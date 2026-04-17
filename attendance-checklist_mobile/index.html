@@ -1478,16 +1478,24 @@ async function loadRosterPDF(input) {
       const tc = await page.getTextContent();
       allItems = allItems.concat(tc.items);
     }
-    // Y좌표로 묶어 행 구성
-    const rows = {};
+    // Y좌표 기준 정렬 후 허용 오차 5px로 행 묶기
+    allItems.sort((a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4]);
+    const rowGroups = [];
+    let curRow = [], curY = null;
     for (const item of allItems) {
       if (!item.str.trim()) continue;
-      const y = Math.round(item.transform[5]);
-      if (!rows[y]) rows[y] = [];
-      rows[y].push({ x: item.transform[4], str: item.str.trim() });
+      const y = item.transform[5];
+      if (curY === null || Math.abs(y - curY) <= 5) {
+        curRow.push(item); if (curY === null) curY = y;
+      } else {
+        if (curRow.length) rowGroups.push(curRow);
+        curRow = [item]; curY = y;
+      }
     }
-    const lines = Object.keys(rows).sort((a,b)=>b-a)
-      .map(y => rows[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' '));
+    if (curRow.length) rowGroups.push(curRow);
+    const lines = rowGroups.map(row =>
+      row.sort((a,b) => a.transform[4] - b.transform[4]).map(i => i.str.trim()).join(' ')
+    );
     // 번호 + 한글 이름 파싱
     const result = {};
     for (const line of lines) {

@@ -1257,6 +1257,13 @@ function resetAll() {
   saveData(); renderInitCard(); showToast('초기화 완료.');
 }
 
+function applyStudentCount(newCount) {
+  if (!newCount || newCount < 1 || newCount > 99) return;
+  if (newCount === studentCount()) return;
+  appData.studentCount = newCount;
+  document.getElementById('cur-student-count').textContent = newCount;
+  document.getElementById('cur-student-count-badge').textContent = `(${newCount}명)`;
+}
 // ===== 학급 인원 설정 =====
 function studentsWithRecords(fromNum, toNum) {
   const set = new Set();
@@ -1418,9 +1425,11 @@ async function loadRosterPDF(input) {
     if (!count) { showToast('이름을 찾지 못했습니다.\n명렬표 PDF가 맞는지 확인해주세요.'); return; }
     if (!appData.studentNames) appData.studentNames = {};
     Object.assign(appData.studentNames, result);
+    const maxNum = Math.max(...Object.keys(result).map(Number));
+    applyStudentCount(maxNum);
     saveData();
     renderNameGrid();
-    showToast(`이름 ${count}명 불러오기 완료`);
+    showToast(`이름 ${count}명 불러오기 완료 (학급 인원 ${maxNum}명으로 설정)`);
   } catch(e) { showToast('PDF 읽기 오류: ' + e.message); }
 }
 function clearAllNames() {
@@ -1537,6 +1546,14 @@ function loadDetailedExcelFile(input) {
       const wb = XLSX.read(e.target.result, { type:'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+      // 학생 번호 최댓값 사전 스캔 → 인원 자동 갱신
+      let maxNum = studentCount();
+      for (const row of rows) {
+        if (!row) continue;
+        const n = parseInt(String(row[1] || ''), 10);
+        if (n >= 1 && n <= 99 && n > maxNum) maxNum = n;
+      }
+      applyStudentCount(maxNum);
       const { imported, skipped, dates, newNames } = importDetailedRows(rows);
       if (!imported) { showToast('불러올 출결 기록이 없습니다.\n파일 형식을 확인해주세요.'); input.value=''; return; }
       // 불러온 날짜 목록 저장 (삭제 시 활용)
@@ -1586,6 +1603,8 @@ function loadExcelFile(input) {
       const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
       const {stats,period}=parseNaiesRows(rows);
       if(!Object.keys(stats).length){showToast('출결 데이터를 찾을 수 없습니다.');input.value='';return;}
+      const maxNum=Math.max(...Object.keys(stats).map(Number),studentCount());
+      applyStudentCount(maxNum);
       appData.initialStats=stats; appData.initialStatsPeriod=period;
       saveData(); renderInitCard(); showToast(`초기값 등록 완료 (${Object.keys(stats).length}명)${period?'\n기간: '+period:''}`);
     } catch(err){showToast('파일 읽기 오류: '+err.message);}

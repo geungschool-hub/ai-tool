@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>학습지 템플릿</title><!-- ◀ 파일 제목 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════
+       색상 토큰 — 필요 시 여기서만 변경
+       기본: 파랑(blue) + 초록(green) 계열
+    ══════════════════════════════════════ */
+    :root {
+      --blue-pastel: #C5E3F7;   /* 파랑 섹션 배경·표 헤더 */
+      --green-pastel: #C3E9CC;  /* 초록 섹션 배경·표 헤더 */
+      --blue-dark:   #1255A0;   /* 파랑 강조·테두리 */
+      --green-dark:  #2A7A38;   /* 초록 강조·테두리 */
+      --red-accent:  #C0392B;   /* 빨강 포인트 */
+      --amber:       #E67E22;   /* 주황 포인트 */
+      --text-main:   #1A1A1A;
+      --text-light:  #555;
+      --line:        #BBBBBB;
+      --white:       #ffffff;
+    }
+
+    /* ══ 기본 리셋 ══ */
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 10pt;
+      color: var(--text-main);
+      background: #d0d0d0;   /* 용지 배경 (인쇄 시 사라짐) */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    /* ══ A4 페이지 ══
+       여러 페이지가 필요하면 .page div를 복사해서 추가 */
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: var(--white);
+      box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+      padding: 8mm 12mm 7mm 12mm;
+      overflow: hidden;
+    }
+
+    /* ══ 헤더 ══ */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 5px;
+      border-bottom: 2.5px solid var(--blue-dark);
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .header-left .subject    { font-size:13pt; font-weight:700; color:var(--blue-dark); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .header-right { display:flex; gap:16px; }
+    .input-field  { font-size:9pt; display:flex; align-items:center; gap:5px; }
+    .input-field .uline { display:inline-block; width:90px; height:15px; border-bottom:1.5px solid var(--text-main); }
+
+    /* ══ 푸터 ══ */
+    .page-footer {
+      display:flex; justify-content:center; align-items:center;
+      padding-top:5px; border-top:1px solid var(--line);
+      flex-shrink:0; margin-top:auto;
+    }
+    .page-badge {
+      background:var(--blue-pastel); color:var(--blue-dark);
+      font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px;
+    }
+
+    /* ══ 컨텐츠 영역 ══ */
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:5px; }
+    .section      { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:8px; flex-shrink:0; }   /* 섹션 사이 여백 조절용 */
+
+    /* ── 섹션 제목 ──
+       파랑(기본) / 초록(.green) / 빨강(.red) / 주황(.amber) 선택 가능 */
+    .section-title {
+      font-size:11pt; font-weight:700;
+      padding:4px 10px; border-radius:4px;
+      border-left:4px solid var(--blue-dark);
+      background:var(--blue-pastel); color:var(--text-main);
+    }
+    .section-title.green { border-left-color:var(--green-dark);  background:var(--green-pastel); }
+    .section-title.red   { border-left-color:var(--red-accent);  background:#FDDEDE; }
+    .section-title.amber { border-left-color:var(--amber);       background:#FDE9C9; }
+
+    /* ══ 빈칸 클래스 ══
+       .b (기본 72px) / .sm (50px) / .lg (108px) / .xl (136px) / .xs (32px) */
+    .b    { display:inline-block; min-width:72px;  height:16px; border-bottom:1.8px solid var(--text-main); vertical-align:bottom; margin:0 2px; }
+    .b.sm { min-width:50px; }
+    .b.lg { min-width:108px; }
+    .b.xl { min-width:136px; }
+    .b.xs { min-width:32px; }
+
+    /* ══ 레이아웃 ══ */
+    .two-col   { display:grid; grid-template-columns:1fr 1fr;    gap:8px; }
+    .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+
+    /* ══ 박스 컴포넌트 ══ */
+    /* 일반 정보 박스 */
+    .info-box {
+      border:1px solid var(--line); border-radius:4px;
+      padding:7px 12px; font-size:9.5pt; line-height:2.2;
+      background:#FAFAFA;
+    }
+    /* 강조 박스 (파랑) */
+    .key-box {
+      border:2px solid var(--blue-dark); border-radius:4px;
+      padding:6px 11px; font-size:9.5pt; line-height:2.0;
+      background:var(--blue-pastel);
+    }
+    /* 강조 박스 (초록) */
+    .key-box.green {
+      border-color:var(--green-dark);
+      background:var(--green-pastel);
+    }
+    /* 단계 박스 (가로 배열 단계 설명) */
+    .step-box {
+      border:1px solid var(--line); border-radius:4px;
+      padding:6px 10px; font-size:9pt; line-height:2.0;
+      display:flex; gap:8px; align-items:flex-start;
+      background:#FAFAFA;
+    }
+
+    /* ══ 흐름도 ══ */
+    .flow-chart {
+      display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+      padding:7px 12px; background:#FAFAFA;
+      border:1px solid var(--line); border-radius:4px; font-size:9pt;
+      justify-content:center;
+    }
+    .flow-box   { border:1.5px solid var(--blue-dark); border-radius:4px; padding:3px 8px; background:var(--white); white-space:nowrap; text-align:center; }
+    .flow-arrow { color:var(--blue-dark); font-size:13pt; font-weight:700; }
+
+    /* ══ 표 ══ */
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th {
+      background:var(--blue-pastel); font-weight:700;
+      padding:6px 8px; border:1px solid var(--line); text-align:center;
+    }
+    .data-table th.g  { background:var(--green-pastel); }
+    .data-table th.r  { background:#FDDEDE; }
+    .data-table td {
+      padding:7px 9px; border:1px solid var(--line);
+      text-align:center; vertical-align:middle; line-height:2.0;
+    }
+    .data-table td.left { text-align:left; }
+    /* 행 번호 열 */
+    .data-table td.num {
+      background:#F0F7FF; color:var(--blue-dark);
+      font-weight:700; width:6%;
+    }
+
+    /* ══ 교과서 이미지 + SVG 레이블 오버레이 ══
+       사용 패턴:
+         .img-wrap > <img> + <svg class="overlay"> 순서로 배치
+       img-wrap이 relative, overlay가 absolute로 겹쳐짐 */
+    .img-wrap {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+    }
+    .img-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .img-wrap .overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      overflow: visible;
+    }
+    /* 이미지 캡션 */
+    .img-caption {
+      font-size: 8pt;
+      color: var(--text-light);
+      text-align: center;
+      margin-top: 3px;
+    }
+
+    /* ══ 인쇄 설정 ══ */
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page {
+        width:210mm; height:297mm;
+        box-shadow:none; page-break-after:always;
+        padding:8mm 12mm 7mm 12mm;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+      }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     1페이지  ←  페이지가 여러 개면 이 div를 복사
+     각 .page 는 A4 한 장에 대응
+════════════════════════════════════════ -->
+<div class="page" id="page-1">
+
+  <!-- ── 헤더 ──────────────────────────────
+       subject   : 과목명
+       breadcrumb: 단원 경로 (예: II. 항상성 > 01. 뉴런)
+  ─────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학</div><!-- ◀ 과목명 -->
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 00. 단원 제목</div><!-- ◀ 단원 경로 -->
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <!-- ── 본문 ─────────────────────────────── -->
+  <div class="page-content">
+
+    <!-- ▣ 섹션 제목 색상 변형 예시
+         기본(파랑) / .green / .red / .amber
+         실제 사용 시 필요한 것만 남기고 삭제 -->
+
+    <!-- ─── 섹션 A ──────────────────────── -->
+    <div class="section">
+      <div class="section-title">A. 섹션 제목을 여기에</div><!-- ◀ 제목 -->
+
+      <!-- 일반 정보 박스 (빈칸 채우기) -->
+      <div class="info-box">
+        • 항목 1: <span class="b sm"></span>이/가 <span class="b"></span>한다.<br>
+        • 항목 2: <span class="b lg"></span>이며, <span class="b sm"></span>을/를 포함한다.<br>
+        • 항목 3: <span class="b xl"></span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── 섹션 B ──────────────────────── -->
+    <div class="section">
+      <div class="section-title green">B. 섹션 제목 (초록 계열)</div><!-- ◀ 제목 -->
+
+      <!-- 2열 레이아웃 예시 -->
+      <div class="two-col">
+        <div class="info-box">
+          <b>왼쪽 항목</b><br>
+          • <span class="b sm"></span><br>
+          • <span class="b"></span>
+        </div>
+        <div class="info-box">
+          <b>오른쪽 항목</b><br>
+          • <span class="b sm"></span><br>
+          • <span class="b"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── 섹션 C : 표 ──────────────────── -->
+    <div class="section">
+      <div class="section-title">C. 섹션 제목 (표 예시)</div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:6%;">번호</th><!-- 번호 열 필요 없으면 삭제 -->
+            <th style="width:20%;">구분</th>
+            <th>내용</th><!-- ◀ 열 제목 수정 -->
+            <th style="width:22%;">추가 열</th><!-- ◀ 열 추가/삭제 자유 -->
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 행 추가·삭제 자유 -->
+          <tr>
+            <td class="num">①</td>
+            <td><b>항목 이름</b></td>
+            <td class="left"><span class="b lg"></span>의 역할을 하며 <span class="b sm"></span>을 포함한다.</td>
+            <td><span class="b sm"></span></td>
+          </tr>
+          <tr>
+            <td class="num">②</td>
+            <td><b>항목 이름</b></td>
+            <td class="left"><span class="b"></span></td>
+            <td><span class="b sm"></span></td>
+          </tr>
+          <tr>
+            <td class="num">③</td>
+            <td><b>항목 이름</b></td>
+            <td class="left"><span class="b"></span></td>
+            <td><span class="b sm"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── 섹션 D : 흐름도 ──────────────── -->
+    <div class="section">
+      <div class="section-title amber">D. 섹션 제목 (흐름도 예시)</div>
+
+      <div class="flow-chart">
+        <div class="flow-box">출발점</div><!-- ◀ 박스 내용 수정, 박스 추가·삭제 자유 -->
+        <span class="flow-arrow">→</span>
+        <div class="flow-box"><span class="b sm"></span></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box"><span class="b sm"></span></div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box">도착점</div>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── 섹션 E : 단계별 설명 ─────────── -->
+    <div class="section">
+      <div class="section-title red">E. 섹션 제목 (단계 박스 예시)</div>
+
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <div class="step-box">
+          <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❶ 단계명</span>
+          <span><span class="b sm"></span>이/가 <span class="b"></span>하여 <span class="b sm"></span>이 일어난다.</span>
+        </div>
+        <div class="step-box">
+          <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❷ 단계명</span>
+          <span><span class="b"></span></span>
+        </div>
+        <div class="step-box">
+          <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❸ 단계명</span>
+          <span><span class="b"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 교과서 이미지 활용 ────────────────────────
+         STEP 1. 터미널에서 이미지 추출:
+           python extract_pdf_images.py 교과서.pdf pdf_images
+
+         STEP 2. 출력된 파일명을 확인 후 아래 src에 입력
+           (예: pdf_images/p03_img2_372x363.png)
+
+         패턴 1 — 이미지 단독 사용 (캡션 포함) -->
+    <!--
+    <div style="text-align:center;">
+      <div class="img-wrap" style="width:55%;">
+        <img src="pdf_images/파일명.png" alt="그림 설명"/>
+      </div>
+      <div class="img-caption">▲ 그림 캡션</div>
+    </div>
+    -->
+
+    <!-- 패턴 2 — 이미지 위에 번호 레이블 오버레이
+         overlay SVG의 viewBox는 원본 이미지 크기(px)에 맞게 설정
+         번호 원 위치(cx, cy)는 이미지를 보며 조정 -->
+    <!--
+    <div style="text-align:center;">
+      <div class="img-wrap" style="width:55%;">
+        <img src="pdf_images/파일명.png" alt="그림 설명"/>
+        <svg class="overlay" viewBox="0 0 372 363"
+             xmlns="http://www.w3.org/2000/svg">
+          번호 원:
+          <circle cx="200" cy="80"  r="12" fill="#1255A0"/>
+          <text x="200" y="85" text-anchor="middle" font-size="14"
+                fill="white" font-weight="bold">①</text>
+          <circle cx="150" cy="200" r="12" fill="#2A7A38"/>
+          <text x="150" y="205" text-anchor="middle" font-size="14"
+                fill="white" font-weight="bold">②</text>
+          callout 선 (점선):
+          <line x1="200" y1="92" x2="200" y2="130"
+                stroke="#1255A0" stroke-width="1.3" stroke-dasharray="3,2"/>
+        </svg>
+      </div>
+      <div class="img-caption">▲ 그림 캡션</div>
+    </div>
+    -->
+
+    <!-- 패턴 3 — 이미지 + 옆에 빈칸 채우기 (2열) -->
+    <!--
+    <div class="two-col" style="align-items:center;">
+      <div style="text-align:center;">
+        <div class="img-wrap">
+          <img src="pdf_images/파일명.png" alt="그림 설명"/>
+        </div>
+        <div class="img-caption">▲ 그림 캡션</div>
+      </div>
+      <div class="info-box">
+        ① <span class="b"></span><br>
+        ② <span class="b"></span><br>
+        ③ <span class="b"></span>
+      </div>
+    </div>
+    -->
+
+    <!-- ─── 순수 SVG 다이어그램 (이미지 없이 직접 그릴 때) ── -->
+    <!--
+    <div style="text-align:center;">
+      <svg width="80%" viewBox="0 0 500 180"
+           xmlns="http://www.w3.org/2000/svg"
+           preserveAspectRatio="xMidYMid meet">
+        <circle cx="50" cy="50" r="12" fill="#1255A0"/>
+        <text x="50" y="55" text-anchor="middle" font-size="13"
+              fill="white" font-weight="bold">①</text>
+        <line x1="50" y1="62" x2="50" y2="90"
+              stroke="#1255A0" stroke-width="1.3" stroke-dasharray="3,2"/>
+      </svg>
+    </div>
+    -->
+
+  </div><!-- /page-content -->
+
+  <!-- ── 푸터 ──────────────────────────────
+       page-badge 텍스트: 페이지 번호 또는 구분 표시
+  ─────────────────────────────────────── -->
+  <footer class="page-footer">
+    <div class="page-badge">1 / 1</div><!-- ◀ 페이지 표시 수정 -->
+  </footer>
+
+</div><!-- /page-1 -->
+
+
+<!-- ════════════════════════════════════════
+     2페이지 예시 — 필요 없으면 삭제
+     필요하면 id="page-3", "page-4" ... 로 계속 추가
+════════════════════════════════════════ -->
+<!--
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학</div>
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 00. 단원 제목</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+    여기에 2페이지 내용
+  </div>
+
+  <footer class="page-footer">
+    <div class="page-badge">2 / 2</div>
+  </footer>
+</div>
+-->
+
+</body>
+</html>

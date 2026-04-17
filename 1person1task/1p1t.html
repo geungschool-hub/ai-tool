@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>1인 1역 수행 기록 · 2학년 7반</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+/* ── 리셋 & 기본 ── */
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --primary: #2a9d8f;
+  --primary-light: #e8f5f3;
+  --primary-mid: #c8e6e0;
+  --accent: #f4a261;
+  --bg: #f5faf9;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --text-sub: #6b7280;
+  --border: #d4ede9;
+  --disabled: #e5e7eb;
+  --disabled-text: #9ca3af;
+  --danger: #e76f51;
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── 앱 래퍼 ── */
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  box-shadow: 0 0 40px rgba(0,0,0,0.08);
+  position: relative;
+}
+
+/* ── 화면 전환 ── */
+.screen { display: none; flex-direction: column; flex: 1; }
+.screen.active { display: flex; }
+
+/* ════════════════════════
+   입장 화면
+════════════════════════ */
+#screen-entry {
+  padding: 0 0 env(safe-area-inset-bottom, 16px);
+}
+
+.entry-header {
+  background: var(--primary);
+  color: white;
+  padding: 36px 24px 28px;
+  padding-top: calc(36px + env(safe-area-inset-top, 0px));
+  text-align: center;
+}
+.entry-header .app-icon { font-size: 40px; margin-bottom: 8px; }
+.entry-header h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.entry-header p { font-size: 14px; opacity: 0.85; }
+
+.entry-body {
+  flex: 1;
+  padding: 24px 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.entry-label {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+/* 번호 그리드 */
+.number-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.num-btn {
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+}
+.num-btn:active { transform: scale(0.92); background: var(--primary-light); border-color: var(--primary); }
+
+/* 담임 버튼 */
+.teacher-btn-wrap {
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.teacher-btn {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  min-height: 48px;
+}
+.teacher-btn:active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+/* 오류 메시지 */
+.entry-error {
+  text-align: center;
+  font-size: 14px;
+  color: var(--danger);
+  min-height: 20px;
+}
+
+/* ════════════════════════
+   학생 기록 화면
+════════════════════════ */
+#screen-record {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 상단 바 */
+.record-header {
+  background: var(--primary);
+  color: white;
+  padding: 16px 16px 14px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.record-header-info { flex: 1; }
+.record-header-name {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.record-header-role {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+.header-back-btn {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-height: 48px;
+  min-width: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-back-btn:active { background: rgba(255,255,255,0.35); }
+
+/* 역할 안내 접이식 */
+.role-guide {
+  background: var(--primary-light);
+  border-bottom: 1px solid var(--primary-mid);
+  flex-shrink: 0;
+}
+.role-guide-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  min-height: 44px;
+}
+.role-guide-toggle .arrow { transition: transform 0.2s; font-size: 11px; }
+.role-guide-toggle.open .arrow { transform: rotate(180deg); }
+.role-guide-body {
+  display: none;
+  padding: 0 16px 12px;
+  font-size: 13px;
+  color: #3d7a74;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.role-guide-body.open { display: block; }
+
+/* 주차 네비게이션 */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.week-nav-btn {
+  background: var(--primary-light);
+  border: 1px solid var(--primary-mid);
+  border-radius: 8px;
+  color: var(--primary);
+  font-size: 18px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.week-nav-btn:active { background: var(--primary-mid); }
+.week-nav-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.5;
+}
+.week-nav-sub {
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 400;
+}
+
+/* 읽기 전용 배너 */
+.readonly-banner {
+  display: none;
+  background: #fff3e0;
+  color: #b45309;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.readonly-banner.show { display: block; }
+
+/* 요일 탭 */
+.day-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+  background: var(--card);
+}
+.day-tab {
+  flex: 1;
+  padding: 10px 4px 8px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s;
+  min-height: 52px;
+  position: relative;
+}
+.day-tab .tab-day { font-size: 14px; }
+.day-tab .tab-date { font-size: 11px; color: var(--text-sub); }
+.day-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.day-tab.active .tab-date { color: var(--primary); }
+.day-tab.today .tab-day::after {
+  content: '';
+  display: block;
+  width: 5px;
+  height: 5px;
+  background: var(--accent);
+  border-radius: 50%;
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 14px);
+}
+.day-tab.disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.day-tab .tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: none;
+}
+.day-tab.has-record .tab-dot { display: block; }
+
+/* 기록 입력 영역 */
+.record-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.record-date-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+.record-textarea {
+  width: 100%;
+  flex: 1;
+  min-height: 180px;
+  padding: 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+  resize: none;
+  line-height: 1.7;
+  background: var(--card);
+  transition: border-color 0.15s;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.record-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.record-textarea:disabled {
+  background: var(--disabled);
+  color: var(--disabled-text);
+  cursor: default;
+}
+
+/* 저장 버튼 (하단 고정) */
+.record-footer {
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background: var(--card);
+  flex-shrink: 0;
+}
+.save-btn {
+  width: 100%;
+  padding: 15px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.08s;
+  min-height: 52px;
+}
+.save-btn:active { transform: scale(0.98); background: #228b7e; }
+.save-btn:disabled {
+  background: var(--disabled);
+  color: var(--disabled-text);
+  cursor: default;
+}
+
+/* ── 토스트 ── */
+#toast {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1a1a2e;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 9999;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── 공통 모달 ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 500;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.28s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+.modal-header {
+  padding: 12px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.modal-close {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── 비밀번호 키패드 모달 ── */
+.pw-display {
+  font-size: 32px;
+  letter-spacing: 14px;
+  text-align: center;
+  color: var(--primary);
+  margin: 8px 0 20px;
+  font-weight: 700;
+  min-height: 44px;
+}
+.pw-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.pw-key {
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text);
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+}
+.pw-key:active { background: var(--primary-light); border-color: var(--primary); }
+.pw-error {
+  color: var(--danger);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+/* ════════════════════════
+   담임 화면
+════════════════════════ */
+#screen-teacher {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.teacher-header {
+  background: #264653;
+  color: white;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.teacher-header h2 { font-size: 17px; font-weight: 700; }
+.teacher-header-sub { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+.teacher-back-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.teacher-week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--card);
+}
+.teacher-week-nav .week-nav-btn {
+  background: #e8f0ee;
+  border-color: #c5d9d5;
+  color: #264653;
+}
+.unrecorded-badge {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 600;
+  background: #fff0ee;
+  border: 1px solid #fcd9d3;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* 전체 현황 표 */
+.overview-scroll {
+  flex: 1;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 480px;
+}
+.overview-table th {
+  background: #f0faf8;
+  color: var(--primary);
+  font-weight: 700;
+  padding: 9px 6px;
+  border-bottom: 2px solid var(--primary-mid);
+  text-align: center;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.overview-table th.col-name {
+  text-align: left;
+  padding-left: 12px;
+  min-width: 100px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #e8f5f3;
+}
+.overview-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.overview-table td.col-name {
+  text-align: left;
+  padding-left: 12px;
+  background: var(--card);
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+.overview-table tr:last-child td { border-bottom: none; }
+.overview-table tr:hover td { background: var(--primary-light); }
+.overview-table tr:hover td.col-name { background: var(--primary-light); }
+
+.td-name-main { font-weight: 600; font-size: 13px; }
+.td-name-role { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+
+.td-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.td-check-icon { color: var(--primary); font-size: 14px; font-weight: 700; }
+.td-check-preview {
+  font-size: 10px;
+  color: var(--text-sub);
+  max-width: 72px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.td-empty { color: #d1d5db; font-size: 18px; }
+
+/* 기록 상세 모달 */
+#record-detail-modal .modal-box { border-radius: 20px 20px 0 0; }
+.detail-student-info {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 10px;
+}
+.detail-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text);
+  white-space: pre-wrap;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  min-height: 80px;
+}
+.detail-empty { color: var(--text-sub); font-style: italic; }
+
+/* 학생 이력 모달 */
+.student-history-week {
+  margin-bottom: 16px;
+}
+.history-week-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--primary-mid);
+}
+.history-day-item {
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin-bottom: 5px;
+  background: var(--bg);
+}
+.history-day-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 2px;
+}
+.history-day-content { font-size: 13px; color: var(--text); white-space: pre-wrap; }
+.history-empty { color: var(--text-sub); font-size: 13px; text-align: center; padding: 20px; }
+
+/* ── 담임 하단 툴바 ── */
+.teacher-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background: var(--card);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.toolbar-btn {
+  flex: 1;
+  min-width: calc(50% - 4px);
+  padding: 11px 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background 0.12s;
+}
+.toolbar-btn.export-csv  { background: #eef4ff; color: #4a7fd4; border: 1px solid #c0d4f5; }
+.toolbar-btn.export-json { background: #f0f9f0; color: #3a8a3a; border: 1px solid #b8ddb8; }
+.toolbar-btn.import-json { background: #f5f0ff; color: #7c4dca; border: 1px solid #d0bff5; }
+.toolbar-btn.edit-mode   { background: #fff8ec; color: #b45309; border: 1px solid #fcd49a; }
+.toolbar-btn.edit-mode.active { background: #b45309; color: white; border-color: #b45309; }
+.toolbar-btn.view-log    { background: #eef0ff; color: #4a4fc8; border: 1px solid #c5c8f0; }
+.toolbar-btn.manage-pw   { background: #fdf0ff; color: #8b2fc8; border: 1px solid #ddbff5; }
+.toolbar-btn:active { opacity: 0.8; }
+
+/* ── 변경 로그 모달 ── */
+.log-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  margin-bottom: 8px;
+  border-left: 3px solid var(--primary);
+}
+.log-item.log-delete { border-left-color: var(--danger); opacity: 0.65; }
+.log-item-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.log-time  { font-size: 11px; color: var(--text-sub); flex-shrink: 0; }
+.log-name  { font-size: 13px; font-weight: 700; color: var(--text); }
+.log-day   { font-size: 12px; color: var(--text-sub); margin-left: auto; flex-shrink: 0; }
+.log-preview { font-size: 12px; color: var(--text-sub); line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+.log-actor-teacher {
+  font-size: 10px; background: #264653; color: white;
+  padding: 1px 6px; border-radius: 999px; flex-shrink: 0;
+}
+.log-ip {
+  font-size: 10px; color: var(--text-sub); font-family: monospace;
+  background: #f3f4f6; padding: 1px 5px; border-radius: 4px; flex-shrink: 0;
+}
+.log-empty { text-align: center; padding: 28px 0; color: var(--text-sub); font-size: 13px; }
+
+/* ── 학생 비밀번호 모달 ── */
+.spw-student-name {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.spw-subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ── 담임 비밀번호 관리 ── */
+.pw-reset-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pw-reset-item:last-child { border-bottom: none; }
+.pw-reset-info { display: flex; align-items: center; gap: 8px; }
+.pw-reset-num  { font-size: 13px; font-weight: 700; color: var(--text-sub); min-width: 26px; }
+.pw-reset-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.pw-reset-badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+}
+.pw-reset-badge.set   { background: #e8f5f3; color: var(--primary); }
+.pw-reset-badge.unset { background: #f3f4f6; color: var(--text-sub); }
+.pw-reset-btn {
+  background: #fff0ee; color: var(--danger);
+  border: 1px solid #fcd9d3; border-radius: 8px;
+  font-size: 13px; font-weight: 600;
+  padding: 6px 14px; cursor: pointer; min-height: 36px; flex-shrink: 0;
+}
+.pw-reset-btn:active { background: var(--danger); color: white; }
+
+/* ── 최근 입장 빠른버튼 ── */
+.recent-section { margin-top: 4px; }
+.recent-label { font-size: 12px; color: var(--text-sub); margin-bottom: 8px; text-align: center; }
+.recent-btns { display: flex; gap: 8px; justify-content: center; }
+.recent-btn {
+  flex: 1;
+  max-width: 120px;
+  padding: 10px 8px;
+  background: var(--primary-light);
+  border: 1.5px solid var(--primary-mid);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  text-align: center;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.recent-btn span { font-size: 11px; font-weight: 400; color: var(--text-sub); }
+.recent-btn:active { background: var(--primary-mid); }
+
+.edit-cell-textarea {
+  width: 100%;
+  min-width: 72px;
+  min-height: 52px;
+  font-size: 11px;
+  padding: 4px;
+  border: 1.5px solid var(--primary-mid);
+  border-radius: 6px;
+  resize: none;
+  font-family: inherit;
+  line-height: 1.4;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ── 로딩 오버레이 ── */
+#loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.7);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+}
+#loading-overlay.show { display: flex; }
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid var(--primary-mid);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: var(--text-sub); font-weight: 600; }
+
+/* ── 확인 다이얼로그 ── */
+.confirm-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 600;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.confirm-overlay.show { display: flex; }
+.confirm-box {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px 20px 16px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.confirm-msg { font-size: 14px; color: var(--text-sub); margin-bottom: 20px; line-height: 1.6; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 48px;
+}
+.confirm-btn.cancel { background: var(--disabled); color: var(--text-sub); }
+.confirm-btn.ok { background: var(--primary); color: white; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════════════════════
+       화면 1: 입장
+  ══════════════════════════ -->
+  <div id="screen-entry" class="screen active">
+    <div class="entry-header">
+      <div class="app-icon">📋</div>
+      <h1>1인 1역 수행 기록</h1>
+      <p>2학년 7반</p>
+    </div>
+
+    <div class="entry-body">
+      <div class="entry-label">내 번호를 눌러주세요</div>
+      <div class="number-grid" id="number-grid"></div>
+      <div class="entry-error" id="entry-error"></div>
+
+      <div class="recent-section" id="recent-section" style="display:none">
+        <div class="recent-label">⚡ 최근 입장</div>
+        <div class="recent-btns" id="recent-btns"></div>
+      </div>
+
+      <div class="teacher-btn-wrap">
+        <button class="teacher-btn" id="teacher-btn">🔒 담임 선생님</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════
+       화면 2: 학생 기록
+  ══════════════════════════ -->
+  <div id="screen-record" class="screen">
+    <div class="record-header">
+      <div class="record-header-info">
+        <div class="record-header-name" id="record-name"></div>
+        <div class="record-header-role" id="record-role"></div>
+      </div>
+      <button class="header-back-btn" id="btn-back">나가기</button>
+    </div>
+
+    <div class="role-guide">
+      <button class="role-guide-toggle" id="role-guide-toggle">
+        <span>📌 역할 활동 내용 보기</span>
+        <span class="arrow">▼</span>
+      </button>
+      <div class="role-guide-body" id="role-guide-body"></div>
+    </div>
+
+    <div class="week-nav">
+      <button class="week-nav-btn" id="btn-prev-week">‹</button>
+      <div class="week-nav-label">
+        <div id="week-label">--</div>
+        <div class="week-nav-sub" id="week-range">--</div>
+      </div>
+      <button class="week-nav-btn" id="btn-next-week">›</button>
+    </div>
+
+    <div class="readonly-banner" id="readonly-banner">
+      🔒 지난 주차는 수정할 수 없습니다
+    </div>
+
+    <div class="day-tabs" id="day-tabs"></div>
+
+    <div class="record-body">
+      <div class="record-date-label" id="record-date-label"></div>
+      <textarea class="record-textarea" id="record-textarea" placeholder="오늘 수행한 역할 내용을 기록해주세요"></textarea>
+    </div>
+
+    <div class="record-footer">
+      <button class="save-btn" id="save-btn">저장하기</button>
+    </div>
+  </div>
+
+</div>
+
+  <!-- ══════════════════════════
+       화면 3: 담임 현황
+  ══════════════════════════ -->
+  <div id="screen-teacher" class="screen">
+    <div class="teacher-header">
+      <div>
+        <h2>📊 전체 수행 현황</h2>
+        <div class="teacher-header-sub">2학년 7반 1인 1역</div>
+      </div>
+      <button class="teacher-back-btn" id="teacher-back-btn">나가기</button>
+    </div>
+
+    <div class="teacher-week-nav">
+      <button class="week-nav-btn" id="t-btn-prev-week">‹</button>
+      <div class="week-nav-label">
+        <div id="t-week-label">--</div>
+        <div class="week-nav-sub" id="t-week-range">--</div>
+      </div>
+      <button class="week-nav-btn" id="t-btn-next-week">›</button>
+    </div>
+
+    <div style="padding:8px 16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:flex-end;">
+      <span class="unrecorded-badge" id="unrecorded-badge"></span>
+    </div>
+
+    <div class="overview-scroll">
+      <table class="overview-table" id="overview-table">
+        <thead>
+          <tr>
+            <th class="col-name">이름 / 역할</th>
+            <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+          </tr>
+        </thead>
+        <tbody id="overview-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="teacher-toolbar">
+      <button class="toolbar-btn export-csv"  id="btn-export-csv">📄 CSV 내보내기</button>
+      <button class="toolbar-btn export-json" id="btn-export-json">📦 JSON 백업</button>
+      <button class="toolbar-btn import-json" id="btn-import-json">📂 JSON 불러오기</button>
+      <button class="toolbar-btn edit-mode"   id="btn-edit-mode">✏️ 편집 모드</button>
+      <button class="toolbar-btn view-log"   id="btn-view-log">📋 변경 로그</button>
+      <button class="toolbar-btn manage-pw"  id="btn-manage-pw">🔑 비밀번호 관리</button>
+      <input type="file" id="t-import-file" accept=".json" style="display:none">
+    </div>
+  </div>
+
+<!-- 기록 상세 모달 -->
+<div class="modal-overlay" id="record-detail-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="detail-modal-title">수행 기록</div>
+      <button class="modal-close" id="detail-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-student-info" id="detail-student-info"></div>
+      <div class="detail-content" id="detail-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 학생 이력 모달 -->
+<div class="modal-overlay" id="student-history-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="history-modal-title">전체 기록</div>
+      <button class="modal-close" id="history-modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="history-modal-body"></div>
+  </div>
+</div>
+
+<!-- 학생 비밀번호 모달 -->
+<div class="modal-overlay" id="student-pw-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="spw-title">비밀번호 입력</div>
+      <button class="modal-close" id="spw-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="spw-student-name" id="spw-student-name"></div>
+      <div class="spw-subtitle" id="spw-subtitle"></div>
+      <div class="pw-display" id="spw-display">　</div>
+      <div class="pw-keypad">
+        <button class="pw-key" onclick="spwInput('1')">1</button>
+        <button class="pw-key" onclick="spwInput('2')">2</button>
+        <button class="pw-key" onclick="spwInput('3')">3</button>
+        <button class="pw-key" onclick="spwInput('4')">4</button>
+        <button class="pw-key" onclick="spwInput('5')">5</button>
+        <button class="pw-key" onclick="spwInput('6')">6</button>
+        <button class="pw-key" onclick="spwInput('7')">7</button>
+        <button class="pw-key" onclick="spwInput('8')">8</button>
+        <button class="pw-key" onclick="spwInput('9')">9</button>
+        <button class="pw-key" onclick="spwDelete()">⌫</button>
+        <button class="pw-key" onclick="spwInput('0')">0</button>
+        <button class="pw-key" style="visibility:hidden"></button>
+      </div>
+      <div class="pw-error" id="spw-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 담임 비밀번호 관리 모달 -->
+<div class="modal-overlay" id="pw-reset-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">🔑 비밀번호 관리</div>
+      <button class="modal-close" id="pw-reset-close">✕</button>
+    </div>
+    <div class="modal-body" id="pw-reset-body"></div>
+  </div>
+</div>
+
+<!-- 변경 로그 모달 -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">📋 변경 로그</div>
+      <button class="modal-close" id="log-modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="log-modal-body"></div>
+  </div>
+</div>
+
+<!-- 비밀번호 모달 -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">🔒 담임 선생님 로그인</div>
+      <button class="modal-close" id="pw-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pw-display" id="pw-display">　</div>
+      <div class="pw-keypad">
+        <button class="pw-key" onclick="pwInput('1')">1</button>
+        <button class="pw-key" onclick="pwInput('2')">2</button>
+        <button class="pw-key" onclick="pwInput('3')">3</button>
+        <button class="pw-key" onclick="pwInput('4')">4</button>
+        <button class="pw-key" onclick="pwInput('5')">5</button>
+        <button class="pw-key" onclick="pwInput('6')">6</button>
+        <button class="pw-key" onclick="pwInput('7')">7</button>
+        <button class="pw-key" onclick="pwInput('8')">8</button>
+        <button class="pw-key" onclick="pwInput('9')">9</button>
+        <button class="pw-key" onclick="pwDelete()">⌫</button>
+        <button class="pw-key" onclick="pwInput('0')">0</button>
+        <button class="pw-key" onclick="pwConfirm()">확인</button>
+      </div>
+      <div class="pw-error" id="pw-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 나가기 확인 다이얼로그 -->
+<div class="confirm-overlay" id="confirm-leave">
+  <div class="confirm-box">
+    <div class="confirm-title">저장하지 않은 내용이 있어요</div>
+    <div class="confirm-msg">지금 나가면 변경 내용이 사라집니다.<br>그래도 나가시겠어요?</div>
+    <div class="confirm-btns">
+      <button class="confirm-btn cancel" id="confirm-stay">계속 작성</button>
+      <button class="confirm-btn ok" id="confirm-leave-ok">나가기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 로딩 오버레이 -->
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">불러오는 중...</div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
+<script>
+
+// ══════════════════════════════════════
+//  데이터: 학생 & 역할
+// ══════════════════════════════════════
+const STUDENTS = [
+  { id:'20701', num:'01', name:'권윤서',  role:'향기 공주',      dept:'환경부', desc:'• 교실 공기가 탁해지지 않도록 커튼과 창문을 관리\n• 조례·이동시간 활용하여 환기\n• 공기 탈취제 관리' },
+  { id:'20702', num:'02', name:'김민경',  role:'급식 공주',      dept:'소통부', desc:'• 학급 친구들에게 매일의 급식 식단 안내' },
+  { id:'20703', num:'03', name:'김민정',  role:'출석부 공주',    dept:'학습부', desc:'• 공통과목 수업 시 우리 반 출석부 관리, 사인 부탁드리기\n• 출석부의 교과 선생님 서명이 없을 시 받아오기' },
+  { id:'20704', num:'04', name:'김시은',  role:'게시판 공주',    dept:'환경부', desc:'• 학급 앞·뒤 게시판을 예쁘고 깔끔하게 관리\n• 계절·테마·일정에 맞게 교실 꾸밈\n• 학급의 의견을 반영하며 꾸며나가기' },
+  { id:'20705', num:'05', name:'김채원',  role:'출석부 공주',    dept:'학습부', desc:'• 공통과목 수업 시 우리 반 출석부 관리, 사인 부탁드리기\n• 출석부의 교과 선생님 서명이 없을 시 받아오기' },
+  { id:'20706', num:'06', name:'박나은',  role:'스터디 공주',    dept:'학습부', desc:'• 시간표 변동 확인 후 학급에 안내\n• 시험기간 디데이 체크\n• 시험 범위 정리 및 공지, 수행평가 안내' },
+  { id:'20707', num:'07', name:'박세은',  role:'학급 회장 공주', dept:'',       desc:'• 학급 총괄, 학급회의 진행, 1인 1역 관리 및 감독\n• 솔선수범하여 행복하고 안전한 학급 분위기 조성' },
+  { id:'20708', num:'08', name:'박효빈',  role:'파티 공주',      dept:'소통부', desc:'• 친구들 생일 조사, 학급 게시판에 월별 생일자 안내 게시물 부착\n• 생일·학교 일정 등에 맞는 소소한 행사 계획\n• 많은 인원이 즐길 수 있도록 의견 수용' },
+  { id:'20709', num:'09', name:'손예원',  role:'파티 공주',      dept:'소통부', desc:'• 친구들 생일 조사, 학급 게시판에 월별 생일자 안내 게시물 부착\n• 생일·학교 일정 등에 맞는 소소한 행사 계획\n• 많은 인원이 즐길 수 있도록 의견 수용' },
+  { id:'20710', num:'10', name:'신지민',  role:'학급함 공주',    dept:'문화부', desc:'• 유인물 배부 & 유인물 수합 (개인정보 제외)' },
+  { id:'20711', num:'11', name:'양수빈',  role:'파티 공주',      dept:'소통부', desc:'• 친구들 생일 조사, 학급 게시판에 월별 생일자 안내 게시물 부착\n• 생일·학교 일정 등에 맞는 소소한 행사 계획\n• 많은 인원이 즐길 수 있도록 의견 수용' },
+  { id:'20712', num:'12', name:'엄예주',  role:'피카츄 공주',    dept:'학습부', desc:'• 선택과목 수업 시 형광등·전자칠판·냉난방기 등 절전\n• 냉난방 온도 조절\n• 환기 시 난방 끄기' },
+  { id:'20713', num:'13', name:'엄지율',  role:'급식 공주',      dept:'소통부', desc:'• 학급 친구들에게 매일의 급식 식단 안내' },
+  { id:'20714', num:'14', name:'유진',    role:'게시판 공주',    dept:'환경부', desc:'• 학급 앞·뒤 게시판을 예쁘고 깔끔하게 관리\n• 계절·테마·일정에 맞게 교실 꾸밈\n• 학급의 의견을 반영하며 꾸며나가기' },
+  { id:'20715', num:'15', name:'윤채원',  role:'소통 공주',      dept:'문화부', desc:'• 학급 또는 사회의 크고 작은 이슈를 학급에 소개\n• 학급 소식지 작성하여 학급에 공유' },
+  { id:'20716', num:'16', name:'이가을',  role:'학급 부회장 공주',dept:'',      desc:'• 학급 회장과 함께 학급회의 진행 및 1인 1역 관리 감독\n• 솔선수범하여 행복하고 안전한 학급 분위기 조성' },
+  { id:'20717', num:'17', name:'이가현',  role:'깔끔 공주',      dept:'환경부', desc:'• 교탁 주변 및 학급에 구비되어 있는 생활용품 관리 및 정리\n• 필요한 물품은 선생님에게 문의하여 구비' },
+  { id:'20718', num:'18', name:'이서현',  role:'긍정 공주',      dept:'문화부', desc:'• 학급 게시판에 친구들을 응원하는 긍정의 메시지·명언 적기 (주 2회)\n• 학급 내에서 칭찬할 일을 찾아서 공유하기' },
+  { id:'20719', num:'19', name:'이수경',  role:'깔끔 공주',      dept:'환경부', desc:'• 교탁 주변 및 학급에 구비되어 있는 생활용품 관리 및 정리\n• 필요한 물품은 선생님에게 문의하여 구비' },
+  { id:'20720', num:'20', name:'이채린',  role:'소통 공주',      dept:'문화부', desc:'• 학급 또는 사회의 크고 작은 이슈를 학급에 소개\n• 학급 소식지 작성하여 학급에 공유' },
+  { id:'20721', num:'21', name:'임혜림',  role:'게시판 공주',    dept:'환경부', desc:'• 학급 앞·뒤 게시판을 예쁘고 깔끔하게 관리\n• 계절·테마·일정에 맞게 교실 꾸밈\n• 학급의 의견을 반영하며 꾸며나가기' },
+  { id:'20722', num:'22', name:'정예은',  role:'별자리 공주',    dept:'소통부', desc:'• 오늘의 운세를 확인하고 1·2·3위의 별자리와 행운 아이템을 기록' },
+  { id:'20723', num:'23', name:'차효주',  role:'소통 공주',      dept:'문화부', desc:'• 학급 또는 사회의 크고 작은 이슈를 학급에 소개\n• 학급 소식지 작성하여 학급에 공유' },
+  { id:'20724', num:'24', name:'최유리',  role:'학급함 공주',    dept:'문화부', desc:'• 유인물 배부 & 유인물 수합 (개인정보 제외)' },
+  { id:'20725', num:'25', name:'한서현',  role:'포토그래퍼 공주',dept:'환경부', desc:'• 학급의 일상·기념 사진을 촬영 및 공유 (공유 동의 필수!)' },
+  { id:'20726', num:'26', name:'한예소',  role:'피카츄 공주',    dept:'학습부', desc:'• 선택과목 수업 시 형광등·전자칠판·냉난방기 등 절전\n• 냉난방 온도 조절\n• 환기 시 난방 끄기' },
+];
+
+const DAYS_KO      = ['월','화','수','목','금'];
+const DAYS_KEY     = ['mon','tue','wed','thu','fri'];
+const TEACHER_EMAIL = 'teacher@c27.local'; // Firebase Auth 담임 계정 이메일
+
+// ══════════════════════════════════════
+//  Firebase 초기화
+// ══════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyB5twZbxD67Wsi3ydP74qcMBSPMBrXZk_g",
+  authDomain: "person1task.firebaseapp.com",
+  databaseURL: "https://person1task-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "person1task",
+  storageBucket: "person1task.firebasestorage.app",
+  messagingSenderId: "664269865774",
+  appId: "1:664269865774:web:b4dc3dc465002d3a5df0bf"
+};
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.database();
+const auth = firebase.auth();
+// Firebase Auth 상태는 IndexedDB에 자동 저장 (기본값 LOCAL)
+
+// ── Firebase 경로 유틸 ──
+function weekKey(year, week) {
+  return `${year}_W${String(week).padStart(2,'0')}`;
+}
+function dbPath(studentId, year, week, dayKey) {
+  return `roles/${studentId}/${weekKey(year, week)}/${dayKey}`;
+}
+
+// ── 학생 주간 데이터 한번에 가져오기 ──
+async function fetchWeekData(studentId, year, week) {
+  const snapshot = await db.ref(`roles/${studentId}/${weekKey(year, week)}`).once('value');
+  return snapshot.exists() ? (snapshot.val() || {}) : {};
+}
+
+// 현재 학생·주 캐시
+let weekCache = {}; // { dayKey: value }
+
+async function loadWeekCache(studentId, year, week) {
+  showLoading(true);
+  try {
+    weekCache = await fetchWeekData(studentId, year, week);
+  } catch(e) {
+    weekCache = {};
+  } finally {
+    showLoading(false);
+  }
+}
+
+function getCached(dayKey) {
+  return weekCache[dayKey] || '';
+}
+
+async function setRecord(studentId, year, week, dayKey, value) {
+  await db.ref(dbPath(studentId, year, week, dayKey)).set(value || null);
+  logChange(studentId, weekKey(year, week), dayKey, value, 'student'); // fire-and-forget
+  if (value) weekCache[dayKey] = value;
+  else delete weekCache[dayKey];
+}
+
+// 클라이언트 IP 캐시 (세션 내 1회 조회)
+let clientIP = null;
+
+async function fetchClientIP() {
+  if (clientIP !== null) return clientIP;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+    clearTimeout(timer);
+    const data = await res.json();
+    clientIP = data.ip || '';
+  } catch {
+    clientIP = '';
+  }
+  return clientIP;
+}
+
+// 변경 로그 기록 (실패해도 무시)
+async function logChange(studentId, wk, dayKey, value, actor) {
+  const ip = await fetchClientIP();
+  const user = auth.currentUser;
+  const actualActor = actor
+    || (user?.email === TEACHER_EMAIL ? 'teacher' : 'student');
+  db.ref('logs').push({
+    studentId, wk, dayKey,
+    value: value || '',
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
+    actor: actualActor,
+    ip: ip || ''
+  }).catch(() => {});
+}
+
+// ══════════════════════════════════════
+//  날짜 유틸
+// ══════════════════════════════════════
+function getToday() {
+  const d = new Date();
+  return { y: d.getFullYear(), m: d.getMonth()+1, d: d.getDate(), dow: d.getDay() };
+}
+
+// ISO 주차 번호
+function getISOWeek(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay()+6)%7);
+  const w1 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - w1) / 86400000 - 3 + (w1.getDay()+6)%7) / 7);
+}
+
+// 주차의 월요일 Date 반환
+function getMondayOfWeek(year, week) {
+  const jan4 = new Date(year, 0, 4);
+  const jan4dow = (jan4.getDay()+6)%7;
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - jan4dow + (week-1)*7);
+  return monday;
+}
+
+// 현재 주차 기준 오프셋 → {year, week}
+let weekOffset = 0;
+
+function getCurrentWeekInfo() {
+  const today = new Date();
+  const baseWeek = getISOWeek(today);
+  const baseYear = today.getFullYear();
+
+  const monday = getMondayOfWeek(baseYear, baseWeek);
+  monday.setDate(monday.getDate() + weekOffset * 7);
+
+  const year = monday.getFullYear();
+  const week = getISOWeek(monday);
+
+  // 이번 주 월~금 날짜
+  const dates = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d);
+  }
+
+  // 월차 계산 (해당 월의 몇 번째 주)
+  const firstMonday = getMondayOfWeek(dates[0].getFullYear(), getISOWeek(dates[0]));
+  const monthWeekNum = Math.ceil((dates[0].getDate() + (new Date(dates[0].getFullYear(), dates[0].getMonth(), 1).getDay()+6)%7) / 7);
+
+  return { year, week, dates, monthWeekNum, month: dates[0].getMonth()+1 };
+}
+
+function isCurrentWeek() { return weekOffset === 0; }
+
+function isFutureDate(date) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(date); d.setHours(0,0,0,0);
+  return d > today;
+}
+
+function isTodayDate(date) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(date); d.setHours(0,0,0,0);
+  return d.getTime() === today.getTime();
+}
+
+function formatDate(date) {
+  return `${date.getMonth()+1}/${date.getDate()}`;
+}
+
+// ══════════════════════════════════════
+//  상태
+// ══════════════════════════════════════
+let currentStudent = null;
+let activeDayIndex = 0;   // 0=월 ... 4=금
+let unsaved = false;
+
+// ══════════════════════════════════════
+//  입장 화면 렌더링
+// ══════════════════════════════════════
+function renderEntryScreen() {
+  const grid = document.getElementById('number-grid');
+  grid.innerHTML = '';
+  STUDENTS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    btn.textContent = s.num;
+    btn.addEventListener('click', () => enterAsStudent(s));
+    grid.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════
+//  기록 화면
+// ══════════════════════════════════════
+async function openRecordScreen() {
+  const s = currentStudent;
+  document.getElementById('record-name').textContent = `${s.num} ${s.name}`;
+  document.getElementById('record-role').textContent =
+    s.dept ? `${s.role} · ${s.dept}` : s.role;
+  document.getElementById('role-guide-body').textContent = s.desc;
+
+  showScreen('screen-record');
+  await renderWeekView();
+}
+
+async function renderWeekView() {
+  const info = getCurrentWeekInfo();
+  const readonly = weekOffset < 0;
+
+  document.getElementById('week-label').textContent =
+    `${info.year}년 ${info.month}월 ${info.monthWeekNum}주차`;
+  document.getElementById('week-range').textContent =
+    `${formatDate(info.dates[0])} ~ ${formatDate(info.dates[4])}`;
+
+  document.getElementById('readonly-banner').classList.toggle('show', readonly);
+  document.getElementById('save-btn').disabled = readonly;
+
+  const todayIdx = isCurrentWeek()
+    ? info.dates.findIndex(d => isTodayDate(d))
+    : -1;
+
+  if (isCurrentWeek() && todayIdx >= 0) {
+    activeDayIndex = todayIdx;
+  } else if (!isCurrentWeek()) {
+    activeDayIndex = 0;
+  }
+
+  // Firebase에서 이번 주 데이터 로드 (캐시)
+  await loadWeekCache(currentStudent.id, info.year, info.week);
+
+  renderDayTabs(info, todayIdx, readonly);
+  renderDayContent(info, readonly);
+  unsaved = false;
+}
+
+function renderDayTabs(info, todayIdx, readonly) {
+  const tabsEl = document.getElementById('day-tabs');
+  tabsEl.innerHTML = '';
+
+  info.dates.forEach((date, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-tab';
+    const future = isFutureDate(date);
+    const hasRecord = getCached(DAYS_KEY[i]) !== '';
+
+    if (i === activeDayIndex) btn.classList.add('active');
+    if (i === todayIdx) btn.classList.add('today');
+    if (future) btn.classList.add('disabled');
+    if (hasRecord) btn.classList.add('has-record');
+
+    btn.innerHTML = `
+      <span class="tab-day">${DAYS_KO[i]}</span>
+      <span class="tab-date">${formatDate(date)}</span>
+      <span class="tab-dot"></span>
+    `;
+
+    if (!future) {
+      btn.addEventListener('click', () => switchDay(i, info, readonly));
+    }
+    tabsEl.appendChild(btn);
+  });
+}
+
+function switchDay(idx, info, readonly) {
+  activeDayIndex = idx;
+  renderDayTabs(info, info.dates.findIndex(d => isTodayDate(d)), readonly);
+  renderDayContent(info, readonly);
+}
+
+function renderDayContent(info, readonly) {
+  const date = info.dates[activeDayIndex];
+  const future = isFutureDate(date);
+  const isReadonly = readonly || future;
+
+  document.getElementById('record-date-label').textContent =
+    `${info.year}. ${String(date.getMonth()+1).padStart(2,'0')}. ${String(date.getDate()).padStart(2,'0')} (${DAYS_KO[activeDayIndex]})`;
+
+  const textarea = document.getElementById('record-textarea');
+  textarea.value = getCached(DAYS_KEY[activeDayIndex]);
+  textarea.disabled = isReadonly;
+  textarea.placeholder = isReadonly
+    ? (future ? '아직 기록할 수 없어요' : '지난 주차는 수정할 수 없습니다')
+    : getPlaceholder(currentStudent.role);
+
+  const newTA = textarea.cloneNode(true);
+  textarea.parentNode.replaceChild(newTA, textarea);
+  newTA.addEventListener('input', () => { unsaved = true; });
+}
+
+// ══════════════════════════════════════
+//  주차 이동
+// ══════════════════════════════════════
+document.getElementById('btn-prev-week').addEventListener('click', async () => {
+  weekOffset--;
+  await renderWeekView();
+});
+document.getElementById('btn-next-week').addEventListener('click', async () => {
+  if (weekOffset >= 0) return;
+  weekOffset++;
+  await renderWeekView();
+});
+
+// ══════════════════════════════════════
+//  역할 안내 접이식
+// ══════════════════════════════════════
+document.getElementById('role-guide-toggle').addEventListener('click', function() {
+  this.classList.toggle('open');
+  document.getElementById('role-guide-body').classList.toggle('open');
+});
+
+// ══════════════════════════════════════
+//  나가기
+// ══════════════════════════════════════
+document.getElementById('btn-back').addEventListener('click', () => {
+  if (unsaved) {
+    document.getElementById('confirm-leave').classList.add('show');
+  } else {
+    goHome();
+  }
+});
+document.getElementById('confirm-stay').addEventListener('click', () => {
+  document.getElementById('confirm-leave').classList.remove('show');
+});
+document.getElementById('confirm-leave-ok').addEventListener('click', () => {
+  document.getElementById('confirm-leave').classList.remove('show');
+  goHome();
+});
+
+function goHome() {
+  auth.signOut().catch(() => {});
+  unsaved = false;
+  currentStudent = null;
+  weekOffset = 0;
+  showScreen('screen-entry');
+  document.getElementById('role-guide-toggle').classList.remove('open');
+  document.getElementById('role-guide-body').classList.remove('open');
+  renderRecentButtons();
+}
+
+// ══════════════════════════════════════
+//  저장 버튼
+// ══════════════════════════════════════
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const info = getCurrentWeekInfo();
+  const textarea = document.getElementById('record-textarea');
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  try {
+    await setRecord(currentStudent.id, info.year, info.week, DAYS_KEY[activeDayIndex], textarea.value);
+    unsaved = false;
+    renderDayTabs(info, info.dates.findIndex(d => isTodayDate(d)), weekOffset < 0);
+    showToast('저장됐어요 ✔');
+  } catch(e) {
+    console.error('저장 오류:', e);
+    showToast('오류: ' + (e.message || e.code || '알 수 없는 오류'));
+  } finally {
+    btn.disabled = weekOffset < 0;
+  }
+});
+
+// ══════════════════════════════════════
+//  담임 로그인 모달
+// ══════════════════════════════════════
+let pwBuffer = '';
+
+document.getElementById('teacher-btn').addEventListener('click', () => {
+  pwBuffer = '';
+  document.getElementById('pw-display').textContent = '　';
+  document.getElementById('pw-error').textContent = '';
+  document.getElementById('pw-modal').classList.add('show');
+});
+document.getElementById('pw-close').addEventListener('click', () => {
+  document.getElementById('pw-modal').classList.remove('show');
+});
+
+function pwInput(d) {
+  if (pwBuffer.length >= 6) return;
+  pwBuffer += d;
+  document.getElementById('pw-display').textContent = '●'.repeat(pwBuffer.length);
+}
+function pwDelete() {
+  pwBuffer = pwBuffer.slice(0, -1);
+  document.getElementById('pw-display').textContent = pwBuffer.length ? '●'.repeat(pwBuffer.length) : '　';
+}
+async function pwConfirm() {
+  if (pwBuffer.length < 4) return;
+  const errEl = document.getElementById('pw-error');
+  errEl.textContent = '';
+  showLoading(true);
+  try {
+    await auth.signInWithEmailAndPassword(TEACHER_EMAIL, pwBuffer + '#t27');
+    document.getElementById('pw-modal').classList.remove('show');
+    openTeacherScreen();
+  } catch {
+    errEl.textContent = '비밀번호가 틀렸습니다.';
+    pwBuffer = '';
+    document.getElementById('pw-display').textContent = '　';
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ══════════════════════════════════════
+//  담임 화면
+// ══════════════════════════════════════
+let teacherWeekOffset = 0;
+let rolesCache = {};       // Firebase 전체 roles 캐시
+let teacherUnsubscribe = null;
+
+function openTeacherScreen() {
+  teacherWeekOffset = 0;
+  showScreen('screen-teacher');
+  showLoading(true);
+
+  // 실시간 구독 시작
+  db.ref('roles').on('value', (snapshot) => {
+    rolesCache = snapshot.val() || {};
+    showLoading(false);
+    renderTeacherView();
+  }, (error) => {
+    showLoading(false);
+    showToast('데이터 로드 실패. 네트워크를 확인해주세요 ❌');
+  });
+  teacherUnsubscribe = true;
+}
+
+function getCachedRecord(studentId, year, week, dayKey) {
+  const wk = weekKey(year, week);
+  return rolesCache?.[studentId]?.[wk]?.[dayKey] || '';
+}
+
+function renderTeacherView() {
+  const info = getTeacherWeekInfo();
+
+  document.getElementById('t-week-label').textContent =
+    `${info.year}년 ${info.month}월 ${info.monthWeekNum}주차`;
+  document.getElementById('t-week-range').textContent =
+    `${formatDate(info.dates[0])} ~ ${formatDate(info.dates[4])}`;
+
+  const todayIdx = info.dates.findIndex(d => isTodayDate(d));
+  if (todayIdx >= 0) {
+    const unrecorded = STUDENTS.filter(s =>
+      getCachedRecord(s.id, info.year, info.week, DAYS_KEY[todayIdx]) === ''
+    ).length;
+    document.getElementById('unrecorded-badge').textContent = `오늘 미기록 ${unrecorded}명`;
+  } else {
+    document.getElementById('unrecorded-badge').textContent = '';
+  }
+
+  renderOverviewTable(info);
+}
+
+function getTeacherWeekInfo() {
+  const today = new Date();
+  const baseWeek = getISOWeek(today);
+  const monday = getMondayOfWeek(today.getFullYear(), baseWeek);
+  monday.setDate(monday.getDate() + teacherWeekOffset * 7);
+
+  const year = monday.getFullYear();
+  const week = getISOWeek(monday);
+  const dates = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d);
+  }
+  const monthWeekNum = Math.ceil(
+    (dates[0].getDate() + (new Date(dates[0].getFullYear(), dates[0].getMonth(), 1).getDay()+6)%7) / 7
+  );
+  return { year, week, dates, monthWeekNum, month: dates[0].getMonth()+1 };
+}
+
+function renderOverviewTable(info) {
+  const tbody = document.getElementById('overview-tbody');
+  tbody.innerHTML = '';
+
+  STUDENTS.forEach(s => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.className = 'col-name';
+    tdName.innerHTML = `<div class="td-name-main">${s.num} ${s.name}</div><div class="td-name-role">${s.role}</div>`;
+    tdName.addEventListener('click', () => openStudentHistory(s));
+    tr.appendChild(tdName);
+
+    DAYS_KEY.forEach((dk, i) => {
+      const td = document.createElement('td');
+      const content = getCachedRecord(s.id, info.year, info.week, dk);
+      if (content) {
+        td.innerHTML = `<div class="td-check">
+          <span class="td-check-icon">✔</span>
+          <span class="td-check-preview">${content.replace(/\n/g,' ')}</span>
+        </div>`;
+      } else {
+        td.innerHTML = `<span class="td-empty">·</span>`;
+      }
+      td.addEventListener('click', () => openRecordDetail(s, info.dates[i], dk, content));
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+// 기록 상세 모달
+function openRecordDetail(student, date, dayKey, content) {
+  const dayName = DAYS_KO[DAYS_KEY.indexOf(dayKey)];
+  document.getElementById('detail-modal-title').textContent =
+    `${student.name} · ${formatDate(date)}(${dayName})`;
+  document.getElementById('detail-student-info').textContent =
+    `${student.role}${student.dept ? ' · ' + student.dept : ''}`;
+  const contentEl = document.getElementById('detail-content');
+  if (content) {
+    contentEl.textContent = content;
+    contentEl.classList.remove('detail-empty');
+  } else {
+    contentEl.textContent = '아직 기록이 없습니다.';
+    contentEl.classList.add('detail-empty');
+  }
+  document.getElementById('record-detail-modal').classList.add('show');
+}
+document.getElementById('detail-close').addEventListener('click', () => {
+  document.getElementById('record-detail-modal').classList.remove('show');
+});
+
+// 학생 이력 모달 (rolesCache에서 해당 학생 데이터 추출)
+function openStudentHistory(student) {
+  document.getElementById('history-modal-title').textContent = `${student.num} ${student.name} · 전체 기록`;
+  const body = document.getElementById('history-modal-body');
+
+  const studentData = rolesCache?.[student.id] || {};
+  const wkKeys = Object.keys(studentData).sort().reverse(); // "2025_W16" 형태
+
+  if (wkKeys.length === 0) {
+    body.innerHTML = '<div class="history-empty">아직 기록이 없습니다.</div>';
+  } else {
+    body.innerHTML = wkKeys.map(wk => {
+      const [yr, wn] = wk.split('_');
+      const week = parseInt(wn.replace('W',''));
+      const monday = getMondayOfWeek(parseInt(yr), week);
+      const endFri = new Date(monday); endFri.setDate(monday.getDate()+4);
+      const dayData = studentData[wk] || {};
+      const items = DAYS_KEY.map((dk, i) => {
+        const val = dayData[dk];
+        if (!val) return '';
+        const d = new Date(monday); d.setDate(monday.getDate()+i);
+        return `<div class="history-day-item">
+          <div class="history-day-label">${DAYS_KO[i]} ${formatDate(d)}</div>
+          <div class="history-day-content">${val}</div>
+        </div>`;
+      }).join('');
+      return `<div class="student-history-week">
+        <div class="history-week-title">${yr}년 W${week} (${formatDate(monday)}~${formatDate(endFri)})</div>
+        ${items || '<div style="font-size:12px;color:var(--text-sub);padding:4px 0">기록 없음</div>'}
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('student-history-modal').classList.add('show');
+}
+document.getElementById('history-modal-close').addEventListener('click', () => {
+  document.getElementById('student-history-modal').classList.remove('show');
+});
+
+// 담임 주차 이동
+document.getElementById('t-btn-prev-week').addEventListener('click', () => {
+  teacherWeekOffset--;
+  renderTeacherView();
+});
+document.getElementById('t-btn-next-week').addEventListener('click', () => {
+  if (teacherWeekOffset >= 0) return;
+  teacherWeekOffset++;
+  renderTeacherView();
+});
+
+document.getElementById('teacher-back-btn').addEventListener('click', () => {
+  auth.signOut().catch(() => {});
+  if (teacherUnsubscribe) {
+    db.ref('roles').off('value');
+    teacherUnsubscribe = null;
+  }
+  closeLogModal();
+  isEditMode = false;
+  document.getElementById('btn-edit-mode').classList.remove('active');
+  showScreen('screen-entry');
+});
+
+// ══════════════════════════════════════
+//  학생 비밀번호 모달
+// ══════════════════════════════════════
+let spwMode = 'enter';   // 'enter' | 'set-first' | 'set-confirm'
+let spwBuffer = '';
+let spwFirstPw = '';
+let spwStudent = null;
+
+function openStudentPwModal(mode, student) {
+  spwStudent = student;
+  spwBuffer = '';
+  spwFirstPw = '';
+  spwMode = mode === 'set' ? 'set-first' : 'enter';
+  updateSpwUI();
+  document.getElementById('spw-error').textContent = '';
+  document.getElementById('student-pw-modal').classList.add('show');
+}
+
+function updateSpwUI() {
+  document.getElementById('spw-display').textContent = '　';
+  document.getElementById('spw-student-name').textContent =
+    `${spwStudent.num}번 ${spwStudent.name}`;
+  const subtitle = document.getElementById('spw-subtitle');
+  const title = document.getElementById('spw-title');
+  if (spwMode === 'enter') {
+    title.textContent = '🔒 비밀번호 입력';
+    subtitle.textContent = '비밀번호 4자리를 입력해주세요.';
+  } else if (spwMode === 'set-first') {
+    title.textContent = '🔑 비밀번호 설정';
+    subtitle.textContent = '처음 입장이에요.\n사용할 비밀번호 4자리를 설정하세요.';
+  } else {
+    title.textContent = '🔑 비밀번호 확인';
+    subtitle.textContent = '한 번 더 입력해주세요.';
+  }
+}
+
+function spwInput(d) {
+  if (spwBuffer.length >= 4) return;
+  spwBuffer += d;
+  document.getElementById('spw-display').textContent = '●'.repeat(spwBuffer.length);
+  if (spwBuffer.length === 4) setTimeout(spwConfirm, 180);
+}
+
+function spwDelete() {
+  spwBuffer = spwBuffer.slice(0, -1);
+  const disp = document.getElementById('spw-display');
+  disp.textContent = spwBuffer.length ? '●'.repeat(spwBuffer.length) : '　';
+}
+
+async function spwConfirm() {
+  if (spwBuffer.length < 4) return;
+  const errEl = document.getElementById('spw-error');
+
+  if (spwMode === 'enter') {
+    // Firebase Auth 로그인
+    showLoading(true);
+    try {
+      await auth.signInWithEmailAndPassword(
+        studentEmail(spwStudent), spwBuffer + '#s27'
+      );
+      document.getElementById('student-pw-modal').classList.remove('show');
+      proceedAsStudent(spwStudent);
+    } catch {
+      errEl.textContent = '비밀번호가 틀렸습니다.';
+      spwBuffer = '';
+      document.getElementById('spw-display').textContent = '　';
+    } finally {
+      showLoading(false);
+    }
+
+  } else if (spwMode === 'set-first') {
+    spwFirstPw = spwBuffer;
+    spwBuffer = '';
+    spwMode = 'set-confirm';
+    updateSpwUI();
+    errEl.textContent = '';
+
+  } else { // set-confirm
+    if (spwBuffer === spwFirstPw) {
+      showLoading(true);
+      try {
+        // Firebase Auth 계정 생성
+        const cred = await auth.createUserWithEmailAndPassword(
+          studentEmail(spwStudent), spwBuffer + '#s27'
+        );
+        // UID를 DB에 저장 (write-once: 보안 규칙으로 보호)
+        await db.ref(`studentMeta/${spwStudent.id}/uid`).set(cred.user.uid);
+        document.getElementById('student-pw-modal').classList.remove('show');
+        showToast('비밀번호가 설정됐어요 🔑');
+        proceedAsStudent(spwStudent);
+      } catch(e) {
+        errEl.textContent = '저장 실패. 다시 시도해주세요.';
+        spwBuffer = '';
+        document.getElementById('spw-display').textContent = '　';
+      } finally {
+        showLoading(false);
+      }
+    } else {
+      spwBuffer = '';
+      spwFirstPw = '';
+      spwMode = 'set-first';
+      updateSpwUI();
+      document.getElementById('spw-error').textContent = '비밀번호가 일치하지 않아요. 처음부터 다시 입력하세요.';
+    }
+  }
+}
+
+document.getElementById('spw-close').addEventListener('click', () => {
+  document.getElementById('student-pw-modal').classList.remove('show');
+});
+
+// ══════════════════════════════════════
+//  담임 비밀번호 관리
+// ══════════════════════════════════════
+document.getElementById('btn-manage-pw').addEventListener('click', async () => {
+  document.getElementById('pw-reset-modal').classList.add('show');
+  await renderPwResetList();
+});
+document.getElementById('pw-reset-close').addEventListener('click', () => {
+  document.getElementById('pw-reset-modal').classList.remove('show');
+});
+
+async function renderPwResetList() {
+  const body = document.getElementById('pw-reset-body');
+  body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-sub)">불러오는 중...</div>';
+  try {
+    const snap = await db.ref('studentMeta').once('value');
+    const meta = snap.val() || {};
+    body.innerHTML = STUDENTS.map(s => {
+      const hasPw = !!(meta[s.id]?.uid);
+      return `<div class="pw-reset-item">
+        <div class="pw-reset-info">
+          <span class="pw-reset-num">${s.num}</span>
+          <span class="pw-reset-name">${s.name}</span>
+          <span class="pw-reset-badge ${hasPw ? 'set' : 'unset'}">${hasPw ? '설정됨' : '미설정'}</span>
+        </div>
+        ${hasPw ? `<button class="pw-reset-btn" onclick="resetStudentPw('${s.id}')">초기화</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch {
+    body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger)">로드 실패</div>';
+  }
+}
+
+async function resetStudentPw(studentId) {
+  const student = STUDENTS.find(s => s.id === studentId);
+  if (!confirm(`${student?.name}의 비밀번호를 초기화할까요?\n다음 입장 시 새로 설정하게 됩니다.`)) return;
+  try {
+    const snap = await db.ref(`studentMeta/${studentId}/resetCount`).once('value');
+    const current = snap.val() || 0;
+    // resetCount 증가 → 학생 이메일이 변경되어 기존 계정과 분리
+    // uid null → 다음 로그인 시 신규 계정 생성으로 인식
+    await db.ref(`studentMeta/${studentId}`).update({
+      resetCount: current + 1,
+      uid: null,
+    });
+    showToast(`${student?.name} 비밀번호 초기화 완료 ✔`);
+    await renderPwResetList(); // 목록 즉시 갱신
+  } catch {
+    showToast('초기화 실패 ❌');
+  }
+}
+
+// ══════════════════════════════════════
+//  변경 로그 모달
+// ══════════════════════════════════════
+let logListener = null;
+
+document.getElementById('btn-view-log').addEventListener('click', openLogModal);
+document.getElementById('log-modal-close').addEventListener('click', closeLogModal);
+document.getElementById('log-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeLogModal();
+});
+
+function openLogModal() {
+  document.getElementById('log-modal').classList.add('show');
+  const body = document.getElementById('log-modal-body');
+  body.innerHTML = '<div class="log-empty">불러오는 중...</div>';
+
+  if (logListener) db.ref('logs').off('value', logListener);
+
+  logListener = db.ref('logs').limitToLast(100).on('value', (snap) => {
+    const data = snap.val();
+    if (!data) {
+      body.innerHTML = '<div class="log-empty">아직 변경 기록이 없습니다.</div>';
+      return;
+    }
+    const entries = Object.entries(data)
+      .map(([k, v]) => ({ key: k, ...v }))
+      .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    body.innerHTML = entries.map(entry => {
+      const student = STUDENTS.find(s => s.id === entry.studentId);
+      if (!student) return '';
+      const ts = entry.timestamp ? new Date(entry.timestamp) : null;
+      const timeStr = ts ? formatLogTime(ts) : '';
+      const dayIdx = DAYS_KEY.indexOf(entry.dayKey);
+      const dayLabel = dayIdx >= 0 ? DAYS_KO[dayIdx] : entry.dayKey;
+      const dateStr = getDateFromWkDay(entry.wk, entry.dayKey);
+      const isDelete = !entry.value;
+      const preview = isDelete
+        ? '(내용 삭제됨)'
+        : entry.value.replace(/\n/g, ' ').slice(0, 50) + (entry.value.length > 50 ? '…' : '');
+      const actorBadge = entry.actor === 'teacher'
+        ? '<span class="log-actor-teacher">담임</span>' : '';
+      const ipBadge = entry.ip ? `<span class="log-ip">${entry.ip}</span>` : '';
+      return `<div class="log-item${isDelete ? ' log-delete' : ''}">
+        <div class="log-item-header">
+          <span class="log-time">${timeStr}</span>
+          <span class="log-name">${student.num} ${student.name}</span>
+          ${actorBadge}
+          <span class="log-day">${dateStr}(${dayLabel})</span>
+        </div>
+        ${ipBadge}
+        <div class="log-preview">${preview}</div>
+      </div>`;
+    }).join('');
+  });
+}
+
+function closeLogModal() {
+  document.getElementById('log-modal').classList.remove('show');
+  if (logListener) {
+    db.ref('logs').off('value', logListener);
+    logListener = null;
+  }
+}
+
+function formatLogTime(date) {
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const h = date.getHours();
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const ampm = h < 12 ? '오전' : '오후';
+  const h12 = h % 12 || 12;
+  if (isToday) return `오늘 ${ampm} ${h12}:${m}`;
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return `어제 ${ampm} ${h12}:${m}`;
+  return `${date.getMonth()+1}/${date.getDate()} ${ampm} ${h12}:${m}`;
+}
+
+function getDateFromWkDay(wk, dayKey) {
+  if (!wk) return '';
+  try {
+    const [yr, wn] = wk.split('_');
+    const week = parseInt(wn.replace('W', ''));
+    const monday = getMondayOfWeek(parseInt(yr), week);
+    const dayIdx = DAYS_KEY.indexOf(dayKey);
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + Math.max(dayIdx, 0));
+    return formatDate(d) + ' ';
+  } catch { return ''; }
+}
+
+// ══════════════════════════════════════
+//  내보내기 & 편집 모드
+// ══════════════════════════════════════
+let isEditMode = false;
+
+function downloadFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// CSV 내보내기
+document.getElementById('btn-export-csv').addEventListener('click', () => {
+  const info = getTeacherWeekInfo();
+  const header = ['이름','역할', ...DAYS_KO];
+  const rows = STUDENTS.map(s => [
+    s.name, s.role,
+    ...DAYS_KEY.map(dk => (getCachedRecord(s.id, info.year, info.week, dk) || '').replace(/\n/g,' '))
+  ]);
+  const csv = '\uFEFF' + [header, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  downloadFile(`1인1역_${info.year}_W${String(info.week).padStart(2,'0')}.csv`, csv, 'text/csv;charset=utf-8');
+  showToast('CSV 파일이 저장됐어요 📄');
+});
+
+// JSON 전체 백업 (rolesCache 그대로 저장)
+document.getElementById('btn-export-json').addEventListener('click', () => {
+  if (!Object.keys(rolesCache).length) { showToast('저장된 데이터가 없습니다'); return; }
+  const json = JSON.stringify({ exported: new Date().toISOString(), data: rolesCache }, null, 2);
+  const today = new Date();
+  const ymd = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+  downloadFile(`1인1역_백업_${ymd}.json`, json, 'application/json');
+  showToast('JSON 백업 완료 📦');
+});
+
+// JSON 불러오기 (Firebase에 병합 업로드)
+document.getElementById('btn-import-json').addEventListener('click', () => {
+  document.getElementById('t-import-file').click();
+});
+document.getElementById('t-import-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      const incoming = parsed.data || parsed;
+      // incoming은 { studentId: { weekKey: { dayKey: value } } } 형태
+      if (!Object.keys(incoming).length) { showToast('올바른 백업 파일이 아닙니다'); return; }
+      if (!confirm('백업 데이터를 Firebase에 업로드합니다. 기존 데이터와 병합됩니다.')) return;
+      showLoading(true);
+      const writes = [];
+      for (const [sid, weeks] of Object.entries(incoming)) {
+        for (const [wk, days] of Object.entries(weeks)) {
+          for (const [dk, val] of Object.entries(days)) {
+            if (val) writes.push(db.ref(`roles/${sid}/${wk}/${dk}`).set(val));
+          }
+        }
+      }
+      await Promise.all(writes);
+      showLoading(false);
+      showToast(`업로드 완료 📂`);
+    } catch (err) {
+      showLoading(false);
+      showToast('파일 읽기 오류');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+  e.target.value = '';
+});
+
+// 편집 모드 토글
+document.getElementById('btn-edit-mode').addEventListener('click', async () => {
+  if (isEditMode) {
+    const info = getTeacherWeekInfo();
+    const writes = [];
+    document.querySelectorAll('.edit-cell-textarea').forEach(ta => {
+      const { sid, dk } = ta.dataset;
+      const wk = weekKey(info.year, info.week);
+      writes.push(db.ref(`roles/${sid}/${wk}/${dk}`).set(ta.value || null));
+      logChange(sid, wk, dk, ta.value, 'teacher');
+    });
+    showLoading(true);
+    try {
+      await Promise.all(writes);
+      showToast('편집 내용을 저장했어요 ✔');
+    } catch {
+      showToast('저장 실패 ❌');
+    } finally {
+      showLoading(false);
+    }
+    isEditMode = false;
+    document.getElementById('btn-edit-mode').classList.remove('active');
+    document.getElementById('btn-edit-mode').textContent = '✏️ 편집 모드';
+  } else {
+    isEditMode = true;
+    document.getElementById('btn-edit-mode').classList.add('active');
+    document.getElementById('btn-edit-mode').textContent = '💾 편집 저장';
+    renderOverviewTableEditMode(getTeacherWeekInfo());
+  }
+});
+
+function renderOverviewTableEditMode(info) {
+  const tbody = document.getElementById('overview-tbody');
+  tbody.innerHTML = '';
+  STUDENTS.forEach(s => {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    tdName.className = 'col-name';
+    tdName.innerHTML = `<div class="td-name-main">${s.num} ${s.name}</div><div class="td-name-role">${s.role}</div>`;
+    tr.appendChild(tdName);
+    DAYS_KEY.forEach((dk) => {
+      const td = document.createElement('td');
+      const val = getCachedRecord(s.id, info.year, info.week, dk);
+      const ta = document.createElement('textarea');
+      ta.className = 'edit-cell-textarea';
+      ta.value = val;
+      ta.dataset.sid = s.id;
+      ta.dataset.dk = dk;
+      td.appendChild(ta);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════
+//  화면 전환
+// ══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ══════════════════════════════════════
+//  로딩
+// ══════════════════════════════════════
+function showLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('show', on);
+}
+
+// ══════════════════════════════════════
+//  토스트
+// ══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════
+//  최근 입장 기록
+// ══════════════════════════════════════
+function getRecentEntries() {
+  const raw = localStorage.getItem('recent_entries');
+  return raw ? JSON.parse(raw) : [];
+}
+function addRecentEntry(studentId) {
+  let recent = getRecentEntries().filter(id => id !== studentId);
+  recent.unshift(studentId);
+  recent = recent.slice(0, 3);
+  localStorage.setItem('recent_entries', JSON.stringify(recent));
+}
+function renderRecentButtons() {
+  const recent = getRecentEntries();
+  const wrap = document.getElementById('recent-section');
+  if (!wrap) return;
+  if (recent.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  const btnsEl = document.getElementById('recent-btns');
+  btnsEl.innerHTML = recent.map(id => {
+    const s = STUDENTS.find(x => x.id === id);
+    if (!s) return '';
+    return `<button class="recent-btn" onclick="quickEnter('${s.id}')">
+      ${s.num}<span>${s.name}</span>
+    </button>`;
+  }).join('');
+}
+function quickEnter(studentId) {
+  const s = STUDENTS.find(x => x.id === studentId);
+  if (s) enterAsStudent(s);
+}
+
+// 학생 Firebase Auth 이메일 생성
+// resetCount가 증가하면 이메일이 바뀌어 기존 계정과 분리됨
+function studentEmail(student) {
+  const rc = student._resetCount || 0;
+  return `s${student.id}c${rc}@c27.local`;
+}
+
+async function enterAsStudent(student) {
+  showLoading(true);
+  try {
+    const [uidSnap, rcSnap] = await Promise.all([
+      db.ref(`studentMeta/${student.id}/uid`).once('value'),
+      db.ref(`studentMeta/${student.id}/resetCount`).once('value'),
+    ]);
+    student._hasAccount  = uidSnap.val() !== null;
+    student._resetCount  = rcSnap.val() || 0;
+  } catch {
+    student._hasAccount = false;
+    student._resetCount = 0;
+  } finally {
+    showLoading(false);
+  }
+
+  if (!student._hasAccount) {
+    openStudentPwModal('set', student);
+  } else {
+    openStudentPwModal('enter', student);
+  }
+}
+
+function proceedAsStudent(student) {
+  addRecentEntry(student.id);
+  currentStudent = student;
+  weekOffset = 0;
+  document.getElementById('entry-error').textContent = '';
+  fetchClientIP();
+  openRecordScreen();
+}
+
+// ══════════════════════════════════════
+//  역할별 placeholder 힌트
+// ══════════════════════════════════════
+const ROLE_HINTS = {
+  '학급 회장 공주':    '예: 조례 시간 1인 1역 점검, 학급회의 안건 공지',
+  '학급 부회장 공주':  '예: 부재 중인 회장 대신 조례 진행, 1인 1역 확인',
+  '스터디 공주':       '예: 3교시 수학 시간표 변경 안내, 중간고사 D-14 공지',
+  '출석부 공주':       '예: 3교시 출석부 수거 완료, 5교시 서명 누락 1명 확인',
+  '피카츄 공주':       '예: 3·4교시 선택과목 후 에어컨 끔, 교실 환기 실시',
+  '깔끔 공주':         '예: 교탁 정리, 청소용품 점검 후 선생님께 물티슈 요청',
+  '포토그래퍼 공주':   '예: 체육 시간 단체 사진 촬영 후 단톡 공유',
+  '향기 공주':         '예: 조례 전 창문 환기, 3교시 후 탈취제 사용',
+  '게시판 공주':       '예: 5월 어린이날 테마로 게시판 꾸밈 시작',
+  '긍정 공주':         '예: "오늘도 파이팅!" 명언 게시판에 부착, 지원이 발표 칭찬 공유',
+  '학급함 공주':       '예: 2교시 후 가정통신문 배부, 4교시 전 수행평가지 수합',
+  '소통 공주':         '예: 오늘의 뉴스 "기후 협약 채결" 조례 시간 공유',
+  '급식 공주':         '예: 오늘 급식: 돈까스, 미역국, 김치 / 단톡 공지 완료',
+  '파티 공주':         '예: 이번 주 생일 지수 공지, 5월 행사 아이디어 수집 중',
+  '별자리 공주':       '예: 오늘 1위 사수자리 🏹 행운 아이템: 파란 볼펜',
+};
+
+function getPlaceholder(role) {
+  return ROLE_HINTS[role] || '오늘 수행한 역할 내용을 기록해주세요';
+}
+
+// ══════════════════════════════════════
+//  모바일 키보드 대응 (iOS Safari)
+// ══════════════════════════════════════
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const footer = document.querySelector('.record-footer');
+    if (!footer) return;
+    const gap = window.innerHeight - window.visualViewport.height;
+    footer.style.paddingBottom = gap > 50
+      ? `${gap}px`
+      : `calc(12px + env(safe-area-inset-bottom, 0px))`;
+  });
+}
+
+// ══════════════════════════════════════
+//  초기화
+// ══════════════════════════════════════
+renderEntryScreen();
+renderRecentButtons();
+</script>
+</body>
+</html>

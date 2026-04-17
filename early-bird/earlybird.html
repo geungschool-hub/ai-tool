@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>얼리버드 프로젝트 - 2학년 7반</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #f0f7f4;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── 상단 바 ── */
+  #header {
+    background: #2a9d8f;
+    color: white;
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  #header .title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  #header .title span { font-size: 26px; margin-right: 8px; }
+  #header .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  #date-display {
+    font-size: 15px;
+    opacity: 0.9;
+  }
+  #clock-display {
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+  }
+
+  /* ── 메인 영역 ── */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* ── 학생 카드 영역 ── */
+  #card-area {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-auto-rows: min-content;
+    gap: 10px;
+    align-content: center;
+  }
+
+  .student-card {
+    background: white;
+    border: 2px solid #c8e6e0;
+    border-radius: 14px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 90px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s, background 0.15s, border-color 0.15s;
+    touch-action: manipulation;
+  }
+  .student-card:active {
+    transform: scale(0.95);
+  }
+  .student-card:hover {
+    box-shadow: 0 4px 12px rgba(42,157,143,0.2);
+    border-color: #2a9d8f;
+  }
+  .student-card.checked {
+    background: #2a9d8f;
+    border-color: #2a9d8f;
+    color: white;
+  }
+  .student-card.locked {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .student-card.locked:hover {
+    box-shadow: none;
+    border-color: #c8e6e0;
+  }
+  .card-number {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 3px;
+  }
+  .student-card.checked .card-number { color: rgba(255,255,255,0.75); }
+  .card-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #2d2d2d;
+    margin-bottom: 5px;
+  }
+  .student-card.checked .card-name { color: white; }
+  .card-check-icon {
+    font-size: 18px;
+    display: none;
+    margin-bottom: 3px;
+  }
+  .student-card.checked .card-check-icon { display: block; }
+  .card-weekly {
+    font-size: 12px;
+    color: #7abfb8;
+    font-weight: 500;
+  }
+  .student-card.checked .card-weekly { color: rgba(255,255,255,0.8); }
+
+  /* ── 우측 사이드패널 ── */
+  #side-panel {
+    width: 220px;
+    flex-shrink: 0;
+    background: white;
+    border-left: 1px solid #d4ede9;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 14px;
+    gap: 12px;
+    overflow-y: auto;
+  }
+
+  .panel-box {
+    background: #f5fafa;
+    border: 1px solid #d4ede9;
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+  .panel-box-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2a9d8f;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .today-count {
+    font-size: 36px;
+    font-weight: 800;
+    color: #2a9d8f;
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .today-count-label {
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+  }
+  .today-names {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .today-name-item {
+    font-size: 14px;
+    color: #444;
+    padding: 3px 6px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e0f0ee;
+  }
+  .today-name-item::before { content: "✔ "; color: #2a9d8f; font-size: 12px; }
+
+  .panel-btn {
+    width: 100%;
+    padding: 11px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    touch-action: manipulation;
+    min-height: 44px;
+  }
+  .panel-btn:active { transform: scale(0.97); }
+  .btn-history {
+    background: #e8f5f3;
+    color: #2a9d8f;
+    border: 1px solid #c8e6e0;
+  }
+  .btn-history:hover { background: #d4ede9; }
+  .btn-admin {
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+  }
+  .btn-admin:hover { background: #ececec; }
+
+  /* ── 공통 모달 ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid #e8f0ee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2a9d8f;
+  }
+  .modal-close {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+  }
+  .modal-close:hover { background: #ddd; }
+  .modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  /* ── 이력 모달 ── */
+  #history-modal .modal-box { width: 560px; }
+  .history-tab-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .history-tab {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #c8e6e0;
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2a9d8f;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .history-tab.active {
+    background: #2a9d8f;
+    color: white;
+    border-color: #2a9d8f;
+  }
+  .history-date-item {
+    margin-bottom: 14px;
+    border: 1px solid #e0f0ee;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .history-date-header {
+    background: #f0faf8;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2a9d8f;
+    display: flex;
+    justify-content: space-between;
+  }
+  .history-date-names {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.8;
+  }
+  .history-student-select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #c8e6e0;
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: #333;
+  }
+  .history-student-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .history-student-date-item {
+    padding: 7px 12px;
+    background: #f0faf8;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #2a9d8f;
+    font-weight: 500;
+  }
+  .history-empty {
+    text-align: center;
+    color: #aaa;
+    font-size: 14px;
+    padding: 24px 0;
+  }
+
+  /* ── 비밀번호 모달 ── */
+  #pw-modal .modal-box { width: 320px; }
+  .pw-display {
+    font-size: 36px;
+    letter-spacing: 12px;
+    text-align: center;
+    color: #2a9d8f;
+    margin: 12px 0 20px;
+    min-height: 44px;
+    font-weight: 700;
+  }
+  .pw-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .pw-key {
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #c8e6e0;
+    background: #f5fafa;
+    font-size: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    color: #333;
+    transition: background 0.1s;
+    min-height: 52px;
+  }
+  .pw-key:hover { background: #e0f0ee; }
+  .pw-key:active { background: #c8e6e0; }
+  .pw-key.wide { grid-column: span 2; }
+  .pw-error { color: #e76f51; font-size: 13px; text-align: center; margin-top: 8px; min-height: 20px; }
+
+  /* ── 관리자 모달 ── */
+  #admin-modal .modal-box { width: 600px; }
+  .admin-date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .admin-date-input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #c8e6e0;
+    font-size: 14px;
+    color: #333;
+  }
+  .admin-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+  }
+  .admin-student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .admin-student-btn {
+    padding: 7px 6px;
+    border-radius: 8px;
+    border: 1px solid #c8e6e0;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.1s;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    line-height: 1.3;
+  }
+  .admin-student-btn.is-checked {
+    background: #2a9d8f;
+    color: white;
+    border-color: #2a9d8f;
+  }
+  .admin-student-btn:not(.is-checked) {
+    background: #f5fafa;
+    color: #333;
+  }
+  .admin-student-btn:hover { opacity: 0.85; }
+  .admin-btn-action {
+    font-size: 10px;
+    opacity: 0.75;
+  }
+  .btn-danger {
+    background: #fff0ed;
+    color: #e76f51;
+    border: 1px solid #f4c3b8;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    width: 100%;
+    min-height: 44px;
+  }
+  .btn-danger:hover { background: #ffe0d9; }
+  .btn-backup {
+    background: #eef4ff;
+    color: #4a7fd4;
+    border: 1px solid #c0d4f5;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    min-height: 44px;
+  }
+  .btn-backup:hover { background: #ddeaff; }
+  .btn-restore {
+    background: #f5f0ff;
+    color: #7c4dca;
+    border: 1px solid #d0bff5;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    min-height: 44px;
+  }
+  .btn-restore:hover { background: #ebe0ff; }
+  .admin-backup-section {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #e8f0ee;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .admin-backup-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 2px;
+  }
+
+  /* ── 응원 팝업 ── */
+  #cheer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  #cheer-overlay.show { display: flex; }
+  #cheer-box {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 56px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    animation: cheerIn 0.4s ease;
+  }
+  #cheer-box.hiding {
+    animation: cheerOut 0.4s ease forwards;
+  }
+  .cheer-emoji { font-size: 52px; margin-bottom: 14px; }
+  .cheer-text {
+    font-size: 28px;
+    font-weight: 800;
+    color: #2a9d8f;
+    letter-spacing: -0.5px;
+  }
+  @keyframes cheerIn {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes cheerOut {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.8); }
+  }
+
+  /* ── 마감 배너 (숨김 상태) ── */
+  #deadline-banner {
+    display: none;
+    background: #f4a261;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- 상단 바 -->
+<div id="header">
+  <div class="title"><span>🐦</span>얼리버드 프로젝트 · 2학년 7반</div>
+  <div class="header-right">
+    <div id="date-display">--</div>
+    <div id="clock-display">--:--:--</div>
+  </div>
+</div>
+
+<!-- 비밀번호 모달 -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">🔒 관리자 로그인</div>
+      <button class="modal-close" id="pw-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pw-display" id="pw-display">　</div>
+      <div class="pw-keypad">
+        <button class="pw-key" onclick="pwInput('1')">1</button>
+        <button class="pw-key" onclick="pwInput('2')">2</button>
+        <button class="pw-key" onclick="pwInput('3')">3</button>
+        <button class="pw-key" onclick="pwInput('4')">4</button>
+        <button class="pw-key" onclick="pwInput('5')">5</button>
+        <button class="pw-key" onclick="pwInput('6')">6</button>
+        <button class="pw-key" onclick="pwInput('7')">7</button>
+        <button class="pw-key" onclick="pwInput('8')">8</button>
+        <button class="pw-key" onclick="pwInput('9')">9</button>
+        <button class="pw-key" onclick="pwDelete()">⌫</button>
+        <button class="pw-key" onclick="pwInput('0')">0</button>
+        <button class="pw-key" onclick="pwConfirm()">확인</button>
+      </div>
+      <div class="pw-error" id="pw-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 관리자 모달 -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ 관리자</div>
+      <button class="modal-close" id="admin-close">나가기</button>
+    </div>
+    <div class="modal-body">
+      <div class="admin-date-row">
+        <label style="font-size:14px;font-weight:600;color:#555;">날짜</label>
+        <input type="date" class="admin-date-input" id="admin-date-input">
+      </div>
+      <div class="admin-section-title">학생 출석 관리 (클릭으로 추가/취소)</div>
+      <div class="admin-student-grid" id="admin-student-grid"></div>
+      <button class="btn-danger" id="btn-reset-day">🗑 이 날짜 데이터 초기화</button>
+
+      <div class="admin-backup-section">
+        <div class="admin-backup-title">💾 데이터 백업 / 복원</div>
+        <button class="btn-backup" id="btn-export-csv">📄 CSV로 내보내기</button>
+        <button class="btn-backup" id="btn-export-json">📦 JSON으로 내보내기 (전체 백업)</button>
+        <button class="btn-restore" id="btn-import-json">📂 JSON 백업 파일 불러오기</button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 이력 모달 -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">📋 전체 이력</div>
+      <button class="modal-close" id="history-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="history-tab-bar">
+        <button class="history-tab active" id="tab-date" onclick="switchHistoryTab('date')">날짜별 보기</button>
+        <button class="history-tab" id="tab-student" onclick="switchHistoryTab('student')">학생별 보기</button>
+      </div>
+      <div id="history-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 응원 팝업 오버레이 -->
+<div id="cheer-overlay">
+  <div id="cheer-box">
+    <div class="cheer-emoji">🌟</div>
+    <div class="cheer-text">오늘도 화이팅!</div>
+  </div>
+</div>
+
+<!-- 마감 배너 -->
+<div id="deadline-banner">🔒 오늘 얼리버드 마감! 내일 또 도전하세요 🐦</div>
+
+<!-- 메인 -->
+<div id="main">
+  <!-- 학생 카드 영역 -->
+  <div id="card-area"></div>
+
+  <!-- 우측 패널 -->
+  <div id="side-panel">
+    <div class="panel-box">
+      <div class="panel-box-title">🌅 오늘의 얼리버드</div>
+      <div class="today-count" id="today-count">0</div>
+      <div class="today-count-label">명 출석</div>
+      <div class="today-names" id="today-names"></div>
+    </div>
+    <button class="panel-btn btn-history" id="btn-history">📋 전체 이력 보기</button>
+    <button class="panel-btn btn-admin" id="btn-admin">🔒 관리자</button>
+  </div>
+</div>
+
+<script>
+// ── 학생 데이터 ──
+const STUDENTS = [
+  { id: '20701', name: '권윤서' },
+  { id: '20702', name: '김민경' },
+  { id: '20703', name: '김민정' },
+  { id: '20704', name: '김시은' },
+  { id: '20705', name: '김채원' },
+  { id: '20706', name: '박나은' },
+  { id: '20707', name: '박세은' },
+  { id: '20708', name: '박효빈' },
+  { id: '20709', name: '손예원' },
+  { id: '20710', name: '신지민' },
+  { id: '20711', name: '양수빈' },
+  { id: '20712', name: '엄예주' },
+  { id: '20713', name: '엄지율' },
+  { id: '20714', name: '유진' },
+  { id: '20715', name: '윤채원' },
+  { id: '20716', name: '이가을' },
+  { id: '20717', name: '이가현' },
+  { id: '20718', name: '이서현' },
+  { id: '20719', name: '이수경' },
+  { id: '20720', name: '이채린' },
+  { id: '20721', name: '임혜림' },
+  { id: '20722', name: '정예은' },
+  { id: '20723', name: '차효주' },
+  { id: '20724', name: '최유리' },
+  { id: '20725', name: '한서현' },
+  { id: '20726', name: '한예소' },
+];
+
+// ── 날짜 유틸 ──
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function storageKey(dateStr) {
+  return `earlybird_${dateStr}`;
+}
+
+function getChecked(dateStr) {
+  const raw = localStorage.getItem(storageKey(dateStr));
+  return raw ? JSON.parse(raw) : [];
+}
+
+// 이번 주 월~금 날짜 목록 반환
+function getWeekDates() {
+  const today = new Date();
+  const dow = today.getDay(); // 0=일, 1=월 ... 6=토
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  const dates = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+  return dates;
+}
+
+// 학생별 이번 주 체크 횟수
+function getWeeklyCount(studentId) {
+  return getWeekDates().reduce((sum, dateStr) => {
+    return sum + (getChecked(dateStr).includes(studentId) ? 1 : 0);
+  }, 0);
+}
+
+// ── 카드 렌더링 ──
+function renderCards() {
+  const area = document.getElementById('card-area');
+  area.innerHTML = '';
+  STUDENTS.forEach((s, idx) => {
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.dataset.id = s.id;
+    card.innerHTML = `
+      <div class="card-number">${String(idx+1).padStart(2,'0')}</div>
+      <div class="card-check-icon">✔</div>
+      <div class="card-name">${s.name}</div>
+      <div class="card-weekly">이번 주 ${getWeeklyCount(s.id)}회</div>
+    `;
+    card.addEventListener('click', () => onCardClick(s.id));
+    area.appendChild(card);
+  });
+  updateCardStates();
+}
+
+function updateCardStates() {
+  const checked = getChecked(todayKey());
+  document.querySelectorAll('.student-card').forEach(card => {
+    const id = card.dataset.id;
+    if (checked.includes(id)) {
+      card.classList.add('checked');
+    } else {
+      card.classList.remove('checked');
+    }
+    // 주간 카운트 갱신
+    card.querySelector('.card-weekly').textContent = `이번 주 ${getWeeklyCount(id)}회`;
+  });
+  updateSidePanel();
+}
+
+// ── 사이드패널 갱신 ──
+function updateSidePanel() {
+  const checked = getChecked(todayKey());
+  document.getElementById('today-count').textContent = checked.length;
+  const namesEl = document.getElementById('today-names');
+  namesEl.innerHTML = checked.map(id => {
+    const s = STUDENTS.find(x => x.id === id);
+    return s ? `<div class="today-name-item">${s.name}</div>` : '';
+  }).join('');
+}
+
+// ── 07:40 마감 여부 ──
+function isDeadlinePassed() {
+  const now = new Date();
+  return now.getHours() > 7 || (now.getHours() === 7 && now.getMinutes() >= 40);
+}
+
+// ── 마감 상태 적용 ──
+function applyDeadlineState() {
+  const passed = isDeadlinePassed();
+  document.getElementById('deadline-banner').style.display = passed ? 'block' : 'none';
+  document.querySelectorAll('.student-card').forEach(card => {
+    const alreadyChecked = getChecked(todayKey()).includes(card.dataset.id);
+    if (passed || alreadyChecked) {
+      card.classList.add('locked');
+    } else {
+      card.classList.remove('locked');
+    }
+  });
+}
+
+// ── 카드 클릭 ──
+function onCardClick(studentId) {
+  if (isDeadlinePassed()) return;
+
+  const key = todayKey();
+  const checked = getChecked(key);
+  if (checked.includes(studentId)) return; // 이미 체크됨
+
+  checked.push(studentId);
+  localStorage.setItem(storageKey(key), JSON.stringify(checked));
+
+  updateCardStates();
+  applyDeadlineState();
+  showCheerPopup();
+}
+
+// ── 응원 팝업 ──
+function showCheerPopup() {
+  const overlay = document.getElementById('cheer-overlay');
+  const box = document.getElementById('cheer-box');
+  box.classList.remove('hiding');
+  overlay.classList.add('show');
+
+  setTimeout(() => {
+    box.classList.add('hiding');
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      box.classList.remove('hiding');
+    }, 400);
+  }, 2000);
+}
+
+// ── 시계 & 날짜 ──
+const DAYS = ['일','월','화','수','목','금','토'];
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock-display').textContent = `${hh}:${mm}:${ss}`;
+
+  const month = now.getMonth() + 1;
+  const date = now.getDate();
+  const day = DAYS[now.getDay()];
+  document.getElementById('date-display').textContent = `${now.getFullYear()}.${String(month).padStart(2,'0')}.${String(date).padStart(2,'0')} (${day})`;
+}
+
+// ── 비밀번호 모달 ──
+const ADMIN_PW = '0000';
+let pwBuffer = '';
+
+function openPwModal() {
+  pwBuffer = '';
+  document.getElementById('pw-display').textContent = '　';
+  document.getElementById('pw-error').textContent = '';
+  document.getElementById('pw-modal').classList.add('show');
+}
+function closePwModal() {
+  document.getElementById('pw-modal').classList.remove('show');
+  pwBuffer = '';
+}
+function pwInput(digit) {
+  if (pwBuffer.length >= 4) return;
+  pwBuffer += digit;
+  document.getElementById('pw-display').textContent = '●'.repeat(pwBuffer.length);
+}
+function pwDelete() {
+  pwBuffer = pwBuffer.slice(0, -1);
+  document.getElementById('pw-display').textContent = pwBuffer.length ? '●'.repeat(pwBuffer.length) : '　';
+}
+function pwConfirm() {
+  if (pwBuffer === ADMIN_PW) {
+    closePwModal();
+    openAdmin();
+  } else {
+    document.getElementById('pw-error').textContent = '비밀번호가 틀렸습니다.';
+    pwBuffer = '';
+    document.getElementById('pw-display').textContent = '　';
+  }
+}
+
+document.getElementById('btn-admin').addEventListener('click', openPwModal);
+document.getElementById('pw-close').addEventListener('click', closePwModal);
+
+// ── 관리자 모달 ──
+function openAdmin() {
+  const input = document.getElementById('admin-date-input');
+  input.value = todayKey();
+  document.getElementById('admin-modal').classList.add('show');
+  renderAdminGrid();
+}
+function closeAdmin() {
+  document.getElementById('admin-modal').classList.remove('show');
+  updateCardStates();
+  applyDeadlineState();
+}
+
+function renderAdminGrid() {
+  const dateStr = document.getElementById('admin-date-input').value;
+  const checked = getChecked(dateStr);
+  const grid = document.getElementById('admin-student-grid');
+  grid.innerHTML = STUDENTS.map((s, idx) => {
+    const isChecked = checked.includes(s.id);
+    return `
+      <button class="admin-student-btn ${isChecked ? 'is-checked' : ''}"
+              onclick="adminToggle('${s.id}')">
+        <span>${String(idx+1).padStart(2,'0')} ${s.name}</span>
+        <span class="admin-btn-action">${isChecked ? '✔ 취소하기' : '+ 추가하기'}</span>
+      </button>`;
+  }).join('');
+}
+
+function adminToggle(studentId) {
+  const dateStr = document.getElementById('admin-date-input').value;
+  const checked = getChecked(dateStr);
+  const idx = checked.indexOf(studentId);
+  if (idx >= 0) {
+    checked.splice(idx, 1);
+  } else {
+    checked.push(studentId);
+  }
+  localStorage.setItem(storageKey(dateStr), JSON.stringify(checked));
+  renderAdminGrid();
+}
+
+// ── 백업/복원 ──
+function getAllEarlybirdData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('earlybird_')) {
+      data[k] = JSON.parse(localStorage.getItem(k));
+    }
+  }
+  return data;
+}
+
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const data = getAllEarlybirdData();
+  const dates = Object.keys(data).map(k => k.replace('earlybird_', '')).sort();
+  if (dates.length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+
+  const header = ['날짜', ...STUDENTS.map(s => `${s.id} ${s.name}`)];
+  const rows = dates.map(dateStr => {
+    const checked = data[`earlybird_${dateStr}`] || [];
+    return [dateStr, ...STUDENTS.map(s => checked.includes(s.id) ? 'O' : '')];
+  });
+
+  const csv = '\uFEFF' + [header, ...rows].map(r => r.join(',')).join('\n');
+  const today = todayKey();
+  downloadFile(`얼리버드_${today}.csv`, csv, 'text/csv;charset=utf-8');
+}
+
+function exportJSON() {
+  const data = getAllEarlybirdData();
+  if (Object.keys(data).length === 0) { alert('내보낼 데이터가 없습니다.'); return; }
+  const json = JSON.stringify({ exported: new Date().toISOString(), data }, null, 2);
+  const today = todayKey();
+  downloadFile(`얼리버드_백업_${today}.json`, json, 'application/json');
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const incoming = parsed.data || parsed; // 구형 포맷 호환
+      const keys = Object.keys(incoming).filter(k => k.startsWith('earlybird_'));
+      if (keys.length === 0) { alert('올바른 백업 파일이 아닙니다.'); return; }
+
+      if (!confirm(`총 ${keys.length}일치 데이터를 불러옵니다.\n기존 데이터와 합쳐집니다. 계속할까요?`)) return;
+
+      keys.forEach(k => {
+        const existing = getChecked(k.replace('earlybird_', ''));
+        const imported = incoming[k];
+        const merged = [...new Set([...existing, ...imported])];
+        localStorage.setItem(k, JSON.stringify(merged));
+      });
+      alert('불러오기 완료!');
+      renderAdminGrid();
+      updateCardStates();
+    } catch {
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+document.getElementById('btn-import-json').addEventListener('click', () => {
+  document.getElementById('import-file-input').click();
+});
+document.getElementById('import-file-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) importJSON(e.target.files[0]);
+  e.target.value = '';
+});
+
+document.getElementById('admin-date-input').addEventListener('change', renderAdminGrid);
+document.getElementById('admin-close').addEventListener('click', closeAdmin);
+document.getElementById('btn-reset-day').addEventListener('click', () => {
+  const dateStr = document.getElementById('admin-date-input').value;
+  if (confirm(`${dateStr} 데이터를 초기화할까요?\n이 작업은 되돌릴 수 없습니다.`)) {
+    localStorage.removeItem(storageKey(dateStr));
+    renderAdminGrid();
+  }
+});
+
+// ── 이력 모달 ──
+let historyTab = 'date';
+
+function openHistory() {
+  document.getElementById('history-modal').classList.add('show');
+  renderHistory();
+}
+function closeHistory() {
+  document.getElementById('history-modal').classList.remove('show');
+}
+function switchHistoryTab(tab) {
+  historyTab = tab;
+  document.getElementById('tab-date').classList.toggle('active', tab === 'date');
+  document.getElementById('tab-student').classList.toggle('active', tab === 'student');
+  renderHistory();
+}
+
+function getAllHistoryDates() {
+  const dates = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('earlybird_')) {
+      dates.push(k.replace('earlybird_', ''));
+    }
+  }
+  return dates.sort((a, b) => b.localeCompare(a)); // 최근 순
+}
+
+function renderHistory() {
+  const content = document.getElementById('history-content');
+  if (historyTab === 'date') {
+    const dates = getAllHistoryDates();
+    if (dates.length === 0) {
+      content.innerHTML = '<div class="history-empty">아직 기록이 없습니다.</div>';
+      return;
+    }
+    content.innerHTML = dates.map(dateStr => {
+      const ids = getChecked(dateStr);
+      const names = ids.map(id => STUDENTS.find(s => s.id === id)?.name || id).join(', ');
+      const d = new Date(dateStr);
+      const dayName = DAYS[d.getDay()];
+      return `
+        <div class="history-date-item">
+          <div class="history-date-header">
+            <span>${dateStr} (${dayName})</span>
+            <span>${ids.length}명</span>
+          </div>
+          <div class="history-date-names">${names || '없음'}</div>
+        </div>`;
+    }).join('');
+  } else {
+    const options = STUDENTS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    const currentId = document.getElementById('history-student-select')?.value || STUDENTS[0].id;
+    content.innerHTML = `
+      <select class="history-student-select" id="history-student-select" onchange="renderHistory()">
+        ${options}
+      </select>
+      <div class="history-student-dates" id="student-date-list"></div>`;
+    document.getElementById('history-student-select').value = currentId;
+    renderStudentHistory(currentId);
+  }
+}
+
+function renderStudentHistory(studentId) {
+  const dates = getAllHistoryDates().filter(d => getChecked(d).includes(studentId));
+  const el = document.getElementById('student-date-list');
+  if (!el) return;
+  if (dates.length === 0) {
+    el.innerHTML = '<div class="history-empty">출석 기록이 없습니다.</div>';
+    return;
+  }
+  el.innerHTML = dates.map(d => {
+    const day = DAYS[new Date(d).getDay()];
+    return `<div class="history-student-date-item">✔ ${d} (${day})</div>`;
+  }).join('');
+}
+
+document.getElementById('btn-history').addEventListener('click', openHistory);
+document.getElementById('history-close').addEventListener('click', closeHistory);
+
+// ── 초기화 ──
+function init() {
+  renderCards();
+  applyDeadlineState();
+  updateClock();
+  setInterval(() => {
+    updateClock();
+    applyDeadlineState();
+  }, 1000);
+}
+
+init();
+</script>
+</body>
+</html>

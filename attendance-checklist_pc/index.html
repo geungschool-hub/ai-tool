@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>출결 관리 — 2026학년도</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Malgun Gothic', 'Segoe UI', sans-serif; background: #ECEFF4; color: #1A1A2E; font-size: 14px; min-height: 100vh; }
+
+/* Header */
+.app-header { background: #1B3A6B; color: white; padding: 10px 24px; display: flex; align-items: center; gap: 14px; }
+.app-header h1 { font-size: 15px; font-weight: 700; }
+.app-header .sub { font-size: 12px; opacity: .65; }
+
+/* Tab Bar */
+.tab-bar { background: #1B3A6B; display: flex; padding: 0 20px; border-top: 1px solid rgba(255,255,255,.1); }
+.tab-btn { background: none; border: none; color: rgba(255,255,255,.55); padding: 9px 18px; cursor: pointer; font-size: 13px; font-family: inherit; border-bottom: 3px solid transparent; white-space: nowrap; transition: color .15s; }
+.tab-btn:hover { color: rgba(255,255,255,.85); }
+.tab-btn.active { color: white; border-bottom-color: #64B5F6; font-weight: 600; }
+
+/* Panes */
+.tab-pane { display: none; padding: 18px 24px; max-width: 1100px; margin: 0 auto; }
+.tab-pane.active { display: block; }
+
+/* Cards */
+.card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); margin-bottom: 14px; overflow: hidden; }
+.card-hd { background: #1B3A6B; color: white; padding: 9px 14px; font-weight: 600; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.card-hd.green { background: #1A5C3A; }
+.card-hd.amber { background: #7A4500; }
+.card-bd { padding: 14px; }
+
+/* Date Nav */
+.date-nav { display: flex; align-items: center; gap: 8px; background: white; border-radius: 8px; padding: 11px 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+.date-display { flex: 1; text-align: center; font-size: 17px; font-weight: 700; color: #1B3A6B; }
+.date-display .day { font-size: 13px; font-weight: 400; color: #666; margin-left: 6px; }
+.date-picker { padding: 5px 8px; border: 1px solid #DDD; border-radius: 5px; font-family: inherit; font-size: 13px; }
+
+/* Buttons */
+.btn { background: #1B3A6B; color: white; border: none; border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 13px; font-family: inherit; transition: background .15s; }
+.btn:hover { background: #254F8F; }
+.btn.ghost { background: #E8EEF8; color: #1B3A6B; }
+.btn.ghost:hover { background: #D0DAEA; }
+.btn.green { background: #1A5C3A; }
+.btn.green:hover { background: #236B47; }
+.btn.red { background: #C0392B; }
+.btn.red:hover { background: #A93226; }
+.btn.sm { padding: 4px 10px; font-size: 12px; }
+
+/* Summary */
+.summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.sum-box { background: white; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.sum-box .num { font-size: 30px; font-weight: 800; line-height: 1.1; }
+.sum-box .lbl { font-size: 11px; color: #777; margin-top: 3px; }
+.sum-box.a .num { color: #C0392B; }
+.sum-box.l .num { color: #D35400; }
+.sum-box.e .num { color: #7D3C98; }
+.sum-box.c .num { color: #1A6EA8; }
+
+
+/* Attendance Table */
+.att-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.att-table th { background: #1B3A6B; color: white; padding: 7px 5px; text-align: center; font-weight: 600; font-size: 12px; white-space: nowrap; }
+.att-table td { padding: 4px 4px; text-align: center; border-bottom: 1px solid #EEE; vertical-align: middle; }
+.att-table tr:hover td { background: #F4F7FC; }
+.att-table tr.has-att td { background: #FFF8F0; }
+.att-table tr.has-att:hover td { background: #FFEDE0; }
+.att-table select { padding: 3px 3px; border: 1px solid #DDD; border-radius: 4px; font-size: 12px; font-family: inherit; background: white; cursor: pointer; }
+.att-table input[type=checkbox] { width: 16px; height: 16px; accent-color: #1B3A6B; cursor: pointer; }
+.att-table input[type=checkbox]:disabled { opacity: 0.2; cursor: not-allowed; }
+.att-table select:disabled { opacity: 0.25; cursor: not-allowed; }
+.snum { font-weight: 700; color: #1B3A6B; }
+
+/* Stats Table */
+.stats-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.stats-table th { background: #1B3A6B; color: white; padding: 5px 4px; text-align: center; font-weight: 600; font-size: 11px; white-space: nowrap; }
+.stats-table th.g { background: #1A5C3A; }
+.stats-table th.a { background: #7A4500; }
+.stats-table th.p { background: #4A235A; }
+.stats-table td { padding: 5px 4px; text-align: center; border-bottom: 1px solid #EEE; vertical-align: middle; font-size: 12px; }
+.stats-table tr.w1 td { background: #FFFDE7; }
+.stats-table tr.w2 td { background: #FFF3E0; }
+.stats-table tr.w3 td { background: #FFEBEE; }
+.stats-table tr:hover td { filter: brightness(.97); }
+.badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.badge.w1 { background: #FDD835; color: #4E342E; }
+.badge.w2 { background: #FF9800; color: white; }
+.badge.w3 { background: #E53935; color: white; }
+.badge.ok { background: #E8EEF8; color: #888; font-weight: 400; font-size: 13px; }
+
+/* Deadlines */
+.dl-list { display: flex; flex-direction: column; gap: 8px; }
+.dl-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 6px; border-left: 4px solid #DDD; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.07); }
+.dl-item.urg { border-left-color: #E53935; background: #FFF5F5; }
+.dl-item.warn { border-left-color: #FF9800; background: #FFFAF0; }
+.dl-item.ok { border-left-color: #43A047; background: #F4FFF5; }
+.dl-item.done-item { opacity: .5; }
+.d-day { font-size: 20px; font-weight: 800; min-width: 56px; text-align: center; flex-shrink: 0; }
+.dl-item.urg .d-day { color: #E53935; }
+.dl-item.warn .d-day { color: #E67E22; }
+.dl-item.ok .d-day { color: #43A047; }
+.dl-info { flex: 1; }
+.dl-title { font-weight: 600; font-size: 13px; }
+.dl-sub { font-size: 11px; color: #777; margin-top: 2px; }
+.dl-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* Add Deadline Form */
+.add-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 12px; background: #F4F7FC; border-radius: 7px; margin-bottom: 10px; }
+.add-form .field { display: flex; flex-direction: column; gap: 3px; }
+.add-form label { font-size: 11px; color: #555; font-weight: 600; }
+.add-form input, .add-form select { padding: 5px 7px; border: 1px solid #DDD; border-radius: 4px; font-size: 13px; font-family: inherit; background: white; }
+.add-form input[type=number] { width: 65px; }
+.add-form input[type=date] { width: 145px; }
+.add-form select { width: 160px; }
+
+/* Record Tab */
+.rec-date-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.week-table { width:100%; border-collapse:collapse; font-size:12px; }
+.week-table th { background:#1B3A6B; color:white; padding:6px 4px; text-align:center; font-weight:600; white-space:nowrap; }
+.week-table th.weekend { background:#4A6A8A; }
+.week-table th.today-col { background:#D35400; }
+.week-table td { padding:5px 4px; text-align:center; border-bottom:1px solid #EEE; vertical-align:middle; }
+.week-table td.today-col { background:#FFF8F0; }
+.att-badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:700; margin:1px; white-space:nowrap; }
+.att-badge.ab { background:#FFEBEE; color:#C0392B; }
+.att-badge.la { background:#FFF3E0; color:#D35400; }
+.att-badge.el { background:#F3E5F5; color:#7B1FA2; }
+.att-badge.cm { background:#E3F2FD; color:#1565C0; }
+
+/* Data Tab */
+.data-section { display: flex; flex-direction: column; gap: 8px; }
+.data-section p { font-size: 13px; color: #666; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; background: #1B3A6B; color: white; padding: 10px 16px; border-radius: 8px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 9999; animation: fadeUp .25s; max-width: 280px; line-height: 1.5; white-space: pre-line; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 메모 입력 */
+.memo-input { width: 100%; min-width: 60px; border: none; border-bottom: 1px solid #DDD; background: transparent; font-family: inherit; font-size: 12px; padding: 2px 4px; color: #333; }
+.memo-input:focus { outline: none; border-bottom-color: #1B3A6B; background: #F4F7FC; }
+.memo-input::placeholder { color: #CCC; }
+
+/* 나이스 미입력 경고 */
+.naeis-warn { background: #FFF0D6 !important; }
+.naeis-warn input[type=checkbox] { accent-color: #E67E22; outline: 2px solid #E67E22; outline-offset: 1px; border-radius: 2px; }
+
+/* 나이스 미입력 팝업 모달 */
+.naeis-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 8000; display: flex; align-items: center; justify-content: center; }
+.naeis-modal { background: white; border-radius: 10px; width: min(480px, 92vw); max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,.35); overflow: hidden; }
+.naeis-modal-hd { background: #B7410E; color: white; padding: 14px 18px; font-size: 15px; font-weight: 700; flex-shrink: 0; letter-spacing: -.3px; }
+.naeis-modal-bd { padding: 14px 18px; overflow-y: auto; flex: 1; font-size: 13px; }
+.naeis-modal-row { padding: 6px 10px; border-radius: 5px; margin-bottom: 5px; border-left: 3px solid #E67E22; background: #FFF8F0; line-height: 1.6; cursor: pointer; transition: background .12s, border-left-color .12s; }
+.naeis-modal-row:hover { background: #FFE8C8; border-left-color: #B7410E; }
+.naeis-modal-date { font-weight: 700; color: #7A3000; }
+.naeis-modal-ft { padding: 12px 18px; border-top: 1px solid #EEE; text-align: right; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+.naeis-modal-note { font-size: 11px; color: #999; }
+
+/* Misc */
+.empty { color: #AAA; font-size: 13px; padding: 20px; text-align: center; }
+
+/* Password screen */
+#pw-screen { position: fixed; inset: 0; background: #1B3A6B; display: flex; align-items: center; justify-content: center; z-index: 99999; }
+.pw-card { background: white; border-radius: 14px; padding: 40px 36px 32px; width: 300px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+.pw-logo { font-size: 22px; font-weight: 800; color: #1B3A6B; letter-spacing: -0.5px; }
+.pw-year { font-size: 12px; color: #999; margin-top: 2px; margin-bottom: 28px; }
+.pw-desc { font-size: 13px; color: #555; margin-bottom: 18px; line-height: 1.6; }
+.pw-input { width: 100%; padding: 10px 12px; border: 1.5px solid #DDD; border-radius: 7px; font-size: 14px; font-family: inherit; margin-bottom: 10px; display: block; }
+.pw-input:focus { outline: none; border-color: #1B3A6B; }
+.pw-err { color: #C0392B; font-size: 12px; min-height: 16px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<!-- ===== 비밀번호 화면 ===== -->
+<div id="pw-screen" style="display:none">
+  <div class="pw-card">
+    <div class="pw-logo">출결 관리</div>
+    <div class="pw-year">2026학년도</div>
+    <div id="pw-setup" style="display:none">
+      <p class="pw-desc">처음 사용합니다.<br>비밀번호를 설정해주세요.</p>
+      <input class="pw-input" type="password" id="pw-new" placeholder="비밀번호 (4자 이상)"
+             onkeydown="if(event.key==='Enter')document.getElementById('pw-confirm').focus()">
+      <input class="pw-input" type="password" id="pw-confirm" placeholder="비밀번호 확인"
+             onkeydown="if(event.key==='Enter')submitPw()">
+    </div>
+    <div id="pw-enter" style="display:none">
+      <input class="pw-input" type="password" id="pw-input" placeholder="비밀번호"
+             onkeydown="if(event.key==='Enter')submitPw()">
+    </div>
+    <div class="pw-err" id="pw-err"></div>
+    <button class="btn" id="pw-btn" style="width:100%" onclick="submitPw()">확인</button>
+  </div>
+</div>
+
+<header class="app-header">
+  <h1>출결 관리</h1>
+  <span class="sub">2026학년도</span>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('daily')">일일 체크리스트</button>
+  <button class="tab-btn" onclick="switchTab('stats')">누적 현황</button>
+  <button class="tab-btn" onclick="switchTab('deadlines')">기한 관리<span id="dl-badge"></span></button>
+  <button class="tab-btn" onclick="switchTab('record')">기록</button>
+  <button class="tab-btn" onclick="switchTab('monthly')">월별 결석 현황</button>
+  <button class="tab-btn" onclick="switchTab('data')">데이터</button>
+</nav>
+
+<main>
+
+<!-- ===== Tab 1: 일일 체크리스트 ===== -->
+<div id="tab-daily" class="tab-pane active">
+  <div class="date-nav">
+    <button class="btn ghost sm" onclick="changeDate(-1)">◀ 전날</button>
+    <div class="date-display" id="date-display"></div>
+    <button class="btn ghost sm" onclick="goToday()">오늘</button>
+    <button class="btn ghost sm" onclick="changeDate(1)">다음날 ▶</button>
+    <input type="date" id="date-picker" class="date-picker" onchange="setDate(this.value)">
+  </div>
+
+  <div class="summary-row">
+    <div class="sum-box a"><div class="num" id="sum-absent">0</div><div class="lbl">결석</div></div>
+    <div class="sum-box l"><div class="num" id="sum-late">0</div><div class="lbl">지각</div></div>
+    <div class="sum-box e"><div class="num" id="sum-early">0</div><div class="lbl">조퇴</div></div>
+    <div class="sum-box c"><div class="num" id="sum-class">0</div><div class="lbl">결과</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">출결 현황 입력 <span style="font-weight:400;font-size:11px;opacity:.8">— 1~26번</span></div>
+    <div class="card-bd" style="padding:8px">
+      <table class="att-table">
+        <thead>
+          <tr>
+            <th style="width:32px">번호</th>
+            <th>결석 종류</th>
+            <th>인정 사유</th>
+            <th>지각</th>
+            <th>조퇴</th>
+            <th>결과</th>
+            <th>서류<br>제출</th>
+            <th>나이스<br>입력</th>
+            <th style="min-width:70px">메모</th>
+          </tr>
+        </thead>
+        <tbody id="att-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 2: 누적 현황 ===== -->
+<div id="tab-stats" class="tab-pane">
+  <div class="card">
+    <div class="card-hd">
+      누적 출결 현황
+      <button class="btn ghost sm" onclick="renderStatsTab()">새로고침</button>
+    </div>
+    <div class="card-bd" style="padding:8px;overflow-x:auto">
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="min-width:28px">번호</th>
+            <th colspan="4">결석</th>
+            <th colspan="4" class="g">지각</th>
+            <th colspan="4" class="a">조퇴</th>
+            <th colspan="4" class="p">결과</th>
+            <th rowspan="2">결석<br>총계</th>
+            <th rowspan="2" class="g">지각<br>총계</th>
+            <th rowspan="2" class="a">조퇴<br>총계</th>
+            <th rowspan="2" class="p">결과<br>총계</th>
+            <th rowspan="2">제적<br>예고</th>
+          </tr>
+          <tr>
+            <th>질병</th><th>미인정</th><th>기타</th><th>인정</th>
+            <th class="g">질병</th><th class="g">미인정</th><th class="g">기타</th><th class="g">인정</th>
+            <th class="a">질병</th><th class="a">미인정</th><th class="a">기타</th><th class="a">인정</th>
+            <th class="p">질병</th><th class="p">미인정</th><th class="p">기타</th><th class="p">인정</th>
+          </tr>
+        </thead>
+        <tbody id="stats-tbody"></tbody>
+      </table>
+      <p style="font-size:11px;color:#999;margin-top:8px">* 총계는 인정 포함 &nbsp;|&nbsp; 제적예고 기준: 인정 제외, 결석+환산(지각·조퇴·결과 각 3회=1일) 누계 35일 1차·45일 2차·55일 3차</p>
+      <p id="stats-period-note" style="font-size:11px;color:#4A235A;margin-top:4px;font-weight:600"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 3: 기한 관리 ===== -->
+<div id="tab-deadlines" class="tab-pane">
+  <div class="card">
+    <div class="card-hd">새 기한 등록</div>
+    <div class="card-bd">
+      <div class="add-form">
+        <div class="field">
+          <label>학생 번호</label>
+          <input type="number" id="dl-student" min="1" max="26" placeholder="1~26">
+        </div>
+        <div class="field">
+          <label>종류</label>
+          <select id="dl-type">
+            <option value="absence_report">결석신고서·증빙서류</option>
+            <option value="absence_report_only">결석신고서 (생리통 인정결석)</option>
+            <option value="field_trip_report">체험학습 보고서</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>기준일 (결석일 / 체험학습 종료일)</label>
+          <input type="date" id="dl-ref-date" onchange="autoSetDueDate()">
+        </div>
+        <div class="field">
+          <label>제출 기한</label>
+          <input type="date" id="dl-due-date">
+        </div>
+        <div class="field" style="justify-content:flex-end">
+          <button class="btn" onclick="addDeadline()">등록</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#999">* 기준일 입력 시 제출 기한이 +5일로 자동 설정됩니다.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">기한 목록</div>
+    <div class="card-bd">
+      <div style="margin-bottom:10px">
+        <label style="font-size:12px;color:#555;cursor:pointer">
+          <input type="checkbox" id="show-submitted" onchange="renderDeadlinesTab()">
+          제출 완료 항목도 표시
+        </label>
+      </div>
+      <div id="dl-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Tab 4: 기록 ===== -->
+<div id="tab-record" class="tab-pane">
+  <div class="rec-date-bar">
+    <button class="btn ghost sm" onclick="changeRecWeek(-1)">◀ 이전주</button>
+    <div id="rec-week-label" style="flex:1;text-align:center;font-weight:700;color:#1B3A6B;font-size:15px"></div>
+    <button class="btn ghost sm" onclick="goRecThisWeek()">이번주</button>
+    <button class="btn ghost sm" onclick="changeRecWeek(1)">다음주 ▶</button>
+  </div>
+  <div id="rec-content"></div>
+</div>
+
+<!-- ===== Tab 5: 월별 현황 ===== -->
+<div id="tab-monthly" class="tab-pane">
+  <div class="rec-date-bar">
+    <button class="btn ghost sm" onclick="changeMonth(-1)">◀ 이전달</button>
+    <div id="month-label" style="flex:1;text-align:center;font-weight:700;color:#1B3A6B;font-size:15px"></div>
+    <button class="btn ghost sm" onclick="goThisMonth()">이번달</button>
+    <button class="btn ghost sm" onclick="changeMonth(1)">다음달 ▶</button>
+  </div>
+  <div id="monthly-content"></div>
+</div>
+
+<!-- ===== Tab 6: 데이터 ===== -->
+<div id="tab-data" class="tab-pane">
+  <div class="card">
+    <div class="card-hd" style="background:#4A235A">이전 기록 초기값 (나이스 출결현황)</div>
+    <div class="card-bd data-section">
+      <p id="init-status-msg"></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <label class="btn" style="background:#4A235A;cursor:pointer">
+          Excel 파일 불러오기
+          <input type="file" accept=".xlsx,.xls" style="display:none" onchange="loadExcelFile(this)">
+        </label>
+        <button class="btn red" onclick="clearInitialData()">초기값 삭제</button>
+      </div>
+      <p style="font-size:11px;color:#888;margin-top:6px">나이스 '학급별 출결현황' Excel 파일을 업로드하면 자동으로 반영됩니다. 이름 열을 삭제하지 않아도 됩니다.</p>
+      <p style="font-size:11px;color:#7A4500;margin-top:4px;font-weight:600">※ 가능하면 인정결석이 포함된 파일을 올려주세요.</p>
+      <p style="font-size:11px;color:#1A5C3A;margin-top:4px">🔒 업로드한 파일의 데이터는 이 기기의 브라우저에만 저장되며 외부 서버로 전송되지 않습니다.</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd green">JSON 백업 내보내기</div>
+    <div class="card-bd data-section">
+      <p>모든 데이터를 JSON 파일로 저장합니다.</p>
+      <div><button class="btn green" onclick="exportData()">JSON 파일 다운로드</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd">JSON 백업 불러오기</div>
+    <div class="card-bd data-section">
+      <p>이전에 저장한 JSON 파일을 불러옵니다. 기존 데이터에 병합됩니다.</p>
+      <input type="file" id="import-file" accept=".json" onchange="importData(this)">
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd">비밀번호 변경</div>
+    <div class="card-bd data-section">
+      <input type="password" id="pw-c-cur" placeholder="현재 비밀번호" class="pw-input" style="max-width:240px">
+      <input type="password" id="pw-c-new" placeholder="새 비밀번호 (4자 이상)" class="pw-input" style="max-width:240px">
+      <input type="password" id="pw-c-con" placeholder="새 비밀번호 확인" class="pw-input" style="max-width:240px">
+      <div><button class="btn" onclick="changePassword()">변경</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd amber">전체 초기화</div>
+    <div class="card-bd data-section">
+      <p style="color:#C0392B">모든 기록(출결·체크리스트·기한)이 삭제됩니다. 복구 불가.</p>
+      <div><button class="btn red" onclick="resetData()">전체 초기화</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd">저장된 기록 현황</div>
+    <div class="card-bd" id="data-summary"></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ===== 상수 =====
+const STUDENT_COUNT = 26;
+const ABSENT_OPTIONS = [
+  { value: "", label: "정상" },
+  { value: "disease", label: "질병" },
+  { value: "unapproved", label: "미인정" },
+  { value: "other", label: "기타" },
+  { value: "approved", label: "인정" }
+];
+const TYPE_OPTIONS = [
+  { value: "", label: "없음" },
+  { value: "disease", label: "질병" },
+  { value: "unapproved", label: "미인정" },
+  { value: "other", label: "기타" },
+  { value: "approved", label: "인정" }
+];
+const DAYS = ["일","월","화","수","목","금","토"];
+const TYPE_LABELS = { absence_report: "결석신고서·증빙서류", absence_report_only: "결석신고서", field_trip_report: "체험학습 보고서" };
+
+const STORAGE_KEY = "attendance_2026";
+
+// ===== 상태 =====
+let appData = { dailyRecords: {}, deadlines: [], initialStats: {}, initialStatsPeriod: '' };
+let currentDate = todayStr();
+let currentRecWeekStart = null;
+let currentMonth = null;
+
+// ===== 유틸 =====
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function pad(n) { return String(n).padStart(2, '0'); }
+function parseDate(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function formatDate(str) {
+  const d = parseDate(str);
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+}
+function dayLabel(str) { return DAYS[parseDate(str).getDay()]; }
+function addDays(str, n) {
+  const d = parseDate(str);
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function addSchoolDays(str, n) {
+  const d = parseDate(str);
+  let added = 0;
+  while (added < n) {
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) added++;  // 일(0)·토(6) 제외
+  }
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+// ===== 저장/불러오기 =====
+async function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      let parsed;
+      try {
+        const decrypted = await _decrypt(raw);
+        parsed = JSON.parse(decrypted);
+      } catch {
+        parsed = JSON.parse(raw); // 평문 하위호환 (최초 업데이트 시 1회)
+      }
+      appData = parsed;
+    }
+    if (!appData.dailyRecords)       appData.dailyRecords = {};
+    if (!appData.deadlines)          appData.deadlines = [];
+    if (!appData.initialStats)       appData.initialStats = {};
+    if (!appData.initialStatsPeriod) appData.initialStatsPeriod = '';
+  } catch(e) {
+    appData = { dailyRecords: {}, deadlines: [], initialStats: {}, initialStatsPeriod: '' };
+  }
+}
+async function saveData() {
+  const json = JSON.stringify(appData);
+  localStorage.setItem(STORAGE_KEY, _cryptoKey ? await _encrypt(json) : json);
+}
+
+// ===== 탭 전환 =====
+function switchTab(tab) {
+  const tabs = ['daily','stats','deadlines','record','monthly','data'];
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', tabs[i] === tab));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  if (tab === 'daily')     renderDailyTab();
+  if (tab === 'stats')     renderStatsTab();
+  if (tab === 'deadlines') renderDeadlinesTab();
+  if (tab === 'record')    { currentRecWeekStart = getMonday(currentDate); renderRecordContent(); }
+  if (tab === 'monthly')   { if (!currentMonth) currentMonth = thisMonthStr(); renderMonthlyTab(); }
+  if (tab === 'data')      renderDataSummary();
+}
+
+// ===== 날짜 이동 =====
+function changeDate(delta) { currentDate = addDays(currentDate, delta); renderDailyTab(); }
+function goToday()         { currentDate = todayStr(); renderDailyTab(); }
+function setDate(val)      { if (val) { currentDate = val; renderDailyTab(); } }
+
+// ===== 탭1: 일일 체크리스트 =====
+function getOrCreateDay(date) {
+  if (!appData.dailyRecords[date])
+    appData.dailyRecords[date] = { checklist: {}, attendance: {} };
+  return appData.dailyRecords[date];
+}
+
+function renderDailyTab() {
+  const isToday = currentDate === todayStr();
+  document.getElementById('date-display').innerHTML =
+    `${formatDate(currentDate)}<span class="day">(${dayLabel(currentDate)}${isToday ? ' · 오늘' : ''})</span>`;
+  document.getElementById('date-picker').value = currentDate;
+  updateSummary();
+  renderAttTable();
+}
+
+function updateSummary() {
+  const att = (appData.dailyRecords[currentDate] || {}).attendance || {};
+  let absent=0, late=0, early=0, cls=0;
+  Object.values(att).forEach(a => {
+    if (a.absent) absent++;
+    if (a.late) late++;
+    if (a.earlyLeave) early++;
+    if (a.classMiss) cls++;
+  });
+  document.getElementById('sum-absent').textContent = absent;
+  document.getElementById('sum-late').textContent = late;
+  document.getElementById('sum-early').textContent = early;
+  document.getElementById('sum-class').textContent = cls;
+}
+
+function checkDisabled(a, field) {
+  const hasAbsent  = !!a.absent;
+  const hasAny     = hasAbsent || !!a.late || !!a.earlyLeave || !!a.classMiss;
+  const isDA       = v => v === 'disease' || v === 'approved';  // 질병 또는 인정
+  const needParent = hasAbsent || isDA(a.late) || isDA(a.earlyLeave) || isDA(a.classMiss);
+  if (field === 'naeis')         return !hasAny;
+  if (field === 'parentContact') return !needParent;
+  if (field === 'docSubmit')     return !hasAbsent;
+  return true;
+}
+
+function renderAttTable() {
+  const att = (appData.dailyRecords[currentDate] || {}).attendance || {};
+  const tbody = document.getElementById('att-tbody');
+  tbody.innerHTML = '';
+  for (let num = 1; num <= STUDENT_COUNT; num++) {
+    const a = att[num] || {};
+    const hasRec = !!(a.absent || a.late || a.earlyLeave || a.classMiss || a.parentContact || a.docSubmit || a.naeis || a.memo);
+    const tr = document.createElement('tr');
+    if (hasRec) tr.className = 'has-att';
+
+    const tdNum = document.createElement('td');
+    tdNum.className = 'snum'; tdNum.textContent = num;
+    tr.appendChild(tdNum);
+
+    // 결석 드롭다운
+    const tdAbs = document.createElement('td');
+    const sel = document.createElement('select');
+    ABSENT_OPTIONS.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value; o.textContent = opt.label;
+      if (a.absent === opt.value) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => updateAttendance(num, 'absent', sel.value));
+    tdAbs.appendChild(sel);
+    tr.appendChild(tdAbs);
+
+    // 인정 사유 드롭다운 (인정결석일 때만 활성)
+    const tdApp = document.createElement('td');
+    const selApp = document.createElement('select');
+    selApp.disabled = a.absent !== 'approved';
+    selApp.style.fontSize = '11px';
+    selApp.style.padding = '1px 2px';
+    [['', '—'], ['menstrual', '생리통'], ['fieldtrip', '체험학습'], ['other', '그외']].forEach(([v, lbl]) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = lbl;
+      if ((a.approvedType || '') === v) o.selected = true;
+      selApp.appendChild(o);
+    });
+    selApp.addEventListener('change', () => updateAttendance(num, 'approvedType', selApp.value));
+    tdApp.appendChild(selApp);
+    tr.appendChild(tdApp);
+
+    // 지각·조퇴·결과 드롭다운 (결석이 있으면 비활성)
+    ['late','earlyLeave','classMiss'].forEach(field => {
+      const td = document.createElement('td');
+      const sel = document.createElement('select');
+      sel.disabled = !!a.absent;
+      TYPE_OPTIONS.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.value; o.textContent = opt.label;
+        if ((a[field] || '') === opt.value) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change', () => updateAttendance(num, field, sel.value));
+      td.appendChild(sel);
+      tr.appendChild(td);
+    });
+
+    // 서류제출·나이스입력 체크박스
+    ['docSubmit','naeis'].forEach(field => {
+      const td = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.disabled = checkDisabled(a, field);
+      cb.checked = !cb.disabled && !!a[field];
+      // 나이스 미입력 경고 표기: 출결 있으나 미입력 (오늘 이전 포함)
+      if (field === 'naeis' && !cb.disabled && !cb.checked && currentDate <= todayStr()) {
+        td.classList.add('naeis-warn');
+        td.title = '나이스 미입력';
+      }
+      cb.addEventListener('change', () => updateAttendance(num, field, cb.checked));
+      td.appendChild(cb);
+      tr.appendChild(td);
+    });
+
+    // 메모
+    const memoTd = document.createElement('td');
+    memoTd.style.textAlign = 'left';
+    const memoInput = document.createElement('input');
+    memoInput.type = 'text';
+    memoInput.className = 'memo-input';
+    memoInput.value = a.memo || '';
+    memoInput.placeholder = '특이사항';
+    memoInput.addEventListener('blur', () => saveMemo(num, memoInput.value.trim()));
+    memoTd.appendChild(memoInput);
+    tr.appendChild(memoTd);
+
+    tbody.appendChild(tr);
+  }
+}
+
+function updateAttendance(num, field, value) {
+  const rec = getOrCreateDay(currentDate);
+  if (!rec.attendance[num]) rec.attendance[num] = {};
+  const prev = rec.attendance[num][field];
+  rec.attendance[num][field] = value;
+
+  // 결석 종류 변경 시 연동 처리
+  if (field === 'absent' && value) {
+    // 결석 설정 → 지각/조퇴/결과 초기화
+    rec.attendance[num].late = '';
+    rec.attendance[num].earlyLeave = '';
+    rec.attendance[num].classMiss = '';
+  }
+  // 인정 결석이 아닌 경우 인정 사유 자동 초기화
+  if (field === 'absent' && value !== 'approved') {
+    rec.attendance[num].approvedType = '';
+  }
+  // 서류제출 체크 시 해당 날짜 기한 항목 자동 완료 처리
+  if (field === 'docSubmit') {
+    const dl = appData.deadlines.find(d =>
+      d.studentNo === num &&
+      d.absenceDate === currentDate &&
+      (d.type === 'absence_report' || d.type === 'absence_report_only' || d.type === 'field_trip_report') &&
+      !d.submitted
+    );
+    if (dl && value) { dl.submitted = true; updateDLBadge(); }
+    else if (dl && !value) { dl.submitted = false; updateDLBadge(); }
+  }
+
+  // 인정 사유 변경 시 기한 항목 종류 자동 업데이트
+  if (field === 'approvedType') {
+    // 기존 미완료 기한(결석신고서 계열 + 체험학습) 모두 제거 후 재생성
+    appData.deadlines = appData.deadlines.filter(d =>
+      !(d.studentNo === num &&
+        d.absenceDate === currentDate &&
+        (d.type === 'absence_report' || d.type === 'absence_report_only' || d.type === 'field_trip_report') &&
+        !d.submitted)
+    );
+    const dueDate = addSchoolDays(currentDate, 5);
+    if (value === 'menstrual') {
+      appData.deadlines.push({ id: Date.now().toString(), studentNo: num, type: 'absence_report_only', absenceDate: currentDate, dueDate, submitted: false });
+      checkMenstrualWarning(num, currentDate);
+    } else if (value === 'fieldtrip') {
+      appData.deadlines.push({ id: Date.now().toString(), studentNo: num, type: 'field_trip_report', absenceDate: currentDate, dueDate, submitted: false });
+    } else {
+      // 'other' 또는 '' (미선택) → absence_report
+      appData.deadlines.push({ id: Date.now().toString(), studentNo: num, type: 'absence_report', absenceDate: currentDate, dueDate, submitted: false });
+    }
+    saveData();
+    updateDLBadge();
+  }
+  if (field === 'absent' && (!value || value === 'unapproved')) {
+    // 결석 해제 또는 미인정으로 변경 → 관련 기한 모두 삭제
+    appData.deadlines = appData.deadlines.filter(d =>
+      !(d.studentNo === num &&
+        (d.type === 'absence_report' || d.type === 'absence_report_only' || d.type === 'field_trip_report') &&
+        d.absenceDate === currentDate && !d.submitted)
+    );
+    updateDLBadge();
+  }
+
+  // 업무 체크박스 — 비활성 조건이 되면 자동 해제
+  const a = rec.attendance[num];
+  if (a) {
+    if (checkDisabled(a, 'docSubmit'))     a.docSubmit     = false;
+    if (checkDisabled(a, 'naeis'))         a.naeis         = false;
+  }
+
+  // 빈 레코드 정리
+  if (a && !a.absent && !a.late && !a.earlyLeave && !a.classMiss && !a.docSubmit && !a.naeis && !a.memo)
+    delete rec.attendance[num];
+
+  // 새로 결석 처리 시 기한 자동 등록
+  if (field === 'absent' && value && value !== 'unapproved' && (!prev || prev === 'unapproved'))
+    autoCreateDeadline(num, currentDate);
+
+  saveData();
+  updateSummary();
+  renderAttTable();
+}
+
+function autoCreateDeadline(studentNo, absenceDate) {
+  const absentType = ((appData.dailyRecords[absenceDate]||{}).attendance||{})[studentNo]?.absent;
+  if (absentType === 'unapproved') return;
+  const exists = appData.deadlines.some(d =>
+    d.studentNo === studentNo &&
+    (d.type === 'absence_report' || d.type === 'absence_report_only' || d.type === 'field_trip_report') &&
+    d.absenceDate === absenceDate
+  );
+  if (exists) return;
+  // 결석 입력 직후에는 approvedType 미결정 상태 → 기본 absence_report로 등록
+  // (이후 approvedType 선택 시 updateAttendance에서 교체됨)
+  const dueDate = addSchoolDays(absenceDate, 5);
+  appData.deadlines.push({
+    id: Date.now().toString(),
+    studentNo, type: 'absence_report',
+    absenceDate, dueDate, submitted: false
+  });
+  saveData();
+  const d = parseDate(dueDate);
+  showToast(`${studentNo}번 학생 결석신고서 기한 자동 등록\n(${d.getMonth()+1}/${d.getDate()}까지)`);
+  updateDLBadge();
+}
+
+// ===== 생리통 월간 경고 =====
+function checkMenstrualWarning(studentNo, dateStr) {
+  const monthPrefix = dateStr.slice(0, 7);
+  let count = 0;
+  Object.entries(appData.dailyRecords).forEach(([date, rec]) => {
+    if (!date.startsWith(monthPrefix)) return;
+    const a = (rec.attendance || {})[studentNo];
+    if (a && a.absent === 'approved' && a.approvedType === 'menstrual') count++;
+  });
+  if (count > 1) {
+    showToast(`⚠ ${studentNo}번 학생\n이번 달 생리통 인정결석 ${count}회\n(월 1회 초과)`);
+  }
+}
+
+// ===== 탭2: 누적 현황 =====
+function calcStats() {
+  const zero = () => ({ disease:0, unapproved:0, other:0, approved:0 });
+  const s = {};
+  for (let i = 1; i <= STUDENT_COUNT; i++)
+    s[i] = { absent: zero(), late: zero(), earlyLeave: zero(), classMiss: zero() };
+
+  // 이전 기록 초기값 반영 (2026.03.02~04.10 나이스 데이터)
+  Object.entries(appData.initialStats || {}).forEach(([n, init]) => {
+    const st = s[+n]; if (!st) return;
+    ['absent','late','earlyLeave','classMiss'].forEach(cat => {
+      if (!init[cat]) return;
+      st[cat].disease    += init[cat].disease    || 0;
+      st[cat].unapproved += init[cat].unapproved || 0;
+      st[cat].other      += init[cat].other      || 0;
+      st[cat].approved   += init[cat].approved   || 0;
+    });
+  });
+
+  // 일별 기록 반영
+  Object.values(appData.dailyRecords).forEach(rec => {
+    Object.entries(rec.attendance || {}).forEach(([n, a]) => {
+      const st = s[+n]; if (!st) return;
+      if (a.absent && st.absent[a.absent] !== undefined) st.absent[a.absent]++;
+      ['late','earlyLeave','classMiss'].forEach(cat => {
+        const val = a[cat];
+        if (!val) return;
+        if (val === true) st[cat].other++;   // 이전 boolean 데이터 하위호환
+        else if (st[cat][val] !== undefined) st[cat][val]++;
+      });
+    });
+  });
+  return s;
+}
+
+function warnLevel(st) {
+  // 총계 = 질병+미인정+기타 (인정 제외 — 나이스 제적예고 기준)
+  const absentTotal = st.absent.disease    + st.absent.unapproved    + st.absent.other;
+  const lateTotal   = st.late.disease      + st.late.unapproved      + st.late.other;
+  const earlyTotal  = st.earlyLeave.disease + st.earlyLeave.unapproved + st.earlyLeave.other;
+  const classTotal  = st.classMiss.disease  + st.classMiss.unapproved  + st.classMiss.other;
+  const equiv = absentTotal + Math.floor(lateTotal/3) + Math.floor(earlyTotal/3) + Math.floor(classTotal/3);
+  return equiv >= 55 ? 3 : equiv >= 45 ? 2 : equiv >= 35 ? 1 : 0;
+}
+
+function renderStatsTab() {
+  const hasInit = Object.keys(appData.initialStats || {}).length > 0;
+  const noteEl = document.getElementById('stats-period-note');
+  const initPeriod = appData.initialStatsPeriod;
+  if (noteEl) noteEl.textContent = hasInit
+    ? `▶ 이전 기록 포함 (나이스 출결${initPeriod ? ' ' + initPeriod : ''} + 이후 직접 입력 합산)`
+    : '▶ 직접 입력 기록만 반영됨 (이전 기록 미적용 — 데이터 탭에서 불러오기 가능)';
+
+  const stats = calcStats();
+  const tbody = document.getElementById('stats-tbody');
+  tbody.innerHTML = '';
+  const v = n => n || '—';
+  for (let i = 1; i <= STUDENT_COUNT; i++) {
+    const s = stats[i];
+    const absentTotal = s.absent.disease    + s.absent.unapproved    + s.absent.other    + s.absent.approved;
+    const lateTotal   = s.late.disease      + s.late.unapproved      + s.late.other      + s.late.approved;
+    const earlyTotal  = s.earlyLeave.disease + s.earlyLeave.unapproved + s.earlyLeave.other + s.earlyLeave.approved;
+    const classTotal  = s.classMiss.disease  + s.classMiss.unapproved  + s.classMiss.other  + s.classMiss.approved;
+    const wl = warnLevel(s);
+    const tr = document.createElement('tr');
+    if (wl) tr.className = `w${wl}`;
+    const warn = wl ? `<span class="badge w${wl}">${wl}차</span>` : `<span class="badge ok">—</span>`;
+    tr.innerHTML = `
+      <td><strong>${i}</strong></td>
+      <td>${v(s.absent.disease)}</td><td>${v(s.absent.unapproved)}</td><td>${v(s.absent.other)}</td><td>${v(s.absent.approved)}</td>
+      <td>${v(s.late.disease)}</td><td>${v(s.late.unapproved)}</td><td>${v(s.late.other)}</td><td>${v(s.late.approved)}</td>
+      <td>${v(s.earlyLeave.disease)}</td><td>${v(s.earlyLeave.unapproved)}</td><td>${v(s.earlyLeave.other)}</td><td>${v(s.earlyLeave.approved)}</td>
+      <td>${v(s.classMiss.disease)}</td><td>${v(s.classMiss.unapproved)}</td><td>${v(s.classMiss.other)}</td><td>${v(s.classMiss.approved)}</td>
+      <td><strong>${v(absentTotal)}</strong></td>
+      <td><strong>${v(lateTotal)}</strong></td>
+      <td><strong>${v(earlyTotal)}</strong></td>
+      <td><strong>${v(classTotal)}</strong></td>
+      <td>${warn}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+// ===== 탭3: 기한 관리 =====
+function autoSetDueDate() {
+  const ref = document.getElementById('dl-ref-date').value;
+  if (ref) document.getElementById('dl-due-date').value = addSchoolDays(ref, 5);
+}
+
+function addDeadline() {
+  const num = parseInt(document.getElementById('dl-student').value);
+  const type = document.getElementById('dl-type').value;
+  const refDate = document.getElementById('dl-ref-date').value;
+  const dueDate = document.getElementById('dl-due-date').value;
+  if (!num || num < 1 || num > 26) { showToast('학생 번호를 1~26 사이로 입력해주세요.'); return; }
+  if (!dueDate) { showToast('제출 기한을 입력해주세요.'); return; }
+  appData.deadlines.push({ id: Date.now().toString(), studentNo: num, type, absenceDate: refDate||null, dueDate, submitted: false });
+  saveData();
+  document.getElementById('dl-student').value = '';
+  document.getElementById('dl-ref-date').value = '';
+  document.getElementById('dl-due-date').value = '';
+  renderDeadlinesTab();
+  showToast('기한이 등록되었습니다.');
+}
+
+function getDDay(dueDate) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = parseDate(dueDate); due.setHours(0,0,0,0);
+  return Math.round((due - today) / 86400000);
+}
+function dDayLabel(dd) { return dd === 0 ? 'D-day' : dd > 0 ? `D-${dd}` : `D+${-dd}`; }
+function dDayClass(dd, submitted) {
+  if (submitted) return 'ok done-item';
+  if (dd < 0) return 'urg'; if (dd <= 3) return 'warn'; return 'ok';
+}
+
+function renderDeadlinesTab() {
+  const showDone = document.getElementById('show-submitted').checked;
+  const items = appData.deadlines
+    .filter(d => showDone || !d.submitted)
+    .sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+  const container = document.getElementById('dl-list');
+  if (!items.length) { container.innerHTML = '<div class="empty">등록된 기한이 없습니다.</div>'; updateDLBadge(); return; }
+  container.innerHTML = '';
+  items.forEach(dl => {
+    const dd = getDDay(dl.dueDate);
+    const div = document.createElement('div');
+    div.className = `dl-item ${dDayClass(dd, dl.submitted)}`;
+    const refInfo = dl.absenceDate ? ` · 기준일 ${formatDate(dl.absenceDate)}` : '';
+    div.innerHTML = `
+      <div class="d-day">${dDayLabel(dd)}</div>
+      <div class="dl-info">
+        <div class="dl-title">${dl.studentNo}번 — ${TYPE_LABELS[dl.type]||dl.type}</div>
+        <div class="dl-sub">기한: ${formatDate(dl.dueDate)}${refInfo}</div>
+      </div>
+      <div class="dl-actions">
+        ${!dl.submitted
+          ? `<button class="btn green sm" onclick="submitDL('${dl.id}')">제출완료</button>`
+          : `<span style="font-size:12px;color:#43A047;padding:0 4px">✔ 완료</span>`}
+        <button class="btn red sm" onclick="deleteDL('${dl.id}')">삭제</button>
+      </div>`;
+    container.appendChild(div);
+  });
+  updateDLBadge();
+}
+
+function submitDL(id) {
+  const dl = appData.deadlines.find(d => d.id === id);
+  if (!dl) return;
+  dl.submitted = true;
+  // 체크리스트 서류 제출 동기화
+  if (dl.absenceDate) {
+    const att = (appData.dailyRecords[dl.absenceDate]||{}).attendance||{};
+    if (att[dl.studentNo]) att[dl.studentNo].docSubmit = true;
+  }
+  saveData();
+  renderDeadlinesTab();
+}
+function deleteDL(id) {
+  appData.deadlines = appData.deadlines.filter(d => d.id !== id);
+  saveData(); renderDeadlinesTab();
+}
+function updateDLBadge() {
+  const n = appData.deadlines.filter(d => !d.submitted && getDDay(d.dueDate) <= 3).length;
+  const el = document.getElementById('dl-badge');
+  el.textContent = n ? ` (${n})` : '';
+  el.style.color = '#FF9800';
+}
+
+// ===== 탭4: 기록 =====
+function getMonday(dateStr) {
+  const d = parseDate(dateStr);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function changeRecWeek(delta) {
+  if (!currentRecWeekStart) currentRecWeekStart = getMonday(todayStr());
+  currentRecWeekStart = addDays(currentRecWeekStart, delta * 7);
+  renderRecordContent();
+}
+
+function goRecThisWeek() {
+  currentRecWeekStart = getMonday(todayStr());
+  renderRecordContent();
+}
+
+function renderRecordContent() {
+  if (!currentRecWeekStart) currentRecWeekStart = getMonday(todayStr());
+  const weekStart = currentRecWeekStart;
+  const today = todayStr();
+  const DAY_NAMES = ['월','화','수','목','금','토','일'];
+  const allDays = Array.from({length:7}, (_,i) => addDays(weekStart, i));
+
+  // 월~금 항상 표시, 토·일은 기록 있을 때만
+  const satHasRec = Object.keys((appData.dailyRecords[allDays[5]]||{}).attendance||{}).length > 0;
+  const sunHasRec = Object.keys((appData.dailyRecords[allDays[6]]||{}).attendance||{}).length > 0;
+  const days = allDays.slice(0, 5);
+  if (satHasRec) days.push(allDays[5]);
+  if (sunHasRec) days.push(allDays[6]);
+
+  // 주간 레이블
+  const ws = parseDate(weekStart), we = parseDate(allDays[6]);
+  document.getElementById('rec-week-label').textContent =
+    `${ws.getFullYear()}년 ${ws.getMonth()+1}월 ${ws.getDate()}일(월) ~ ${we.getMonth()+1}월 ${we.getDate()}일(일)`;
+
+  const dayAtts = days.map(d => (appData.dailyRecords[d]||{}).attendance || {});
+
+  // 이번 주 기록 있는 학생
+  const studentSet = new Set();
+  dayAtts.forEach(att => Object.keys(att).forEach(n => studentSet.add(+n)));
+  const students = [...studentSet].sort((a,b) => a-b);
+
+  const container = document.getElementById('rec-content');
+  const TL = { disease:'질병', unapproved:'미인정', other:'기타', approved:'인정' };
+
+  let html = '';
+
+  // ── 주간 출결 현황 표 ──
+  if (students.length > 0) {
+    html += `<div class="card"><div class="card-hd">주간 출결 현황 <span style="font-weight:400;font-size:11px;opacity:.8">— ${students.length}명 기록</span></div><div class="card-bd" style="padding:8px;overflow-x:auto">`;
+    html += '<table class="week-table"><thead><tr><th style="min-width:32px">번호</th>';
+    days.forEach(d => {
+      const idx = allDays.indexOf(d);
+      const [,m,dd] = d.split('-');
+      const cls = d === today ? 'today-col' : idx >= 5 ? 'weekend' : '';
+      html += `<th class="${cls}" style="min-width:80px">${+m}/${+dd}(${DAY_NAMES[idx]})</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    students.forEach(num => {
+      html += `<tr><td><strong style="color:#1B3A6B">${num}</strong></td>`;
+      days.forEach((d, i) => {
+        const a = dayAtts[i][num] || {};
+        const idx = allDays.indexOf(d);
+        const cls = d === today ? 'today-col' : idx >= 5 ? 'weekend' : '';
+        let b = '';
+        if (a.absent) {
+          const APTYPE = { menstrual:'생리통', fieldtrip:'체험학습', other:'그외' };
+          const extra = (a.absent === 'approved' && a.approvedType) ? `(${APTYPE[a.approvedType]||a.approvedType})` : '';
+          b += `<span class="att-badge ab">${TL[a.absent]||'?'}결석${extra}</span>`;
+        }
+        if (a.late)       b += `<span class="att-badge la">${TL[a.late]||'?'}지각</span>`;
+        if (a.earlyLeave) b += `<span class="att-badge el">${TL[a.earlyLeave]||'?'}조퇴</span>`;
+        if (a.classMiss)  b += `<span class="att-badge cm">${TL[a.classMiss]||'?'}결과</span>`;
+        if (b) {
+          const si = [];
+          if (!checkDisabled(a, 'docSubmit'))     si.push(`<span style="color:${a.docSubmit?'#43A047':'#E67E22'}">${a.docSubmit?'✓':'○'}&nbsp;서류</span>`);
+          if (!checkDisabled(a, 'naeis'))         si.push(`<span style="color:${a.naeis?'#43A047':'#E67E22'}">${a.naeis?'✓':'○'}&nbsp;나이스</span>`);
+          if (si.length) b += `<div style="font-size:9px;margin-top:4px;display:flex;flex-direction:column;gap:1px">${si.join('')}</div>`;
+        }
+        if (a.memo) b += `<div style="font-size:10px;color:#555;font-style:italic;margin-top:3px;text-align:left">${a.memo}</div>`;
+        html += `<td class="${cls}">${b || '<span style="color:#DDD">—</span>'}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += `<div style="margin-top:8px;font-size:11px;color:#888;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+      <span>범례:</span>
+      <span><span class="att-badge ab">■</span> 결석</span>
+      <span><span class="att-badge la">■</span> 지각</span>
+      <span><span class="att-badge el">■</span> 조퇴</span>
+      <span><span class="att-badge cm">■</span> 결과</span>
+    </div>`;
+    html += '</div></div>';
+  }
+
+  // ── 주간 미처리 현황 카드 ──
+  // 나이스 미입력: 이번 주 날짜 중 오늘 이전
+  const naeisPending = [];
+  days.forEach(d => {
+    if (d > today) return;
+    const att = (appData.dailyRecords[d] || {}).attendance || {};
+    const nums = Object.entries(att)
+      .filter(([, a]) => !checkDisabled(a, 'naeis') && !a.naeis)
+      .map(([n]) => +n).sort((a, b) => a - b);
+    if (nums.length) {
+      const idx = allDays.indexOf(d);
+      const [,m,dd] = d.split('-');
+      naeisPending.push({ label: `${+m}/${+dd}(${DAY_NAMES[idx]})`, date: d, nums });
+    }
+  });
+
+  // 서류 미제출: absenceDate 또는 dueDate가 이번 주에 걸치는 미완료 건
+  const wkStart = days[0], wkEnd = days[days.length - 1];
+  const TYPE_LABELS_LOCAL = { absence_report:'결석신고서·증빙서류', absence_report_only:'결석신고서', field_trip_report:'체험학습 보고서' };
+  const docPending = appData.deadlines.filter(dl =>
+    !dl.submitted && (
+      (dl.absenceDate && dl.absenceDate >= wkStart && dl.absenceDate <= wkEnd) ||
+      (dl.dueDate >= wkStart && dl.dueDate <= wkEnd)
+    )
+  ).sort((a, b) => (a.absenceDate||'').localeCompare(b.absenceDate||''));
+
+  if (naeisPending.length || docPending.length) {
+    html += `<div class="card"><div class="card-hd amber">주간 미처리 현황</div><div class="card-bd" style="padding:12px 14px;display:flex;flex-direction:column;gap:12px">`;
+
+    if (naeisPending.length) {
+      html += `<div><div style="font-size:12px;font-weight:700;color:#7A3000;margin-bottom:6px">나이스 미입력 (${naeisPending.reduce((s,i)=>s+i.nums.length,0)}건)</div>`;
+      naeisPending.forEach(({ label, date, nums }) => {
+        html += `<div style="font-size:12px;padding:4px 8px;border-left:3px solid #E67E22;background:#FFF8F0;border-radius:3px;margin-bottom:4px">
+          <span style="font-weight:700;color:#7A3000">${label}</span> &nbsp;${nums.map(n=>`<strong>${n}번</strong>`).join(', ')}
+          <a href="#" style="float:right;font-size:11px;color:#B7410E;text-decoration:none" onclick="event.preventDefault();currentDate='${date}';switchTab('daily')">이동 →</a>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (docPending.length) {
+      html += `<div><div style="font-size:12px;font-weight:700;color:#1B3A6B;margin-bottom:6px">서류 미제출 (${docPending.length}건)</div>`;
+      docPending.forEach(dl => {
+        const ad = dl.absenceDate ? parseDate(dl.absenceDate) : null;
+        const dd2 = parseDate(dl.dueDate);
+        const adLabel = ad ? `${ad.getMonth()+1}/${ad.getDate()} 결석분` : '';
+        const ddLabel = `기한 ${dd2.getMonth()+1}/${dd2.getDate()}`;
+        const diff = Math.ceil((parseDate(dl.dueDate) - new Date(new Date().toDateString())) / 86400000);
+        const urgCls = diff < 0 ? 'color:#C0392B;font-weight:700' : diff <= 2 ? 'color:#E67E22;font-weight:700' : 'color:#555';
+        html += `<div style="font-size:12px;padding:4px 8px;border-left:3px solid #1B3A6B;background:#F0F4FF;border-radius:3px;margin-bottom:4px">
+          <strong>${dl.studentNo}번</strong> &nbsp;${TYPE_LABELS_LOCAL[dl.type]||dl.type}
+          ${adLabel ? `<span style="color:#888;font-size:11px"> (${adLabel})</span>` : ''}
+          &nbsp;<span style="${urgCls}">${diff < 0 ? '만료' : `D-${diff}`} · ${ddLabel}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += '</div></div>';
+  }
+
+  if (!html) {
+    container.innerHTML = '<div class="empty">이번 주 출결 기록이 없습니다.</div>';
+    return;
+  }
+
+  container.innerHTML = html;
+}
+
+// ===== 탭5: 월별 현황 =====
+function thisMonthStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+}
+
+function changeMonth(delta) {
+  if (!currentMonth) currentMonth = thisMonthStr();
+  const [y, m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  currentMonth = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+  renderMonthlyTab();
+}
+
+function goThisMonth() {
+  currentMonth = thisMonthStr();
+  renderMonthlyTab();
+}
+
+function getRequiredDocs(absentType, approvedType) {
+  if (absentType === 'disease')                              return ['결석신고서', '진단서·처방전'];
+  if (absentType === 'approved' && approvedType === 'menstrual')  return ['결석신고서'];
+  if (absentType === 'approved' && approvedType === 'fieldtrip')  return ['체험학습 보고서'];
+  if (absentType === 'approved')                             return ['결석신고서', '증빙서류'];
+  if (absentType === 'other')                                return ['결석신고서', '증빙서류'];
+  if (absentType === 'unapproved')                           return [];
+  return ['결석신고서'];
+}
+
+function renderMonthlyTab() {
+  if (!currentMonth) currentMonth = thisMonthStr();
+  const [y, m] = currentMonth.split('-').map(Number);
+
+  document.getElementById('month-label').textContent = `${y}년 ${m}월`;
+
+  // 해당 월 결석 수집 (날짜→학번 순 정렬)
+  const absences = [];
+  Object.entries(appData.dailyRecords).forEach(([date, rec]) => {
+    if (!date.startsWith(currentMonth)) return;
+    Object.entries(rec.attendance || {}).forEach(([num, a]) => {
+      if (!a.absent) return;
+      absences.push({ date, num: +num, a });
+    });
+  });
+  absences.sort((x, z) => x.date.localeCompare(z.date) || x.num - z.num);
+
+  const container = document.getElementById('monthly-content');
+
+  if (absences.length === 0) {
+    container.innerHTML = '<div class="empty">이번 달 결석 기록이 없습니다.</div>';
+    return;
+  }
+
+  const studentCount = new Set(absences.map(x => x.num)).size;
+  const undone = absences.filter(x => !x.a.docSubmit).length;
+
+  const ABSENT_LABEL = { disease:'질병결석', unapproved:'미인정결석', other:'기타결석', approved:'인정결석' };
+  const docTag = txt => `<span style="display:inline-block;background:#EEF3FF;border-radius:3px;padding:1px 6px;font-size:11px;margin:1px;white-space:nowrap">${txt}</span>`;
+  const chk = v => v
+    ? '<span style="color:#43A047;font-weight:700">✔</span>'
+    : '<span style="color:#CCC">—</span>';
+
+  let html = `<div class="card">
+    <div class="card-hd">${y}년 ${m}월 결석 현황
+      <span style="font-weight:400;font-size:11px;opacity:.9">총 ${absences.length}건 · ${studentCount}명
+        ${undone > 0 ? `&nbsp;<span style="color:#FFB74D">서류 미제출 ${undone}건</span>` : ''}
+      </span>
+    </div>
+    <div class="card-bd" style="padding:8px;overflow-x:auto">
+    <table class="att-table">
+      <thead><tr>
+        <th>날짜</th>
+        <th>학번</th>
+        <th>결석 종류</th>
+        <th style="text-align:left;padding-left:10px">필요 서류</th>
+        <th>서류<br>제출</th>
+        <th>나이스<br>입력</th>
+      </tr></thead>
+      <tbody>`;
+
+  absences.forEach(({ date, num, a }) => {
+    const APTYPE_LBL = { menstrual:'생리통', fieldtrip:'체험학습', other:'그외' };
+    const label = (a.absent === 'approved' && a.approvedType)
+      ? `인정결석(${APTYPE_LBL[a.approvedType]||a.approvedType})` : (ABSENT_LABEL[a.absent] || a.absent);
+    const docs = getRequiredDocs(a.absent, a.approvedType).map(docTag).join('');
+    const [, mo, dd] = date.split('-');
+    const dayName = DAYS[parseDate(date).getDay()];
+    const rowCls = !a.docSubmit ? 'has-att' : '';
+
+    html += `<tr class="${rowCls}">
+      <td style="white-space:nowrap">${+mo}/${+dd}(${dayName})</td>
+      <td class="snum">${num}</td>
+      <td>${label}</td>
+      <td style="text-align:left;padding-left:6px">${docs}</td>
+      <td>${chk(a.docSubmit)}</td>
+      <td>${chk(a.naeis)}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+
+  // 이전 기록(initialStats) 존재 시 안내
+  if (Object.keys(appData.initialStats || {}).length > 0) {
+    const p = appData.initialStatsPeriod;
+    html += `<p style="font-size:11px;color:#999;margin-top:8px">
+      * 나이스 이전 기록${p ? ' (' + p + ')' : ''}은 날짜 단위 데이터가 없어 이 목록에 포함되지 않습니다.
+    </p>`;
+  }
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+// ===== 탭6: 데이터 =====
+function exportData() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `attendance_backup_${todayStr()}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('백업 파일을 저장했습니다.');
+}
+
+function importData(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (!imp.dailyRecords && !imp.deadlines) throw new Error('올바른 형식이 아닙니다.');
+      if (imp.dailyRecords) Object.assign(appData.dailyRecords, imp.dailyRecords);
+      if (Array.isArray(imp.deadlines)) {
+        const ids = new Set(appData.deadlines.map(d=>d.id));
+        imp.deadlines.forEach(d => { if (!ids.has(d.id)) appData.deadlines.push(d); });
+      }
+      if (imp.initialStats && Object.keys(imp.initialStats).length > 0) {
+        appData.initialStats = imp.initialStats;
+        if (imp.initialStatsPeriod) appData.initialStatsPeriod = imp.initialStatsPeriod;
+      }
+      saveData(); renderDataSummary(); showToast('데이터를 불러왔습니다.');
+    } catch(err) { showToast('불러오기 실패: ' + err.message); }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function resetData() {
+  if (!confirm('모든 데이터를 삭제합니다.\n(이전 기록 초기값 포함)\n정말 초기화하시겠습니까?')) return;
+  appData = { dailyRecords: {}, deadlines: [], initialStats: {}, initialStatsPeriod: '' };
+  saveData(); renderDataSummary(); renderInitCard(); showToast('초기화 완료.');
+}
+
+function renderDataSummary() {
+  const days = Object.keys(appData.dailyRecords).sort();
+  const el = document.getElementById('data-summary');
+  const dayInfo = days.length
+    ? `기록된 날짜: <strong>${days.length}일</strong> (${formatDate(days[0])} ~ ${formatDate(days[days.length-1])})`
+    : '기록된 날짜: <strong>0일</strong>';
+  el.innerHTML = `<p style="font-size:13px;line-height:1.8">
+    ${dayInfo}<br>
+    기한 관리 항목: <strong>${appData.deadlines.length}건</strong>
+    (미완료 ${appData.deadlines.filter(d=>!d.submitted).length}건)
+  </p>`;
+  renderInitCard();
+}
+
+function renderInitCard() {
+  const hasInit = Object.keys(appData.initialStats || {}).length > 0;
+  const msg = document.getElementById('init-status-msg');
+  if (!msg) return;
+  if (hasInit) {
+    const affected = Object.keys(appData.initialStats).map(Number).sort((a,b)=>a-b).join('번, ') + '번';
+    const period = appData.initialStatsPeriod ? ` (${appData.initialStatsPeriod})` : '';
+    msg.innerHTML = `<span style="color:#4A235A;font-weight:600">✔ 적용됨${period}</span><br>기록 있는 학생: ${affected}`;
+  } else {
+    msg.textContent = '미적용 상태. Excel 파일을 업로드해 이전 출결 기록을 불러오세요.';
+  }
+}
+
+
+function clearInitialData() {
+  if (!confirm('이전 기록 초기값을 삭제합니다.\n계속하시겠습니까?')) return;
+  appData.initialStats = {};
+  appData.initialStatsPeriod = '';
+  saveData(); renderInitCard(); showToast('초기값을 삭제했습니다.');
+}
+
+// ===== Excel 파일 파싱 (나이스 학급별 출결현황) =====
+function loadExcelFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    showToast('Excel 파서를 불러오지 못했습니다.\n인터넷 연결을 확인해주세요.');
+    input.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      const { stats, period } = parseNaiesRows(rows);
+
+      if (Object.keys(stats).length === 0) {
+        showToast('출결 데이터를 찾을 수 없습니다.\n나이스 학급별 출결현황 파일인지 확인해주세요.');
+        input.value = ''; return;
+      }
+      if (Object.keys(appData.initialStats || {}).length > 0) {
+        if (!confirm('이미 초기값이 적용되어 있습니다.\n덮어쓰시겠습니까?')) {
+          input.value = ''; return;
+        }
+      }
+      appData.initialStats = stats;
+      appData.initialStatsPeriod = period;
+      saveData(); renderInitCard();
+      showToast(`Excel 데이터를 불러왔습니다.\n${Object.keys(stats).length}명 기록 반영${period ? '\n기간: ' + period : ''}`);
+    } catch(err) {
+      showToast('파일 읽기 실패: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseNaiesRows(rows) {
+  const stats = {};
+  let period = '';
+  let format = null; // 'B4': 학급별출결현황(4카테고리) | 'A3': 학급별출결현황(3카테고리) | 'old': 나이스구형
+
+  for (const row of rows) {
+    if (!row) continue;
+
+    // 기간 정보 추출 (예: "2026.03.01. ~ 2026.03.31.")
+    if (!period) {
+      const rowStr = row.map(v => v ?? '').join(' ');
+      const dates = rowStr.match(/\d{4}\.\d{2}\.\d{2}/g);
+      if (dates && dates.length >= 2) period = `${dates[0]} ~ ${dates[1]}`;
+    }
+
+    // 학생 번호 행 탐지 (col 0이 1~50 숫자)
+    const num = row[0];
+    if (typeof num !== 'number' || num < 1 || num > 50) continue;
+    const studentNum = Math.round(num);
+
+    // 포맷 자동 감지 (첫 학생 행에서 1회 결정)
+    // 학급별출결현황: col2=null, col3=수업일수(10 이상)
+    //   → col9 숫자(인정 열 존재) → B4(4카테고리)
+    //   → col9 null(인정 열 없음)  → A3(3카테고리)
+    // 구 형식(나이스): col2에 데이터 있음 → old
+    if (!format) {
+      if (row[2] == null && typeof row[3] === 'number' && row[3] >= 10) {
+        format = (row[9] != null) ? 'B4' : 'A3';
+      } else {
+        format = 'old';
+      }
+    }
+
+    const n = i => Number(row[i]) || 0;
+    let absent, late, earlyLeave, classMiss;
+
+    if (format === 'B4') {
+      // 4카테고리(인정 포함): 결석(4질병,5미인정,6기타,7인정) / 지각(8,9,12,13) / 조퇴(14,16,17,18) / 결과(19,20,22,23)
+      absent     = { disease: n(4),  unapproved: n(5),  other: n(6),  approved: n(7)  };
+      late       = { disease: n(8),  unapproved: n(9),  other: n(12), approved: n(13) };
+      earlyLeave = { disease: n(14), unapproved: n(16), other: n(17), approved: n(18) };
+      classMiss  = { disease: n(19), unapproved: n(20), other: n(22), approved: n(23) };
+    } else if (format === 'A3') {
+      // 3카테고리(인정 없음): 결석(4,5,6) / 지각(7,8,11) / 조퇴(12,13,14) / 결과(15,17,18)
+      absent     = { disease: n(4),  unapproved: n(5),  other: n(6),  approved: 0 };
+      late       = { disease: n(7),  unapproved: n(8),  other: n(11), approved: 0 };
+      earlyLeave = { disease: n(12), unapproved: n(13), other: n(14), approved: 0 };
+      classMiss  = { disease: n(15), unapproved: n(17), other: n(18), approved: 0 };
+    } else {
+      // 구 형식: 이름 열 있으면 +1 offset
+      const o = (typeof row[1] === 'string' && String(row[1]).trim() !== '') ? 1 : 0;
+      const no = i => Number(row[i + o]) || 0;
+      absent     = { disease: no(2),  unapproved: no(3),  other: no(4),  approved: no(5)  };
+      late       = { disease: no(6),  unapproved: no(7),  other: no(10), approved: no(11) };
+      earlyLeave = { disease: no(12), unapproved: no(14), other: no(15), approved: no(16) };
+      classMiss  = { disease: no(17), unapproved: no(18), other: no(20), approved: no(21) };
+    }
+
+    const hasData = [absent, late, earlyLeave, classMiss]
+      .some(cat => Object.values(cat).some(v => v > 0));
+
+    if (hasData) stats[studentNum] = { absent, late, earlyLeave, classMiss };
+  }
+
+  return { stats, period };
+}
+
+// ===== 토스트 =====
+let _toastTimer = null;
+function showToast(msg) {
+  document.querySelector('.toast')?.remove();
+  clearTimeout(_toastTimer);
+  const div = document.createElement('div');
+  div.className = 'toast'; div.textContent = msg;
+  document.body.appendChild(div);
+  _toastTimer = setTimeout(() => div.remove(), 3000);
+}
+
+// ===== 메모 저장 =====
+function saveMemo(num, value) {
+  const rec = getOrCreateDay(currentDate);
+  if (!rec.attendance[num]) rec.attendance[num] = {};
+  if (value) {
+    rec.attendance[num].memo = value;
+  } else {
+    delete rec.attendance[num].memo;
+    const a = rec.attendance[num];
+    if (a && !a.absent && !a.late && !a.earlyLeave && !a.classMiss && !a.docSubmit && !a.naeis)
+      delete rec.attendance[num];
+  }
+  saveData();
+  // 행 배경색만 갱신 (포커스 유지를 위해 전체 재렌더 안 함)
+  const rows = document.querySelectorAll('#att-tbody tr');
+  const row = rows[num - 1];
+  if (row) row.className = rec.attendance[num] ? 'has-att' : '';
+}
+
+// ===== 나이스 미입력 팝업 =====
+function collectNaeisPending() {
+  const today = todayStr();
+  const results = [];
+  Object.entries(appData.dailyRecords).forEach(([date, rec]) => {
+    if (date > today) return; // 미래 날짜 제외
+    const att = rec.attendance || {};
+    const pending = [];
+    Object.entries(att).forEach(([num, a]) => {
+      if (!checkDisabled(a, 'naeis') && !a.naeis) pending.push(+num);
+    });
+    if (pending.length) {
+      pending.sort((x, y) => x - y);
+      results.push({ date, pending });
+    }
+  });
+  results.sort((a, b) => a.date.localeCompare(b.date));
+  return results;
+}
+
+function showNaeisPendingModal() {
+  const items = collectNaeisPending();
+  if (!items.length) return;
+
+  const total = items.reduce((s, i) => s + i.pending.length, 0);
+  const rows = items.map(({ date, pending }) => {
+    const d = parseDate(date);
+    const label = `${d.getMonth()+1}월 ${d.getDate()}일 (${dayLabel(date)})`;
+    const nums = pending.map(n => `<strong>${n}번</strong>`).join(', ');
+    return `<div class="naeis-modal-row" data-date="${date}"><span class="naeis-modal-date">${label}</span> &nbsp;${nums}<span style="float:right;font-size:11px;color:#B7410E;margin-top:2px">이동 →</span></div>`;
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'naeis-overlay';
+  overlay.innerHTML = `
+    <div class="naeis-modal">
+      <div class="naeis-modal-hd">⚠ 나이스 미입력 알림 — ${items.length}일 · ${total}건</div>
+      <div class="naeis-modal-bd">
+        <p style="margin-bottom:10px;color:#555;font-size:13px">날짜를 누르면 해당 일자 체크리스트로 이동합니다.</p>
+        ${rows}
+      </div>
+      <div class="naeis-modal-ft">
+        <span class="naeis-modal-note">미입력 셀은 주황색으로 표시됩니다.</span>
+        <button class="btn" onclick="this.closest('.naeis-overlay').remove()">닫기</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  // 날짜 행 클릭 → 해당 날짜 일일탭으로 이동
+  overlay.querySelectorAll('.naeis-modal-row[data-date]').forEach(row => {
+    row.addEventListener('click', () => {
+      currentDate = row.dataset.date;
+      switchTab('daily');
+      overlay.remove();
+    });
+  });
+}
+
+// ===== 비밀번호 + AES-GCM 암호화 =====
+const _PK = 'att_pw_h';
+const _PS = 'att2026\u2726';  // SHA-256 해시용 고정 salt
+
+async function _hash(pwd) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(_PS + pwd));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// PBKDF2 salt — 비밀번호 설정 시 생성, localStorage에 보관 (비밀 아님)
+function _getOrCreateSalt() {
+  const KEY = 'att_enc_salt';
+  const stored = localStorage.getItem(KEY);
+  if (stored) return Uint8Array.from(atob(stored), c => c.charCodeAt(0));
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  localStorage.setItem(KEY, btoa(String.fromCharCode(...salt)));
+  return salt;
+}
+
+// 비밀번호 → AES-GCM 256bit 키 유도 (PBKDF2, 100,000회)
+async function _deriveKey(pwd) {
+  const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: _getOrCreateSalt(), iterations: 100000, hash: 'SHA-256' },
+    km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function _encrypt(plaintext) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, _cryptoKey, new TextEncoder().encode(plaintext));
+  return JSON.stringify({ iv: btoa(String.fromCharCode(...iv)), ct: btoa(String.fromCharCode(...new Uint8Array(ct))) });
+}
+
+async function _decrypt(ciphertext) {
+  const { iv, ct } = JSON.parse(ciphertext);
+  const ivBuf = Uint8Array.from(atob(iv), c => c.charCodeAt(0));
+  const ctBuf = Uint8Array.from(atob(ct), c => c.charCodeAt(0));
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivBuf }, _cryptoKey, ctBuf);
+  return new TextDecoder().decode(pt);
+}
+
+let _pwMode = 'enter';
+let _cryptoKey = null;  // 인증 후 메모리에만 보관 — 페이지 닫으면 소멸
+
+// 인증 완료 후 데이터 로드 & 렌더
+async function _initApp() {
+  await loadData();
+  await saveData(); // 평문 데이터가 남아있으면 즉시 암호화 (마이그레이션)
+  renderDailyTab();
+  updateDLBadge();
+  renderInitCard();
+  document.getElementById('pw-screen').style.display = 'none';
+  showNaeisPendingModal();
+}
+
+function initPasswordCheck() {
+  const screen = document.getElementById('pw-screen');
+  const stored = localStorage.getItem(_PK);
+  _pwMode = stored ? 'enter' : 'setup';
+  document.getElementById('pw-setup').style.display = _pwMode === 'setup' ? 'block' : 'none';
+  document.getElementById('pw-enter').style.display = _pwMode === 'enter' ? 'block' : 'none';
+  document.getElementById('pw-err').textContent = '';
+  screen.style.display = 'flex';
+  setTimeout(() => {
+    (_pwMode === 'setup'
+      ? document.getElementById('pw-new')
+      : document.getElementById('pw-input')
+    )?.focus();
+  }, 80);
+}
+
+async function submitPw() {
+  _pwMode === 'setup' ? await setupPassword() : await verifyPassword();
+}
+
+async function setupPassword() {
+  const newPwd = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  const err = document.getElementById('pw-err');
+  if (newPwd.length < 4) { err.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
+  if (newPwd !== confirm) { err.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+  localStorage.setItem(_PK, await _hash(newPwd));
+  _cryptoKey = await _deriveKey(newPwd);
+  await _initApp();
+}
+
+async function verifyPassword() {
+  const pwd = document.getElementById('pw-input').value;
+  const err = document.getElementById('pw-err');
+  if ((await _hash(pwd)) === localStorage.getItem(_PK)) {
+    _cryptoKey = await _deriveKey(pwd);
+    await _initApp();
+  } else {
+    err.textContent = '비밀번호가 틀렸습니다.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+async function changePassword() {
+  const cur = document.getElementById('pw-c-cur').value;
+  const newPwd = document.getElementById('pw-c-new').value;
+  const con = document.getElementById('pw-c-con').value;
+  if ((await _hash(cur)) !== localStorage.getItem(_PK)) { showToast('현재 비밀번호가 틀렸습니다.'); return; }
+  if (newPwd.length < 4) { showToast('새 비밀번호는 4자 이상이어야 합니다.'); return; }
+  if (newPwd !== con) { showToast('새 비밀번호가 일치하지 않습니다.'); return; }
+  // 새 salt 생성 → 새 키 유도 → 재암호화 → 해시 갱신
+  const newSalt = crypto.getRandomValues(new Uint8Array(16));
+  localStorage.setItem('att_enc_salt', btoa(String.fromCharCode(...newSalt)));
+  _cryptoKey = await _deriveKey(newPwd);
+  await saveData();
+  localStorage.setItem(_PK, await _hash(newPwd));
+  ['pw-c-cur','pw-c-new','pw-c-con'].forEach(id => document.getElementById(id).value = '');
+  showToast('비밀번호가 변경되었습니다.');
+}
+
+// ===== 초기화 =====
+initPasswordCheck();
+</script>
+</body>
+</html>

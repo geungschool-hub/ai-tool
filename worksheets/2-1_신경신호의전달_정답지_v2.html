@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>신경신호의 전달 — 정답지</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel: #C5E3F7;
+      --green-pastel: #C3E9CC;
+      --blue-dark:   #1255A0;
+      --green-dark:  #2A7A38;
+      --red-accent:  #C0392B;
+      --amber:       #E67E22;
+      --text-main:   #1A1A1A;
+      --text-light:  #555;
+      --line:        #BBBBBB;
+      --white:       #ffffff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 10pt;
+      color: var(--text-main);
+      background: #d0d0d0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 24px;
+    }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: var(--white);
+      box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+      padding: 8mm 12mm 7mm 12mm;
+      overflow: hidden;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 5px;
+      border-bottom: 2.5px solid var(--red-accent);
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .header-left .subject    { font-size:13pt; font-weight:700; color:var(--red-accent); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .page-footer {
+      display:flex; justify-content:center; align-items:center;
+      padding-top:5px; border-top:1px solid var(--line);
+      flex-shrink:0; margin-top:auto;
+    }
+    .page-badge {
+      background:#FDDEDE; color:var(--red-accent);
+      font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px;
+    }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:5px; }
+    .section      { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:7px; flex-shrink:0; }
+    .section-title {
+      font-size:11pt; font-weight:700;
+      padding:4px 10px; border-radius:4px;
+      border-left:4px solid var(--blue-dark);
+      background:var(--blue-pastel); color:var(--text-main);
+    }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    /* 정답 스타일 */
+    .ans {
+      display: inline-block;
+      color: var(--red-accent);
+      font-weight: 700;
+      border-bottom: 1.8px solid var(--red-accent);
+      vertical-align: bottom;
+      padding: 0 3px;
+      text-align: center;
+    }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .info-box { border:1px solid var(--line); border-radius:4px; padding:6px 11px; font-size:9.5pt; line-height:2.1; background:#FAFAFA; }
+    .ion-box  { border:2px solid var(--blue-dark); border-radius:4px; padding:6px 10px; font-size:9.5pt; text-align:center; background:var(--blue-pastel); line-height:1.9; }
+    .step-box { border:1px solid var(--line); border-radius:4px; padding:5px 8px; font-size:9pt; line-height:1.9; display:flex; gap:7px; align-items:flex-start; background:#FAFAFA; }
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th { background:var(--blue-pastel); font-weight:700; padding:5px 7px; border:1px solid var(--line); text-align:center; }
+    .data-table th.g { background:var(--green-pastel); }
+    .data-table td { padding:5px 7px; border:1px solid var(--line); text-align:center; vertical-align:middle; line-height:1.9; }
+    .data-table td.left { text-align:left; }
+    .img-wrap { position:relative; display:inline-block; line-height:0; }
+    .img-wrap img { display:block; width:100%; height:auto; }
+    .img-wrap .overlay { position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible; }
+    .img-caption { font-size:8pt; color:var(--text-light); text-align:center; margin-top:2px; }
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page { width:210mm; height:297mm; box-shadow:none; page-break-after:always;
+              padding:8mm 12mm 7mm 12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ 1페이지 ════════════════════ -->
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학 — 정답지</div>
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 01. 신경신호의 전달</div>
+    </div>
+    <div style="background:#FDDEDE; border:2px solid #C0392B; border-radius:6px; padding:3px 16px;
+                font-size:11pt; font-weight:700; color:#C0392B; letter-spacing:3px;">【 정 답 지 】</div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- ───────── A. 뉴런의 구조와 막전위 ───────── -->
+    <div class="section">
+      <div class="section-title">A. 뉴런의 구조와 막전위</div>
+
+      <div style="display:flex; gap:5px; align-items:stretch;">
+        <div style="flex:1; border:1.5px solid var(--blue-dark); border-radius:4px; padding:5px 8px; background:#EEF6FD; text-align:center; font-size:9pt;">
+          <b style="color:var(--blue-dark);">가지돌기</b><br>
+          <span style="font-size:8.5pt; color:var(--text-light);">다른 세포로부터 신호를 <span class="ans">받아</span>들임</span>
+        </div>
+        <div style="display:flex; align-items:center; color:var(--blue-dark); font-size:14pt; font-weight:700;">→</div>
+        <div style="flex:1; border:1.5px solid var(--blue-dark); border-radius:4px; padding:5px 8px; background:#EEF6FD; text-align:center; font-size:9pt;">
+          <b style="color:var(--blue-dark);">신경세포체</b><br>
+          <span style="font-size:8.5pt; color:var(--text-light);"><span class="ans">핵</span>과 세포소기관이 있어 생명활동의 중심</span>
+        </div>
+        <div style="display:flex; align-items:center; color:var(--blue-dark); font-size:14pt; font-weight:700;">→</div>
+        <div style="flex:1; border:1.5px solid var(--blue-dark); border-radius:4px; padding:5px 8px; background:#EEF6FD; text-align:center; font-size:9pt;">
+          <b style="color:var(--blue-dark);">축삭돌기</b><br>
+          <span style="font-size:8.5pt; color:var(--text-light);">다른 신경세포나 <span class="ans">효과기</span>으로 신호 전달</span>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div style="font-size:8.5pt; font-weight:700; color:var(--blue-dark);">▪ 이온 분포</div>
+          <div style="display:flex; gap:6px;">
+            <div class="ion-box" style="flex:1;">세포 <b>밖</b>에 많은 이온<br><span class="ans">Na⁺</span></div>
+            <div class="ion-box" style="flex:1;">세포 <b>안</b>에 많은 이온<br><span class="ans">K⁺</span></div>
+          </div>
+          <div class="info-box" style="font-size:9pt; line-height:1.9;">
+            • <b>Na⁺-K⁺ 펌프</b>: <span class="ans">능동</span>수송으로 Na⁺은 세포 <span class="ans">밖</span>으로,
+            K⁺은 세포 <span class="ans">안</span>으로 이동시켜 이온 불균형을 유지한다.
+          </div>
+        </div>
+        <div class="info-box">
+          • <b>막전위</b>: <span class="ans">세포막 안팎의 전위 차이</span><br>
+          • <b>분극</b>: 안쪽이 <span class="ans">음(−)</span>전하, 바깥이 <span class="ans">양(+)</span>전하인 상태<br>
+          • <b>휴지전위</b>: 흥분하지 않을 때의 막전위 ≈ <span class="ans">−70</span> mV<br>
+          • <b>역치전위</b>: 활동전위가 발생하는 최소 막전위 ≈ <span class="ans">−55</span> mV
+        </div>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ───────── B. 활동전위의 발생 과정 ───────── -->
+    <div class="section">
+      <div class="section-title">B. 활동전위의 발생 과정</div>
+
+      <div class="two-col" style="align-items:start;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="font-size:8.5pt; font-weight:700; color:var(--blue-dark);">▪ 활동전위 발생 단계</div>
+          <div class="step-box">
+            <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❶ 휴지</span>
+            <span>Na⁺·K⁺ 채널 모두 <span class="ans">닫힘</span> / 막전위 −70 mV 유지</span>
+          </div>
+          <div class="step-box">
+            <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❷ 탈분극</span>
+            <span>역치 이상 자극 → Na⁺ 채널 <span class="ans">열림</span> → Na⁺ <span class="ans">유입</span><br>
+            막전위 상승 → 약 <span class="ans">+35</span> mV 도달</span>
+          </div>
+          <div class="step-box">
+            <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❸ 재분극</span>
+            <span>Na⁺ 채널 <span class="ans">닫힘</span> / K⁺ 채널 <span class="ans">열림</span><br>
+            K⁺ <span class="ans">유출</span> → 막전위 <span class="ans">하강</span></span>
+          </div>
+          <div class="step-box">
+            <span style="font-weight:700; color:var(--blue-dark); white-space:nowrap;">❹ 과분극</span>
+            <span>K⁺ 채널 천천히 <span class="ans">닫힘</span> → 막전위 일시적으로<br>
+            −70 mV <span class="ans">이하</span> → 휴지전위로 회복</span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div style="font-size:8.5pt; font-weight:700; color:var(--blue-dark);">▪ 이온 채널 상태 정리</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:26%;">단계</th>
+                <th>Na⁺ 채널</th>
+                <th>K⁺ 채널</th>
+                <th>막전위</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>❶ 휴지</b></td>
+                <td>닫힘</td><td>닫힘</td><td>−70 mV</td>
+              </tr>
+              <tr>
+                <td><b>❷ 탈분극<br>+활동전위</b></td>
+                <td><span class="ans">열림</span></td>
+                <td>닫힘</td>
+                <td>↑ <span class="ans">+35 mV</span></td>
+              </tr>
+              <tr>
+                <td><b>❸ 재분극</b></td>
+                <td><span class="ans">닫힘</span></td>
+                <td><span class="ans">열림</span></td>
+                <td>↓</td>
+              </tr>
+              <tr>
+                <td><b>❹ 과분극</b></td>
+                <td>닫힘</td>
+                <td><span class="ans">천천히 닫힘</span></td>
+                <td><span class="ans">−70 mV 이하</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="info-box" style="font-size:8.5pt; line-height:1.85;">
+            💡 <b>실무율</b>: 역치 미만 자극 → 활동전위 <span class="ans">미발생</span><br>
+            &emsp;&emsp;&emsp;역치 이상 자극 → 자극 세기와 무관하게 <span class="ans">일정한</span> 크기의 활동전위 발생
+          </div>
+        </div>
+      </div>
+
+      <!-- 활동전위 그래프 SVG (학습지와 동일) -->
+      <div style="text-align:center; margin-top:3px;">
+        <svg width="98%" height="195" viewBox="0 0 520 178"
+             xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <marker id="arw-red" markerWidth="5" markerHeight="5" refX="2.5" refY="2.5" orient="auto"><path d="M0,0 L0,5 L5,2.5 z" fill="#C0392B"/></marker>
+          </defs>
+          <text x="11" y="78" text-anchor="middle" font-size="8" fill="#333"
+                font-family="Noto Sans KR,sans-serif" transform="rotate(-90,11,78)">막전위(mV)</text>
+          <line x1="48" y1="10" x2="48" y2="150" stroke="#333" stroke-width="1.5"/>
+          <polygon points="48,7 44,14 52,14" fill="#333"/>
+          <line x1="48" y1="150" x2="498" y2="150" stroke="#333" stroke-width="1.5"/>
+          <polygon points="501,150 493,146 493,154" fill="#333"/>
+          <text x="453" y="163" font-size="8" fill="#333" font-family="Noto Sans KR,sans-serif">시간(ms)</text>
+          <line x1="128" y1="150" x2="128" y2="155" stroke="#333" stroke-width="1.2"/>
+          <text x="128" y="164" text-anchor="middle" font-size="8" fill="#555">1</text>
+          <line x1="213" y1="150" x2="213" y2="155" stroke="#333" stroke-width="1.2"/>
+          <text x="213" y="164" text-anchor="middle" font-size="8" fill="#555">2</text>
+          <line x1="298" y1="150" x2="298" y2="155" stroke="#333" stroke-width="1.2"/>
+          <text x="298" y="164" text-anchor="middle" font-size="8" fill="#555">3</text>
+          <line x1="383" y1="150" x2="383" y2="155" stroke="#333" stroke-width="1.2"/>
+          <text x="383" y="164" text-anchor="middle" font-size="8" fill="#555">4</text>
+          <line x1="48" y1="14"  x2="498" y2="14"  stroke="#BBBBBB" stroke-width="0.9" stroke-dasharray="3,3"/>
+          <line x1="48" y1="57"  x2="498" y2="57"  stroke="#BBBBBB" stroke-width="0.9" stroke-dasharray="3,3"/>
+          <line x1="48" y1="115" x2="498" y2="115" stroke="#FF5722" stroke-width="1.2" stroke-dasharray="5,3"/>
+          <line x1="48" y1="136" x2="498" y2="136" stroke="#888"    stroke-width="0.9" stroke-dasharray="3,3"/>
+          <line x1="45" y1="14"  x2="48" y2="14"  stroke="#333" stroke-width="1.2"/>
+          <text x="43" y="18"  text-anchor="end" font-size="8" fill="#1255A0" font-weight="bold">+35</text>
+          <line x1="45" y1="57"  x2="48" y2="57"  stroke="#333" stroke-width="1.2"/>
+          <text x="43" y="61"  text-anchor="end" font-size="8" fill="#555">0</text>
+          <line x1="45" y1="136" x2="48" y2="136" stroke="#333" stroke-width="1.2"/>
+          <text x="43" y="140" text-anchor="end" font-size="8" fill="#555" font-weight="bold">−70</text>
+          <text x="358" y="11"  font-size="8" fill="#1255A0" font-weight="bold" font-family="Noto Sans KR,sans-serif">← 활동전위</text>
+          <text x="358" y="112" font-size="8" fill="#FF5722" font-family="Noto Sans KR,sans-serif">← 역치전위</text>
+          <text x="358" y="133" font-size="8" fill="#555"    font-family="Noto Sans KR,sans-serif">← 휴지전위</text>
+          <path d="M 48,136 L 83,136
+                   C 96,136 102,115 111,115
+                   C 120,115 126,17  153,14
+                   C 177,7  201,136 215,136
+                   C 228,136 241,144 253,144
+                   C 269,144 305,136 355,136
+                   L 498,136"
+                fill="none" stroke="#1255A0" stroke-width="3"
+                stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="65"  cy="136" r="8" fill="#1255A0"/>
+          <text x="65"  y="140" text-anchor="middle" font-size="8" fill="white" font-weight="bold">❶</text>
+          <circle cx="126" cy="64"  r="8" fill="#1255A0"/>
+          <text x="126" y="68"  text-anchor="middle" font-size="8" fill="white" font-weight="bold">❷</text>
+          <circle cx="198" cy="108" r="8" fill="#1255A0"/>
+          <text x="198" y="112" text-anchor="middle" font-size="8" fill="white" font-weight="bold">❸</text>
+          <circle cx="253" cy="144" r="8" fill="#1255A0"/>
+          <text x="253" y="148" text-anchor="middle" font-size="8" fill="white" font-weight="bold">❹</text>
+          <line x1="90" y1="170" x2="90" y2="157" stroke="#C0392B" stroke-width="1.5" marker-end="url(#arw-red)"/>
+          <text x="90" y="178" text-anchor="middle" font-size="8" fill="#C0392B" font-weight="bold">자극</text>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+  <footer class="page-footer">
+    <div class="page-badge">정답 1 / 2</div>
+  </footer>
+</div>
+
+
+<!-- ════════════════════ 2페이지 ════════════════════ -->
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학 — 정답지</div>
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 01. 신경신호의 전달</div>
+    </div>
+    <div style="background:#FDDEDE; border:2px solid #C0392B; border-radius:6px; padding:3px 16px;
+                font-size:11pt; font-weight:700; color:#C0392B; letter-spacing:3px;">【 정 답 지 】</div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- ───────── C. 신경신호의 전도 ───────── -->
+    <div class="section">
+      <div class="section-title green">C. 신경신호의 전도</div>
+
+      <div class="two-col">
+        <!-- 민말이집신경 -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+          <div style="font-size:9pt; font-weight:700; text-align:center;">민말이집신경</div>
+          <div class="img-wrap" style="width:90%;">
+            <img src="pdf_images_신경신호/p05_img5_300x117.png" alt="민말이집신경"/>
+          </div>
+          <div class="img-caption">전도 방식: <span class="ans">연속</span>전도 &nbsp;|&nbsp; 속도: <span class="ans">느림</span></div>
+        </div>
+
+        <!-- 말이집신경 -->
+        <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+          <div style="font-size:9pt; font-weight:700; text-align:center;">말이집신경</div>
+          <div class="img-wrap" style="width:90%;">
+            <img src="pdf_images_신경신호/p07_img2_276x135.png" alt="말이집신경"/>
+            <svg class="overlay" viewBox="0 0 276 135" xmlns="http://www.w3.org/2000/svg">
+              <line x1="128" y1="28" x2="128" y2="52" stroke="#2A7A38" stroke-width="1.2" stroke-dasharray="2,2"/>
+              <circle cx="128" cy="17" r="11" fill="#2A7A38"/>
+              <text x="128" y="22" text-anchor="middle" font-size="12" fill="white" font-weight="bold">①</text>
+              <line x1="196" y1="108" x2="196" y2="84" stroke="#C0392B" stroke-width="1.2" stroke-dasharray="2,2"/>
+              <circle cx="196" cy="119" r="11" fill="#C0392B"/>
+              <text x="196" y="124" text-anchor="middle" font-size="12" fill="white" font-weight="bold">②</text>
+            </svg>
+          </div>
+          <div style="font-size:8pt; text-align:center; margin-top:2px;">
+            <span style="color:#2A7A38; font-weight:700;">①</span> <span class="ans">말이집</span>
+            &emsp;<span style="color:#C0392B; font-weight:700;">②</span> <span class="ans">랑비에결절</span>
+          </div>
+          <div class="img-caption">전도 방식: <span class="ans">도약</span>전도 &nbsp;|&nbsp; 속도: <span class="ans">빠름</span></div>
+        </div>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="g" style="width:30%;">구분</th>
+            <th class="g">민말이집신경</th>
+            <th class="g">말이집신경</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="left">활동전위 발생 부위</td>
+            <td>축삭돌기 막 <b>전체</b></td>
+            <td><span class="ans">랑비에</span>결절에서만</td>
+          </tr>
+          <tr>
+            <td class="left">전도 방식</td>
+            <td><span class="ans">연속</span> 전도</td>
+            <td><span class="ans">도약</span> 전도</td>
+          </tr>
+          <tr>
+            <td class="left">전도 속도</td>
+            <td><span class="ans">느림</span></td>
+            <td><span class="ans">빠름</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="info-box" style="font-size:9pt; line-height:1.9;">
+        ◆ <b>단방향 전도</b>: 활동전위가 발생한 직후 해당 부위는 <span class="ans">재분극</span> 중 →
+        Na⁺ 채널 <b>불응기</b>(닫힘) → 역방향으로 활동전위 전파 <span class="ans">불가</span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ───────── D. 시냅스를 통한 신경신호의 전달 ───────── -->
+    <div class="section">
+      <div class="section-title green">D. 시냅스를 통한 신경신호의 전달</div>
+
+      <div class="two-col" style="align-items:start; gap:10px;">
+
+        <!-- 왼쪽: 시냅스 이미지 + 레이블 정답 + 단방향 이유 -->
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div class="img-wrap">
+            <img src="pdf_images_신경신호/p07_img1_885x821.png" alt="시냅스 구조"/>
+            <svg class="overlay" viewBox="0 0 885 821" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="260" cy="310" r="6" fill="#1255A0" stroke="white" stroke-width="2"/>
+              <line x1="260" y1="310" x2="88" y2="152" stroke="#1255A0" stroke-width="2" stroke-dasharray="5,3"/>
+              <circle cx="72" cy="136" r="20" fill="#1255A0"/>
+              <text x="72" y="143" text-anchor="middle" font-size="20" fill="white" font-weight="bold">①</text>
+
+              <circle cx="450" cy="490" r="6" fill="#1255A0" stroke="white" stroke-width="2"/>
+              <line x1="450" y1="490" x2="694" y2="212" stroke="#1255A0" stroke-width="2" stroke-dasharray="5,3"/>
+              <circle cx="710" cy="196" r="20" fill="#1255A0"/>
+              <text x="710" y="203" text-anchor="middle" font-size="20" fill="white" font-weight="bold">②</text>
+
+              <circle cx="420" cy="680" r="6" fill="#E67E22" stroke="white" stroke-width="2"/>
+              <line x1="420" y1="680" x2="152" y2="760" stroke="#E67E22" stroke-width="2" stroke-dasharray="5,3"/>
+              <circle cx="132" cy="776" r="20" fill="#E67E22"/>
+              <text x="132" y="783" text-anchor="middle" font-size="20" fill="white" font-weight="bold">③</text>
+
+              <circle cx="680" cy="760" r="6" fill="#2A7A38" stroke="white" stroke-width="2"/>
+              <line x1="680" y1="760" x2="820" y2="620" stroke="#2A7A38" stroke-width="2" stroke-dasharray="5,3"/>
+              <circle cx="836" cy="604" r="20" fill="#2A7A38"/>
+              <text x="836" y="611" text-anchor="middle" font-size="20" fill="white" font-weight="bold">④</text>
+            </svg>
+          </div>
+
+          <!-- 레이블 정답 2×2 -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:3px 8px; font-size:8.5pt;">
+            <span><b style="color:#1255A0;">①</b> <span class="ans">시냅스전 신경세포</span></span>
+            <span><b style="color:#1255A0;">②</b> <span class="ans">시냅스소포</span></span>
+            <span><b style="color:#E67E22;">③</b> <span class="ans">시냅스틈</span></span>
+            <span><b style="color:#2A7A38;">④</b> <span class="ans">시냅스후 신경세포</span></span>
+          </div>
+
+          <div class="info-box" style="font-size:8.5pt; line-height:1.85;">
+            ◆ <b>단방향 전달</b>: <span class="ans">수용체</span>가
+            <span class="ans">시냅스후 신경세포의 막</span>에만 존재하기 때문
+          </div>
+        </div>
+
+        <!-- 오른쪽: 전달 과정 + 약물 표 -->
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="font-size:8.5pt; font-weight:700; color:var(--green-dark);">▪ 전달 과정</div>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div class="step-box" style="font-size:8.5pt;">
+              <span style="font-weight:700; color:var(--green-dark);">❶</span>
+              활동전위가 <span class="ans">축삭돌기</span> 말단에 도달
+            </div>
+            <div style="text-align:center; font-size:11pt; color:var(--green-dark); line-height:1.1;">↓</div>
+            <div class="step-box" style="font-size:8.5pt;">
+              <span style="font-weight:700; color:var(--green-dark);">❷</span>
+              <span class="ans">시냅스소포</span>가 세포막과 <span class="ans">융합</span>
+            </div>
+            <div style="text-align:center; font-size:11pt; color:var(--green-dark); line-height:1.1;">↓</div>
+            <div class="step-box" style="font-size:8.5pt;">
+              <span style="font-weight:700; color:var(--green-dark);">❸</span>
+              <b>신경전달물질</b>이 <span class="ans">시냅스틈</span>으로 방출
+            </div>
+            <div style="text-align:center; font-size:11pt; color:var(--green-dark); line-height:1.1;">↓</div>
+            <div class="step-box" style="font-size:8.5pt;">
+              <span style="font-weight:700; color:var(--green-dark);">❹</span>
+              <span class="ans">시냅스후 신경세포</span>의 <span class="ans">수용체</span>에 결합 → <span class="ans">탈분극</span> 유발
+            </div>
+            <div style="text-align:center; font-size:11pt; color:var(--green-dark); line-height:1.1;">↓</div>
+            <div class="step-box" style="font-size:8.5pt;">
+              <span style="font-weight:700; color:var(--green-dark);">❺</span>
+              시냅스후 신경세포에서 <span class="ans">활동전위</span> 발생
+            </div>
+          </div>
+
+          <div style="font-size:8.5pt; font-weight:700; color:var(--green-dark); margin-top:4px;">▪ 약물과 시냅스 전달</div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="g" style="width:24%;">종류</th>
+                <th class="g">시냅스 전달에 미치는 영향</th>
+                <th class="g" style="width:28%;">예시</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>흥분성<br>약물</b></td>
+                <td class="left">신경전달물질 분비 촉진 또는 재흡수 <span class="ans">억제</span></td>
+                <td style="font-size:8pt; color:var(--text-light);">코카인, 니코틴, 카페인</td>
+              </tr>
+              <tr>
+                <td><b>억제성<br>약물</b></td>
+                <td class="left">신경전달물질 분비 억제 또는 수용체 <span class="ans">차단</span></td>
+                <td style="font-size:8pt; color:var(--text-light);">알코올, 수면제</td>
+              </tr>
+              <tr>
+                <td><b>마약류</b></td>
+                <td class="left">수용체에 직접 결합 → <span class="ans">환각</span> 유발, 의존성</td>
+                <td style="font-size:8pt; color:var(--text-light);">아편, 모르핀, 대마초</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <footer class="page-footer">
+    <div class="page-badge">정답 2 / 2</div>
+  </footer>
+</div>
+
+</body>
+</html>

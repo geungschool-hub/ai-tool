@@ -1,0 +1,16 @@
+# 용량 큰 참고자료 (교과서 PDF 228MB 포함)
+study-materials/
+
+# 개인정보 포함 파일 (학생 명단)
+homeroom-teacher/
+
+# Claude 내부 설정
+.claude/
+
+# 임시 폴더
+새 폴더/
+
+# OS 자동 생성 파일
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>사람의 신경계 학습지</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel: #C5E3F7;
+      --green-pastel: #C3E9CC;
+      --blue-dark:   #1255A0;
+      --green-dark:  #2A7A38;
+      --red-accent:  #C0392B;
+      --amber:       #E67E22;
+      --text-main:   #1A1A1A;
+      --text-light:  #555;
+      --line:        #BBBBBB;
+      --white:       #ffffff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 10pt;
+      color: var(--text-main);
+      background: #d0d0d0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 24px;
+    }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      background: var(--white);
+      box-shadow: 0 2px 14px rgba(0,0,0,0.18);
+      display: flex;
+      flex-direction: column;
+      padding: 8mm 12mm 7mm 12mm;
+      overflow: hidden;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 5px;
+      border-bottom: 2.5px solid var(--blue-dark);
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    .header-left .subject    { font-size:13pt; font-weight:700; color:var(--blue-dark); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .header-right { display:flex; gap:16px; }
+    .input-field  { font-size:9pt; display:flex; align-items:center; gap:5px; }
+    .input-field .uline { display:inline-block; width:90px; height:15px; border-bottom:1.5px solid var(--text-main); }
+    .page-footer {
+      display:flex; justify-content:center; align-items:center;
+      padding-top:5px; border-top:1px solid var(--line);
+      flex-shrink:0; margin-top:auto;
+    }
+    .page-badge {
+      background:var(--blue-pastel); color:var(--blue-dark);
+      font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px;
+    }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:5px; }
+    .section      { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:8px; flex-shrink:0; }
+    .section-title {
+      font-size:11pt; font-weight:700;
+      padding:4px 10px; border-radius:4px;
+      border-left:4px solid var(--blue-dark);
+      background:var(--blue-pastel); color:var(--text-main);
+    }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    .b    { display:inline-block; min-width:72px;  height:16px; border-bottom:1.8px solid var(--text-main); vertical-align:bottom; margin:0 2px; }
+    .b.sm { min-width:50px; }
+    .b.lg { min-width:108px; }
+    .b.xl { min-width:136px; }
+    .b.xs { min-width:32px; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .info-box { border:1px solid var(--line); border-radius:4px; padding:6px 11px; font-size:9.5pt; line-height:2.1; background:#FAFAFA; }
+    .flow-chart { display:flex; align-items:center; gap:5px; flex-wrap:wrap; padding:6px 10px; background:#FAFAFA; border:1px solid var(--line); border-radius:4px; font-size:9pt; justify-content:center; }
+    .flow-box   { border:1.5px solid var(--blue-dark); border-radius:4px; padding:3px 8px; background:var(--white); white-space:nowrap; text-align:center; }
+    .flow-arrow { color:var(--blue-dark); font-size:13pt; font-weight:700; }
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th { background:var(--blue-pastel); font-weight:700; padding:5px 7px; border:1px solid var(--line); text-align:center; }
+    .data-table th.g { background:var(--green-pastel); }
+    .data-table td { padding:5px 7px; border:1px solid var(--line); text-align:center; vertical-align:middle; line-height:1.9; }
+    .data-table td.left { text-align:left; }
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page { width:210mm; height:297mm; box-shadow:none; page-break-after:always;
+              padding:8mm 12mm 7mm 12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════ 앞면 ════════════════════════ -->
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학</div>
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 02. 사람의 신경계</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- ─────────── A. 신경계의 구성 ─────────── -->
+    <div class="section">
+      <div class="section-title">A. 신경계의 구성</div>
+
+      <div style="display:flex; gap:8px; align-items:stretch;">
+
+        <!-- 뇌+척수 전체 그림 -->
+        <div style="flex-shrink:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--line); border-radius:4px; padding:4px; background:#FAFAFA;">
+          <img src="pdf_images_신경계/p07_img1_208x714.png" style="height:118px; width:auto; object-fit:contain;" alt="사람의 신경계 구성"/>
+        </div>
+
+        <!-- 설명 + 계층도 -->
+        <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+          <div class="info-box" style="font-size:9pt; line-height:2.0;">
+            • 신경계는 <span class="b sm"></span>신경계(뇌·척수)와 <span class="b sm"></span>신경계(뇌신경·척수신경)로 구성된다.<br>
+            • <b>중추신경계</b>: 정보를 <span class="b sm"></span>·분석하여 명령을 내리는 최고 조절 중추<br>
+            • <b>말초신경계</b>: <span class="b xs"></span>성 신경세포(자극→중추) + <span class="b xs"></span>성 신경세포(중추→반응기)
+          </div>
+          <!-- 계층도 -->
+          <div style="padding:5px 9px; background:#FAFAFA; border:1px solid var(--line); border-radius:4px; font-size:8.5pt; line-height:1.7;">
+            <div style="display:flex; align-items:flex-start; gap:6px;">
+              <div style="border:2px solid var(--blue-dark); border-radius:4px; padding:4px 10px; background:var(--blue-pastel); font-weight:700; flex-shrink:0; align-self:center; font-size:9pt;">신경계</div>
+              <div style="font-size:14pt; color:var(--blue-dark); align-self:center; padding-top:1px;">→</div>
+              <div style="display:flex; flex-direction:column; gap:4px; flex:1;">
+                <div style="display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+                  <div style="border:1.5px solid var(--blue-dark); background:#EEF6FD; border-radius:4px; padding:2px 8px; font-weight:700; white-space:nowrap;"><span class="b xs"></span>신경계</div>
+                  <span style="color:#888;">:</span>
+                  <span>뇌(대뇌·소뇌·사이뇌·뇌줄기) + <span class="b xs"></span></span>
+                </div>
+                <div style="display:flex; align-items:flex-start; gap:5px; flex-wrap:wrap;">
+                  <div style="border:1.5px solid var(--green-dark); background:#EEF8EE; border-radius:4px; padding:2px 8px; font-weight:700; white-space:nowrap; flex-shrink:0;"><span class="b xs"></span>신경계</div>
+                  <span style="color:#888; padding-top:2px;">→</span>
+                  <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span>원심성 → <span style="border:1px solid var(--line); border-radius:3px; padding:1px 5px; background:white;"><b>체성신경계</b> (골격근)</span></span>
+                    <span>원심성 → <span style="border:1px solid var(--line); border-radius:3px; padding:1px 5px; background:white;"><b><span class="b xs"></span>신경계</b> (내장·혈관)</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─────────── B. 뇌의 구조와 기능 ─────────── -->
+    <div class="section">
+      <div class="section-title">B. 중추신경계: 뇌의 구조와 기능</div>
+
+      <!-- 교과서 뇌 시상단면 그림 + 번호 레이블 오버레이 (SVG 래퍼) -->
+      <div style="text-align:center;">
+        <svg width="46%" viewBox="-48 0 485 363"
+             xmlns="http://www.w3.org/2000/svg" style="display:block; margin:0 auto;"
+             preserveAspectRatio="xMidYMid meet">
+
+          <!-- ══ 교과서 뇌 시상단면 이미지 ══ -->
+          <image href="pdf_images_신경계/p03_img3_372x363.png"
+                 x="0" y="0" width="372" height="363"/>
+
+          <!-- 뇌줄기 묶음 표시 (왼쪽 괄호) -->
+          <path d="M -3,238 L -18,238 L -18,318 L -3,318"
+                fill="none" stroke="#E67E22" stroke-width="1.8"/>
+          <text x="-30" y="284" text-anchor="middle"
+                font-size="9" fill="#C05700" font-weight="bold" font-family="Noto Sans KR"
+                transform="rotate(-90,-30,284)">뇌줄기</text>
+
+          <!-- ① 대뇌 -->
+          <line x1="235" y1="85"  x2="392" y2="72"  stroke="#1255A0" stroke-width="1.5"/>
+          <circle cx="403" cy="70" r="11" fill="#1255A0"/>
+          <text x="403" y="74" text-anchor="middle" font-size="12" fill="white" font-weight="bold">①</text>
+
+          <!-- ② 사이뇌 -->
+          <line x1="200" y1="208" x2="392" y2="185" stroke="#1255A0" stroke-width="1.5"/>
+          <circle cx="403" cy="183" r="11" fill="#1255A0"/>
+          <text x="403" y="187" text-anchor="middle" font-size="12" fill="white" font-weight="bold">②</text>
+
+          <!-- ③ 소뇌 -->
+          <line x1="312" y1="292" x2="392" y2="308" stroke="#2A7A38" stroke-width="1.5"/>
+          <circle cx="403" cy="310" r="11" fill="#2A7A38"/>
+          <text x="403" y="314" text-anchor="middle" font-size="12" fill="white" font-weight="bold">③</text>
+
+          <!-- ④ 중간뇌 -->
+          <line x1="140" y1="240" x2="-3"  y2="243" stroke="#E67E22" stroke-width="1.5"/>
+          <circle cx="-14" cy="243" r="11" fill="#E67E22"/>
+          <text x="-14" y="247" text-anchor="middle" font-size="12" fill="white" font-weight="bold">④</text>
+
+          <!-- ⑤ 다리뇌 -->
+          <line x1="130" y1="272" x2="-3"  y2="278" stroke="#E67E22" stroke-width="1.5"/>
+          <circle cx="-14" cy="278" r="11" fill="#E67E22"/>
+          <text x="-14" y="282" text-anchor="middle" font-size="12" fill="white" font-weight="bold">⑤</text>
+
+          <!-- ⑥ 숨골 -->
+          <line x1="138" y1="312" x2="-3"  y2="313" stroke="#E67E22" stroke-width="1.5"/>
+          <circle cx="-14" cy="313" r="11" fill="#E67E22"/>
+          <text x="-14" y="317" text-anchor="middle" font-size="12" fill="white" font-weight="bold">⑥</text>
+
+        </svg>
+      </div>
+
+      <!-- 레이블 행 -->
+      <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap; font-size:9pt; margin-top:1px;">
+        <span style="color:#1255A0; font-weight:700;">① <span class="b sm"></span></span>
+        <span style="color:#1255A0; font-weight:700;">② <span class="b sm"></span></span>
+        <span style="color:#2A7A38; font-weight:700;">③ <span class="b sm"></span></span>
+        <span style="color:#E67E22; font-weight:700;">④ <span class="b xs"></span></span>
+        <span style="color:#E67E22; font-weight:700;">⑤ <span class="b xs"></span></span>
+        <span style="color:#E67E22; font-weight:700;">⑥ <span class="b xs"></span></span>
+      </div>
+
+      <!-- 기능 정리 표 -->
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:17%;">구분</th>
+            <th style="width:31%;">구조적 특징</th>
+            <th>주요 기능</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>① 대뇌</b></td>
+            <td class="left">좌우 2개의 <span class="b xs"></span>; 겉질(<span class="b xs"></span>색질)·속질(<span class="b xs"></span>색질)</td>
+            <td class="left">감각 정보 <span class="b sm"></span>, 운동 조절, 언어·기억·사고 등 <span class="b sm"></span> 활동; 몸 오른쪽 ↔ <span class="b xs"></span>반구</td>
+          </tr>
+          <tr>
+            <td><b>② 사이뇌</b></td>
+            <td class="left">시상, <span class="b sm"></span>, 뇌하수체</td>
+            <td class="left">감각신호를 <span class="b xs"></span>로 전달; <span class="b sm"></span> 유지(항상성)</td>
+          </tr>
+          <tr>
+            <td><b>③ 소뇌</b></td>
+            <td class="left">대뇌 뒤쪽 아래에 위치</td>
+            <td class="left">수의운동 보조, 자세와 <span class="b sm"></span> 유지</td>
+          </tr>
+          <tr>
+            <td><b>④⑤⑥ 뇌줄기</b></td>
+            <td class="left">중간뇌(④) + 다리뇌(⑤) + 숨골(⑥)</td>
+            <td class="left">뇌와 <span class="b xs"></span> 연결; 호흡·심장 운동 조절 → <span class="b sm"></span> 유지 중추</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+
+  </div>
+  <footer class="page-footer">
+    <div class="page-badge">1</div>
+  </footer>
+</div>
+
+
+<!-- ════════════════════════ 뒷면 ════════════════════════ -->
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학</div>
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 02. 사람의 신경계</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- ─────────── C. 척수의 구조와 기능 ─────────── -->
+    <div class="section">
+      <div class="section-title green">C. 척수의 구조와 기능</div>
+
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+
+        <!-- 좌: 교과서 척수 구조 이미지 -->
+        <div style="flex:0 0 42%;">
+          <img src="pdf_images_신경계/p05_img1_650x443.png"
+               style="width:100%; border:1px solid var(--line); border-radius:3px; background:#FAFAFA;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:8.5pt; margin-top:3px; line-height:2.0;">
+            <span style="color:var(--blue-dark);">① 겉질(바깥): <span class="b xs"></span>색질</span>
+            <span style="color:var(--blue-dark);">② 속질(안쪽): <span class="b xs"></span>색질</span>
+            <span style="color:var(--red-accent);">③ <span class="b xs"></span>근 (감각 입력)</span>
+            <span style="color:var(--blue-dark);">④ <span class="b xs"></span>근 (운동 출력)</span>
+          </div>
+        </div>
+
+        <!-- 우: 척수 역할 + 척수반사 -->
+        <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+          <div class="info-box" style="font-size:9pt; line-height:2.0;">
+            ❶ <b>전달 통로</b>: 감각 정보 → <span class="b xs"></span> / 뇌 명령 → 반응기<br>
+            ❷ <b>척수반사</b>: <span class="b lg"></span>의 개입 없이 무의식적으로 반응
+          </div>
+          <div style="font-size:8.5pt; font-weight:700; color:var(--green-dark);">▪ 척수반사 경로</div>
+          <div class="flow-chart" style="font-size:8pt; gap:3px; padding:4px 7px;">
+            <div class="flow-box">자극</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-box"><span class="b xs"></span>신경<br><span style="font-size:7pt;">(감각)</span></div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-box">척수<br><span style="font-size:7pt;">(연합)</span></div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-box"><span class="b xs"></span>신경<br><span style="font-size:7pt;">(운동)</span></div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-box">반응기</div>
+          </div>
+          <table class="data-table" style="font-size:8.5pt;">
+            <thead>
+              <tr>
+                <th class="g" style="width:35%;">구분</th>
+                <th class="g">의식적 반응</th>
+                <th class="g">척수반사</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="left">조절 중추</td>
+                <td>대뇌</td>
+                <td><span class="b xs"></span></td>
+              </tr>
+              <tr>
+                <td class="left">의식 여부</td>
+                <td>있음 (수의)</td>
+                <td><span class="b lg"></span></td>
+              </tr>
+              <tr>
+                <td class="left">예시</td>
+                <td>걷기, 글쓰기</td>
+                <td><span class="b sm"></span>반사</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─────────── D. 말초신경계 신경절 비교 ─────────── -->
+    <div class="section">
+      <div class="section-title green">D. 말초신경계 — 신경절 위치와 뉴런 길이 비교</div>
+
+      <!-- 신경절 위치·뉴런 길이 비교 다이어그램 -->
+      <svg viewBox="0 0 580 118" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%; display:block; font-family:'Noto Sans KR',sans-serif;">
+
+        <!-- ── 체성신경 ── -->
+        <rect x="1" y="4" width="50" height="17" rx="3" fill="#1255A0"/>
+        <text x="26" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="white" font-weight="bold">체성신경</text>
+        <rect x="56" y="4" width="30" height="17" rx="2" fill="#EEF6FD" stroke="#1255A0" stroke-width="1.2"/>
+        <text x="71" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="#1255A0" font-weight="bold">척수</text>
+        <line x1="86" y1="12.5" x2="505" y2="12.5" stroke="#1255A0" stroke-width="2.5"/>
+        <polygon points="505,9.5 514,12.5 505,15.5" fill="#1255A0"/>
+        <rect x="516" y="4" width="42" height="17" rx="2" fill="#EEF6FD" stroke="#1255A0" stroke-width="1.2"/>
+        <text x="537" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="#1255A0">골격근</text>
+        <text x="295" y="28" text-anchor="middle" font-size="7" fill="#1255A0">아세틸콜린(ACh) — 신경절 없음 / 뉴런 1개</text>
+
+        <line x1="0" y1="35" x2="580" y2="35" stroke="#DDD" stroke-width="0.8" stroke-dasharray="4,3"/>
+
+        <!-- ── 교감신경 ── -->
+        <rect x="1" y="42" width="50" height="17" rx="3" fill="#C0392B"/>
+        <text x="26" y="50.5" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="white" font-weight="bold">교감신경</text>
+        <rect x="56" y="42" width="30" height="17" rx="2" fill="#FDECEA" stroke="#C0392B" stroke-width="1.2"/>
+        <text x="71" y="50.5" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="#C0392B" font-weight="bold">척수</text>
+        <!-- 짧은 신경절이전 뉴런 -->
+        <line x1="86" y1="50.5" x2="132" y2="50.5" stroke="#C0392B" stroke-width="2.5"/>
+        <!-- 신경절 (척추 근처) -->
+        <circle cx="145" cy="50.5" r="12" fill="#E67E22" stroke="#C0392B" stroke-width="1.2"/>
+        <text x="145" y="50.5" text-anchor="middle" dominant-baseline="middle" font-size="6.5" fill="white" font-weight="bold">신경절</text>
+        <!-- 긴 신경절이후 뉴런 -->
+        <line x1="158" y1="50.5" x2="505" y2="50.5" stroke="#C0392B" stroke-width="2.5"/>
+        <polygon points="505,47.5 514,50.5 505,53.5" fill="#C0392B"/>
+        <rect x="516" y="42" width="42" height="17" rx="2" fill="#FDECEA" stroke="#C0392B" stroke-width="1.2"/>
+        <text x="537" y="50.5" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="#C0392B">내장</text>
+        <text x="109" y="44" text-anchor="middle" font-size="7" fill="#C0392B" font-weight="bold">짧음</text>
+        <text x="330" y="44" text-anchor="middle" font-size="7" fill="#C0392B" font-weight="bold">긺</text>
+        <text x="109" y="65" text-anchor="middle" font-size="6.5" fill="#666">ACh</text>
+        <text x="330" y="65" text-anchor="middle" font-size="6.5" fill="#666">노르에피네프린</text>
+        <text x="145" y="71" text-anchor="middle" font-size="6.5" fill="#C05700" font-weight="bold">▲ 척추 근처</text>
+
+        <line x1="0" y1="77" x2="580" y2="77" stroke="#DDD" stroke-width="0.8" stroke-dasharray="4,3"/>
+
+        <!-- ── 부교감신경 ── -->
+        <rect x="1" y="84" width="50" height="17" rx="3" fill="#2A7A38"/>
+        <text x="26" y="92.5" text-anchor="middle" dominant-baseline="middle" font-size="7.5" fill="white" font-weight="bold">부교감신경</text>
+        <rect x="56" y="84" width="40" height="17" rx="2" fill="#EAF5EC" stroke="#2A7A38" stroke-width="1.2"/>
+        <text x="76" y="92.5" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="#2A7A38" font-weight="bold">뇌/척수</text>
+        <!-- 긴 신경절이전 뉴런 -->
+        <line x1="96" y1="92.5" x2="437" y2="92.5" stroke="#2A7A38" stroke-width="2.5"/>
+        <!-- 신경절 (효과기 근처) -->
+        <circle cx="450" cy="92.5" r="12" fill="#5DB860" stroke="#2A7A38" stroke-width="1.2"/>
+        <text x="450" y="92.5" text-anchor="middle" dominant-baseline="middle" font-size="6.5" fill="white" font-weight="bold">신경절</text>
+        <!-- 짧은 신경절이후 뉴런 -->
+        <line x1="463" y1="92.5" x2="505" y2="92.5" stroke="#2A7A38" stroke-width="2.5"/>
+        <polygon points="505,89.5 514,92.5 505,95.5" fill="#2A7A38"/>
+        <rect x="516" y="84" width="42" height="17" rx="2" fill="#EAF5EC" stroke="#2A7A38" stroke-width="1.2"/>
+        <text x="537" y="92.5" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="#2A7A38">내장</text>
+        <text x="265" y="86" text-anchor="middle" font-size="7" fill="#2A7A38" font-weight="bold">긺</text>
+        <text x="484" y="86" text-anchor="middle" font-size="7" fill="#2A7A38" font-weight="bold">짧음</text>
+        <text x="265" y="107" text-anchor="middle" font-size="6.5" fill="#666">ACh</text>
+        <text x="484" y="107" text-anchor="middle" font-size="6.5" fill="#666">ACh</text>
+        <text x="450" y="113" text-anchor="middle" font-size="6.5" fill="#2A7A38" font-weight="bold">▲ 효과기 근처</text>
+
+      </svg>
+
+      <!-- D 핵심 비교표 -->
+      <table class="data-table" style="font-size:8.5pt; margin-top:3px;">
+        <thead>
+          <tr>
+            <th class="g" style="width:22%;">구분</th>
+            <th class="g">체성신경계</th>
+            <th class="g">교감신경계</th>
+            <th class="g">부교감신경계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="left"><b>조절 대상</b></td>
+            <td><span class="b sm"></span> (수의근)</td>
+            <td colspan="2" style="text-align:center;">내장 기관·혈관·분비샘 (불수의)</td>
+          </tr>
+          <tr>
+            <td class="left"><b>신경절 위치</b></td>
+            <td>없음</td>
+            <td><span class="b sm"></span> 근처</td>
+            <td><span class="b sm"></span> 근처</td>
+          </tr>
+          <tr>
+            <td class="left"><b>신경절이후 신경전달물질</b></td>
+            <td>아세틸콜린</td>
+            <td><span class="b xl"></span></td>
+            <td>아세틸콜린</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─────────── E. 교감·부교감 길항작용 ─────────── -->
+    <div class="section">
+      <div class="section-title green">E. 교감·부교감 신경의 길항작용</div>
+
+      <div class="two-col" style="gap:8px; align-items:start;">
+
+        <!-- 좌: 길항작용 표 -->
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="g" style="width:30%;">기관</th>
+              <th class="g">교감신경</th>
+              <th class="g">부교감신경</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="left">동공</td>       <td><span class="b xs"></span></td>          <td>축소</td></tr>
+            <tr><td class="left">침샘 분비</td>  <td>억제</td>                                <td><span class="b xs"></span></td></tr>
+            <tr><td class="left">심장박동</td>   <td><span class="b xs"></span> (빨라짐)</td>  <td>억제 (느려짐)</td></tr>
+            <tr><td class="left">기관지</td>     <td>확장</td>                                <td><span class="b xs"></span></td></tr>
+            <tr><td class="left">소화관 운동</td><td>억제</td>                                <td><span class="b xs"></span></td></tr>
+            <tr><td class="left">방광</td>       <td><span class="b xs"></span></td>          <td>수축</td></tr>
+          </tbody>
+        </table>
+
+        <!-- 우: 핵심 정리 -->
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div class="info-box" style="font-size:9pt; line-height:2.1;">
+            • 교감: 몸을 <span class="b sm"></span> 상태 → 위기 대처<br>
+            • 부교감: 몸을 <span class="b sm"></span> 상태 → 소화 촉진<br>
+            • 대부분 기관 공동 분포 → <span class="b sm"></span>작용
+          </div>
+          <div class="info-box" style="font-size:9pt; line-height:2.0; border-left:3px solid var(--red-accent);">
+            <b>※ 교감신경 단독 조절</b><br>
+            혈관 수축/이완, 땀샘 분비, 털세움근<br>
+            → <span class="b sm"></span>신경만 분포
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  <footer class="page-footer">
+    <div class="page-badge">2</div>
+  </footer>
+</div>
+
+</body>
+</html>

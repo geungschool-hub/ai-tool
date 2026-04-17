@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Tasks</title>
+
+  <!-- 홈 화면 아이콘 -->
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+
+  <!-- 주소창 / 상태바 색상 -->
+  <meta name="theme-color" content="#3b82f6" />
+
+  <!-- iOS 전체화면 설정 -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="tasks" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="card">
+
+    <!-- 헤더 -->
+    <div class="app-header">
+      <h1 class="app-title">My Tasks</h1>
+      <button id="theme-toggle" class="theme-toggle" aria-label="다크모드 토글" title="Alt+D">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </div>
+
+    <!-- 입력 영역 -->
+    <div class="input-area">
+      <div class="input-row">
+        <input
+          type="text"
+          id="todo-input"
+          class="todo-input"
+          placeholder="할 일을 입력하세요... (Alt+N)"
+          maxlength="100"
+        />
+        <select id="category-select" class="category-select">
+          <option value="업무">업무</option>
+          <option value="개인">개인</option>
+          <option value="공부">공부</option>
+        </select>
+        <button id="add-btn" class="add-btn">추가</button>
+      </div>
+    </div>
+
+    <!-- 검색 -->
+    <div class="search-row">
+      <input
+        type="text"
+        id="search-input"
+        class="search-input"
+        placeholder="🔍 할 일 검색..."
+      />
+    </div>
+
+    <!-- 카테고리 필터 + 완료 삭제 -->
+    <div class="toolbar-row">
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="전체">전체</button>
+        <button class="filter-btn" data-filter="업무">업무</button>
+        <button class="filter-btn" data-filter="개인">개인</button>
+        <button class="filter-btn" data-filter="공부">공부</button>
+      </div>
+      <button id="clear-completed-btn" class="clear-btn" disabled>완료 삭제</button>
+    </div>
+
+    <!-- 목록 -->
+    <ul id="todo-list" class="todo-list"></ul>
+
+    <!-- 빈 상태 -->
+    <div id="empty-msg" class="empty-msg hidden">
+      <span class="empty-icon">📝</span>
+      <p>할 일이 없습니다. 추가해보세요!</p>
+    </div>
+
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>

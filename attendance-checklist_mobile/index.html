@@ -877,7 +877,7 @@ function openSheet(num) {
     `<button class="opt-btn${attSelClass(o.value, a[field]||'')}" onclick="setAtt(${num},'${field}','${o.value}')">${o.label}</button>`
   ).join('');
 
-  const showAP = a.absent === 'approved';
+  const showAP = ['absent','late','earlyLeave','classMiss'].some(f => a[f]==='approved');
   const showTA = !a.absent;
   const dDis   = checkDisabled(a,'docSubmit');
   const nDis   = checkDisabled(a,'naeis');
@@ -930,7 +930,20 @@ function setAtt(num, field, value, skipSheetRefresh) {
   rec.attendance[num][field] = value;
 
   if (field==='absent' && value) { rec.attendance[num].late=''; rec.attendance[num].earlyLeave=''; rec.attendance[num].classMiss=''; }
-  if (field==='absent' && value!=='approved') rec.attendance[num].approvedType = '';
+
+  // approvedType: 4가지 유형 중 하나라도 인정이면 유지, 모두 아니면 초기화
+  const _att = rec.attendance[num];
+  const _hasApproved = f => _att[f]==='approved';
+  if (field==='absent' && value!=='approved') {
+    if (!['late','earlyLeave','classMiss'].some(_hasApproved)) _att.approvedType = '';
+  }
+  if (['late','earlyLeave','classMiss'].includes(field) && value!=='approved') {
+    if (_att.absent!=='approved' && !['late','earlyLeave','classMiss'].filter(f=>f!==field).some(_hasApproved))
+      _att.approvedType = '';
+  }
+  // 지각/조퇴/결과가 인정으로 변경될 때 이미 생리통 사유가 있으면 경고 발동
+  if (['late','earlyLeave','classMiss'].includes(field) && value==='approved' && _att.approvedType==='menstrual')
+    checkMenstrualWarning(num, currentDate);
 
   if (field==='docSubmit') {
     const dl = appData.deadlines.find(d => d.studentNo===num && d.absenceDate===currentDate && ['absence_report','absence_report_only','field_trip_report'].includes(d.type));
@@ -988,9 +1001,10 @@ function checkMenstrualWarning(num, date) {
   Object.entries(appData.dailyRecords).forEach(([d,rec]) => {
     if (!d.startsWith(`${y}-${m}`)) return;
     const a = (rec.attendance||{})[num];
-    if (a && a.absent==='approved' && a.approvedType==='menstrual') count++;
+    if (!a || a.approvedType !== 'menstrual') return;
+    if (['absent','late','earlyLeave','classMiss'].some(f => a[f]==='approved')) count++;
   });
-  if (count>1) showWarningModal(`⚠ ${num}번 학생 — 생리통 인정결석 ${count}회`, `이번 달 생리통 인정결석이 <strong style="color:#C0392B">${count}회</strong>입니다.<br>월 1회를 초과하였으므로<br>인정 여부를 재확인해 주세요.`);
+  if (count>1) showWarningModal(`⚠ ${num}번 학생 — 생리통 인정 ${count}회`, `이번 달 생리통 인정 출결이 <strong style="color:#C0392B">${count}회</strong>입니다.<br>(결석·지각·조퇴·결과 합산 월 1회 초과)<br>인정 여부를 재확인해 주세요.`);
 }
 
 // ===== DL 배지 =====

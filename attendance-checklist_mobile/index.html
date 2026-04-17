@@ -2033,8 +2033,8 @@ function renderMonthlyView() {
 
     html += `<div class="ab-card ${a.docSubmit?'done-card':'pending'}">
       <div class="ab-row" onclick="goToDate('${date}')" style="cursor:pointer;-webkit-tap-highlight-color:transparent">
-        <span class="ab-date" style="text-decoration:underline;text-underline-offset:2px">${+mo}/${+dd}(${dayName})</span>
         <span style="font-size:13px;font-weight:700;color:var(--navy)">${num}번</span>
+        <span class="ab-date" style="text-decoration:underline;text-underline-offset:2px">${+mo}/${+dd}(${dayName})</span>
         <span style="font-size:12px">${label}</span>
         <span style="margin-left:auto;font-size:16px;color:#CCC;line-height:1">›</span>
       </div>

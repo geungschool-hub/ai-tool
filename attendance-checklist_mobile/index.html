@@ -121,7 +121,7 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
 .compact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .memo-preview { font-size: 11px; color: var(--muted); font-style: italic; }
 .status-mini { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
-.s-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; display: inline-block; white-space: nowrap; }
+.s-tag { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; display: inline-block; white-space: nowrap; cursor: pointer; }
 .s-tag.done { background: #E8F5E9; color: #2E7D32; }
 .s-tag.todo { background: #FFF3E0; color: #E65100; }
 
@@ -841,8 +841,8 @@ function renderStudentList() {
 
     if (hasAtt) {
       const items = [];
-      if (!checkDisabled(a,'docSubmit'))     items.push(`<span class="s-tag ${a.docSubmit?'done':'todo'}">${a.docSubmit?'✓ 서류':'○ 서류'}</span>`);
-      if (!checkDisabled(a,'naeis'))         items.push(`<span class="s-tag ${a.naeis?'done':'todo'}">${a.naeis?'✓ 나이스':'○ 나이스'}</span>`);
+      if (!checkDisabled(a,'docSubmit'))     items.push(`<span class="s-tag ${a.docSubmit?'done':'todo'}" onclick="event.stopPropagation();setAtt(${num},'docSubmit',${!a.docSubmit},true)">${a.docSubmit?'✓ 서류':'○ 서류'}</span>`);
+      if (!checkDisabled(a,'naeis'))         items.push(`<span class="s-tag ${a.naeis?'done':'todo'}" onclick="event.stopPropagation();setAtt(${num},'naeis',${!a.naeis},true)">${a.naeis?'✓ 나이스':'○ 나이스'}</span>`);
       if (items.length) {
         const mini = document.createElement('div');
         mini.className = 'status-mini';

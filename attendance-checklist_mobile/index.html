@@ -1268,15 +1268,18 @@ function importBackup(input) {
   reader.onload = e => {
     try {
       const imp = JSON.parse(e.target.result);
-      if(imp.dailyRecords)    appData.dailyRecords    = imp.dailyRecords;
-      if(imp.deadlines)       appData.deadlines       = imp.deadlines;
-      if(imp.initialStats)    { appData.initialStats=imp.initialStats; if(imp.initialStatsPeriod) appData.initialStatsPeriod=imp.initialStatsPeriod; }
-      if(imp.studentCount)    appData.studentCount    = imp.studentCount;
-      if(imp.studentNames)    appData.studentNames    = imp.studentNames;
-      if(imp.holidays)        appData.holidays        = imp.holidays;
-      if(imp.importedDates)   appData.importedDates   = imp.importedDates;
-      if(imp.importedPeriod)  appData.importedPeriod  = imp.importedPeriod;
-      if(imp.importedCount)   appData.importedCount   = imp.importedCount;
+      if (typeof imp !== 'object' || Array.isArray(imp) || !imp.dailyRecords)
+        throw new Error('올바른 백업 파일이 아닙니다.');
+      appData.dailyRecords       = imp.dailyRecords       || {};
+      appData.deadlines          = imp.deadlines          || [];
+      appData.initialStats       = imp.initialStats       || {};
+      appData.initialStatsPeriod = imp.initialStatsPeriod || '';
+      appData.studentCount       = imp.studentCount       || 26;
+      appData.studentNames       = imp.studentNames       || {};
+      appData.holidays           = imp.holidays           || DEFAULT_HOLIDAYS.map(h=>({...h}));
+      appData.importedDates      = imp.importedDates      || [];
+      appData.importedPeriod     = imp.importedPeriod     || '';
+      appData.importedCount      = imp.importedCount      ?? 0;
       saveData();
       document.getElementById('cur-student-count').textContent = studentCount();
       document.getElementById('cur-student-count-badge').textContent = `(${studentCount()}명)`;

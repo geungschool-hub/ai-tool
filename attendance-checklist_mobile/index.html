@@ -483,7 +483,10 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
     <div class="card-bd">
       <p id="detail-import-msg" style="font-size:13px;color:#666"></p>
       <label class="btn ghost full" style="cursor:pointer">📂 엑셀 파일 업로드<input type="file" accept=".xlsx,.xls" style="display:none" onchange="loadDetailedExcelFile(this)"></label>
-      <p style="font-size:11px;color:#888;margin:4px 0 6px;text-align:center">이름을 비우고 올리셔도 인식이 가능합니다.</p>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin:6px 0;cursor:pointer">
+        <input type="checkbox" id="import-names-check" checked style="width:16px;height:16px;cursor:pointer">
+        이름 함께 인식하기
+      </label>
       <button class="btn red sm" onclick="clearDetailImport()">불러온 기록 삭제</button>
       <div style="background:#F5F7FF;border-radius:8px;padding:11px 12px;font-size:11px;color:#555;line-height:2">
         <div style="font-weight:700;color:var(--navy);margin-bottom:2px">📌 나이스에서 파일 다운로드 하는 방법</div>
@@ -1481,7 +1484,7 @@ function inferApprovedType(사유) {
   return 'other';
 }
 
-function importDetailedRows(rows) {
+function importDetailedRows(rows, importNames=true) {
   let imported = 0, skipped = 0, newNames = 0;
   let currentNum = null;
   const newDates = new Set();
@@ -1497,11 +1500,13 @@ function importDetailedRows(rows) {
     // 번호 carry-forward (연속 행에서 null이면 이전 학생 유지)
     if (번호 !== null && 번호 !== undefined && String(번호).trim() !== '') {
       currentNum = parseInt(String(번호), 10);
-      // 이름 자동 인식 (나이스 파일에 이름 컬럼이 있을 경우)
-      const 이름 = 이름Raw ? String(이름Raw).trim() : '';
-      if (이름 && currentNum >= 1 && !appData.studentNames[currentNum]) {
-        appData.studentNames[currentNum] = 이름;
-        newNames++;
+      // 이름 자동 인식
+      if (importNames) {
+        const 이름 = 이름Raw ? String(이름Raw).trim() : '';
+        if (이름 && currentNum >= 1 && !appData.studentNames[currentNum]) {
+          appData.studentNames[currentNum] = 이름;
+          newNames++;
+        }
       }
     }
     if (!currentNum || currentNum < 1 || currentNum > studentCount()) continue;
@@ -1555,7 +1560,8 @@ function loadDetailedExcelFile(input) {
         if (n >= 1 && n <= 99 && n > maxNum) maxNum = n;
       }
       applyStudentCount(maxNum);
-      const { imported, skipped, dates, newNames } = importDetailedRows(rows);
+      const importNames = document.getElementById('import-names-check').checked;
+      const { imported, skipped, dates, newNames } = importDetailedRows(rows, importNames);
       if (!imported) { showToast('불러올 출결 기록이 없습니다.\n파일 형식을 확인해주세요.'); input.value=''; return; }
       // 불러온 날짜 목록 저장 (삭제 시 활용)
       dates.forEach(d => { if (!appData.importedDates.includes(d)) appData.importedDates.push(d); });

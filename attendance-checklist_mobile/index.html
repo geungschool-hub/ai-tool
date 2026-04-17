@@ -1948,7 +1948,7 @@ function copyAppUrl() {
 }
 
 function renderObStep() {
-  const url = 'https://geungschool-hub.github.io/attendance-checklist_mobile/';
+  const url = location.origin + location.pathname;
   const steps = [
     { icon:'📋', color:'#1B3A6B', title:'출결 관리 앱에 오신 걸 환영합니다',
       body:`<p style="font-size:13px;color:#555;line-height:1.8;margin-bottom:16px">선생님의 출결 업무를 모바일에서 간편하게 관리하는 앱입니다.</p>

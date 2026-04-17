@@ -443,7 +443,13 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
     </div>
     <div id="name-card-body" style="display:none">
       <div class="card-bd" style="padding-bottom:4px">
-        <p style="font-size:11px;color:#999;margin:0 0 10px">나이스 파일 업로드 시 이름이 있으면 자동으로 채워집니다.</p>
+        <p style="font-size:11px;color:#999;margin:0 0 8px">나이스 파일 업로드 시 이름이 있으면 자동으로 채워집니다.</p>
+        <button class="btn ghost full" onclick="toggleRosterPaste()" style="margin-bottom:10px">📋 명렬표 붙여넣기로 일괄 입력</button>
+        <div id="roster-paste-area" style="display:none;margin-bottom:10px">
+          <p style="font-size:11px;color:#555;margin:0 0 6px;line-height:1.7">나이스 → 학급담임 → 명렬표출력 → 출력<br>PDF를 열고 전체 선택(Ctrl+A) → 복사(Ctrl+C) 후 아래에 붙여넣으세요.</p>
+          <textarea id="roster-paste-input" placeholder="여기에 붙여넣기 (Ctrl+V)" style="width:100%;height:100px;font-size:12px;padding:8px;border:1px solid #CCC;border-radius:6px;box-sizing:border-box;resize:none;font-family:inherit"></textarea>
+          <button class="btn primary full" onclick="parseRosterPaste()" style="margin-top:6px">이름 불러오기</button>
+        </div>
         <div id="name-grid"></div>
         <div style="display:flex;gap:8px;margin-top:10px">
           <button class="btn red" onclick="clearAllNames()" style="flex:1">모두 지우기</button>
@@ -1377,6 +1383,32 @@ function renderNameGrid() {
     </div>`;
   }
   grid.innerHTML = html;
+}
+function toggleRosterPaste() {
+  const area = document.getElementById('roster-paste-area');
+  area.style.display = area.style.display === 'none' ? '' : 'none';
+}
+function parseRosterPaste() {
+  const raw = document.getElementById('roster-paste-input').value;
+  if (!raw.trim()) { showToast('붙여넣은 내용이 없습니다.'); return; }
+  const result = {};
+  for (const line of raw.split('\n')) {
+    // 패턴: "2 7 1 권윤서" 또는 "1 권윤서" — 번호(숫자) + 한글 이름
+    const m = line.trim().match(/(?:^\d+\s+\d+\s+)?(\d+)\s+([가-힣]{2,5})\s*(?:$|비고)/);
+    if (!m) continue;
+    const num = +m[1];
+    const name = m[2];
+    if (num >= 1 && num <= 99) result[num] = name;
+  }
+  const count = Object.keys(result).length;
+  if (!count) { showToast('이름을 찾지 못했습니다.\nPDF 전체를 복사했는지 확인해주세요.'); return; }
+  if (!appData.studentNames) appData.studentNames = {};
+  Object.assign(appData.studentNames, result);
+  saveData();
+  renderNameGrid();
+  document.getElementById('roster-paste-area').style.display = 'none';
+  document.getElementById('roster-paste-input').value = '';
+  showToast(`이름 ${count}명 불러오기 완료`);
 }
 function clearAllNames() {
   if (!confirm('입력된 이름을 모두 지웁니다.\n계속하시겠습니까?')) return;

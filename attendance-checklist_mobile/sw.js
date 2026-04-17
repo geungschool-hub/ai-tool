@@ -1,4 +1,4 @@
-const CACHE = 'attendance-2026-v6';
+const CACHE = 'attendance-2026-v7';
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // 설치: 파일 캐시

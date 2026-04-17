@@ -454,17 +454,17 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
   </div>
   <div class="card">
     <div class="card-hd" onclick="toggleSettingsCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
-      <span>휴업일 설정</span>
+      <span>휴일 설정</span>
       <span id="settings-card-arrow" style="font-size:12px;opacity:.8">▶</span>
     </div>
     <div id="settings-card-body" style="display:none">
       <div class="card-bd">
         <div>
-          <div class="form-lbl" style="margin-bottom:8px">휴업일 목록 <span id="holiday-count" style="font-weight:400;color:#999"></span></div>
+          <div class="form-lbl" style="margin-bottom:8px">휴일 목록 <span id="holiday-count" style="font-weight:400;color:#999"></span></div>
           <div id="holiday-list"></div>
         </div>
         <div>
-          <div class="form-lbl" style="margin-bottom:6px">휴업일 추가</div>
+          <div class="form-lbl" style="margin-bottom:6px">휴일 추가</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <input class="form-inp" id="holiday-date-inp" type="date" style="flex:1;min-width:130px">
             <input class="form-inp" id="holiday-label-inp" type="text" placeholder="설명 (예: 재량휴업일)" style="flex:2;min-width:130px">
@@ -1311,7 +1311,7 @@ function renderHolidayList() {
   const holidays = (appData.holidays || []).slice().sort((a,b)=>a.date.localeCompare(b.date));
   if (cntEl) cntEl.textContent = `(${holidays.length}일)`;
   if (!holidays.length) {
-    list.innerHTML = '<div style="font-size:12px;color:#999;padding:6px 0">등록된 휴업일이 없습니다.</div>';
+    list.innerHTML = '<div style="font-size:12px;color:#999;padding:6px 0">등록된 휴일이 없습니다.</div>';
     return;
   }
   list.innerHTML = holidays.map(h => {
@@ -1325,7 +1325,7 @@ function renderHolidayList() {
 }
 function addHoliday() {
   const date  = document.getElementById('holiday-date-inp').value;
-  const label = document.getElementById('holiday-label-inp').value.trim() || '휴업일';
+  const label = document.getElementById('holiday-label-inp').value.trim() || '휴일';
   if (!date) { showToast('날짜를 선택해주세요.'); return; }
   if (!appData.holidays) appData.holidays = [];
   if (appData.holidays.some(h=>h.date===date)) { showToast('이미 등록된 날짜입니다.'); return; }
@@ -1334,7 +1334,7 @@ function addHoliday() {
   document.getElementById('holiday-date-inp').value  = '';
   document.getElementById('holiday-label-inp').value = '';
   renderHolidayList();
-  showToast('휴업일이 추가됐습니다.');
+  showToast('휴일이 추가됐습니다.');
 }
 function deleteHoliday(date) {
   appData.holidays = (appData.holidays||[]).filter(h=>h.date!==date);
@@ -2025,8 +2025,8 @@ function renderObStep() {
           <div class="ob-setting-desc">나이스 파일 업로드 시 자동 입력됩니다. 직접 입력도 가능합니다.</div>
         </div>
         <div class="ob-setting-item" style="border-left-color:#E67E22">
-          <div class="ob-setting-title">휴업일 확인·수정 <span class="ob-badge-g">선택</span></div>
-          <div class="ob-setting-desc">데이터 탭 → 휴업일 설정에서 학교 재량휴업일을 추가·수정하세요.</div>
+          <div class="ob-setting-title">휴일 확인·수정 <span class="ob-badge-g">선택</span></div>
+          <div class="ob-setting-desc">데이터 탭 → 휴일 설정에서 학교 재량휴업일을 추가·수정하세요.</div>
         </div>
       </div>` },
     { icon:'📂', color:'#1B3A6B', title:'나이스 파일 불러오기',

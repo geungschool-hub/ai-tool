@@ -1497,7 +1497,7 @@ async function loadRosterPDF(input) {
       if (num >= 1 && num <= 99) result[num] = m[2];
     }
     const count = Object.keys(result).length;
-    if (!count) { showToast('이름을 찾지 못했습니다.\n명렬표 PDF가 맞는지 확인해주세요.'); return; }
+    if (!count) { showToast('이름을 찾지 못했습니다.\n추출된 텍스트:\n' + lines.slice(0,5).join('\n')); return; }
     if (!appData.studentNames) appData.studentNames = {};
     Object.assign(appData.studentNames, result);
     const maxNum = Math.max(...Object.keys(result).map(Number));

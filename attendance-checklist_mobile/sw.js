@@ -1,4 +1,4 @@
-const CACHE = 'attendance-2026-v7';
+const CACHE = 'attendance-2026-v8';
 const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // 설치: 파일 캐시
@@ -16,8 +16,9 @@ self.addEventListener('activate', e => {
   );
 });
 
-// 요청: 캐시 우선 → 백그라운드 업데이트
+// 요청: 동일 출처만 캐시, CDN 등 외부 요청은 그대로 통과
 self.addEventListener('fetch', e => {
+  if (!e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
     caches.match(e.request).then(cached => {
       const fresh = fetch(e.request).then(res => {

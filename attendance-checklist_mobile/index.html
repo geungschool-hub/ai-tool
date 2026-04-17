@@ -19,6 +19,18 @@
   </div>
 </div>
 
+<div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div style="font-size:44px;line-height:1;margin-bottom:14px">⚠️</div>
+    <div style="font-size:17px;font-weight:700;color:#7A4500;margin-bottom:10px">전체 데이터 삭제</div>
+    <div style="font-size:13px;color:#444;line-height:1.8;margin-bottom:22px">출결 기록, 증빙서류 기한 등<br>모든 데이터가 삭제됩니다.<br><b>이 작업은 되돌릴 수 없습니다.</b></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('reset-confirm-overlay').style.display='none'" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
+      <button onclick="confirmResetAll()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">삭제</button>
+    </div>
+  </div>
+</div>
+
 <script src="xlsx.full.min.js"></script>
 <script src="pdf.min.js"></script>
 <style>
@@ -1281,7 +1293,10 @@ function clearInitialData() {
   saveData(); renderInitCard(); showToast('초기값을 삭제했습니다.');
 }
 function resetAll() {
-  if(!confirm('모든 데이터를 삭제합니다.\n정말 초기화하시겠습니까?')) return;
+  document.getElementById('reset-confirm-overlay').style.display = 'flex';
+}
+function confirmResetAll() {
+  document.getElementById('reset-confirm-overlay').style.display = 'none';
   const sc = appData.studentCount || 26;
   const sn = appData.studentNames || {};
   const sh = appData.holidays    || DEFAULT_HOLIDAYS.map(h=>({...h}));

@@ -888,11 +888,12 @@ function openSheet(num) {
       <div class="f-label">결석</div>
       <div class="opts">${abOpts}</div>
     </div>
-    ${showAP ? `<div class="f-group"><div class="f-label">인정 사유</div><div class="opts">${apOpts}</div></div>` : ''}
+    ${a.absent==='approved' ? `<div class="f-group"><div class="f-label">인정 사유</div><div class="opts">${apOpts}</div></div>` : ''}
     ${showTA ? `
       <div class="f-group"><div class="f-label">지각</div><div class="opts">${mkOpts('late')}</div></div>
       <div class="f-group"><div class="f-label">조퇴</div><div class="opts">${mkOpts('earlyLeave')}</div></div>
       <div class="f-group"><div class="f-label">결과</div><div class="opts">${mkOpts('classMiss')}</div></div>
+      ${showAP && a.absent!=='approved' ? `<div class="f-group"><div class="f-label">인정 사유</div><div class="opts">${apOpts}</div></div>` : ''}
     ` : ''}
     <div class="f-group">
       <div class="f-label">업무 처리</div>

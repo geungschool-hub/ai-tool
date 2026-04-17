@@ -1573,12 +1573,12 @@ function pwDelete() {
   document.getElementById('pw-display').textContent = pwBuffer.length ? '●'.repeat(pwBuffer.length) : '　';
 }
 async function pwConfirm() {
-  if (pwBuffer.length < 4) return;
+  if (pwBuffer.length < 6) return;
   const errEl = document.getElementById('pw-error');
   errEl.textContent = '';
   showLoading(true);
   try {
-    await auth.signInWithEmailAndPassword(TEACHER_EMAIL, pwBuffer + '#t27');
+    await auth.signInWithEmailAndPassword(TEACHER_EMAIL, pwBuffer);
     document.getElementById('pw-modal').classList.remove('show');
     openTeacherScreen();
   } catch {

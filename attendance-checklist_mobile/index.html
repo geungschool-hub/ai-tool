@@ -190,6 +190,14 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
 .toast { position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%); background: rgba(25,25,35,.9); color: white; padding: 11px 20px; border-radius: 24px; font-size: 13px; z-index: 9999; white-space: pre-line; text-align: center; max-width: 82vw; box-shadow: 0 4px 18px rgba(0,0,0,.28); animation: fu .2s; }
 @keyframes fu { from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);} }
 
+/* ── 생리결석 경고 모달 ── */
+#warn-overlay { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px; }
+#warn-box { background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3); }
+#warn-icon { font-size:48px;line-height:1;margin-bottom:14px; }
+#warn-title { font-size:17px;font-weight:700;color:#C0392B;margin-bottom:10px;line-height:1.4; }
+#warn-body { font-size:13px;color:#444;line-height:1.8;margin-bottom:22px; }
+#warn-btn { background:#C0392B;color:#fff;border:none;border-radius:10px;padding:13px 0;font-size:15px;font-weight:700;cursor:pointer;width:100%; }
+
 /* ── 온보딩 ── */
 #ob-overlay { position:fixed;inset:0;background:rgba(17,35,68,.96);z-index:10000;display:none;align-items:center;justify-content:center;padding:16px; }
 #ob-card { background:white;border-radius:20px;width:100%;max-width:360px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.4); }
@@ -982,7 +990,7 @@ function checkMenstrualWarning(num, date) {
     const a = (rec.attendance||{})[num];
     if (a && a.absent==='approved' && a.approvedType==='menstrual') count++;
   });
-  if (count>1) showToast(`⚠ ${num}번 학생\n이번 달 생리통 인정결석 ${count}회\n(월 1회 초과)`);
+  if (count>1) showWarningModal(`⚠ ${num}번 학생 — 생리통 인정결석 ${count}회`, `이번 달 생리통 인정결석이 <strong style="color:#C0392B">${count}회</strong>입니다.<br>월 1회를 초과하였으므로<br>인정 여부를 재확인해 주세요.`);
 }
 
 // ===== DL 배지 =====
@@ -1915,6 +1923,22 @@ function showNaeisPendingModal() {
   overlay.querySelectorAll('.naeis-row[data-date]').forEach(row => {
     row.addEventListener('click',()=>{ currentDate=row.dataset.date; switchTab('daily'); overlay.remove(); });
   });
+}
+
+// ===== 생리결석 경고 모달 =====
+function showWarningModal(title, body) {
+  document.getElementById('warn-overlay')?.remove();
+  const ov = document.createElement('div');
+  ov.id = 'warn-overlay';
+  ov.innerHTML = `<div id="warn-box">
+    <div id="warn-icon">⚠️</div>
+    <div id="warn-title">${title}</div>
+    <div id="warn-body">${body}</div>
+    <button id="warn-btn">확인</button>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#warn-btn').addEventListener('click', () => ov.remove());
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
 }
 
 // ===== 토스트 =====

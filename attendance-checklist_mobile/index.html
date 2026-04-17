@@ -1463,7 +1463,7 @@ async function loadRosterPDF(input) {
   const file = input.files[0]; if (!file) return;
   input.value = '';
   if (typeof pdfjsLib === 'undefined') { showToast('PDF 파서 로드 실패.\n잠시 후 다시 시도해주세요.'); return; }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdf.worker.min.js', document.baseURI).href;
   showToast('명렬표 읽는 중...');
   try {
     const buf = await file.arrayBuffer();

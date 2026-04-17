@@ -1475,16 +1475,23 @@ async function loadRosterPDF(input) {
     let allItems = [];
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
+      const viewport = page.getViewport({ scale: 1 });
       const tc = await page.getTextContent();
+      // 회전 보정: viewport 변환으로 실제 화면 좌표 계산
+      tc.items.forEach(item => {
+        const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+        item._vx = tx[4];
+        item._vy = tx[5];
+      });
       allItems = allItems.concat(tc.items);
     }
-    // Y좌표 기준 정렬 후 허용 오차 5px로 행 묶기
-    allItems.sort((a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4]);
+    // viewport Y 기준 정렬 후 허용 오차 5px로 행 묶기
+    allItems.sort((a, b) => b._vy - a._vy || a._vx - b._vx);
     const rowGroups = [];
     let curRow = [], curY = null;
     for (const item of allItems) {
       if (!item.str.trim()) continue;
-      const y = item.transform[5];
+      const y = item._vy;
       if (curY === null || Math.abs(y - curY) <= 5) {
         curRow.push(item); if (curY === null) curY = y;
       } else {
@@ -1494,7 +1501,7 @@ async function loadRosterPDF(input) {
     }
     if (curRow.length) rowGroups.push(curRow);
     const lines = rowGroups.map(row =>
-      row.sort((a,b) => a.transform[4] - b.transform[4]).map(i => i.str.trim()).join(' ')
+      row.sort((a,b) => a._vx - b._vx).map(i => i.str.trim()).join(' ')
     );
     // 번호 + 한글 이름 파싱
     const result = {};

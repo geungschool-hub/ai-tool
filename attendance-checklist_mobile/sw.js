@@ -1,5 +1,5 @@
-const CACHE = 'attendance-2026-v8';
-const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE = 'attendance-2026-v9';
+const FILES = ['./', './index.html', './manifest.json', './icon.svg', './xlsx.full.min.js'];
 
 // 설치: 파일 캐시
 self.addEventListener('install', e => {

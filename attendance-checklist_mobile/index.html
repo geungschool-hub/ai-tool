@@ -70,6 +70,26 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
 .date-bar { display: flex; align-items: center; background: white; border-radius: 14px; padding: 9px 8px; margin-bottom: 10px; box-shadow: var(--sh); gap: 6px; }
 .arrow-btn { width: 38px; height: 38px; border: none; background: var(--bg); border-radius: 10px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--navy); transition: background .1s; }
 .arrow-btn:active { background: #D4DAEA; }
+
+/* ── 커스텀 달력 팝업 ── */
+.cal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;display:flex;align-items:flex-end;justify-content:center;padding-bottom:env(safe-area-inset-bottom); }
+.cal-popup { background:white;border-radius:20px 20px 0 0;padding:20px 16px 28px;width:100%;max-width:400px; }
+.cal-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
+.cal-title { font-size:17px;font-weight:700;color:var(--navy); }
+.cal-nav { width:36px;height:36px;border:none;background:var(--bg);border-radius:10px;font-size:16px;cursor:pointer;color:var(--navy); }
+.cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:4px; }
+.cal-dow { text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding-bottom:6px; }
+.cal-dow:first-child { color:#C0392B; }
+.cal-dow:last-child { color:#1255A0; }
+.cal-day { aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:14px;cursor:pointer;border:none;background:none;font-family:inherit; }
+.cal-day:active { background:#EEF3FC; }
+.cal-day.today { font-weight:700;color:var(--navy); }
+.cal-day.selected { background:var(--navy);color:white;font-weight:700; }
+.cal-day.today.selected { background:var(--navy); }
+.cal-day.other-month { color:#CCC; }
+.cal-day.sun { color:#C0392B; }
+.cal-day.sat { color:#1255A0; }
+.cal-day.selected.sun,.cal-day.selected.sat { color:white; }
 .date-center { flex: 1; text-align: center; }
 .date-main { font-size: 17px; font-weight: 700; color: var(--navy); }
 .date-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
@@ -348,9 +368,7 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
       <div class="date-sub" id="date-sub"></div>
     </div>
     <button class="btn ghost sm" onclick="goToday()" style="flex-shrink:0;font-size:12px;padding:5px 10px;min-height:32px;border-radius:7px">오늘</button>
-    <label class="arrow-btn" style="cursor:pointer;position:relative;overflow:hidden" title="날짜 선택">
-      📅<input type="date" id="date-picker" onchange="setDate(this.value)" style="position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer;font-size:0">
-    </label>
+    <button class="arrow-btn" onclick="openCalPopup()" title="날짜 선택">📅</button>
     <button class="arrow-btn" onclick="changeDate(1)">▶</button>
   </div>
   <div class="sum-row">
@@ -707,6 +725,61 @@ function switchTab(tab) {
 }
 
 // ===== 날짜 이동 =====
+// ===== 커스텀 달력 팝업 =====
+let _calYear, _calMonth;
+function openCalPopup() {
+  const d = parseDate(currentDate);
+  _calYear = d.getFullYear(); _calMonth = d.getMonth();
+  _renderCalPopup();
+}
+function _renderCalPopup() {
+  document.querySelector('.cal-overlay')?.remove();
+  const today = todayStr();
+  const sel = currentDate;
+  const DAYS_KO = ['일','월','화','수','목','금','토'];
+  const first = new Date(_calYear, _calMonth, 1);
+  const lastDay = new Date(_calYear, _calMonth+1, 0).getDate();
+  const startDow = first.getDay();
+
+  let cells = '';
+  for (let i=0;i<startDow;i++) {
+    const pd = new Date(_calYear, _calMonth, i - startDow + 1);
+    cells += `<button class="cal-day other-month" style="pointer-events:none">${pd.getDate()}</button>`;
+  }
+  for (let d=1;d<=lastDay;d++) {
+    const ds = `${_calYear}-${pad(_calMonth+1)}-${pad(d)}`;
+    const dow = new Date(_calYear,_calMonth,d).getDay();
+    let cls = 'cal-day';
+    if (ds===today) cls+=' today';
+    if (ds===sel) cls+=' selected';
+    if (dow===0) cls+=' sun';
+    if (dow===6) cls+=' sat';
+    cells += `<button class="${cls}" onclick="calPick('${ds}')">${d}</button>`;
+  }
+  const remaining = (7 - (startDow+lastDay)%7) % 7;
+  for (let d=1;d<=remaining;d++) {
+    cells += `<button class="cal-day other-month" style="pointer-events:none">${d}</button>`;
+  }
+
+  const ov = document.createElement('div');
+  ov.className = 'cal-overlay';
+  ov.innerHTML = `<div class="cal-popup">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="_calMove(-1)">◀</button>
+      <div class="cal-title">${_calYear}년 ${_calMonth+1}월</div>
+      <button class="cal-nav" onclick="_calMove(1)">▶</button>
+    </div>
+    <div class="cal-grid">
+      ${DAYS_KO.map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>
+  </div>`;
+  ov.addEventListener('click', e => { if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+function _calMove(delta) { _calMonth+=delta; if(_calMonth>11){_calMonth=0;_calYear++;} else if(_calMonth<0){_calMonth=11;_calYear--;} _renderCalPopup(); }
+function calPick(ds) { document.querySelector('.cal-overlay')?.remove(); setDate(ds); }
+
 function changeDate(delta) {
   let next = addDays(currentDate, delta);
   let safety = 0;

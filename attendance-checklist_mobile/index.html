@@ -814,7 +814,6 @@ function renderDailyTab() {
   const isToday = currentDate === todayStr();
   document.getElementById('date-main').textContent = formatDate(currentDate);
   document.getElementById('date-sub').textContent  = `(${dayLabel(currentDate)})${isToday?' · 오늘':''}`;
-  document.getElementById('date-picker').value     = currentDate;
   const d = parseDate(currentDate);
   document.getElementById('hd-date').textContent   = `${d.getMonth()+1}/${d.getDate()}`;
   updateSummary();

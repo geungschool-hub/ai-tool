@@ -1,4 +1,4 @@
-const CACHE = 'attendance-2026-v10';
+const CACHE = 'attendance-2026-v11';
 const FILES = ['./', './index.html', './manifest.json', './icon.svg', './xlsx.full.min.js', './pdf.min.js', './pdf.worker.min.js'];
 
 // 설치: 파일 캐시

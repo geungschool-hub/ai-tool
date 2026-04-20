@@ -674,7 +674,8 @@ function loadData() {
     if (!appData.studentCount)         appData.studentCount         = 26;
     if (!appData.studentNames)         appData.studentNames         = {};
     if (!appData.holidays)             appData.holidays             = DEFAULT_HOLIDAYS.map(h=>({...h}));
-  } catch { appData = { dailyRecords:{}, deadlines:[], initialStats:{}, initialStatsPeriod:'', importedDates:[], importedPeriod:'', importedCount:0, studentCount:26, studentNames:{}, holidays:DEFAULT_HOLIDAYS.map(h=>({...h})) }; }
+    if (!appData.holidayYear)          appData.holidayYear          = 0;
+  } catch { appData = { dailyRecords:{}, deadlines:[], initialStats:{}, initialStatsPeriod:'', importedDates:[], importedPeriod:'', importedCount:0, studentCount:26, studentNames:{}, holidays:DEFAULT_HOLIDAYS.map(h=>({...h})), holidayYear:0 }; }
 }
 function saveData() {
   try {
@@ -2267,6 +2268,19 @@ function applyZoom() {
   document.getElementById('zoom-in').disabled  = _zoomIdx === ZOOM_LEVELS.length - 1;
 }
 
+// ===== 공휴일 자동 업데이트 =====
+async function fetchSchoolYearHolidays(yr) {
+  const [r1, r2] = await Promise.all([
+    fetch(`https://date.nager.at/api/v3/PublicHolidays/${yr}/KR`),
+    fetch(`https://date.nager.at/api/v3/PublicHolidays/${yr+1}/KR`)
+  ]);
+  if (!r1.ok || !r2.ok) throw new Error('API 오류');
+  const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+  const h1 = d1.filter(h => parseInt(h.date.slice(5,7)) >= 3);
+  const h2 = d2.filter(h => parseInt(h.date.slice(5,7)) <= 2);
+  return [...h1, ...h2].map(h => ({ date: h.date, label: h.localName || h.name }));
+}
+
 // ===== 초기화 =====
 function _initApp() {
   initZoom();
@@ -2283,6 +2297,18 @@ function _initApp() {
   renderNaeisBanner();
   renderDLRemindBanner();
   checkOnboarding();
+
+  if (appData.holidayYear !== yr) {
+    fetchSchoolYearHolidays(yr).then(holidays => {
+      appData.holidays = holidays;
+      appData.holidayYear = yr;
+      saveData();
+      renderHolidayList();
+      showToast(`${yr}학년도 공휴일이 자동 업데이트되었습니다.\n재량휴업일·대체공휴일은 직접 확인 후 추가해 주세요.`);
+    }).catch(() => {
+      showToast('공휴일 자동 업데이트 실패.\n인터넷 연결을 확인하거나 휴일 목록을 직접 수정해 주세요.');
+    });
+  }
 }
 
 _initApp();

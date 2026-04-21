@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>과세특 작성 도구</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue-d:#1255A0; --blue-m:#4472C4; --blue-l:#C5E3F7;
+  --green-d:#2A7A38; --green-l:#C3E9CC;
+  --yellow:#FFF9C4; --orange:#E67E22; --red:#C0392B;
+  --gray-l:#F5F5F5; --gray-m:#EEEEEE; --text:#1A1A1A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:#E8E8E8;color:var(--text);font-size:14px}
+
+/* ── nav ── */
+.nav{position:sticky;top:0;z-index:100;background:var(--blue-d);display:flex;align-items:center;
+  padding:0 12px;gap:1px;box-shadow:0 2px 6px rgba(0,0,0,.25);flex-wrap:wrap}
+.nav-title{color:#fff;font-weight:700;font-size:14px;padding:12px 14px 12px 4px;
+  border-right:1px solid rgba(255,255,255,.3);margin-right:6px;white-space:nowrap}
+.tab-btn{color:rgba(255,255,255,.7);background:none;border:none;padding:11px 12px;cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:500;border-bottom:3px solid transparent;
+  transition:.15s;white-space:nowrap}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,.1)}
+.tab-btn.active{color:#fff;border-bottom-color:#FFF176;font-weight:700}
+
+/* ── layout ── */
+.content{padding:16px;max-width:1440px;margin:0 auto}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:18px;margin-bottom:14px}
+
+/* ── tables ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--blue-d);color:#fff;padding:8px 10px;font-weight:600;
+  text-align:center;border:1px solid #BBBBB}
+.tbl td{padding:6px 8px;border:1px solid #CCC;vertical-align:middle;text-align:center}
+.tbl tr:nth-child(even) td{background:#F8F9FF}
+.tbl tr:hover td{background:#EEF4FF}
+
+/* ── item layout ── */
+.item-layout{display:grid;grid-template-columns:1fr 290px;gap:14px;align-items:start}
+.ref-panel{position:sticky;top:52px;background:#fff;border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden;max-height:calc(100vh - 70px);overflow-y:auto}
+.ref-header{background:var(--green-d);color:#fff;padding:9px 14px;font-weight:700;font-size:12px}
+.ref-item{display:flex;align-items:stretch;border-bottom:1px solid #EEE}
+.ref-item:last-child{border-bottom:none}
+.ref-badge{min-width:34px;width:34px;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;color:#fff}
+.ref-text{padding:6px 8px;font-size:11px;color:#333;line-height:1.5;background:#EEF2FF;flex:1}
+
+/* ── item header ── */
+.item-header{display:flex;align-items:center;gap:10px;background:#fff;border-radius:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);padding:12px 16px;margin-bottom:14px}
+.item-label{font-weight:700;color:#fff;background:var(--blue-d);padding:5px 12px;
+  border-radius:4px;white-space:nowrap;font-size:12px}
+.item-input{flex:1;border:2px solid var(--blue-l);border-radius:4px;padding:7px 10px;
+  font-size:13px;font-weight:700;font-family:inherit;background:var(--yellow);outline:none;transition:.2s}
+.item-input:focus{border-color:var(--blue-d)}
+
+/* ── level edit ── */
+.lvl-panel{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);
+  margin-bottom:14px;overflow:hidden}
+.lvl-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;
+  background:#F0F4FF;cursor:pointer;user-select:none;border-bottom:1px solid #DDD;font-size:13px;font-weight:600;color:var(--blue-d)}
+.lvl-body{padding:12px 14px}
+.lvl-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.lvl-badge{min-width:30px;width:30px;height:30px;border-radius:4px;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:12px;color:#fff;margin-top:3px;flex-shrink:0}
+.lvl-ta{flex:1;padding:5px 8px;border:1px solid #CCC;border-radius:4px;font-size:11px;
+  font-family:inherit;resize:vertical;min-height:36px;line-height:1.5}
+.lvl-ta:focus{outline:none;border-color:var(--blue-m)}
+
+/* ── student table wrap ── */
+.stbl-wrap{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+select.lv-sel{padding:4px 6px;border:1px solid #CCC;border-radius:4px;font-family:inherit;
+  font-size:12px;background:var(--yellow);cursor:pointer;width:75px}
+.sent-cell{text-align:left!important;font-size:11px;color:#444;line-height:1.5}
+
+/* ── 최종세특 ── */
+.final-text{text-align:left!important;font-size:12px;line-height:1.6}
+.char-ok{color:var(--green-d);font-weight:600}
+.char-warn{color:var(--orange);font-weight:600}
+.char-over{color:var(--red);font-weight:600}
+
+/* ── 문장은행 ── */
+.cat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.c0{background:#DDEEFF;color:#1255A0} .c1{background:#DDFFDD;color:#2A7A38}
+.c2{background:#FFFACC;color:#7B6200} .c3{background:#FFE8D6;color:#BF360C}
+.c4{background:#EDE0FF;color:#4A148C} .c5{background:#FFE0E0;color:#B71C1C}
+
+/* ── section title ── */
+.sec-title{font-size:14px;font-weight:700;color:var(--blue-d);border-left:4px solid var(--blue-d);
+  padding-left:10px;margin-bottom:12px}
+
+/* ── buttons ── */
+.btn{padding:6px 12px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;
+  font-size:12px;font-weight:600;transition:.15s}
+.btn-blue{background:var(--blue-d);color:#fff}.btn-blue:hover{background:var(--blue-m)}
+.btn-green{background:var(--green-d);color:#fff}.btn-green:hover{background:#43A047}
+.btn-gray{background:#888;color:#fff}.btn-gray:hover{background:#666}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#A93226}
+
+/* ── step ── */
+.step{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #EEE;align-items:flex-start}
+.step:last-child{border-bottom:none}
+.step-badge{background:var(--blue-d);color:#fff;font-weight:700;font-size:11px;padding:4px 9px;
+  border-radius:4px;white-space:nowrap;margin-top:2px}
+.step-text{line-height:1.7;font-size:13px}
+
+@media(max-width:900px){.item-layout{grid-template-columns:1fr}.ref-panel{position:static;max-height:300px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-title">과세특 작성 도구</div>
+  <button class="tab-btn active" data-tab="guide" onclick="switchTab(this,'guide')">사용법</button>
+  <button class="tab-btn" data-tab="students" onclick="switchTab(this,'students')">학생목록</button>
+  <button class="tab-btn" data-tab="item0" onclick="switchTab(this,'item0')">항목 1</button>
+  <button class="tab-btn" data-tab="item1" onclick="switchTab(this,'item1')">항목 2</button>
+  <button class="tab-btn" data-tab="item2" onclick="switchTab(this,'item2')">항목 3</button>
+  <button class="tab-btn" data-tab="item3" onclick="switchTab(this,'item3')">항목 4</button>
+  <button class="tab-btn" data-tab="item4" onclick="switchTab(this,'item4')">항목 5</button>
+  <button class="tab-btn" data-tab="final" onclick="switchTab(this,'final')">최종세특</button>
+  <button class="tab-btn" data-tab="bank" onclick="switchTab(this,'bank')">문장은행</button>
+  <div style="flex:1"></div>
+  <button class="btn btn-gray" onclick="resetAll()" style="font-size:11px">초기화</button>
+</nav>
+
+<div class="content">
+
+<!-- 사용법 -->
+<div class="panel active" id="panel-guide">
+  <div class="card">
+    <div class="sec-title">과세특 작성 도구 사용법</div>
+    <div class="step"><span class="step-badge">STEP 1</span><span class="step-text"><strong>[학생목록]</strong> 탭에서 학급과 이름을 입력합니다. 한 번 입력하면 모든 항목 탭에 자동 반영됩니다.</span></div>
+    <div class="step"><span class="step-badge">STEP 2</span><span class="step-text"><strong>[항목 1~5]</strong> 탭 상단의 항목명 칸에 항목 제목을 입력합니다. (예: 수업참여, 단백질 합성 탐구, 모둠 발표)</span></div>
+    <div class="step"><span class="step-badge">STEP 3</span><span class="step-text"><strong>[자동 생성]</strong> 버튼을 클릭하면 항목명에 맞는 위계 1~10 예시 문장이 자동으로 채워집니다. <strong>[위계 문장 편집]</strong>을 펼쳐 수정하세요.</span></div>
+    <div class="step"><span class="step-badge">STEP 4</span><span class="step-text">학생별로 <strong>위계(1~10)</strong>를 선택하면 해당 문장이 자동 입력됩니다. 화면 우측 <strong>위계 참고 패널</strong>을 보며 수준을 판단하세요.</span></div>
+    <div class="step"><span class="step-badge">STEP 5</span><span class="step-text"><strong>[최종세특]</strong> 탭에서 5개 항목이 자동 합산된 세특 전문과 글자수를 확인합니다. [복사] 버튼으로 나이스에 붙여넣기 하세요.</span></div>
+    <div class="step"><span class="step-badge" style="background:var(--orange)">NOTE</span><span class="step-text">모든 데이터는 브라우저에 자동 저장됩니다. 같은 브라우저에서 다시 열어도 유지됩니다.</span></div>
+  </div>
+</div>
+
+<!-- 학생목록 -->
+<div class="panel" id="panel-students">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="sec-title" style="margin:0">학생 목록 (40명 기본)</div>
+      <button class="btn btn-blue" onclick="addRow()">+ 행 추가</button>
+    </div>
+    <table class="tbl" id="stbl">
+      <thead><tr><th style="width:50px">번호</th><th style="width:90px">학급</th><th>이름</th></tr></thead>
+      <tbody id="stbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 항목 탭 컨테이너 -->
+<div class="panel" id="panel-item0"></div>
+<div class="panel" id="panel-item1"></div>
+<div class="panel" id="panel-item2"></div>
+<div class="panel" id="panel-item3"></div>
+<div class="panel" id="panel-item4"></div>
+
+<!-- 최종세특 -->
+<div class="panel" id="panel-final">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="sec-title" style="margin:0">최종 세특 (자동 합산)</div>
+    <button class="btn btn-blue" onclick="copyAll()">전체 복사</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:45px">번호</th><th style="width:80px">이름</th>
+        <th>최종 세특</th>
+        <th style="width:65px">글자수</th>
+        <th style="width:55px">복사</th>
+      </tr></thead>
+      <tbody id="ftbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 문장은행 -->
+<div class="panel" id="panel-bank">
+  <div class="card">
+    <div class="sec-title">문장은행</div>
+    <div id="bank-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:90px">카테고리</th><th style="width:110px">상황/특징</th>
+        <th>문장</th><th style="width:50px">삽입</th>
+      </tr></thead>
+      <tbody id="bktbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ═══════════════ 상수 ═══════════════
+const LV_COLORS = ['#9E9E9E','#8D6E63','#78909C','#F57C00','#FB8C00','#FFA726','#43A047','#2E7D32','#1565C0','#0D47A1'];
+const CAT_CLS   = ['c0','c1','c2','c3','c4','c5'];
+
+function makeSentences(t) {
+  return [
+    `${t} 활동에서 기초 개념의 이해가 부족하여 교사의 안내 없이는 과제 수행에 어려움을 보였으며, 핵심 내용을 스스로 설명하거나 적용하는 데 한계를 나타냄.`,
+    `${t} 활동에서 기초적인 개념을 부분적으로 이해하고 있으나, 핵심 내용의 연결과 적용에서 불완전한 수행을 보여 지속적인 보완이 필요함.`,
+    `${t} 활동에서 기본 개념을 이해하고 주어진 절차에 따라 과제를 수행할 수 있으나, 개념 간 연관성을 파악하거나 스스로 문제를 해결하는 데는 한계를 보임.`,
+    `${t} 활동에서 기본 개념을 이해하고 주어진 과제를 성실히 수행하였으며, 학습 내용을 단순한 상황에 적용할 수 있는 수준을 갖춤.`,
+    `${t} 활동에서 핵심 개념을 정확히 이해하고, 학습한 내용을 바탕으로 문제를 논리적으로 분석하여 적절한 결론을 도출하는 능력을 보임.`,
+    `${t} 활동에서 핵심 개념을 깊이 이해하고 다양한 상황에 적용하는 능력을 발휘함. 학습 내용 간 연관성을 스스로 파악하여 자신의 언어로 재구성하는 모습이 돋보임.`,
+    `${t} 활동에서 개념 간 연결고리를 스스로 발견하고, 논거를 갖추어 자신의 견해를 논리적으로 전개하는 능력이 우수함. 주어진 과제를 넘어 스스로 탐구 범위를 확장하는 모습을 보임.`,
+    `${t} 활동에서 핵심 개념을 심층적으로 이해하고 다양한 맥락에 유연하게 적용함. 스스로 탐구 질문을 설정하고 검증하는 과정에서 논리적 사고력과 창의적 문제 해결력이 두드러짐.`,
+    `${t} 활동에서 개념 간 관계를 독창적으로 재구성하고, 자신의 관점을 논거와 함께 설득력 있게 전개함. 동료의 사고를 자극하고 이해를 높이는 데 기여하며 학습 공동체에 긍정적인 영향을 미침.`,
+    `${t} 활동에서 탁월한 이해력과 창의적 사고로 학습의 경계를 스스로 확장하며 독창적이고 수준 높은 성과를 이끌어냄. 지식을 생산하고 공유하는 자기주도적 학습자의 면모가 두드러짐.`,
+  ];
+}
+
+const SENTENCES = [
+  ["수업 참여","비판적 질문","수업 중 핵심 개념에 대한 날카로운 질문을 제기하고, 교사 및 동료의 답변을 분석·비교하여 자신만의 이해를 구성하는 능력이 돋보임."],
+  ["수업 참여","개념 연결","학습한 개념을 이전 단원 또는 타 교과의 내용과 스스로 연결하여 통합적으로 이해하는 모습을 보임."],
+  ["수업 참여","논리적 발언","수업 토의에서 단순한 의견 제시에 그치지 않고 근거를 들어 자신의 주장을 논리적으로 전개하는 능력이 우수함."],
+  ["수업 참여","자기주도 탐구","수업 내용에 지적 호기심을 갖고 스스로 심화 자료를 탐색하여 수업에서 학습한 내용 이상의 이해를 구축함."],
+  ["수업 참여","오류 발견","수업 내용에서 논리적 오류나 예외 사례를 스스로 발견하고 이를 근거와 함께 제시하는 비판적 사고력이 뛰어남."],
+  ["수업 참여","개념 재구성","교사의 설명을 단순히 수용하지 않고 자신의 언어로 재구성하여 설명하는 과정에서 깊이 있는 이해를 드러냄."],
+  ["수업 참여","실생활 연결","학습 개념을 실제 현상과 능동적으로 연결하여 '왜 그런가'를 스스로 설명하는 응용력이 탁월함."],
+  ["수업 참여","성장 과정","학기 초 기초 개념에서 출발하여 점진적으로 심화 내용을 이해하고 스스로 학습 범위를 확장하는 성장의 궤적을 보임."],
+  ["수업 참여","수업 기여","자신의 탐구 결과를 공유하고 동료의 이해를 돕는 과정에서 지식을 더욱 정교화하는 협력적 학습 역량을 보임."],
+  ["수업 참여","메타인지","자신이 이해한 내용과 이해하지 못한 내용을 명확히 구분하고, 부족한 부분을 보완하기 위한 구체적인 학습 전략을 스스로 실천함."],
+  ["탐구/실험","가설 설정","탐구 문제에 대한 명확한 가설을 설정하고, 이를 검증하기 위한 실험을 체계적으로 설계하는 과학적 사고력이 뛰어남."],
+  ["탐구/실험","변인 통제","실험에서 독립변인·종속변인·통제변인을 정확히 구분하고 이를 엄밀하게 적용하여 신뢰성 있는 결과를 도출함."],
+  ["탐구/실험","결과 해석","실험 결과를 단순히 기록하는 데 그치지 않고, 이론과의 차이를 분석하고 오차 원인을 논리적으로 설명하는 능력이 우수함."],
+  ["탐구/실험","창의적 설계","기존 실험 방법의 한계를 인식하고 이를 개선한 독창적인 실험 방법을 제안하여 탐구의 깊이를 높임."],
+  ["탐구/실험","데이터 비판","수집한 데이터의 신뢰도와 타당도를 비판적으로 검토하고, 이상치의 원인을 분석하여 합리적인 결론을 도출함."],
+  ["탐구/실험","개념 적용","학습한 이론을 실험 결과와 연결하여 개념의 실제 적용 과정을 논리적으로 설명하는 능력이 탁월함."],
+  ["탐구/실험","탐구 보고서","탐구 과정과 결과를 체계적으로 서술하고, 결론 도출의 근거를 명확히 제시한 보고서를 완성함."],
+  ["탐구/실험","협력 탐구","모둠 탐구에서 자신의 역할을 명확히 수행하면서도 전체 탐구의 방향과 의미를 주도적으로 이끄는 역량을 발휘함."],
+  ["탐구/실험","확장 탐구","실험 결과에서 새로운 탐구 문제를 스스로 도출하고, 이를 바탕으로 후속 탐구를 계획하는 자기주도적 탐구 역량이 뛰어남."],
+  ["탐구/실험","오류 분석","예상과 다른 결과가 나왔을 때 실험 설계·수행·분석 단계를 재검토하여 원인을 논리적으로 규명하는 과학적 태도를 보임."],
+  ["발표/토론","논리 구성","발표 시 주장-근거-사례의 구조를 명확히 갖추어 청중이 논리적 흐름을 따라올 수 있도록 내용을 체계적으로 구성함."],
+  ["발표/토론","반론 대응","토론에서 상대방의 주장을 정확히 이해한 후 논리적 약점을 짚어 설득력 있는 반론을 제시하는 능력이 탁월함."],
+  ["발표/토론","근거의 질","주장을 뒷받침하기 위해 다양한 사례·통계·이론을 활용하고, 근거의 신뢰성을 스스로 검증하는 엄밀한 태도를 보임."],
+  ["발표/토론","독창적 관점","일반적인 견해에 머물지 않고 기존 논의에서 간과된 관점을 발굴하여 토론의 깊이를 높이는 기여를 함."],
+  ["발표/토론","경청과 통합","다른 학생의 발표 내용을 경청하고, 이를 자신의 생각과 통합하여 더욱 발전된 견해를 제시하는 능력이 돋보임."],
+  ["발표/토론","개념 전달","복잡한 개념을 청중의 수준에 맞는 언어와 비유를 사용하여 명확하게 전달하는 의사소통 능력이 우수함."],
+  ["발표/토론","자기 수정","토론 중 자신의 주장에 논리적 허점이 발견되면 이를 솔직하게 인정하고 즉각 수정하는 지적 성실함을 보임."],
+  ["발표/토론","시각화","추상적 개념을 도표·그래프·이미지 등으로 시각화하여 청중의 이해를 효과적으로 도움."],
+  ["발표/토론","질문의 질","발표자의 논리적 허점을 짚는 예리한 질문을 통해 토론의 수준을 한 단계 끌어올리는 기여를 함."],
+  ["발표/토론","발표 성장","학기 초 발표에서 보인 논리적 미흡함을 스스로 인식하고, 이후 체계적 구성과 설득력 있는 표현으로 발전한 모습이 뚜렷함."],
+  ["협력/모둠","역할 분배","모둠 과제에서 각 구성원의 강점을 파악하여 역할을 효율적으로 분배하고, 결과물의 완성도를 높이는 데 핵심적으로 기여함."],
+  ["협력/모둠","의견 통합","다양한 의견이 충돌하는 상황에서 각 의견의 핵심을 파악하고, 이를 논리적으로 통합하여 더 나은 해결책을 도출함."],
+  ["협력/모둠","개인 기여","집단의 의견에 동조하지 않고 독자적인 분석을 통해 새로운 관점을 제시하여 모둠 결과물의 질을 향상시킴."],
+  ["협력/모둠","갈등 조율","의견 차이로 인한 갈등 상황에서 감정을 배제하고 논리적 근거를 중심으로 합의점을 이끌어내는 조율 능력을 보임."],
+  ["협력/모둠","지식 나눔","자신이 이해한 내용을 동료에게 설명하는 과정에서 개념을 더욱 정교화하고, 모둠 전체의 학습 수준을 향상시키는 데 기여함."],
+  ["협력/모둠","주도적 탐구","모둠 과제의 방향을 스스로 설정하고 구체적인 탐구 계획을 수립하여 구성원들을 이끄는 주도적 역량을 발휘함."],
+  ["협력/모둠","피드백 수용","동료의 비판적 피드백을 방어적으로 받아들이지 않고, 이를 근거로 자신의 결과물을 구체적으로 개선하는 성숙한 태도를 보임."],
+  ["사고력/창의","가정 도전","학습 내용에 내포된 전제와 가정을 의식적으로 검토하고, 이에 의문을 제기하여 새로운 관점에서 개념을 재해석함."],
+  ["사고력/창의","유추와 전이","한 영역에서 학습한 원리를 전혀 다른 맥락에 창의적으로 적용하여 두 영역 간 숨겨진 연결고리를 발견하는 능력이 탁월함."],
+  ["사고력/창의","다중 관점","하나의 문제를 여러 입장에서 바라보고, 각 관점의 강점과 한계를 분석하여 균형 잡힌 결론을 도출하는 능력이 우수함."],
+  ["사고력/창의","역발상","일반적으로 당연시되는 결론에 의문을 제기하고, 역방향의 논리를 통해 새로운 가능성을 탐색하는 창의적 사고를 발휘함."],
+  ["사고력/창의","융합적 해결","단일 교과의 지식만으로는 해결하기 어려운 문제에 다양한 분야의 개념을 융합하여 독창적인 해결책을 제시함."],
+  ["사고력/창의","본질 탐구","현상의 표면적 설명에 만족하지 않고 '왜 그런가'라는 질문을 반복하여 현상의 근본 원인과 구조를 파악하는 능력이 탁월함."],
+  ["성장/변화","오류 전환","초기에 보인 개념적 오류를 스스로 발견하고, 이를 수정하는 과정에서 더욱 정밀한 이해에 도달하는 성장을 보임."],
+  ["성장/변화","피드백 활용","평가 결과를 단순히 확인하는 데 그치지 않고, 구체적인 오류 원인을 분석하여 이후 학습에 반영하는 성장 지향적 태도를 보임."],
+  ["성장/변화","도전 지속","반복된 실패에도 불구하고 접근 방법을 달리하며 문제 해결을 지속하는 끈기와 회복력이 인상적임."],
+  ["성장/변화","비판적 성찰","자신의 학습 결과물을 비판적으로 검토하여 개선이 필요한 부분을 구체적으로 파악하고 이를 수정하는 성찰적 태도가 돋보임."],
+  ["성장/변화","역량 발현","학기 초에는 두드러지지 않았으나, 특정 활동을 계기로 잠재적 역량이 두드러지게 발현되는 전환점을 보임."],
+  ["성장/변화","학습법 발전","비효율적인 학습 방법을 스스로 인식하고, 더 효과적인 전략을 탐색하여 실천함으로써 학습 효율이 향상되는 모습을 보임."],
+  ["성장/변화","통합적 성장","지식·기능·태도 전반에 걸친 균형 있는 성장을 보이며, 학습자로서의 정체성이 더욱 성숙해지는 과정이 관찰됨."],
+];
+
+// ═══════════════ 상태 ═══════════════
+function makeState() {
+  return {
+    students: Array.from({length:40}, (_,i) => ({cls:'', no:i+1, name:''})),
+    items: Array.from({length:5}, () => ({name:'', sentences:Array(10).fill(''), levels:Array(40).fill('')}))
+  };
+}
+
+let state = makeState();
+
+function save() { try { localStorage.setItem('gwaseteuk_v2', JSON.stringify(state)); } catch(e){} }
+function load() { try { const s = localStorage.getItem('gwaseteuk_v2'); if(s) state=JSON.parse(s); } catch(e){} }
+
+function resetAll() {
+  if (!confirm('모든 데이터를 초기화합니다. 계속하시겠습니까?')) return;
+  localStorage.removeItem('gwaseteuk_v2');
+  state = makeState();
+  renderAll();
+}
+
+// ═══════════════ 탭 ═══════════════
+function switchTab(btn, tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'final') renderFinal();
+  if (tab === 'bank') renderBank();
+}
+
+// ═══════════════ 학생목록 ═══════════════
+function renderStudents() {
+  document.getElementById('stbody').innerHTML = state.students.map((s,i) => `
+    <tr>
+      <td style="color:#999;font-size:11px">${i+1}</td>
+      <td><input value="${esc(s.cls)}" oninput="state.students[${i}].cls=this.value;save()"
+        style="width:70px;border:1px solid #DDD;border-radius:3px;padding:4px 6px;font-size:12px;font-family:inherit;text-align:center"></td>
+      <td><input value="${esc(s.name)}" oninput="state.students[${i}].name=this.value;save()"
+        placeholder="이름"
+        style="width:140px;border:1px solid #DDD;border-radius:3px;padding:4px 8px;font-size:13px;font-family:inherit"></td>
+    </tr>
+  `).join('');
+}
+
+function addRow() {
+  const n = state.students.length;
+  state.students.push({cls:'', no:n+1, name:''});
+  state.items.forEach(it => it.levels.push(''));
+  save();
+  renderStudents();
+}
+
+// ═══════════════ 항목 ═══════════════
+function renderItem(idx) {
+  const it = state.items[idx];
+  const panel = document.getElementById('panel-item'+idx);
+
+  const refRows = it.sentences.map((s,i) => `
+    <div class="ref-item">
+      <div class="ref-badge" style="background:${LV_COLORS[i]}">${i+1}</div>
+      <div class="ref-text" id="rtext-${idx}-${i}">${esc(s) || '<i style="color:#bbb">미입력</i>'}</div>
+    </div>`).join('');
+
+  const lvRows = it.sentences.map((s,i) => `
+    <div class="lvl-row">
+      <div class="lvl-badge" style="background:${LV_COLORS[i]}">${i+1}</div>
+      <textarea class="lvl-ta" rows="2"
+        oninput="onSentenceEdit(${idx},${i},this.value)"
+        onfocus="this.rows=3" onblur="this.rows=2">${esc(s)}</textarea>
+    </div>`).join('');
+
+  const stRows = state.students.map((s,si) => {
+    const lv = it.levels[si] || '';
+    const sent = lv ? (it.sentences[parseInt(lv)-1] || '') : '';
+    return `<tr>
+      <td style="color:#999;font-size:11px">${si+1}</td>
+      <td style="font-size:12px">${esc(s.cls)}</td>
+      <td style="font-weight:500">${esc(s.name) || '<span style="color:#CCC">—</span>'}</td>
+      <td><select class="lv-sel" onchange="onLevelChange(${idx},${si},this.value)">
+        <option value="">—</option>
+        ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${lv==n?' selected':''}>${n}</option>`).join('')}
+      </select></td>
+      <td class="sent-cell" id="scell-${idx}-${si}">${esc(sent)}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="item-header">
+      <span class="item-label">항목 ${idx+1}</span>
+      <input class="item-input" id="iname-${idx}" value="${esc(it.name)}"
+        placeholder="항목명 입력 (예: 수업참여, 단백질 합성 탐구)"
+        oninput="state.items[${idx}].name=this.value;save();updateRefHeader(${idx})">
+      <button class="btn btn-green" onclick="autoFill(${idx})">자동 생성</button>
+    </div>
+    <div class="item-layout">
+      <div>
+        <div class="lvl-panel">
+          <div class="lvl-header" onclick="toggleEdit(${idx})">
+            <span>위계 문장 편집 (1~10)</span>
+            <span id="eicon-${idx}">▼</span>
+          </div>
+          <div class="lvl-body" id="ebody-${idx}" style="display:none">${lvRows}</div>
+        </div>
+        <div class="stbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th style="width:45px">번호</th><th style="width:60px">학급</th>
+              <th style="width:100px">이름</th><th style="width:85px">위계</th><th>내용 (자동)</th>
+            </tr></thead>
+            <tbody id="itbody-${idx}">${stRows}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ref-panel">
+        <div class="ref-header" id="refhdr-${idx}">위계 참고 — 항목 ${idx+1}${it.name?' · '+esc(it.name):''}</div>
+        <div id="refpanel-${idx}">${refRows}</div>
+      </div>
+    </div>`;
+}
+
+function toggleEdit(idx) {
+  const b = document.getElementById('ebody-'+idx);
+  const ic = document.getElementById('eicon-'+idx);
+  const open = b.style.display === 'none';
+  b.style.display = open ? 'block' : 'none';
+  ic.textContent = open ? '▲' : '▼';
+}
+
+function updateRefHeader(idx) {
+  const el = document.getElementById('refhdr-'+idx);
+  const name = state.items[idx].name;
+  if (el) el.textContent = `위계 참고 — 항목 ${idx+1}${name?' · '+name:''}`;
+}
+
+function autoFill(idx) {
+  const topic = state.items[idx].name.trim();
+  if (!topic) { alert('항목명을 먼저 입력하세요.'); return; }
+  state.items[idx].sentences = makeSentences(topic);
+  save();
+  renderItem(idx);
+}
+
+function onSentenceEdit(idx, lvIdx, val) {
+  state.items[idx].sentences[lvIdx] = val;
+  save();
+  const rtext = document.getElementById(`rtext-${idx}-${lvIdx}`);
+  if (rtext) rtext.textContent = val || '';
+  // 해당 위계를 선택한 학생 셀 갱신
+  state.students.forEach((_,si) => {
+    if (parseInt(state.items[idx].levels[si])-1 === lvIdx) {
+      const el = document.getElementById(`scell-${idx}-${si}`);
+      if (el) el.textContent = val;
+    }
+  });
+}
+
+function onLevelChange(idx, si, val) {
+  state.items[idx].levels[si] = val;
+  save();
+  const sent = val ? (state.items[idx].sentences[parseInt(val)-1] || '') : '';
+  const el = document.getElementById(`scell-${idx}-${si}`);
+  if (el) el.textContent = sent;
+}
+
+// ═══════════════ 최종세특 ═══════════════
+function getFinal(si) {
+  return state.items
+    .filter(it => it.levels[si] && it.sentences[parseInt(it.levels[si])-1])
+    .map(it => it.sentences[parseInt(it.levels[si])-1].trim())
+    .join(' ');
+}
+
+function renderFinal() {
+  document.getElementById('ftbody').innerHTML = state.students.map((s,si) => {
+    const txt = getFinal(si);
+    const n = txt.length;
+    const cls = n===0?'':n<=500?'char-ok':n<=600?'char-warn':'char-over';
+    return `<tr>
+      <td style="color:#999;font-size:11px">${si+1}</td>
+      <td style="font-weight:500">${esc(s.name)||'<span style="color:#CCC">—</span>'}</td>
+      <td class="final-text">${esc(txt)||'<span style="color:#CCC">—</span>'}</td>
+      <td><span class="${cls}">${n>0?n+'자':'—'}</span></td>
+      <td><button class="btn btn-blue" style="font-size:11px;padding:5px 9px" onclick="copyOne(${si})">복사</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function copyOne(si) {
+  const txt = getFinal(si);
+  if (!txt) { alert('세특 내용이 없습니다.'); return; }
+  navigator.clipboard.writeText(txt).then(() => alert(`${state.students[si].name||si+1+'번'} 복사 완료 (${txt.length}자)`));
+}
+
+function copyAll() {
+  const lines = state.students
+    .map((s,si) => { const t=getFinal(si); return t?`${s.name||si+1}\t${t}`:null; })
+    .filter(Boolean);
+  if (!lines.length) { alert('세특 내용이 없습니다.'); return; }
+  navigator.clipboard.writeText(lines.join('\n')).then(() => alert(`${lines.length}명 전체 복사 완료!`));
+}
+
+// ═══════════════ 문장은행 ═══════════════
+let bkFilter = '';
+const CATS = [...new Set(SENTENCES.map(s=>s[0]))];
+const CAT_IDX = Object.fromEntries(CATS.map((c,i)=>[c,i]));
+
+function renderBank() {
+  // 필터 버튼
+  document.getElementById('bank-filters').innerHTML =
+    `<button class="btn ${bkFilter===''?'btn-blue':'btn-gray'}" onclick="setBkFilter('')">전체</button>` +
+    CATS.map(c => `<button class="btn ${bkFilter===c?'btn-blue':'btn-gray'}" onclick="setBkFilter('${c}')">${c}</button>`).join('');
+
+  const rows = SENTENCES.filter(s => !bkFilter || s[0]===bkFilter);
+  document.getElementById('bktbody').innerHTML = rows.map(([cat,sit,sent],ri) => {
+    const ci = CAT_IDX[cat] % CAT_CLS.length;
+    return `<tr>
+      <td><span class="cat-badge ${CAT_CLS[ci]}">${cat}</span></td>
+      <td style="font-size:12px">${sit}</td>
+      <td style="text-align:left;font-size:12px;line-height:1.6">${esc(sent)}</td>
+      <td><button class="btn btn-gray" style="font-size:10px;padding:4px 8px"
+        onclick="bkInsert(this,'${esc(sent).replace(/'/g,'&#39;')}')">삽입</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function setBkFilter(cat) { bkFilter = cat; renderBank(); }
+
+function bkInsert(btn, sent) {
+  // 마지막으로 포커스된 textarea에 삽입, 없으면 클립보드
+  if (lastFocused && lastFocused.isConnected) {
+    lastFocused.value = sent;
+    lastFocused.dispatchEvent(new Event('input'));
+    lastFocused.focus();
+  } else {
+    navigator.clipboard.writeText(sent).then(() => alert('클립보드에 복사했습니다.\n위계 문장 편집 칸에 붙여넣기 하세요.'));
+  }
+}
+
+// textarea 마지막 포커스 추적
+let lastFocused = null;
+document.addEventListener('focusin', e => { if (e.target.classList.contains('lvl-ta')) lastFocused = e.target; });
+
+// ═══════════════ 유틸 ═══════════════
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════ 초기화 ═══════════════
+function renderAll() {
+  renderStudents();
+  for (let i=0; i<5; i++) renderItem(i);
+  renderFinal();
+  renderBank();
+}
+
+load();
+renderAll();
+</script>
+</body>
+</html>

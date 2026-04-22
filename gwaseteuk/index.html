@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>과세특 작성 도구</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --blue-d:#1255A0; --blue-m:#4472C4; --blue-l:#C5E3F7;
@@ -28,13 +29,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:#E8E8E8;color:var(--text);
 
 /* ── layout ── */
 .content{padding:16px;max-width:1440px;margin:0 auto}
-.panel{display:none}.panel.active{display:block}
+@keyframes tabFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.panel{display:none}
+.panel.active{display:block;animation:tabFadeIn .18s ease}
 .card{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);padding:18px;margin-bottom:14px}
 
 /* ── tables ── */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{background:var(--blue-d);color:#fff;padding:8px 10px;font-weight:600;
-  text-align:center;border:1px solid #BBBBB}
+  text-align:center;border:1px solid #BBBBBB}
 .tbl td{padding:6px 8px;border:1px solid #CCC;vertical-align:middle;text-align:center}
 .tbl tr:nth-child(even) td{background:#F8F9FF}
 .tbl tr:hover td{background:#EEF4FF}
@@ -109,14 +112,94 @@ select.lv-sel{padding:4px 6px;border:1px solid #CCC;border-radius:4px;font-famil
   border-radius:4px;white-space:nowrap;margin-top:2px}
 .step-text{line-height:1.7;font-size:13px}
 
+/* ── 초기화 확인 오버레이 ── */
+#reset-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;
+  align-items:center;justify-content:center;padding:20px}
+#reset-overlay.show{display:flex}
+#reset-card{background:#fff;border-radius:14px;padding:28px 24px 20px;max-width:300px;width:100%;
+  text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.rc-ico{font-size:40px;line-height:1;margin-bottom:12px}
+.rc-ttl{font-size:16px;font-weight:700;color:#7A4500;margin-bottom:8px}
+.rc-msg{font-size:13px;color:#444;line-height:1.8;margin-bottom:20px}
+.rc-btns{display:flex;gap:10px}
+.rc-btns button{flex:1;padding:12px 0;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* ── 토스트 ── */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:#1A1A2E;color:#fff;padding:10px 22px;border-radius:24px;font-size:13px;font-weight:500;
+  white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);
+  opacity:0;transition:opacity .2s,transform .2s;z-index:9999;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── AI 프롬프트 모달 ── */
+#ai-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9100;
+  align-items:center;justify-content:center;padding:20px}
+#ai-overlay.show{display:flex}
+#ai-card{background:#fff;border-radius:14px;width:100%;max-width:640px;
+  box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden}
+.ai-hd{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;
+  background:#5E35B1;color:#fff}
+.ai-hd span{font-size:13px;font-weight:700}
+.ai-hd button{background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;
+  border-radius:6px;cursor:pointer;font-size:15px;line-height:1;font-family:inherit}
+.ai-hint{padding:10px 18px 0;font-size:12px;color:#555;line-height:1.6}
+#ai-prompt{display:block;width:100%;padding:12px 18px;border:none;border-top:1px solid #EEE;
+  font-family:inherit;font-size:12px;line-height:1.8;resize:vertical;min-height:230px;
+  outline:none;color:#333;margin-top:10px}
+.ai-ft{padding:12px 18px;display:flex;align-items:center;gap:12px;border-top:1px solid #EEE;
+  background:#F8F8F8}
+.btn-ai{background:#5E35B1;color:#fff}
+.btn-ai:hover{background:#7E57C2}
+
+/* ── 기록 유형 선택 ── */
+.type-btn{padding:8px 16px;border:2px solid #DDD;border-radius:20px;background:#fff;
+  font-family:inherit;font-size:12px;font-weight:600;color:#666;cursor:pointer;transition:.15s}
+.type-btn:hover:not(.active){border-color:var(--blue-m);color:var(--blue-d);background:#EEF4FF}
+.type-btn.active{border-color:var(--blue-d);background:var(--blue-d);color:#fff}
+#type-badge{font-size:10px;font-weight:600;background:rgba(255,255,255,.2);padding:2px 9px;
+  border-radius:10px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+
 @media(max-width:900px){.item-layout{grid-template-columns:1fr}.ref-panel{position:static;max-height:300px}}
 </style>
 </head>
 <body>
 
+<!-- AI 프롬프트 모달 -->
+<div id="ai-overlay">
+  <div id="ai-card">
+    <div class="ai-hd">
+      <span id="ai-title">SEN GPT 프롬프트</span>
+      <button onclick="closeAI()">✕</button>
+    </div>
+    <div class="ai-hint">아래 프롬프트를 복사한 뒤, <strong>SEN GPT(senedu.kr)</strong>에 붙여넣기 하세요.</div>
+    <textarea id="ai-prompt"></textarea>
+    <div class="ai-ft">
+      <button class="btn btn-ai" onclick="copyAIPrompt()" style="padding:8px 20px">복사하기</button>
+      <span style="font-size:11px;color:#888">복사 후 <strong>senedu.kr → SEN GPT</strong>에 붙여넣기</span>
+    </div>
+  </div>
+</div>
+
+<!-- 초기화 확인 오버레이 -->
+<div id="reset-overlay">
+  <div id="reset-card">
+    <div class="rc-ico">⚠️</div>
+    <div class="rc-ttl">전체 데이터 초기화</div>
+    <div class="rc-msg">학생 목록, 항목명, 위계 설정 등<br>모든 데이터가 삭제됩니다.<br><strong>이 작업은 되돌릴 수 없습니다.</strong></div>
+    <div class="rc-btns">
+      <button onclick="closeReset()" style="border:1.5px solid #CCC;background:#fff">취소</button>
+      <button onclick="confirmReset()" style="border:none;background:var(--red);color:#fff">초기화</button>
+    </div>
+  </div>
+</div>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+
 <nav class="nav">
-  <div class="nav-title">과세특 작성 도구</div>
+  <div class="nav-title">과세특 작성 도구<span id="type-badge">교과 세특</span></div>
   <button class="tab-btn active" data-tab="guide" onclick="switchTab(this,'guide')">사용법</button>
+  <button class="tab-btn" data-tab="settings" onclick="switchTab(this,'settings')">설정</button>
   <button class="tab-btn" data-tab="students" onclick="switchTab(this,'students')">학생목록</button>
   <button class="tab-btn" data-tab="item0" onclick="switchTab(this,'item0')">항목 1</button>
   <button class="tab-btn" data-tab="item1" onclick="switchTab(this,'item1')">항목 2</button>
@@ -126,7 +209,17 @@ select.lv-sel{padding:4px 6px;border:1px solid #CCC;border-radius:4px;font-famil
   <button class="tab-btn" data-tab="final" onclick="switchTab(this,'final')">최종세특</button>
   <button class="tab-btn" data-tab="bank" onclick="switchTab(this,'bank')">문장은행</button>
   <div style="flex:1"></div>
-  <button class="btn btn-gray" onclick="resetAll()" style="font-size:11px">초기화</button>
+  <div style="display:flex;gap:5px;padding:0 4px;align-items:center">
+    <button class="btn" onclick="exportXlsx()"
+      style="background:rgba(255,255,255,.18);color:#fff;font-size:11px" title="최종세특 엑셀 파일로 저장">엑셀↓</button>
+    <button class="btn" onclick="exportJson()"
+      style="background:rgba(255,255,255,.18);color:#fff;font-size:11px" title="전체 데이터 백업 저장">백업↓</button>
+    <label class="btn" title="백업 파일에서 복원"
+      style="background:rgba(255,255,255,.18);color:#fff;font-size:11px;cursor:pointer;line-height:normal">
+      복원↑<input type="file" accept=".json" onchange="importJson(event)" style="display:none">
+    </label>
+    <button class="btn btn-red" onclick="openReset()" style="font-size:11px">초기화</button>
+  </div>
 </nav>
 
 <div class="content">
@@ -140,7 +233,43 @@ select.lv-sel{padding:4px 6px;border:1px solid #CCC;border-radius:4px;font-famil
     <div class="step"><span class="step-badge">STEP 3</span><span class="step-text"><strong>[자동 생성]</strong> 버튼을 클릭하면 항목명에 맞는 위계 1~10 예시 문장이 자동으로 채워집니다. <strong>[위계 문장 편집]</strong>을 펼쳐 수정하세요.</span></div>
     <div class="step"><span class="step-badge">STEP 4</span><span class="step-text">학생별로 <strong>위계(1~10)</strong>를 선택하면 해당 문장이 자동 입력됩니다. 화면 우측 <strong>위계 참고 패널</strong>을 보며 수준을 판단하세요.</span></div>
     <div class="step"><span class="step-badge">STEP 5</span><span class="step-text"><strong>[최종세특]</strong> 탭에서 5개 항목이 자동 합산된 세특 전문과 글자수를 확인합니다. [복사] 버튼으로 나이스에 붙여넣기 하세요.</span></div>
+    <div class="step"><span class="step-badge" style="background:var(--green-d)">엑셀↓</span><span class="step-text">우측 상단 <strong>[엑셀↓]</strong> 버튼으로 최종 세특 전체를 엑셀 파일로 저장할 수 있습니다.</span></div>
+    <div class="step"><span class="step-badge" style="background:var(--orange)">백업</span><span class="step-text"><strong>[백업↓]</strong>으로 데이터를 JSON 파일로 저장하고, <strong>[복원↑]</strong>으로 다시 불러올 수 있습니다.</span></div>
     <div class="step"><span class="step-badge" style="background:var(--orange)">NOTE</span><span class="step-text">모든 데이터는 브라우저에 자동 저장됩니다. 같은 브라우저에서 다시 열어도 유지됩니다.</span></div>
+  </div>
+</div>
+
+<!-- 설정 -->
+<div class="panel" id="panel-settings">
+  <div class="card">
+    <div class="sec-title">기록 유형 선택</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center">
+      <button class="type-btn" data-rt="subject" onclick="setRecordType('subject')">교과 세특</button>
+      <button class="type-btn" data-rt="homeroom" onclick="setRecordType('homeroom')">행동특성·종합의견</button>
+      <button class="type-btn" data-rt="autonomous" onclick="setRecordType('autonomous')">자율활동</button>
+      <button class="type-btn" data-rt="volunteer" onclick="setRecordType('volunteer')">봉사활동</button>
+      <button class="type-btn" data-rt="career" onclick="setRecordType('career')">진로활동</button>
+      <span style="font-size:11px;color:#999;margin-left:4px">아직 기능 미구현 ㅜㅜ</span>
+    </div>
+    <div id="rt-hint" style="font-size:12px;color:#555;background:#F0F4FF;padding:10px 14px;border-radius:6px;line-height:1.8;margin-bottom:16px"></div>
+    <div id="subject-fields" style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <div style="font-size:12px;color:#555;margin-bottom:6px;font-weight:600">학교급</div>
+        <select id="set-grade" onchange="state.grade=this.value;save()"
+          style="padding:7px 10px;border:1.5px solid #CCC;border-radius:5px;font-family:inherit;font-size:13px;background:#fff;cursor:pointer">
+          <option value="초등학교">초등학교</option>
+          <option value="중학교">중학교</option>
+          <option value="고등학교">고등학교</option>
+          <option value="대학교">대학교</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:12px;color:#555;margin-bottom:6px;font-weight:600">교과명</div>
+        <input id="set-subject" oninput="state.subject=this.value;save()"
+          placeholder="예: 생명과학, 수학, 영어"
+          style="padding:7px 10px;border:1.5px solid #CCC;border-radius:5px;font-family:inherit;font-size:13px;width:200px;outline:none">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -169,7 +298,10 @@ select.lv-sel{padding:4px 6px;border:1px solid #CCC;border-radius:4px;font-famil
 <div class="panel" id="panel-final">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <div class="sec-title" style="margin:0">최종 세특 (자동 합산)</div>
-    <button class="btn btn-blue" onclick="copyAll()">전체 복사</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-green" onclick="exportXlsx()">엑셀 저장↓</button>
+      <button class="btn btn-blue" onclick="copyAll()">전체 복사</button>
+    </div>
   </div>
   <div class="card" style="padding:0;overflow:hidden">
     <table class="tbl">
@@ -206,19 +338,207 @@ select.lv-sel{padding:4px 6px;border:1px solid #CCC;border-radius:4px;font-famil
 const LV_COLORS = ['#9E9E9E','#8D6E63','#78909C','#F57C00','#FB8C00','#FFA726','#43A047','#2E7D32','#1565C0','#0D47A1'];
 const CAT_CLS   = ['c0','c1','c2','c3','c4','c5'];
 
+function detectActivityType(name) {
+  if (/탐구|실험|관찰|측정|분석|조사|검증/.test(name)) return 'inquiry';
+  if (/발표|토론|토의|논의|PT|프레젠/.test(name)) return 'presentation';
+  if (/보고서|논술|글쓰기|서술|에세이|작성/.test(name)) return 'writing';
+  if (/모둠|협력|팀|그룹|협동/.test(name)) return 'teamwork';
+  return 'general';
+}
+
+// 활동 유형 → 문장은행 카테고리 매핑
+const TYPE_TO_CATS = {
+  inquiry:      ['탐구/실험'],
+  presentation: ['발표/토론'],
+  teamwork:     ['협력/모둠'],
+  writing:      ['발표/토론', '사고력/창의'],
+  general:      ['수업 참여', '사고력/창의', '성장/변화']
+};
+
+// 교과 활동 카테고리 (활동명 앞에 붙여야 하는 것)
+const ACADEMIC_CATS = new Set(['탐구/실험', '발표/토론', '협력/모둠', '사고력/창의']);
+
+const TYPE_LABELS = {
+  subject:   '교과 세특',
+  homeroom:  '행동특성·종합의견',
+  autonomous:'자율활동',
+  volunteer: '봉사활동',
+  career:    '진로활동',
+};
+
+const TYPE_HINTS = {
+  subject:   '교과 수업에서 관찰한 세부능력 및 특기사항을 기록합니다. 항목명에 탐구·발표·모둠 등 활동명을 입력하면 맞춤형 위계 문장을 자동 생성합니다. 학교급과 교과명은 AI 프롬프트에 자동 반영됩니다.',
+  homeroom:  '담임교사가 관찰한 행동특성 및 종합의견을 기록합니다. 항목에 관찰 영역을 입력하세요. 예: 교우관계, 학업 태도, 리더십, 자기주도 학습.',
+  autonomous:'창의적 체험활동 중 자율활동 내역을 기록합니다. 항목에 구체적인 활동명을 입력하세요. 예: 학급회의, 학교폭력예방교육, 리더십캠프.',
+  volunteer: '봉사활동 내역과 학생의 태도·성장을 기록합니다. 항목에 봉사 활동명을 입력하세요. 예: 교내 환경정화활동, 지역사회 봉사.',
+  career:    '진로활동 참여 내용과 진로 성장을 기록합니다. 항목에 활동명을 입력하세요. 예: 진로 탐색 검사, 직업인 특강, 학과 탐방.',
+};
+
+function setRecordType(rt) {
+  state.recordType = rt;
+  save();
+  renderSettings();
+}
+
+// 활동명을 문장 앞에 삽입 (이미 있는 맥락구는 교체)
+function prependTopic(topic, cat, sent) {
+  if (!ACADEMIC_CATS.has(cat)) return sent;  // 정의적 영역은 그대로
+  // "실험에서", "발표 시", "모둠 과제에서" 등 기존 맥락구 제거 후 활동명으로 교체
+  const clean = sent
+    .replace(/^[가-힣a-zA-Z0-9\s]{1,20}에서\s+/, '')
+    .replace(/^[가-힣a-zA-Z0-9]+\s시\s+/, '');
+  return `${topic}에서 ${clean}`;
+}
+
+// 문장은행에서 주제 관련 문장 추출 (관련도 점수 + 다양성 보장)
+function getRecommendedSentences(topic, type, maxBank) {
+  const targetCats = TYPE_TO_CATS[type] || ['수업 참여'];
+  const keywords = topic.split(/[\s,·\-]+/).filter(w => w.length >= 2);
+
+  const scored = SENTENCES
+    .filter(([cat]) => targetCats.includes(cat))
+    .map(([cat, sit, sent]) => {
+      const score = keywords.reduce((acc, kw) =>
+        acc + (sit.includes(kw) ? 2 : 0) + (sent.includes(kw) ? 1 : 0), 1
+      );
+      const text = prependTopic(topic, cat, sent);
+      return { sit, text, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // situation 태그 중복 제거로 다양성 확보
+  const picked = [];
+  const usedSit = new Set();
+  for (const { sit, text } of scored) {
+    if (picked.length >= maxBank) break;
+    if (!usedSit.has(sit)) { picked.push(text); usedSit.add(sit); }
+  }
+  return picked;
+}
+
+const SENTENCE_TEMPLATES = {
+  // ── 탐구·실험형 ──
+  inquiry: [
+    t => `${t}에서 탐구의 목적과 절차 파악에 어려움을 겪으며, 실험 수행과 결과 해석 전반에서 교사의 안내가 필요함.`,
+    t => `${t}에서 기초적인 실험 절차는 따를 수 있으나, 변인의 의미와 결과의 타당성을 스스로 판단하는 데 한계를 보임.`,
+    t => `${t}에서 제시된 절차에 따라 탐구를 수행하고 결과를 기록할 수 있으나, 이론과 연결하여 해석하는 과정에서 논리적 연결이 부족함.`,
+    t => `${t}에서 탐구 절차를 성실히 이행하고 주요 결과를 정리하였으며, 간단한 결론을 스스로 도출하는 기초 역량을 갖춤.`,
+    t => `${t}에서 탐구 목적에 맞게 변인을 구분하여 실험을 수행하고, 결과를 이론과 연결하여 해석하는 과학적 사고력을 보임.`,
+    t => `${t}에서 변인을 체계적으로 통제하고 결과를 다각도로 분석하여, 이론적 근거를 바탕으로 논리적인 결론을 도출하는 능력이 돋보임.`,
+    t => `${t}에서 탐구 설계의 타당성을 스스로 검토하고, 예상과 다른 결과에 대해 오차 원인을 근거 있게 규명하는 비판적 과학 태도를 보임.`,
+    t => `${t}에서 탐구 과정을 주도적으로 수행하며 결과를 심층적으로 해석하고, 학습 내용과의 연결을 통해 수준 높은 과학적 통찰을 드러냄.`,
+    t => `${t}에서 기존 탐구 방법의 한계를 인식하고 개선 방향을 제안하며, 결과에서 스스로 새로운 탐구 문제를 도출하는 창의적 역량이 탁월함.`,
+    t => `${t}에서 탐구 전 과정을 독립적으로 설계·수행·분석하고, 결과를 창의적으로 해석하여 심화 탐구로 확장하는 자기주도적 과학자의 면모를 보임.`,
+  ],
+  // ── 발표·토론형 ──
+  presentation: [
+    t => `${t}에서 발표 내용의 논리적 구성에 어려움을 보이며, 핵심 내용 전달과 청중과의 소통이 전반적으로 부족함.`,
+    t => `${t}에서 기본 내용을 전달할 수 있으나, 논거 구성이 미흡하고 청중의 이해를 고려한 표현에서 한계를 보임.`,
+    t => `${t}에서 준비한 내용을 전달할 수 있으나, 주장과 근거의 연결이 부족하고 질의에 대한 대응이 제한적임.`,
+    t => `${t}에서 핵심 내용을 정리하여 청중에게 전달하였으며, 발표의 기본 흐름을 유지하는 능력을 갖춤.`,
+    t => `${t}에서 주장-근거-사례의 구조로 내용을 구성하고, 청중의 수준에 맞게 핵심 내용을 효과적으로 전달하는 능력을 보임.`,
+    t => `${t}에서 논거를 갖추어 설득력 있게 의견을 전개하고, 예상 질문을 고려한 구성으로 청중의 이해를 높이는 능력이 돋보임.`,
+    t => `${t}에서 발표 내용의 논리적 허점을 사전에 검토하고, 질의응답에서 근거를 들어 명확하게 대응하는 능력이 우수함.`,
+    t => `${t}에서 시각 자료와 구체적 근거로 주장을 뒷받침하며, 상대방의 날카로운 질문에도 논리적으로 대응하는 탁월한 발표력을 발휘함.`,
+    t => `${t}에서 독창적인 관점으로 주제를 재해석하고, 청중의 사고를 자극하는 수준 높은 논의를 이끌며 토론의 질을 높임.`,
+    t => `${t}에서 발표 전반을 창의적으로 구성하고, 논리적 설득력과 탁월한 의사소통 능력으로 청중의 이해와 공감을 이끌어냄.`,
+  ],
+  // ── 보고서·쓰기형 ──
+  writing: [
+    t => `${t}에서 글의 기본 구조 파악에 어려움을 보이며, 내용 구성과 표현 전반에서 지속적인 보완이 필요함.`,
+    t => `${t}에서 기초적인 내용을 서술할 수 있으나, 논리적 구성과 근거 제시가 미흡하여 완성도가 낮음.`,
+    t => `${t}에서 주어진 형식에 따라 내용을 서술할 수 있으나, 주장과 근거의 연결과 문장 표현이 다소 부족함.`,
+    t => `${t}에서 내용을 체계적으로 정리하고 기본적인 논거를 갖추어 서술하였으며, 보고서의 형식을 충족함.`,
+    t => `${t}에서 주제에 맞게 내용을 구성하고 근거를 들어 논리적으로 서술하는 능력을 보임.`,
+    t => `${t}에서 다양한 자료를 활용하여 근거를 뒷받침하고, 자신의 견해를 논리적이고 명확하게 전개하는 서술 능력이 돋보임.`,
+    t => `${t}에서 글의 논리적 흐름을 스스로 검토하고 수정하는 과정에서 비판적 사고력을 발휘하며, 완성도 높은 글을 작성함.`,
+    t => `${t}에서 핵심 개념을 심층적으로 분석하고 다양한 관점을 통합하여, 설득력 있는 논거로 구성된 우수한 글을 완성함.`,
+    t => `${t}에서 기존 논의를 비판적으로 검토하고 독창적인 관점을 제시하며, 학문적 서술 형식을 갖춘 수준 높은 보고서를 완성함.`,
+    t => `${t}에서 주제를 창의적으로 재해석하고 탁월한 논리 구성력과 표현력으로 독자의 이해와 공감을 이끄는 완성도 높은 글을 작성함.`,
+  ],
+  // ── 협력·모둠형 ──
+  teamwork: [
+    t => `${t}에서 자신의 역할을 파악하고 수행하는 데 어려움을 보이며, 협력적 참여가 전반적으로 제한적임.`,
+    t => `${t}에서 주어진 역할을 부분적으로 수행하였으나, 모둠 목표와 연결하여 기여하는 데 한계를 보임.`,
+    t => `${t}에서 주어진 역할을 수행하고 기본적인 협력 활동에 참여하였으나, 능동적인 기여가 부족함.`,
+    t => `${t}에서 자신의 역할을 성실히 이행하고 동료의 의견을 경청하며 협력하는 기초 역량을 갖춤.`,
+    t => `${t}에서 역할을 충실히 수행하면서 동료와 소통하고, 모둠 결과물 완성에 실질적으로 기여하는 능력을 보임.`,
+    t => `${t}에서 모둠 내 의견 조율에 기여하고, 자신의 역할을 넘어 전체 결과물의 완성도를 높이는 데 능동적으로 참여함.`,
+    t => `${t}에서 구성원의 강점을 파악하여 역할 분배를 제안하고, 의견 충돌 상황에서 합리적인 합의를 이끌어내는 조율 역량이 우수함.`,
+    t => `${t}에서 모둠 활동을 주도하면서도 구성원 모두의 참여를 이끌어내며, 자신의 결과물을 공유하여 모둠 전체의 이해 수준을 높임.`,
+    t => `${t}에서 독창적인 아이디어로 모둠 결과물의 방향을 제시하고, 구성원의 성장에 기여하는 협력적 리더십을 발휘함.`,
+    t => `${t}에서 목표 설정부터 결과물 완성까지 모둠 전체를 이끌며, 구성원 각자의 잠재력을 끌어내는 탁월한 협력적 리더십을 보임.`,
+  ],
+  // ── 일반형 (기본값) ──
+  general: [
+    t => `${t}에서 학습 내용의 기초 개념 이해에 어려움을 보이며, 핵심 내용 파악과 과제 수행에서 교사의 안내가 필요함.`,
+    t => `${t}에서 기초적인 내용을 부분적으로 이해하고 있으나, 핵심 개념의 연결과 적용에서 불완전한 수행을 보임.`,
+    t => `${t}에서 기본 개념을 이해하고 과제를 수행할 수 있으나, 개념 간 연관성 파악이나 심화 적용에서 한계를 보임.`,
+    t => `${t}에서 기본 개념을 이해하고 주어진 활동을 성실히 수행하였으며, 학습 내용을 단순한 상황에 적용할 수 있는 수준을 갖춤.`,
+    t => `${t}에서 핵심 개념을 정확히 이해하고, 학습한 내용을 바탕으로 문제를 논리적으로 분석하여 적절한 결론을 도출하는 능력을 보임.`,
+    t => `${t}에서 핵심 개념을 깊이 이해하고 다양한 상황에 적용하며, 학습 내용 간 연관성을 스스로 파악하여 자신의 언어로 재구성하는 모습이 돋보임.`,
+    t => `${t}에서 개념 간 연결고리를 스스로 발견하고 논거를 갖추어 견해를 전개하며, 주어진 범위를 넘어 스스로 탐구 범위를 확장하는 모습을 보임.`,
+    t => `${t}에서 핵심 개념을 심층적으로 이해하고 다양한 맥락에 유연하게 적용하며, 스스로 탐구 질문을 설정하고 검증하는 논리적 사고력이 두드러짐.`,
+    t => `${t}에서 개념 간 관계를 독창적으로 재구성하고 자신의 관점을 설득력 있게 전개하며, 동료의 사고를 자극하고 학습 공동체에 기여함.`,
+    t => `${t}에서 탁월한 이해력과 창의적 사고로 학습의 경계를 스스로 확장하며, 지식을 생산하고 공유하는 자기주도적 학습자의 면모가 두드러짐.`,
+  ],
+  // ── 행동특성·종합의견 ──
+  homeroom: [
+    t => `${t} 면에서 아직 발전이 필요한 단계로, 담임교사와의 상담을 통해 개선 방향을 함께 탐색 중임.`,
+    t => `${t} 면에서 기초적인 수준을 갖추고 있으나, 일관성 있는 실천으로 이어지는 데 한계가 있음.`,
+    t => `${t} 면에서 일정한 수준을 유지하고 있으며, 개선의 의지를 보이는 긍정적인 모습이 관찰됨.`,
+    t => `${t} 면에서 성실한 태도로 꾸준히 노력하고 있으며, 또래 관계에서도 안정적인 모습을 보임.`,
+    t => `${t} 면에서 기대 수준에 부합하는 행동을 보이며, 학교생활 전반에 긍정적인 영향을 미침.`,
+    t => `${t} 면에서 또래에 비해 성숙한 모습을 발휘하며, 주변 학생들에게 좋은 영향을 주는 존재로 인식됨.`,
+    t => `${t} 면에서 탁월한 역량을 발휘하며, 학급 분위기 형성에 긍정적으로 기여하는 모습이 돋보임.`,
+    t => `${t} 면에서 모범적인 행동을 일관되게 보이며, 스스로를 성찰하고 꾸준히 성장하는 학생임.`,
+    t => `${t} 면에서 학급 내 신뢰받는 존재로, 어려운 상황에서도 주위 학생들을 배려하고 이끄는 성숙함을 보임.`,
+    t => `${t} 면에서 남다른 역량과 품성으로 학급 구성원 모두에게 긍정적인 영향을 미치는 진정한 리더의 면모를 보임.`,
+  ],
+  // ── 자율활동 ──
+  autonomous: [
+    t => `${t}에서 활동의 목적을 충분히 이해하지 못한 채 수동적으로 참여하였으며, 활동 이후 의미 있는 성찰이 부족함.`,
+    t => `${t}에서 기본적인 참여는 하였으나, 활동 내용에 대한 이해와 참여 의지가 미흡한 편임.`,
+    t => `${t}에서 주어진 역할을 수행하고 기본 활동 과정에 참여하였으나, 자발적인 기여가 부족함.`,
+    t => `${t}에서 성실하게 참여하고 활동 목적을 이해하며, 활동을 통해 얻은 점을 정리할 수 있음.`,
+    t => `${t}에서 활동 전반에 적극 참여하고, 활동에서 배운 점을 자신의 성장과 연결하여 성찰하는 모습을 보임.`,
+    t => `${t}에서 자발적이고 능동적인 태도로 참여하여 활동의 목적을 충실히 실현하고 의미 있는 경험을 만들어냄.`,
+    t => `${t}에서 활동을 통해 자기 역할의 중요성을 인식하고, 구성원 간 협력의 필요성을 체득하는 성장을 보임.`,
+    t => `${t}에서 주도적으로 참여하여 활동의 방향을 이끌고, 구성원들의 참여를 북돋우며 긍정적인 분위기를 조성함.`,
+    t => `${t}에서 창의적인 아이디어와 솔선수범하는 태도로 활동 전반의 완성도를 높이는 데 핵심적으로 기여함.`,
+    t => `${t}에서 자기주도적 참여와 탁월한 협력적 태도로 활동을 이끌며, 모든 구성원이 의미 있는 경험을 할 수 있도록 기여하는 리더십을 발휘함.`,
+  ],
+  // ── 봉사활동 ──
+  volunteer: [
+    t => `${t}에 참여하였으나, 봉사의 의미와 목적에 대한 이해가 부족하여 형식적인 참여에 그침.`,
+    t => `${t}에 기초적인 수준으로 참여하였으나, 봉사 대상을 배려하는 태도나 적극적 실천이 다소 부족함.`,
+    t => `${t}에 성실히 참여하였으며, 봉사 활동의 기본 의미를 이해하고 주어진 역할을 수행함.`,
+    t => `${t}에서 맡은 역할을 충실히 수행하고, 타인을 위해 행동하는 봉사 정신의 기초를 실천함.`,
+    t => `${t}에서 자발적으로 참여하여 봉사 대상에 대한 진정한 관심을 바탕으로 의미 있는 도움을 실천함.`,
+    t => `${t}에서 봉사 대상의 필요를 세심히 살피고, 더 나은 도움을 제공하기 위해 스스로 노력하는 모습이 돋보임.`,
+    t => `${t}에서 높은 공감 능력과 적극적인 태도로 봉사 활동의 질을 높이고, 함께 참여한 학생들에게 긍정적인 영향을 줌.`,
+    t => `${t}에서 봉사 활동의 의미를 깊이 내면화하고, 활동 후 사회적 책임감에 대한 성찰로 이어가는 성숙한 시민 의식을 보임.`,
+    t => `${t}에서 타인에 대한 깊은 공감과 헌신적 태도로 봉사의 진정한 가치를 실천하며, 함께하는 모든 이에게 선한 영향을 미침.`,
+    t => `${t}에서 자발적·헌신적 참여와 탁월한 공감 능력으로 봉사 현장의 변화를 이끌며, 사회적 책임감의 실천적 모범을 보임.`,
+  ],
+  // ── 진로활동 ──
+  career: [
+    t => `${t}에 참여하였으나, 진로와의 연결이나 자신의 관심 분야에 대한 성찰이 아직 미흡한 편임.`,
+    t => `${t}에 기초적으로 참여하였으며, 자신의 진로 방향에 대한 탐색이 시작 단계에 있음.`,
+    t => `${t}을 통해 관심 분야에 대한 기본적인 이해를 넓히고, 진로에 대한 관심을 구체화하는 계기를 가짐.`,
+    t => `${t}을 통해 자신의 관심 분야와 강점을 파악하는 기회를 갖고, 진로 방향을 구체적으로 탐색하기 시작함.`,
+    t => `${t}을 통해 자신의 진로 목표와 연결하여 의미 있는 탐색을 수행하고, 활동 내용을 진로 계획에 반영하는 모습을 보임.`,
+    t => `${t}에서 자신의 진로 목표와 관련하여 능동적으로 정보를 탐색하고, 구체적인 준비 방향을 설정하는 진로 의식을 보임.`,
+    t => `${t}에서 직업 세계와 학습 내용을 연결하여 미래 진로에 대한 구체적인 비전을 형성하고, 실천 계획을 수립하는 역량을 발휘함.`,
+    t => `${t}에서 진로에 대한 깊이 있는 탐색과 주도적인 정보 수집을 통해 목표 의식이 뚜렷해지고, 자기주도적 진로 설계 역량이 두드러짐.`,
+    t => `${t}에서 관심 분야의 전문적 내용을 탐구하고 자신의 역량과 연결하여 명확한 진로 목표를 설정하며, 이를 실현하기 위한 구체적인 행동 계획을 세움.`,
+    t => `${t}에서 진로에 대한 탁월한 통찰력과 자기주도적 탐구로 명확한 목표 의식과 실행력을 갖추며, 주변 학생들의 진로 탐색에도 긍정적인 영향을 미침.`,
+  ],
+};
+
 function makeSentences(t) {
-  return [
-    `${t} 활동에서 기초 개념의 이해가 부족하여 교사의 안내 없이는 과제 수행에 어려움을 보였으며, 핵심 내용을 스스로 설명하거나 적용하는 데 한계를 나타냄.`,
-    `${t} 활동에서 기초적인 개념을 부분적으로 이해하고 있으나, 핵심 내용의 연결과 적용에서 불완전한 수행을 보여 지속적인 보완이 필요함.`,
-    `${t} 활동에서 기본 개념을 이해하고 주어진 절차에 따라 과제를 수행할 수 있으나, 개념 간 연관성을 파악하거나 스스로 문제를 해결하는 데는 한계를 보임.`,
-    `${t} 활동에서 기본 개념을 이해하고 주어진 과제를 성실히 수행하였으며, 학습 내용을 단순한 상황에 적용할 수 있는 수준을 갖춤.`,
-    `${t} 활동에서 핵심 개념을 정확히 이해하고, 학습한 내용을 바탕으로 문제를 논리적으로 분석하여 적절한 결론을 도출하는 능력을 보임.`,
-    `${t} 활동에서 핵심 개념을 깊이 이해하고 다양한 상황에 적용하는 능력을 발휘함. 학습 내용 간 연관성을 스스로 파악하여 자신의 언어로 재구성하는 모습이 돋보임.`,
-    `${t} 활동에서 개념 간 연결고리를 스스로 발견하고, 논거를 갖추어 자신의 견해를 논리적으로 전개하는 능력이 우수함. 주어진 과제를 넘어 스스로 탐구 범위를 확장하는 모습을 보임.`,
-    `${t} 활동에서 핵심 개념을 심층적으로 이해하고 다양한 맥락에 유연하게 적용함. 스스로 탐구 질문을 설정하고 검증하는 과정에서 논리적 사고력과 창의적 문제 해결력이 두드러짐.`,
-    `${t} 활동에서 개념 간 관계를 독창적으로 재구성하고, 자신의 관점을 논거와 함께 설득력 있게 전개함. 동료의 사고를 자극하고 이해를 높이는 데 기여하며 학습 공동체에 긍정적인 영향을 미침.`,
-    `${t} 활동에서 탁월한 이해력과 창의적 사고로 학습의 경계를 스스로 확장하며 독창적이고 수준 높은 성과를 이끌어냄. 지식을 생산하고 공유하는 자기주도적 학습자의 면모가 두드러짐.`,
-  ];
+  const type = detectActivityType(t);
+  return SENTENCE_TEMPLATES[type].map(fn => fn(t));
 }
 
 const SENTENCES = [
@@ -277,6 +597,9 @@ const SENTENCES = [
 // ═══════════════ 상태 ═══════════════
 function makeState() {
   return {
+    grade: '고등학교',
+    subject: '생명과학',
+    recordType: 'subject',
     students: Array.from({length:40}, (_,i) => ({cls:'', no:i+1, name:''})),
     items: Array.from({length:5}, () => ({name:'', sentences:Array(10).fill(''), levels:Array(40).fill('')}))
   };
@@ -285,13 +608,31 @@ function makeState() {
 let state = makeState();
 
 function save() { try { localStorage.setItem('gwaseteuk_v2', JSON.stringify(state)); } catch(e){} }
-function load() { try { const s = localStorage.getItem('gwaseteuk_v2'); if(s) state=JSON.parse(s); } catch(e){} }
+function load() { try { const s = localStorage.getItem('gwaseteuk_v2'); if(s) state={...makeState(),...JSON.parse(s)}; } catch(e){} }
 
-function resetAll() {
-  if (!confirm('모든 데이터를 초기화합니다. 계속하시겠습니까?')) return;
+// ═══════════════ 토스트 ═══════════════
+let _toastTimer = null;
+function toast(msg, duration) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), duration || 2200);
+}
+
+// ═══════════════ 초기화 오버레이 ═══════════════
+function openReset() {
+  document.getElementById('reset-overlay').classList.add('show');
+}
+function closeReset() {
+  document.getElementById('reset-overlay').classList.remove('show');
+}
+function confirmReset() {
+  closeReset();
   localStorage.removeItem('gwaseteuk_v2');
   state = makeState();
   renderAll();
+  toast('초기화 완료');
 }
 
 // ═══════════════ 탭 ═══════════════
@@ -367,6 +708,7 @@ function renderItem(idx) {
         placeholder="항목명 입력 (예: 수업참여, 단백질 합성 탐구)"
         oninput="state.items[${idx}].name=this.value;save();updateRefHeader(${idx})">
       <button class="btn btn-green" onclick="autoFill(${idx})">자동 생성</button>
+      <button class="btn btn-ai" onclick="showItemPrompt(${idx})" title="SEN GPT로 주제 맞춤 위계 문장 생성">AI 문장↗</button>
     </div>
     <div class="item-layout">
       <div>
@@ -410,10 +752,23 @@ function updateRefHeader(idx) {
 
 function autoFill(idx) {
   const topic = state.items[idx].name.trim();
-  if (!topic) { alert('항목명을 먼저 입력하세요.'); return; }
-  state.items[idx].sentences = makeSentences(topic);
+  if (!topic) { toast('항목명을 먼저 입력하세요.', 2000); return; }
+
+  const rt = state.recordType || 'subject';
+
+  if (rt === 'subject') {
+    const type = detectActivityType(topic);
+    const bankSentences = getRecommendedSentences(topic, type, 5);
+    const templates = SENTENCE_TEMPLATES[type].map(fn => fn(topic));
+    const templateCount = 10 - bankSentences.length;
+    state.items[idx].sentences = [...templates.slice(0, templateCount), ...bankSentences];
+  } else {
+    state.items[idx].sentences = SENTENCE_TEMPLATES[rt].map(fn => fn(topic));
+  }
+
   save();
   renderItem(idx);
+  toast(`항목 ${idx+1} 맞춤 문장 자동 생성 완료`);
 }
 
 function onSentenceEdit(idx, lvIdx, val) {
@@ -421,7 +776,6 @@ function onSentenceEdit(idx, lvIdx, val) {
   save();
   const rtext = document.getElementById(`rtext-${idx}-${lvIdx}`);
   if (rtext) rtext.textContent = val || '';
-  // 해당 위계를 선택한 학생 셀 갱신
   state.students.forEach((_,si) => {
     if (parseInt(state.items[idx].levels[si])-1 === lvIdx) {
       const el = document.getElementById(`scell-${idx}-${si}`);
@@ -456,24 +810,271 @@ function renderFinal() {
       <td style="font-weight:500">${esc(s.name)||'<span style="color:#CCC">—</span>'}</td>
       <td class="final-text">${esc(txt)||'<span style="color:#CCC">—</span>'}</td>
       <td><span class="${cls}">${n>0?n+'자':'—'}</span></td>
-      <td><button class="btn btn-blue" style="font-size:11px;padding:5px 9px" onclick="copyOne(${si})">복사</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-blue" style="font-size:11px;padding:5px 9px;display:block;width:100%;margin-bottom:4px" onclick="copyOne(${si})">복사</button>
+        <button class="btn btn-ai" style="font-size:10px;padding:4px 9px;display:block;width:100%" onclick="showStudentPrompt(${si})" title="SEN GPT로 세특 초안 생성">AI↗</button>
+      </td>
     </tr>`;
   }).join('');
 }
 
 function copyOne(si) {
   const txt = getFinal(si);
-  if (!txt) { alert('세특 내용이 없습니다.'); return; }
-  navigator.clipboard.writeText(txt).then(() => alert(`${state.students[si].name||si+1+'번'} 복사 완료 (${txt.length}자)`));
+  if (!txt) { toast('세특 내용이 없습니다.', 2000); return; }
+  navigator.clipboard.writeText(txt).then(() =>
+    toast(`${state.students[si].name||si+1+'번'} 복사 완료 (${txt.length}자)`)
+  );
 }
 
 function copyAll() {
   const lines = state.students
     .map((s,si) => { const t=getFinal(si); return t?`${s.name||si+1}\t${t}`:null; })
     .filter(Boolean);
-  if (!lines.length) { alert('세특 내용이 없습니다.'); return; }
-  navigator.clipboard.writeText(lines.join('\n')).then(() => alert(`${lines.length}명 전체 복사 완료!`));
+  if (!lines.length) { toast('세특 내용이 없습니다.', 2000); return; }
+  navigator.clipboard.writeText(lines.join('\n')).then(() =>
+    toast(`${lines.length}명 전체 복사 완료!`)
+  );
 }
+
+// ═══════════════ 엑셀 내보내기 ═══════════════
+function exportXlsx() {
+  const itemNames = state.items.map((it,i) => it.name || `항목${i+1}`);
+
+  // 헤더행
+  const header = ['번호','학급','이름', ...itemNames.map(n=>`${n}(위계)`), '최종 세특', '글자수'];
+
+  const rows = state.students
+    .filter(s => s.name)
+    .map((s,_) => {
+      const si = state.students.indexOf(s);
+      const levels = state.items.map(it => it.levels[si] || '');
+      const txt = getFinal(si);
+      return [si+1, s.cls, s.name, ...levels, txt, txt.length || ''];
+    });
+
+  if (!rows.length) { toast('이름이 입력된 학생이 없습니다.', 2500); return; }
+
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+  // 열 너비 설정
+  ws['!cols'] = [
+    {wch:6},{wch:8},{wch:10},
+    ...itemNames.map(()=>({wch:8})),
+    {wch:80},{wch:8}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '최종세특');
+
+  const today = new Date();
+  const ymd = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `과세특_${ymd}.xlsx`);
+  toast(`과세특_${ymd}.xlsx 저장 완료`);
+}
+
+// ═══════════════ JSON 백업 / 복원 ═══════════════
+function exportJson() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const today = new Date();
+  const ymd = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+  a.download = `과세특_백업_${ymd}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('백업 파일 저장 완료');
+}
+
+function importJson(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (!parsed.students || !parsed.items) throw new Error();
+      state = parsed;
+      save();
+      renderAll();
+      toast(`${file.name} 복원 완료`);
+    } catch {
+      toast('파일 형식이 올바르지 않습니다.', 3000);
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════ AI 프롬프트 ═══════════════
+function showItemPrompt(idx) {
+  const it = state.items[idx];
+  const name = it.name.trim();
+  if (!name) { toast('항목명을 먼저 입력하세요.', 2000); return; }
+
+  const rt = state.recordType || 'subject';
+  const subjectFull = `${state.grade} ${state.subject}`.trim();
+  const rtLabel = TYPE_LABELS[rt];
+
+  let prompt;
+  if (rt === 'subject') {
+    prompt =
+`${subjectFull} 수업 '세부능력 및 특기사항(세특)' 작성을 위해, 다음 항목의 위계별 서술 문장 10개를 작성해주세요.
+
+[항목명] ${name}
+[교과] ${subjectFull}
+
+요구사항
+• 위계 1~10으로 나누어 각 1문장씩 (1=최하위 수준, 10=최상위 수준)
+• 이 항목의 내용·활동 특성이 문장에 구체적으로 드러나야 함
+  (막연하게 "잘함/못함" 표현 금지, 이 활동에서만 나올 수 있는 표현 사용)
+• 각 문장은 "${name} 활동에서" 또는 "${name}에서"로 시작
+• 서술형 종결어미 (~함, ~보임, ~드러냄 등), 2문장 이내
+• 아래 형식으로만 출력 (설명 문구 없이):
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+6. ...
+7. ...
+8. ...
+9. ...
+10. ...`;
+  } else if (rt === 'homeroom') {
+    prompt =
+`학생 '행동특성 및 종합의견' 작성을 위해, '${name}' 영역의 위계별 서술 문장 10개를 작성해주세요.
+
+요구사항
+• 위계 1~10으로 나누어 각 1문장씩 (1=가장 발전이 필요한 수준, 10=가장 뛰어난 수준)
+• 각 문장은 "${name} 면에서"로 시작
+• 구체적인 행동·태도 관찰 내용이 포함되어야 함 (막연한 칭찬/비판 금지)
+• 서술형 종결어미 (~함, ~보임, ~드러냄 등), 2문장 이내
+• 아래 형식으로만 출력 (설명 문구 없이):
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+6. ...
+7. ...
+8. ...
+9. ...
+10. ...`;
+  } else {
+    prompt =
+`학생 창의적 체험활동 '${rtLabel}' 기록을 위해, '${name}' 활동의 위계별 서술 문장 10개를 작성해주세요.
+
+요구사항
+• 위계 1~10으로 나누어 각 1문장씩 (1=최하위 수준, 10=최상위 수준)
+• 각 문장은 "${name}에서" 또는 "${name}을 통해"로 시작
+• 활동 참여의 태도, 배움, 성장이 구체적으로 드러나야 함 (막연한 표현 금지)
+• 서술형 종결어미 (~함, ~보임, ~드러냄 등), 2문장 이내
+• 아래 형식으로만 출력 (설명 문구 없이):
+1. ...
+2. ...
+3. ...
+4. ...
+5. ...
+6. ...
+7. ...
+8. ...
+9. ...
+10. ...`;
+  }
+
+  document.getElementById('ai-title').textContent = `항목 ${idx+1} — "${name}" 위계 문장 생성 (${rtLabel})`;
+  document.getElementById('ai-prompt').value = prompt;
+  document.getElementById('ai-overlay').classList.add('show');
+}
+
+function showStudentPrompt(si) {
+  const s = state.students[si];
+  if (!s.name) { toast('학생 이름이 없습니다.', 2000); return; }
+
+  const itemLines = state.items
+    .filter(it => it.levels[si] && it.sentences[parseInt(it.levels[si])-1])
+    .map(it => {
+      const lv = it.levels[si];
+      const sent = it.sentences[parseInt(lv)-1];
+      return `• ${it.name || '(항목명 없음)'} (위계 ${lv}/10)\n  "${sent}"`;
+    });
+
+  if (!itemLines.length) { toast('입력된 항목이 없습니다.', 2000); return; }
+
+  const rt = state.recordType || 'subject';
+  const subjectFull = `${state.grade} ${state.subject}`.trim();
+  const rtLabel = TYPE_LABELS[rt];
+  const nameTag = `${s.cls ? s.cls+'반 ' : ''}${s.name}`;
+
+  let prompt, titleSuffix;
+  if (rt === 'subject') {
+    titleSuffix = '최종 세특 초안';
+    prompt =
+`${subjectFull} 세부능력 및 특기사항을 작성해주세요.
+
+[학생 정보] ${nameTag}
+
+[항목별 수행 수준]
+${itemLines.join('\n\n')}
+
+[작성 조건]
+• 500자 내외 (최대 600자)
+• 위 항목들을 자연스럽게 연결하여 통합 서술 (항목 구분 없이 흐름 있게)
+• 중복 표현 없이, 이 학생만의 특성이 드러나는 문장으로
+• 나이스(NEIS) 입력 형식 (줄바꿈 없이 이어쓰기)`;
+  } else if (rt === 'homeroom') {
+    titleSuffix = '행동특성·종합의견 초안';
+    prompt =
+`학생 행동특성 및 종합의견을 작성해주세요.
+
+[학생 정보] ${nameTag}
+
+[영역별 관찰 내용]
+${itemLines.join('\n\n')}
+
+[작성 조건]
+• 500자 내외 (최대 600자)
+• 위 영역들을 자연스럽게 연결하여 통합 서술 (영역 구분 없이 흐름 있게)
+• 이 학생의 개성과 긍정적 성장 가능성이 드러나도록
+• 나이스(NEIS) 입력 형식 (줄바꿈 없이 이어쓰기)`;
+  } else {
+    titleSuffix = `${rtLabel} 기록 초안`;
+    prompt =
+`창의적 체험활동 '${rtLabel}' 세부 기록을 작성해주세요.
+
+[학생 정보] ${nameTag}
+
+[활동별 수행 내용]
+${itemLines.join('\n\n')}
+
+[작성 조건]
+• 500자 내외 (최대 600자)
+• 위 활동들을 자연스럽게 연결하여 통합 서술 (활동 구분 없이 흐름 있게)
+• 활동을 통한 학생의 성장과 변화가 드러나도록
+• 나이스(NEIS) 입력 형식 (줄바꿈 없이 이어쓰기)`;
+  }
+
+  document.getElementById('ai-title').textContent = `${nameTag} · ${titleSuffix}`;
+  document.getElementById('ai-prompt').value = prompt;
+  document.getElementById('ai-overlay').classList.add('show');
+}
+
+function closeAI() {
+  document.getElementById('ai-overlay').classList.remove('show');
+}
+
+function copyAIPrompt() {
+  const txt = document.getElementById('ai-prompt').value;
+  navigator.clipboard.writeText(txt).then(() => {
+    closeAI();
+    toast('프롬프트 복사 완료! SEN GPT에 붙여넣기 하세요.');
+  });
+}
+
+// 오버레이 바깥 클릭 시 닫기
+document.getElementById('ai-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAI();
+});
 
 // ═══════════════ 문장은행 ═══════════════
 let bkFilter = '';
@@ -481,34 +1082,35 @@ const CATS = [...new Set(SENTENCES.map(s=>s[0]))];
 const CAT_IDX = Object.fromEntries(CATS.map((c,i)=>[c,i]));
 
 function renderBank() {
-  // 필터 버튼
   document.getElementById('bank-filters').innerHTML =
     `<button class="btn ${bkFilter===''?'btn-blue':'btn-gray'}" onclick="setBkFilter('')">전체</button>` +
     CATS.map(c => `<button class="btn ${bkFilter===c?'btn-blue':'btn-gray'}" onclick="setBkFilter('${c}')">${c}</button>`).join('');
 
   const rows = SENTENCES.filter(s => !bkFilter || s[0]===bkFilter);
-  document.getElementById('bktbody').innerHTML = rows.map(([cat,sit,sent],ri) => {
+  document.getElementById('bktbody').innerHTML = rows.map(([cat,sit,sent]) => {
     const ci = CAT_IDX[cat] % CAT_CLS.length;
     return `<tr>
       <td><span class="cat-badge ${CAT_CLS[ci]}">${cat}</span></td>
       <td style="font-size:12px">${sit}</td>
       <td style="text-align:left;font-size:12px;line-height:1.6">${esc(sent)}</td>
       <td><button class="btn btn-gray" style="font-size:10px;padding:4px 8px"
-        onclick="bkInsert(this,'${esc(sent).replace(/'/g,'&#39;')}')">삽입</button></td>
+        onclick="bkInsert('${esc(sent).replace(/'/g,'&#39;')}')">삽입</button></td>
     </tr>`;
   }).join('');
 }
 
 function setBkFilter(cat) { bkFilter = cat; renderBank(); }
 
-function bkInsert(btn, sent) {
-  // 마지막으로 포커스된 textarea에 삽입, 없으면 클립보드
+function bkInsert(sent) {
   if (lastFocused && lastFocused.isConnected) {
     lastFocused.value = sent;
     lastFocused.dispatchEvent(new Event('input'));
     lastFocused.focus();
+    toast('문장 삽입 완료');
   } else {
-    navigator.clipboard.writeText(sent).then(() => alert('클립보드에 복사했습니다.\n위계 문장 편집 칸에 붙여넣기 하세요.'));
+    navigator.clipboard.writeText(sent).then(() =>
+      toast('클립보드에 복사했습니다. 위계 문장 편집 칸에 붙여넣기 하세요.', 3000)
+    );
   }
 }
 
@@ -516,14 +1118,43 @@ function bkInsert(btn, sent) {
 let lastFocused = null;
 document.addEventListener('focusin', e => { if (e.target.classList.contains('lvl-ta')) lastFocused = e.target; });
 
+// 오버레이 바깥 클릭 시 닫기
+document.getElementById('reset-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeReset();
+});
+
 // ═══════════════ 유틸 ═══════════════
 function esc(s) {
   if (!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ═══════════════ 설정 ═══════════════
+function renderSettings() {
+  const rt = state.recordType || 'subject';
+
+  document.querySelectorAll('.type-btn[data-rt]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.rt === rt);
+  });
+
+  const subjectFields = document.getElementById('subject-fields');
+  if (subjectFields) subjectFields.style.display = rt === 'subject' ? 'flex' : 'none';
+
+  const hintEl = document.getElementById('rt-hint');
+  if (hintEl) hintEl.textContent = TYPE_HINTS[rt] || '';
+
+  const gradeEl = document.getElementById('set-grade');
+  const subjectEl = document.getElementById('set-subject');
+  if (gradeEl) gradeEl.value = state.grade || '고등학교';
+  if (subjectEl) subjectEl.value = state.subject || '';
+
+  const badge = document.getElementById('type-badge');
+  if (badge) badge.textContent = TYPE_LABELS[rt] || '';
+}
+
 // ═══════════════ 초기화 ═══════════════
 function renderAll() {
+  renderSettings();
   renderStudents();
   for (let i=0; i<5; i++) renderItem(i);
   renderFinal();

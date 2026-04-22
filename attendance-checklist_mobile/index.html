@@ -582,7 +582,7 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
     </div>
   </div>
 
-  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:16px;padding-bottom:4px">Claude AI로 이 앱을 제작함</p>
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:16px;padding-bottom:4px">Claude AI로 이 앱을 제작함 by 고은표</p>
 </div>
 
 </main>
@@ -1650,6 +1650,7 @@ function inferApprovedType(사유) {
 function importDetailedRows(rows, importNames=true) {
   let imported = 0, skipped = 0, newNames = 0;
   let currentNum = null;
+  let currentAttType = null, currentSayoo = null;
   const newDates = new Set();
 
   for (let i = 0; i < rows.length; i++) {
@@ -1658,11 +1659,17 @@ function importDetailedRows(rows, importNames=true) {
     // 헤더 행 건너뜀
     if (String(row[0] || '').includes('일자')) continue;
 
-    const [일자, 번호, 이름Raw, 출결구분, , 사유] = row;
+    const [일자, 번호Raw, 이름Raw, 출결구분Raw, , 사유Raw] = row;
 
     // 번호 carry-forward (연속 행에서 null이면 이전 학생 유지)
-    if (번호 !== null && 번호 !== undefined && String(번호).trim() !== '') {
-      currentNum = parseInt(String(번호), 10);
+    if (번호Raw !== null && 번호Raw !== undefined && String(번호Raw).trim() !== '') {
+      const newNum = parseInt(String(번호Raw), 10);
+      if (newNum !== currentNum) {
+        // 학생 변경 시 출결구분 carry-forward 초기화
+        currentAttType = null;
+        currentSayoo = null;
+      }
+      currentNum = newNum;
       // 이름 자동 인식
       if (importNames) {
         const 이름 = 이름Raw ? String(이름Raw).trim() : '';
@@ -1672,15 +1679,22 @@ function importDetailedRows(rows, importNames=true) {
         }
       }
     }
+
+    // 출결구분 carry-forward (병합 셀: 값이 있을 때만 갱신)
+    if (출결구분Raw !== null && 출결구분Raw !== undefined && String(출결구분Raw).trim() !== '') {
+      currentAttType = String(출결구분Raw).trim();
+      currentSayoo = 사유Raw;
+    }
+
     if (!currentNum || currentNum < 1 || currentNum > studentCount()) continue;
-    if (!출결구분) continue;
+    if (!currentAttType) continue;
 
     // 날짜 파싱: "2026.03.05.(목)" → "2026-03-05"
     const dm = String(일자 || '').match(/(\d{4})\.(\d{2})\.(\d{2})/);
     if (!dm) continue;
     const date = `${dm[1]}-${dm[2]}-${dm[3]}`;
 
-    const parsed = ATT_TYPE_MAP[String(출결구분).trim()];
+    const parsed = ATT_TYPE_MAP[currentAttType];
     if (!parsed) continue;
 
     if (!appData.dailyRecords[date]) appData.dailyRecords[date] = { attendance: {} };
@@ -1695,10 +1709,10 @@ function importDetailedRows(rows, importNames=true) {
 
     if (parsed.type === 'approved') {
       if (parsed.field === 'absent' && !att[currentNum].approvedType)
-        att[currentNum].approvedType = inferApprovedType(사유);
+        att[currentNum].approvedType = inferApprovedType(currentSayoo);
     }
-    if (사유 && !att[currentNum].memo)
-      att[currentNum].memo = String(사유).trim();
+    if (currentSayoo && !att[currentNum].memo)
+      att[currentNum].memo = String(currentSayoo).trim();
 
     newDates.add(date);
     imported++;

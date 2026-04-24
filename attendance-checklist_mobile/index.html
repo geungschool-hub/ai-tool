@@ -10,54 +10,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="출결 관리">
 <link rel="apple-touch-icon" href="icon.svg">
-<!-- 업데이트 공지 -->
-<div id="update-notice-overlay">
-  <div id="update-notice-card">
-    <div class="un-header">
-      <div class="un-badge">2026년 4월 24일 업데이트</div>
-      <div class="un-title">교과 출결 기능이<br>새로 추가되었습니다 📚</div>
-    </div>
-    <div class="un-body">
-      <div class="un-feat-list">
-        <div class="un-feat">
-          <div class="un-feat-icon">📋</div>
-          <div class="un-feat-text"><b>반 관리</b> — 여러 반을 등록하고, 명렬표를 PDF로 업로드하거나 직접 입력할 수 있습니다.</div>
-        </div>
-        <div class="un-feat">
-          <div class="un-feat-icon">✅</div>
-          <div class="un-feat-text"><b>일일 체크</b> — 날짜별로 결과 학생을 탭 한 번으로 기록합니다.</div>
-        </div>
-        <div class="un-feat">
-          <div class="un-feat-icon">📊</div>
-          <div class="un-feat-text"><b>출결 현황</b> — 반별로 결과 발생 날짜와 학생을 한눈에 확인합니다.</div>
-        </div>
-      </div>
-      <button class="un-confirm-btn" onclick="closeUpdateNotice()">확인</button>
-    </div>
-  </div>
-</div>
-
-<!-- 온보딩 -->
-<div id="ob-overlay">
-  <div id="ob-card">
-    <div id="ob-dots"></div>
-    <div id="ob-body"></div>
-    <div id="ob-foot"></div>
-  </div>
-</div>
-
-<div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
-    <div style="font-size:44px;line-height:1;margin-bottom:14px">⚠️</div>
-    <div style="font-size:17px;font-weight:700;color:#7A4500;margin-bottom:10px">전체 데이터 삭제</div>
-    <div style="font-size:13px;color:#444;line-height:1.8;margin-bottom:22px">출결 기록, 증빙서류 기한 등<br>모든 데이터가 삭제됩니다.<br><b>이 작업은 되돌릴 수 없습니다.</b></div>
-    <div style="display:flex;gap:10px">
-      <button onclick="document.getElementById('reset-confirm-overlay').style.display='none'" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
-      <button onclick="confirmResetAll()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">삭제</button>
-    </div>
-  </div>
-</div>
-
 <script src="xlsx.full.min.js"></script>
 <script src="pdf.min.js"></script>
 <style>
@@ -839,6 +791,55 @@ body.mode-subject > .bottom-nav { display: none !important; }
   <div class="landing-footer" id="landing-footer-yr"></div>
 </div>
 
+<!-- 업데이트 공지 -->
+<div id="update-notice-overlay">
+  <div id="update-notice-card">
+    <div class="un-header">
+      <div class="un-badge">2026년 4월 24일 업데이트</div>
+      <div class="un-title">교과 출결 기능이<br>새로 추가되었습니다 📚</div>
+    </div>
+    <div class="un-body">
+      <div class="un-feat-list">
+        <div class="un-feat">
+          <div class="un-feat-icon">📋</div>
+          <div class="un-feat-text"><b>반 관리</b> — 여러 반을 등록하고, 명렬표를 PDF로 업로드하거나 직접 입력할 수 있습니다.</div>
+        </div>
+        <div class="un-feat">
+          <div class="un-feat-icon">✅</div>
+          <div class="un-feat-text"><b>일일 체크</b> — 날짜별로 결과 학생을 탭 한 번으로 기록합니다.</div>
+        </div>
+        <div class="un-feat">
+          <div class="un-feat-icon">📊</div>
+          <div class="un-feat-text"><b>출결 현황</b> — 반별로 결과 발생 날짜와 학생을 한눈에 확인합니다.</div>
+        </div>
+      </div>
+      <button class="un-confirm-btn" onclick="closeUpdateNotice()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 온보딩 -->
+<div id="ob-overlay">
+  <div id="ob-card">
+    <div id="ob-dots"></div>
+    <div id="ob-body"></div>
+    <div id="ob-foot"></div>
+  </div>
+</div>
+
+<!-- 전체 데이터 삭제 확인 -->
+<div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div style="font-size:44px;line-height:1;margin-bottom:14px">⚠️</div>
+    <div style="font-size:17px;font-weight:700;color:#7A4500;margin-bottom:10px">전체 데이터 삭제</div>
+    <div style="font-size:13px;color:#444;line-height:1.8;margin-bottom:22px">출결 기록, 증빙서류 기한 등<br>모든 데이터가 삭제됩니다.<br><b>이 작업은 되돌릴 수 없습니다.</b></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('reset-confirm-overlay').style.display='none'" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
+      <button onclick="confirmResetAll()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">삭제</button>
+    </div>
+  </div>
+</div>
+
 <header class="app-header">
   <button class="zoom-btn" onclick="backToLanding()" aria-label="홈" title="모드 선택 화면" style="font-size:16px">⌂</button>
   <h1>담임 출결 <span id="hd-year" style="font-weight:400;opacity:.6;font-size:12px"></span></h1>
@@ -1209,6 +1210,16 @@ body.mode-subject > .bottom-nav { display: none !important; }
       <div class="subj-modal-btns">
         <button onclick="closeClassModal()" style="flex:1;padding:13px;border:1.5px solid var(--line);border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
         <button onclick="saveClassModal()" style="flex:1;padding:13px;border:none;border-radius:10px;background:var(--green);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:0 16px 4px">
+    <div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">교과 출결 데이터 백업</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn ghost full" onclick="exportSubjBackup()">📤 JSON 내보내기</button>
+        <label class="btn ghost full" style="cursor:pointer;position:relative">📥 JSON 불러오기<input type="file" accept=".json,application/json" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="importSubjBackup(this)"></label>
       </div>
     </div>
   </div>
@@ -1986,6 +1997,31 @@ function importBackup(input) {
       showToast('데이터를 불러왔습니다.');
     } catch(err) { showToast('불러오기 실패: '+err.message); }
     input.value='';
+  };
+  reader.readAsText(file);
+}
+function exportSubjBackup() {
+  const blob = new Blob([JSON.stringify(subjData, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`subject_backup_${subjTodayStr()}.json`; a.click();
+  URL.revokeObjectURL(url); showToast('교과 출결 백업 파일을 저장했습니다.');
+}
+function importSubjBackup(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (typeof imp !== 'object' || Array.isArray(imp) || !imp.classes || !imp.records)
+        throw new Error('올바른 백업 파일이 아닙니다.');
+      subjData.classes = imp.classes || [];
+      subjData.records = imp.records || {};
+      saveSubjData();
+      renderSubjClassList();
+      showToast('교과 출결 데이터를 불러왔습니다.');
+    } catch(err) { showToast('불러오기 실패: ' + err.message); }
+    input.value = '';
   };
   reader.readAsText(file);
 }
@@ -2975,7 +3011,7 @@ function renderObStep() {
 }
 
 // ===== 화면 확대 =====
-const ZOOM_LEVELS = [1, 1.15, 1.3];
+const ZOOM_LEVELS = ['100%', '115%', '130%'];
 let _zoomIdx = 0;
 function initZoom() {
   _zoomIdx = Math.min(parseInt(localStorage.getItem('attendance_zoom') || '0'), ZOOM_LEVELS.length - 1);
@@ -2987,7 +3023,7 @@ function adjustZoom(dir) {
   applyZoom();
 }
 function applyZoom() {
-  document.body.style.zoom = ZOOM_LEVELS[_zoomIdx];
+  document.documentElement.style.fontSize = ZOOM_LEVELS[_zoomIdx];
   document.getElementById('zoom-out').disabled = _zoomIdx === 0;
   document.getElementById('zoom-in').disabled  = _zoomIdx === ZOOM_LEVELS.length - 1;
 }

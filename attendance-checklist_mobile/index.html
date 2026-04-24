@@ -840,6 +840,17 @@ body.mode-subject > .bottom-nav { display: none !important; }
   </div>
 </div>
 
+<!-- 교과 출결 공용 confirm 모달 -->
+<div id="subj-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div id="subj-confirm-msg" style="font-size:15px;color:#333;line-height:1.8;margin-bottom:22px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="_closeSubjConfirm()" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
+      <button onclick="_okSubjConfirm()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">확인</button>
+    </div>
+  </div>
+</div>
+
 <header class="app-header">
   <button class="zoom-btn" onclick="backToLanding()" aria-label="홈" title="모드 선택 화면" style="font-size:16px">⌂</button>
   <h1>담임 출결 <span id="hd-year" style="font-weight:400;opacity:.6;font-size:12px"></span></h1>
@@ -2000,6 +2011,23 @@ function importBackup(input) {
   };
   reader.readAsText(file);
 }
+// ── 교과 출결 공용 confirm ────────────────────────────────────────
+let _subjConfirmCb = null;
+function _showSubjConfirm(msg, onConfirm) {
+  document.getElementById('subj-confirm-msg').textContent = msg;
+  _subjConfirmCb = onConfirm;
+  document.getElementById('subj-confirm-overlay').style.display = 'flex';
+}
+function _closeSubjConfirm() {
+  document.getElementById('subj-confirm-overlay').style.display = 'none';
+  _subjConfirmCb = null;
+}
+function _okSubjConfirm() {
+  const cb = _subjConfirmCb;
+  _closeSubjConfirm();
+  if (cb) cb();
+}
+
 function exportSubjBackup() {
   const blob = new Blob([JSON.stringify(subjData, null, 2)], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
@@ -3134,6 +3162,11 @@ function subjShiftDate(str, delta) {
   dt.setDate(dt.getDate() + delta);
   return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
 }
+function _subjIsWeekend(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  const dow = new Date(y, m-1, d).getDay();
+  return dow === 0 || dow === 6;
+}
 
 // ── 탭 전환 ─────────────────────────────────────────────────────
 let subjCurrentTab = 'daily';
@@ -3250,18 +3283,23 @@ function closeAddClsModal() {
 }
 function saveAddClsModal() {
   const clsName = document.getElementById('add-cls-name-input').value.trim();
-  if (!clsName) { alert('반 이름을 입력해 주세요.'); return; }
+  if (!clsName) { showToast('반 이름을 입력해 주세요.'); return; }
   const raw      = document.getElementById('add-cls-students-input').value;
   const students = _parseStudentList(raw);
   const cnt      = Object.keys(students).length;
-  if (!cnt) { alert('학생 명단을 입력해 주세요.'); return; }
+  if (!cnt) { showToast('학생 명단을 입력해 주세요.'); return; }
   const existing = subjData.classes.find(c => c.name === clsName);
   if (existing) {
-    if (!confirm(`"${clsName}" 반이 이미 있습니다.\n학생 명단을 업데이트할까요?`)) return;
-    existing.students = students;
-  } else {
-    subjData.classes.push({ id: 'cls_' + Date.now(), name: clsName, students });
+    _showSubjConfirm(`"${clsName}" 반이 이미 있습니다. 학생 명단을 업데이트할까요?`, () => {
+      existing.students = students;
+      saveSubjData();
+      closeAddClsModal();
+      renderSubjClassList();
+      showToast(`✅ ${cnt}명 업데이트 완료`);
+    });
+    return;
   }
+  subjData.classes.push({ id: 'cls_' + Date.now(), name: clsName, students });
   saveSubjData();
   closeAddClsModal();
   renderSubjClassList();
@@ -3392,7 +3430,13 @@ function _renderSubjDateView() {
 }
 function subjChangeDate(delta) {
   _setSortMode(false);
-  subjDate = subjShiftDate(subjDate, delta);
+  let next = subjShiftDate(subjDate, delta);
+  let safety = 0;
+  while (_subjIsWeekend(next) && safety < 14) {
+    next = subjShiftDate(next, delta > 0 ? 1 : -1);
+    safety++;
+  }
+  subjDate = next;
   _renderSubjDateView();
 }
 function subjGoToday() {
@@ -3428,7 +3472,6 @@ function _subjRenderCal() {
   document.querySelector('.cal-overlay')?.remove();
   const today = subjTodayStr();
   const sel   = subjDate;
-  const DAYS  = ['일','월','화','수','목','금','토'];
   const first  = new Date(_sCalY, _sCalM, 1);
   const lastDay = new Date(_sCalY, _sCalM + 1, 0).getDate();
   const startDow = first.getDay();
@@ -3490,15 +3533,16 @@ function deleteSubjStudent(key) {
   const cls = subjData.classes.find(c => c.id === subjClassId);
   if (!cls) return;
   const name = cls.students[key];
-  if (!confirm(`"${name}" 학생을 명단에서 삭제할까요?`)) return;
-  delete cls.students[key];
-  const rec = subjData.records[cls.id] || {};
-  Object.keys(rec).forEach(date => {
-    const arr = rec[date].filter(k => k !== key);
-    if (!arr.length) delete rec[date]; else rec[date] = arr;
+  _showSubjConfirm(`"${name}" 학생을 명단에서 삭제할까요?`, () => {
+    delete cls.students[key];
+    const rec = subjData.records[cls.id] || {};
+    Object.keys(rec).forEach(date => {
+      const arr = rec[date].filter(k => k !== key);
+      if (!arr.length) delete rec[date]; else rec[date] = arr;
+    });
+    saveSubjData();
+    renderSubjStudents();
   });
-  saveSubjData();
-  renderSubjStudents();
 }
 
 // 학생 키 파싱: "3-1-4" (나이스) 또는 "4" (수동)

@@ -1,0 +1,36 @@
+name: Deploy attendance-test
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'attendance-test/**'
+      - '.github/workflows/deploy-attendance-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare deploy files
+        run: |
+          mkdir -p deploy-tmp
+          cp attendance-test/index.html    deploy-tmp/
+          cp attendance-test/manifest.json deploy-tmp/
+          cp attendance-test/sw.js         deploy-tmp/
+          cp attendance-test/icon.svg      deploy-tmp/
+          [ -f "attendance-test/xlsx.full.min.js"   ] && cp attendance-test/xlsx.full.min.js   deploy-tmp/
+          [ -f "attendance-test/pdf.min.js"          ] && cp attendance-test/pdf.min.js          deploy-tmp/
+          [ -f "attendance-test/pdf.worker.min.js"   ] && cp attendance-test/pdf.worker.min.js   deploy-tmp/
+          [ -d "attendance-test/cmaps"               ] && cp -r attendance-test/cmaps            deploy-tmp/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy-tmp

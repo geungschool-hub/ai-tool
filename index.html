@@ -3031,14 +3031,16 @@ function subjTodayStr() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 function subjFmtDate(str) {
+  if (!str || !str.includes('-')) return '';
   const [y,m,d] = str.split('-');
   const days = ['일','월','화','수','목','금','토'];
   return `${+m}월 ${+d}일 (${days[new Date(+y,+m-1,+d).getDay()]})`;
 }
 function subjShiftDate(str, delta) {
-  const d = new Date(str);
-  d.setDate(d.getDate() + delta);
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const [y,m,d] = str.split('-').map(Number);
+  const dt = new Date(y, m-1, d);   // 로컬 시간 기준 — Safari UTC 파싱 버그 방지
+  dt.setDate(dt.getDate() + delta);
+  return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
 }
 
 // ── 탭 전환 ─────────────────────────────────────────────────────
@@ -3048,18 +3050,10 @@ function switchSubjTab(tab) {
   subjCurrentTab = tab;
   document.getElementById('subj-tab-daily').classList.toggle('active',   tab === 'daily');
   document.getElementById('subj-tab-summary').classList.toggle('active', tab === 'summary');
-
   if (tab === 'daily') {
-    if (subjClassId) {
-      showSubjView('students');
-    } else {
-      showSubjView('classes');
-    }
-    document.getElementById('subj-view-summary').style.display = 'none';
+    showSubjView(subjClassId ? 'students' : 'classes');
   } else {
-    document.getElementById('subj-view-classes').style.display  = 'none';
-    document.getElementById('subj-view-students').style.display = 'none';
-    document.getElementById('subj-view-summary').style.display  = 'block';
+    showSubjView('summary');
     renderSubjSummary();
   }
 }
@@ -3143,7 +3137,7 @@ function toggleSummaryDetail(detailId) {
 function goToDailyCheck(clsId, dateStr) {
   subjDate    = dateStr;
   subjClassId = clsId;
-  subjSortMode = false;
+  _setSortMode(false);
   document.getElementById('subj-tab-daily').classList.add('active');
   document.getElementById('subj-tab-summary').classList.remove('active');
   subjCurrentTab = 'daily';
@@ -3231,7 +3225,7 @@ function initSubjApp() {
 function showSubjView(view) {
   document.getElementById('subj-view-classes').style.display  = (view === 'classes')  ? '' : 'none';
   document.getElementById('subj-view-students').style.display = (view === 'students') ? '' : 'none';
-  document.getElementById('subj-view-summary').style.display  = 'none';
+  document.getElementById('subj-view-summary').style.display  = (view === 'summary')  ? 'block' : 'none';
 }
 
 // ── 반 목록 뷰 ───────────────────────────────────────────────────
@@ -3278,13 +3272,13 @@ function renderSubjClassList() {
 }
 
 // ── 반 순서 변경 ─────────────────────────────────────────────────
-function toggleSortMode() {
-  subjSortMode = !subjSortMode;
+function _setSortMode(on) {
+  subjSortMode = on;
   const btn = document.getElementById('sort-toggle-btn');
-  if (btn) {
-    btn.textContent = subjSortMode ? '완료' : '순서 변경';
-    btn.classList.toggle('active', subjSortMode);
-  }
+  if (btn) { btn.textContent = on ? '완료' : '순서 변경'; btn.classList.toggle('active', on); }
+}
+function toggleSortMode() {
+  _setSortMode(!subjSortMode);
   renderSubjClassList();
 }
 
@@ -3299,20 +3293,19 @@ function moveSubjClass(clsId, delta) {
   renderSubjClassList();
 }
 
-function subjChangeDate(delta) {
-  subjSortMode = false;
-  const btn = document.getElementById('sort-toggle-btn');
-  if (btn) { btn.textContent = '순서 변경'; btn.classList.remove('active'); }
-  subjDate = subjShiftDate(subjDate, delta);
+function _renderSubjDateView() {
   document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
   if (subjClassId) renderSubjStudents();
   else renderSubjClassList();
 }
+function subjChangeDate(delta) {
+  _setSortMode(false);
+  subjDate = subjShiftDate(subjDate, delta);
+  _renderSubjDateView();
+}
 function subjGoToday() {
   subjDate = subjTodayStr();
-  document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
-  if (subjClassId) renderSubjStudents();
-  else renderSubjClassList();
+  _renderSubjDateView();
 }
 
 // ── 학생 뷰 ─────────────────────────────────────────────────────
@@ -3576,7 +3569,8 @@ function saveClassModal() {
   const name = document.getElementById('subj-cls-name-input').value.trim();
   if (!name) { alert('반 이름을 입력해 주세요.'); return; }
   const cls = subjData.classes.find(c => c.id === editingClassId);
-  if (cls) cls.name = name;
+  if (!cls) { closeClassModal(); return; }
+  cls.name = name;
   saveSubjData();
   closeClassModal();
   renderSubjClassList();

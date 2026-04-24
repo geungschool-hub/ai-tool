@@ -590,18 +590,6 @@ body.mode-subject > .bottom-nav { display: none !important; }
   box-shadow: 0 1px 4px rgba(0,0,0,.25);
   -webkit-tap-highlight-color: transparent;
 }
-/* 결과 이력 뱃지 */
-.sc-hist-btn {
-  position: absolute; top: -8px; left: -8px;
-  min-width: 26px; height: 26px; padding: 0 6px;
-  background: var(--navy); color: white;
-  border-radius: 13px; border: 2px solid white;
-  font-size: 12px; font-weight: 700;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
-  -webkit-tap-highlight-color: transparent;
-  z-index: 1;
-}
 
 /* 교과 출결 날짜 바 */
 .subj-date-bar {
@@ -743,30 +731,6 @@ body.mode-subject > .bottom-nav { display: none !important; }
 }
 .sum-action-btn:active { background: var(--bg); }
 .sum-action-btn.goto  { color: var(--green); border-color: #A8D4AB; }
-
-/* 학생 이력 모달 */
-#subj-hist-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,.5); z-index: 8100;
-  align-items: flex-end; justify-content: center;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-#subj-hist-overlay.open { display: flex; }
-.subj-hist-modal {
-  background: white; border-radius: 20px 20px 0 0;
-  padding: 20px 20px 32px; width: 100%; max-width: 440px;
-  max-height: 70vh; display: flex; flex-direction: column;
-}
-.subj-hist-modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.subj-hist-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
-.subj-hist-list { overflow-y: auto; flex: 1; }
-.subj-hist-item {
-  padding: 9px 12px; border-radius: 8px;
-  font-size: 13px; font-weight: 600; color: var(--text);
-  border-bottom: 1px solid var(--line);
-}
-.subj-hist-item:last-child { border-bottom: none; }
-.subj-hist-empty { padding: 24px 0; text-align: center; color: var(--muted); font-size: 13px; }
 
 /* 수동 반 추가 모달 */
 #subj-add-cls-overlay {
@@ -1204,16 +1168,6 @@ body.mode-subject > .bottom-nav { display: none !important; }
         <button onclick="closeClassModal()" style="flex:1;padding:13px;border:1.5px solid var(--line);border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
         <button onclick="saveClassModal()" style="flex:1;padding:13px;border:none;border-radius:10px;background:var(--green);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
       </div>
-    </div>
-  </div>
-
-  <!-- 학생 이력 모달 -->
-  <div id="subj-hist-overlay" onclick="if(event.target===this)closeStudentHistory()">
-    <div class="subj-hist-modal">
-      <h3 id="subj-hist-name"></h3>
-      <div class="subj-hist-subtitle" id="subj-hist-subtitle"></div>
-      <div class="subj-hist-list" id="subj-hist-list"></div>
-      <button onclick="closeStudentHistory()" style="margin-top:14px;width:100%;padding:13px;border:1.5px solid var(--line);border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">닫기</button>
     </div>
   </div>
 
@@ -3197,29 +3151,6 @@ function goToDailyCheck(clsId, dateStr) {
   renderSubjStudents();
 }
 
-// ── 기능 2: 학생별 결과 이력 ─────────────────────────────────────
-
-function showStudentHistory(key) {
-  if (!subjClassId) return;
-  const cls      = subjData.classes.find(c => c.id === subjClassId);
-  if (!cls) return;
-  const name     = (cls.students || {})[key] || key;
-  const label    = studentCellLabel(key);
-  const rec      = subjData.records[subjClassId] || {};
-  const dates    = Object.keys(rec)
-    .filter(d => (rec[d] || []).includes(key))
-    .sort((a, b) => b.localeCompare(a));
-
-  document.getElementById('subj-hist-name').textContent     = `${label}  ${name}`;
-  document.getElementById('subj-hist-subtitle').textContent = dates.length ? `총 ${dates.length}회 결과` : '결과 기록 없음';
-  document.getElementById('subj-hist-list').innerHTML = dates.length
-    ? dates.map(d => `<div class="subj-hist-item">${subjFmtDate(d)}</div>`).join('')
-    : `<div class="subj-hist-empty">결과 기록이 없습니다.</div>`;
-  document.getElementById('subj-hist-overlay').classList.add('open');
-}
-function closeStudentHistory() {
-  document.getElementById('subj-hist-overlay').classList.remove('open');
-}
 
 // ── 기능 3: 수동 반 추가 ─────────────────────────────────────────
 function openAddClsModal() {
@@ -3527,10 +3458,8 @@ function renderSubjStudents() {
     </div>`;
     return;
   }
-  const allRec = subjData.records[subjClassId] || {};
   grid.innerHTML = keys.map(key => {
     const absent = absentSet.has(key);
-    const histCount = Object.values(allRec).filter(arr => arr.includes(key)).length;
     if (subjEditMode) {
       return `<div class="student-cell${absent?' absent':''} editing">
         <div class="sc-del-btn" onclick="deleteSubjStudent('${key}')">×</div>
@@ -3538,11 +3467,7 @@ function renderSubjStudents() {
         <div class="sc-name">${students[key]}</div>
       </div>`;
     }
-    const histBtn = histCount
-      ? `<div class="sc-hist-btn" onclick="event.stopPropagation();showStudentHistory('${key}')">${histCount}</div>`
-      : '';
     return `<div class="student-cell${absent?' absent':''}" onclick="toggleSubjAbsent('${key}')">
-      ${histBtn}
       <div class="sc-num">${studentCellLabel(key)}</div>
       <div class="sc-name">${students[key]}</div>
     </div>`;

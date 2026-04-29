@@ -539,13 +539,44 @@
     font-weight: 600;
     flex-shrink: 0;
   }
+
+  /* ── 학급 설정 섹션 ── */
+  .admin-roster-section {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e8f0ee;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .class-info-badge {
+    font-size: 13px;
+    color: #555;
+    background: #f0faf8;
+    border: 1px solid #c8e6e0;
+    border-radius: 8px;
+    padding: 7px 12px;
+  }
+  .btn-roster {
+    background: #e8f5f3;
+    color: #2a9d8f;
+    border: 1px solid #c8e6e0;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    min-height: 44px;
+  }
+  .btn-roster:hover { background: #d4ede9; }
 </style>
 </head>
 <body>
 
 <!-- 상단 바 -->
 <div id="header">
-  <div class="title"><span>🐦</span>얼리버드 프로젝트 · 2학년 7반</div>
+  <div class="title"><span>🐦</span>얼리버드 프로젝트 · <span id="class-label">2학년 7반</span></div>
   <div class="header-right">
     <div id="date-display">--</div>
     <div id="clock-display">--:--:--</div>
@@ -588,6 +619,12 @@
       <button class="modal-close" id="admin-close">나가기</button>
     </div>
     <div class="modal-body">
+      <div class="admin-roster-section">
+        <div class="admin-backup-title">👥 학급 설정</div>
+        <div class="class-info-badge" id="class-info-display">현재: 2학년 7반 (26명)</div>
+        <button class="btn-roster" id="btn-upload-roster">📋 명렬표 업로드 (.xlsx)</button>
+        <input type="file" id="roster-file-input" accept=".xlsx,.xls" style="display:none">
+      </div>
       <div class="admin-date-row">
         <label style="font-size:14px;font-weight:600;color:#555;">날짜</label>
         <input type="date" class="admin-date-input" id="admin-date-input">
@@ -653,9 +690,10 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── 학생 데이터 ──
-const STUDENTS = [
+const DEFAULT_STUDENTS = [
   { id: '20701', name: '권윤서' },
   { id: '20702', name: '김민경' },
   { id: '20703', name: '김민정' },
@@ -683,6 +721,87 @@ const STUDENTS = [
   { id: '20725', name: '한서현' },
   { id: '20726', name: '한예소' },
 ];
+
+function loadStudents() {
+  const raw = localStorage.getItem('earlybird_students');
+  return raw ? JSON.parse(raw) : DEFAULT_STUDENTS;
+}
+
+function loadClassInfo() {
+  const raw = localStorage.getItem('earlybird_class_info');
+  return raw ? JSON.parse(raw) : { grade: 2, classNum: 7 };
+}
+
+let STUDENTS = loadStudents();
+let CLASS_INFO = loadClassInfo();
+
+function updateHeader() {
+  document.getElementById('class-label').textContent = `${CLASS_INFO.grade}학년 ${CLASS_INFO.classNum}반`;
+  document.title = `얼리버드 프로젝트 - ${CLASS_INFO.grade}학년 ${CLASS_INFO.classNum}반`;
+  const el = document.getElementById('class-info-display');
+  if (el) el.textContent = `현재: ${CLASS_INFO.grade}학년 ${CLASS_INFO.classNum}반 (${STUDENTS.length}명)`;
+}
+
+function parseRosterXlsx(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      let headerRowIdx = -1, nameCol = -1, numCol = -1, gradeCol = -1, classCol = -1;
+      for (let i = 0; i < Math.min(rows.length, 5); i++) {
+        const row = rows[i].map(v => String(v).trim());
+        const ni = row.findIndex(v => v === '성명' || v === '이름');
+        if (ni >= 0) {
+          headerRowIdx = i;
+          nameCol = ni;
+          numCol = row.findIndex(v => v === '번호');
+          gradeCol = row.findIndex(v => v === '학년');
+          classCol = row.findIndex(v => v === '반');
+          break;
+        }
+      }
+
+      if (headerRowIdx < 0 || nameCol < 0 || numCol < 0) {
+        alert('명렬표 형식을 인식하지 못했습니다.\n(학년/반/번호/성명 열이 필요합니다)');
+        return;
+      }
+
+      const students = [];
+      let grade = 0, classNum = 0;
+      for (let i = headerRowIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        const name = String(row[nameCol] || '').trim();
+        const num = parseInt(row[numCol]);
+        const g = parseInt(row[gradeCol]);
+        const c = parseInt(row[classCol]);
+        if (!name || isNaN(num)) break;
+        if (g && !grade) grade = g;
+        if (c && !classNum) classNum = c;
+        const id = `${grade}${String(classNum).padStart(2,'0')}${String(num).padStart(2,'0')}`;
+        students.push({ id, name });
+      }
+
+      if (students.length === 0) { alert('학생 데이터를 찾을 수 없습니다.'); return; }
+
+      CLASS_INFO = { grade, classNum };
+      STUDENTS = students;
+      localStorage.setItem('earlybird_students', JSON.stringify(STUDENTS));
+      localStorage.setItem('earlybird_class_info', JSON.stringify(CLASS_INFO));
+
+      updateHeader();
+      renderAdminGrid();
+      renderCards();
+      applyDeadlineState();
+      alert(`${grade}학년 ${classNum}반 학생 ${students.length}명을 불러왔습니다.`);
+    } catch (err) {
+      alert('파일을 읽는 중 오류가 발생했습니다.\n' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 // ── 날짜 유틸 ──
 function todayKey() {
@@ -1087,6 +1206,7 @@ document.getElementById('history-close').addEventListener('click', closeHistory)
 
 // ── 초기화 ──
 function init() {
+  updateHeader();
   renderCards();
   applyDeadlineState();
   updateClock();
@@ -1095,6 +1215,14 @@ function init() {
     applyDeadlineState();
   }, 1000);
 }
+
+document.getElementById('btn-upload-roster').addEventListener('click', () => {
+  document.getElementById('roster-file-input').click();
+});
+document.getElementById('roster-file-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) parseRosterXlsx(e.target.files[0]);
+  e.target.value = '';
+});
 
 init();
 </script>

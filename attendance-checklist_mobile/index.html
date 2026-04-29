@@ -1728,10 +1728,13 @@ function setAtt(num, field, value, skipSheetRefresh) {
 
   if (field==='approvedType') {
     appData.deadlines = appData.deadlines.filter(d => !(d.studentNo===num && d.absenceDate===currentDate && ['absence_report','absence_report_only','field_trip_report'].includes(d.type)));
-    const due = addSchoolDays(currentDate,5);
-    if (value==='menstrual')  { appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report_only',absenceDate:currentDate,dueDate:due,submitted:false}); checkMenstrualWarning(num,currentDate); }
-    else if (value==='fieldtrip') appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'field_trip_report',absenceDate:currentDate,dueDate:due,submitted:false});
-    else appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report',absenceDate:currentDate,dueDate:due,submitted:false});
+    if (_att.absent) {
+      const due = addSchoolDays(currentDate,5);
+      if (value==='menstrual')      appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report_only',absenceDate:currentDate,dueDate:due,submitted:false});
+      else if (value==='fieldtrip') appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'field_trip_report',absenceDate:currentDate,dueDate:due,submitted:false});
+      else                          appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report',absenceDate:currentDate,dueDate:due,submitted:false});
+    }
+    if (value==='menstrual') checkMenstrualWarning(num,currentDate);
     updateDLBadge();
   }
   if (field==='absent' && (!value || value==='unapproved')) {

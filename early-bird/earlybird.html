@@ -344,6 +344,40 @@
     padding: 24px 0;
   }
 
+  /* ── 전체 현황 탭 ── */
+  .summary-total-info {
+    font-size: 12px; color: #888; text-align: center;
+    background: #f0faf8; border-radius: 8px;
+    padding: 6px 10px; margin-bottom: 10px;
+  }
+  .summary-grid { display: flex; flex-direction: column; gap: 5px; }
+  .summary-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; background: white;
+    border-radius: 8px; border: 1px solid #e0f0ee;
+  }
+  .summary-rank {
+    font-size: 13px; min-width: 22px;
+    text-align: center; flex-shrink: 0; color: #aaa;
+  }
+  .summary-name { flex: 0 0 60px; font-size: 14px; font-weight: 600; color: #333; }
+  .summary-bar-wrap {
+    flex: 1; height: 8px; background: #e8f5f3;
+    border-radius: 99px; overflow: hidden;
+  }
+  .summary-bar {
+    height: 100%; background: #2a9d8f;
+    border-radius: 99px; transition: width .4s ease;
+    min-width: 2px;
+  }
+  .summary-count {
+    font-size: 13px; font-weight: 700;
+    color: #2a9d8f; min-width: 30px; text-align: right;
+  }
+  .summary-zero .summary-bar { background: #ddd; }
+  .summary-zero .summary-count { color: #bbb; }
+  .summary-zero .summary-name { color: #bbb; font-weight: 400; }
+
   /* ── 비밀번호 모달 ── */
   #pw-modal .modal-box { width: 320px; }
   .pw-display {
@@ -655,6 +689,7 @@
       <div class="history-tab-bar">
         <button class="history-tab active" id="tab-date" onclick="switchHistoryTab('date')">날짜별 보기</button>
         <button class="history-tab" id="tab-student" onclick="switchHistoryTab('student')">학생별 보기</button>
+        <button class="history-tab" id="tab-summary" onclick="switchHistoryTab('summary')">📊 전체 현황</button>
       </div>
       <div id="history-content"></div>
     </div>
@@ -1138,6 +1173,7 @@ function switchHistoryTab(tab) {
   historyTab = tab;
   document.getElementById('tab-date').classList.toggle('active', tab === 'date');
   document.getElementById('tab-student').classList.toggle('active', tab === 'student');
+  document.getElementById('tab-summary').classList.toggle('active', tab === 'summary');
   renderHistory();
 }
 
@@ -1152,8 +1188,38 @@ function getAllHistoryDates() {
   return dates.sort((a, b) => b.localeCompare(a)); // 최근 순
 }
 
+function renderSummary(content) {
+  const dates = getAllHistoryDates().filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+  const totalDays = dates.length;
+  if (totalDays === 0) {
+    content.innerHTML = '<div class="history-empty">아직 기록이 없습니다.</div>';
+    return;
+  }
+  const counts = STUDENTS.map(s => {
+    const count = dates.reduce((sum, d) => sum + (getChecked(d).includes(s.id) ? 1 : 0), 0);
+    return { ...s, count };
+  }).sort((a, b) => b.count - a.count);
+  const maxCount = Math.max(1, counts[0]?.count || 1);
+  content.innerHTML = `
+    <div class="summary-total-info">총 ${totalDays}일 기록 · 학생 ${STUDENTS.length}명</div>
+    <div class="summary-grid">
+      ${counts.map((s, i) => {
+        const pct = Math.round(s.count / maxCount * 100);
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`;
+        const zeroClass = s.count === 0 ? ' summary-zero' : '';
+        return `<div class="summary-item${zeroClass}">
+          <div class="summary-rank">${medal}</div>
+          <div class="summary-name">${s.name}</div>
+          <div class="summary-bar-wrap"><div class="summary-bar" style="width:${pct}%"></div></div>
+          <div class="summary-count">${s.count}회</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
 function renderHistory() {
   const content = document.getElementById('history-content');
+  if (historyTab === 'summary') { renderSummary(content); return; }
   if (historyTab === 'date') {
     const dates = getAllHistoryDates();
     if (dates.length === 0) {

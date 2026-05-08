@@ -590,7 +590,7 @@ html, body {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 480px;
+  table-layout: fixed;
 }
 .overview-table th {
   background: #f0faf8;
@@ -607,7 +607,7 @@ html, body {
 .overview-table th.col-name {
   text-align: left;
   padding-left: 12px;
-  min-width: 100px;
+  width: 88px;
   position: sticky;
   left: 0;
   z-index: 2;
@@ -634,7 +634,7 @@ html, body {
 .overview-table tr:hover td.col-name { background: var(--primary-light); }
 
 .td-name-main { font-weight: 600; font-size: 13px; }
-.td-name-role { font-size: 11px; color: var(--text-sub); margin-top: 1px; }
+.td-name-role { font-size: 11px; color: var(--text-sub); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 76px; }
 
 .td-check {
   display: flex;

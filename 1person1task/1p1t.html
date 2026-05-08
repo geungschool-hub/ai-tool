@@ -41,7 +41,8 @@ html, body {
 #app {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--card);
@@ -73,6 +74,8 @@ html, body {
 
 .entry-body {
   flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 24px 20px 12px;
   display: flex;
   flex-direction: column;

@@ -114,8 +114,11 @@ html, body {
 
 /* 담임 버튼 */
 .teacher-btn-wrap {
-  padding-top: 4px;
+  flex-shrink: 0;
+  padding: 8px 20px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
+  background: var(--card);
 }
 .teacher-btn {
   width: 100%;
@@ -925,10 +928,10 @@ html, body {
         <div class="recent-label">⚡ 최근 입장</div>
         <div class="recent-btns" id="recent-btns"></div>
       </div>
+    </div>
 
-      <div class="teacher-btn-wrap">
-        <button class="teacher-btn" id="teacher-btn">🔒 담임 선생님</button>
-      </div>
+    <div class="teacher-btn-wrap">
+      <button class="teacher-btn" id="teacher-btn">🔒 담임 선생님</button>
     </div>
   </div>
 

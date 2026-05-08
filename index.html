@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>2학년 7반 학급 포털</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+:root {
+  --indigo:       #4338ca;
+  --indigo-dark:  #312e81;
+  --indigo-mid:   #c7d2fe;
+  --indigo-light: #e0e7ff;
+  --amber:        #d97706;
+  --amber-light:  #fef3c7;
+  --green:        #059669;
+  --red:          #dc2626;
+  --bg:           #f1f5f9;
+  --card:         #ffffff;
+  --text:         #0f172a;
+  --text-sub:     #64748b;
+  --border:       #e2e8f0;
+  --radius:       14px;
+  --radius-sm:    10px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.screen { display: none; flex-direction: column; flex: 1; }
+.screen.active { display: flex; }
+
+/* ════════════════════════════════
+   GATE SCREEN
+════════════════════════════════ */
+#screen-gate {
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #312e81 0%, #4338ca 55%, #6366f1 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(40px + env(safe-area-inset-top, 0px));
+  gap: 32px;
+}
+
+.gate-header { text-align: center; color: white; }
+.gate-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  padding: 5px 14px;
+  margin-bottom: 14px;
+}
+.gate-title { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+.gate-sub   { font-size: 14px; color: rgba(255,255,255,0.65); }
+
+.gate-card {
+  width: 100%;
+  max-width: 320px;
+  background: rgba(255,255,255,0.11);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 28px 24px 22px;
+}
+.gate-label {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 18px;
+}
+
+/* PIN dots */
+.pin-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 6px; }
+.pin-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.45);
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pin-dot.filled { background: white; border-color: white; }
+.pin-error {
+  text-align: center;
+  font-size: 12px;
+  color: #fca5a5;
+  min-height: 20px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+/* Numpad */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.np-btn {
+  height: 52px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.14);
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.np-btn:active { background: rgba(255,255,255,0.28); }
+.np-btn.del   { font-size: 16px; }
+.np-btn.blank { background: transparent; pointer-events: none; }
+
+.np-enter {
+  width: 100%;
+  height: 50px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--indigo-dark);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 14px;
+  transition: opacity 0.1s;
+}
+.np-enter:active { opacity: 0.85; }
+
+.gate-teacher-link {
+  text-align: center;
+}
+.gate-teacher-link button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+}
+
+/* ════════════════════════════════
+   PORTAL SCREEN
+════════════════════════════════ */
+#screen-portal { background: var(--bg); }
+
+.portal-header {
+  background: var(--indigo-dark);
+  color: white;
+  padding: 14px 16px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.portal-header-left .class-name { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+.portal-header-left .today-info { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.portal-logout {
+  background: rgba(255,255,255,0.14);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 13px;
+  cursor: pointer;
+  min-height: 36px;
+  font-family: inherit;
+}
+
+.portal-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.section-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-sub);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* ── 공지사항 ── */
+.notice-empty {
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.notice-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: box-shadow 0.15s;
+}
+.notice-card:last-child { margin-bottom: 0; }
+.notice-card:active { box-shadow: 0 0 0 2px var(--indigo-mid); }
+.notice-card.pinned { border-color: #fbbf24; background: #fffbeb; }
+
+.notice-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-bottom: 5px;
+}
+.notice-pin-icon { font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+.notice-title    { font-size: 14px; font-weight: 700; flex: 1; line-height: 1.35; }
+.notice-date     { font-size: 11px; color: var(--text-sub); flex-shrink: 0; margin-top: 2px; }
+.notice-preview  {
+  font-size: 12.5px; color: var(--text-sub); line-height: 1.5;
+  overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+/* ── 앱 카드 ── */
+.app-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.app-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 12px 18px;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 108px;
+  justify-content: center;
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.app-card:active { transform: scale(0.95); box-shadow: 0 0 0 2px var(--indigo-mid); }
+.app-card.disabled { opacity: 0.4; pointer-events: none; }
+.app-card-icon { font-size: 30px; }
+.app-card-name { font-size: 13px; font-weight: 700; text-align: center; }
+.app-card-desc { font-size: 11px; color: var(--text-sub); text-align: center; margin-top: -2px; }
+
+/* ── 푸터 ── */
+.portal-footer {
+  text-align: center;
+  flex-shrink: 0;
+  padding: 2px 0 4px;
+}
+.portal-teacher-btn {
+  background: none; border: none;
+  color: var(--text-sub); font-size: 11.5px;
+  cursor: pointer; padding: 8px 16px;
+  font-family: inherit; opacity: 0.55;
+}
+.credit { font-size: 10px; color: var(--text-sub); opacity: 0.4; padding-bottom: 10px; }
+
+/* ════════════════════════════════
+   TEACHER OVERLAY (슬라이드업)
+════════════════════════════════ */
+#overlay-teacher {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.48);
+  align-items: flex-end;
+}
+#overlay-teacher.show { display: flex; }
+
+.t-sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--card);
+  border-radius: 22px 22px 0 0;
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.t-handle {
+  width: 36px; height: 4px;
+  background: var(--border); border-radius: 2px;
+  margin: 12px auto 0;
+  flex-shrink: 0;
+}
+.t-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.t-header-title { font-size: 16px; font-weight: 700; }
+.t-close {
+  background: var(--bg); border: none;
+  border-radius: 8px; width: 32px; height: 32px;
+  font-size: 14px; cursor: pointer;
+}
+.t-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.t-section-title {
+  font-size: 12px; font-weight: 700;
+  color: var(--text-sub); letter-spacing: 0.3px;
+  margin-bottom: 10px; text-transform: uppercase;
+}
+.t-input, .t-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg);
+  display: block;
+}
+.t-input:focus, .t-textarea:focus { border-color: var(--indigo); }
+.t-textarea { resize: none; height: 80px; font-size: 13px; }
+.t-form { display: flex; flex-direction: column; gap: 8px; }
+.t-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.t-btn.primary  { background: var(--indigo); color: white; }
+.t-btn.primary:active { opacity: 0.85; }
+.t-btn.danger   { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+.t-btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+
+/* teacher notice list */
+.t-notice-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 7px;
+}
+.t-notice-item:last-child { margin-bottom: 0; }
+.t-notice-text { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-notice-date { font-size: 11px; color: var(--text-sub); flex-shrink: 0; }
+.t-icon-btn { background: none; border: none; font-size: 15px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+
+/* ════════════════════════════════
+   NOTICE DETAIL MODAL
+════════════════════════════════ */
+#modal-notice {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.48);
+  align-items: flex-end;
+}
+#modal-notice.show { display: flex; }
+.n-sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--card);
+  border-radius: 22px 22px 0 0;
+  max-height: 72dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.n-handle {
+  width: 36px; height: 4px;
+  background: var(--border); border-radius: 2px;
+  margin: 12px auto 0; flex-shrink: 0;
+}
+.n-header {
+  padding: 12px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.n-title { font-size: 15px; font-weight: 700; line-height: 1.4; }
+.n-date  { font-size: 11px; color: var(--text-sub); margin-top: 4px; }
+.n-body  {
+  flex: 1; overflow-y: auto;
+  padding: 16px 20px;
+  font-size: 14px; line-height: 1.85;
+  white-space: pre-wrap;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ════════════════════════════════
+   TOAST & LOADING
+════════════════════════════════ */
+#toast {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  left: 50%; transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 9999;
+}
+#toast.show { opacity: 1; }
+#loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.65);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+#loading-overlay.show { display: flex; }
+.spinner {
+  width: 34px; height: 34px;
+  border: 3px solid var(--indigo-light);
+  border-top-color: var(--indigo);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════════════════════════
+     GATE
+════════════════════════════════ -->
+<div id="screen-gate" class="screen active">
+  <div class="gate-header">
+    <div class="gate-badge">2025학년도 2학기</div>
+    <div class="gate-title">2학년 7반</div>
+    <div class="gate-sub">학급 포털에 오신 것을 환영합니다</div>
+  </div>
+
+  <div class="gate-card">
+    <div class="gate-label">반 비밀번호</div>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="pin-error" id="pin-error"></div>
+
+    <div class="numpad">
+      <button class="np-btn" data-n="1">1</button>
+      <button class="np-btn" data-n="2">2</button>
+      <button class="np-btn" data-n="3">3</button>
+      <button class="np-btn" data-n="4">4</button>
+      <button class="np-btn" data-n="5">5</button>
+      <button class="np-btn" data-n="6">6</button>
+      <button class="np-btn" data-n="7">7</button>
+      <button class="np-btn" data-n="8">8</button>
+      <button class="np-btn" data-n="9">9</button>
+      <button class="np-btn blank"></button>
+      <button class="np-btn" data-n="0">0</button>
+      <button class="np-btn del" id="np-del">⌫</button>
+    </div>
+    <button class="np-enter" id="np-enter">입장하기</button>
+
+    <div class="gate-teacher-link">
+      <button id="gate-teacher-btn">담임 로그인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     PORTAL
+════════════════════════════════ -->
+<div id="screen-portal" class="screen">
+  <div class="portal-header">
+    <div class="portal-header-left">
+      <div class="class-name">2학년 7반</div>
+      <div class="today-info" id="today-info"></div>
+    </div>
+    <button class="portal-logout" id="portal-logout">나가기</button>
+  </div>
+
+  <div class="portal-scroll">
+    <!-- 공지사항 -->
+    <div>
+      <div class="section-label">📢 공지사항</div>
+      <div id="notice-list">
+        <div class="notice-empty">공지사항이 없습니다</div>
+      </div>
+    </div>
+
+    <!-- 앱 바로가기 -->
+    <div>
+      <div class="section-label">📱 바로가기</div>
+      <div class="app-grid">
+        <a class="app-card" href="1person1task/1p1t.html">
+          <div class="app-card-icon">📋</div>
+          <div class="app-card-name">1인 1역</div>
+          <div class="app-card-desc">수행 기록</div>
+        </a>
+        <div class="app-card disabled">
+          <div class="app-card-icon">➕</div>
+          <div class="app-card-name">추가 예정</div>
+          <div class="app-card-desc">곧 업데이트됩니다</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="portal-footer">
+      <button class="portal-teacher-btn" id="portal-teacher-btn">담임 관리</button>
+      <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- ════════════════════════════════
+     TEACHER OVERLAY
+════════════════════════════════ -->
+<div id="overlay-teacher">
+  <div class="t-sheet">
+    <div class="t-handle"></div>
+    <div class="t-header">
+      <div class="t-header-title">담임 관리</div>
+      <button class="t-close" id="t-close">✕</button>
+    </div>
+    <div class="t-body">
+
+      <!-- 로그인 전 -->
+      <div id="t-login-section">
+        <div class="t-section-title">담임 로그인</div>
+        <div class="t-form">
+          <input class="t-input" type="password" id="t-pw" placeholder="담임 비밀번호" inputmode="numeric">
+          <button class="t-btn primary" id="t-login-btn">로그인</button>
+        </div>
+      </div>
+
+      <!-- 로그인 후 -->
+      <div id="t-logged-section" style="display:none">
+
+        <!-- 반 비밀번호 설정 -->
+        <div>
+          <div class="t-section-title">반 비밀번호 설정</div>
+          <div class="t-form">
+            <input class="t-input" type="password" id="new-pw" placeholder="새 비밀번호 (4~8자리 숫자)" inputmode="numeric" maxlength="8">
+            <button class="t-btn primary" id="set-pw-btn">저장</button>
+          </div>
+        </div>
+
+        <!-- 공지 추가 -->
+        <div>
+          <div class="t-section-title">공지사항 추가</div>
+          <div class="t-form">
+            <input class="t-input" type="text" id="notice-title" placeholder="제목">
+            <textarea class="t-textarea" id="notice-body" placeholder="내용"></textarea>
+            <button class="t-btn primary" id="add-notice-btn">등록</button>
+          </div>
+        </div>
+
+        <!-- 공지 목록 -->
+        <div>
+          <div class="t-section-title">등록된 공지사항</div>
+          <div id="t-notice-list">
+            <div style="font-size:13px;color:var(--text-sub)">없음</div>
+          </div>
+        </div>
+
+        <button class="t-btn danger" id="t-logout-btn">Firebase 로그아웃</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     NOTICE DETAIL MODAL
+════════════════════════════════ -->
+<div id="modal-notice">
+  <div class="n-sheet">
+    <div class="n-handle"></div>
+    <div class="n-header">
+      <div class="n-title" id="n-title"></div>
+      <div class="n-date"  id="n-date"></div>
+    </div>
+    <div class="n-body" id="n-body"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="loading-overlay"><div class="spinner"></div></div>
+
+<script>
+/* ════════════════════════════════
+   Firebase
+════════════════════════════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyB5twZbxD67Wsi3ydP74qcMBSPMBrXZk_g",
+  authDomain: "person1task.firebaseapp.com",
+  databaseURL: "https://person1task-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "person1task",
+  storageBucket: "person1task.firebasestorage.app",
+  messagingSenderId: "664269865774",
+  appId: "1:664269865774:web:b4dc3dc465002d3a5df0bf"
+};
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.database();
+const auth = firebase.auth();
+
+/* ════════════════════════════════
+   Utilities
+════════════════════════════════ */
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+function showLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('show', on);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtDate(ts) {
+  const d = new Date(ts);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+/* ════════════════════════════════
+   Today date
+════════════════════════════════ */
+function setTodayInfo() {
+  const d = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('today-info').textContent =
+    `${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+}
+
+/* ════════════════════════════════
+   PIN Gate
+════════════════════════════════ */
+const PIN_MAX = 6;
+let pin = '';
+
+function renderDots() {
+  const wrap = document.getElementById('pin-dots');
+  wrap.innerHTML = '';
+  for (let i = 0; i < PIN_MAX; i++) {
+    const d = document.createElement('div');
+    d.className = 'pin-dot' + (i < pin.length ? ' filled' : '');
+    wrap.appendChild(d);
+  }
+}
+
+function pinAdd(digit) {
+  if (pin.length >= PIN_MAX) return;
+  pin += digit;
+  renderDots();
+  document.getElementById('pin-error').textContent = '';
+  if (pin.length === PIN_MAX) verifyPin();
+}
+
+function pinDel() {
+  pin = pin.slice(0, -1);
+  renderDots();
+}
+
+async function verifyPin() {
+  const hash = await sha256(pin);
+  showLoading(true);
+  try {
+    const snap = await db.ref('classPortal/config/passwordHash').once('value');
+    showLoading(false);
+    const stored = snap.val();
+    if (!stored) {
+      document.getElementById('pin-error').textContent = '비밀번호가 설정되지 않았습니다.\n담임 로그인 후 설정해주세요.';
+      pin = ''; renderDots();
+      return;
+    }
+    if (hash === stored) {
+      sessionStorage.setItem('portalAuth', '1');
+      enterPortal();
+    } else {
+      document.getElementById('pin-error').textContent = '비밀번호가 틀렸습니다';
+      pin = ''; renderDots();
+    }
+  } catch(e) {
+    showLoading(false);
+    document.getElementById('pin-error').textContent = '네트워크 오류. 다시 시도해주세요.';
+    pin = ''; renderDots();
+  }
+}
+
+document.querySelectorAll('.np-btn[data-n]').forEach(btn =>
+  btn.addEventListener('click', () => pinAdd(btn.dataset.n))
+);
+document.getElementById('np-del').addEventListener('click', pinDel);
+document.getElementById('np-enter').addEventListener('click', () => {
+  if (pin.length >= 4) verifyPin();
+  else document.getElementById('pin-error').textContent = '4자리 이상 입력해주세요';
+});
+
+/* ════════════════════════════════
+   Portal
+════════════════════════════════ */
+function enterPortal() {
+  showScreen('screen-portal');
+  setTodayInfo();
+  loadNotices();
+}
+
+document.getElementById('portal-logout').addEventListener('click', () => {
+  sessionStorage.removeItem('portalAuth');
+  pin = ''; renderDots();
+  document.getElementById('pin-error').textContent = '';
+  showScreen('screen-gate');
+});
+
+/* ════════════════════════════════
+   Notices
+════════════════════════════════ */
+let noticesCache = [];
+
+function loadNotices() {
+  db.ref('classPortal/notices').on('value', snap => {
+    const raw = snap.val() || {};
+    noticesCache = Object.entries(raw).map(([id, v]) => ({ id, ...v }));
+    noticesCache.sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      return b.date - a.date;
+    });
+    renderNotices();
+    renderTeacherNotices();
+  });
+}
+
+function renderNotices() {
+  const el = document.getElementById('notice-list');
+  if (!noticesCache.length) {
+    el.innerHTML = '<div class="notice-empty">공지사항이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = noticesCache.map(n => `
+    <div class="notice-card ${n.pinned ? 'pinned' : ''}" onclick="openNotice('${n.id}')">
+      <div class="notice-top">
+        ${n.pinned ? '<span class="notice-pin-icon">📌</span>' : ''}
+        <span class="notice-title">${esc(n.title)}</span>
+        <span class="notice-date">${fmtDate(n.date)}</span>
+      </div>
+      <div class="notice-preview">${esc(n.body)}</div>
+    </div>
+  `).join('');
+}
+
+function openNotice(id) {
+  const n = noticesCache.find(x => x.id === id);
+  if (!n) return;
+  document.getElementById('n-title').textContent = n.title;
+  document.getElementById('n-date').textContent  = fmtDate(n.date);
+  document.getElementById('n-body').textContent  = n.body;
+  document.getElementById('modal-notice').classList.add('show');
+}
+
+document.getElementById('modal-notice').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-notice'))
+    document.getElementById('modal-notice').classList.remove('show');
+});
+
+/* ════════════════════════════════
+   Teacher Overlay
+════════════════════════════════ */
+const overlay = document.getElementById('overlay-teacher');
+
+function openTeacher() {
+  overlay.classList.add('show');
+  const user = auth.currentUser;
+  showTeacherState(user && user.email === 'teacher@c27.local');
+}
+function showTeacherState(loggedIn) {
+  document.getElementById('t-login-section').style.display  = loggedIn ? 'none' : '';
+  document.getElementById('t-logged-section').style.display = loggedIn ? '' : 'none';
+}
+function closeTeacher() { overlay.classList.remove('show'); }
+
+document.getElementById('portal-teacher-btn').addEventListener('click', openTeacher);
+document.getElementById('gate-teacher-btn').addEventListener('click', openTeacher);
+document.getElementById('t-close').addEventListener('click', closeTeacher);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeTeacher(); });
+
+/* Teacher login */
+document.getElementById('t-login-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('t-pw').value.trim();
+  if (!pw) return;
+  showLoading(true);
+  try {
+    await auth.signInWithEmailAndPassword('teacher@c27.local', pw);
+    showLoading(false);
+    document.getElementById('t-pw').value = '';
+    showTeacherState(true);
+    showToast('담임 로그인 완료 ✅');
+  } catch(e) {
+    showLoading(false);
+    showToast('로그인 실패. 비밀번호를 확인해주세요 ❌');
+  }
+});
+
+document.getElementById('t-logout-btn').addEventListener('click', async () => {
+  await auth.signOut();
+  showTeacherState(false);
+  showToast('로그아웃 완료');
+});
+
+/* Set class password */
+document.getElementById('set-pw-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('new-pw').value.trim();
+  if (pw.length < 4) { showToast('4자리 이상 입력해주세요'); return; }
+  const hash = await sha256(pw);
+  showLoading(true);
+  try {
+    await db.ref('classPortal/config/passwordHash').set(hash);
+    showLoading(false);
+    document.getElementById('new-pw').value = '';
+    showToast('반 비밀번호 저장 완료 ✅');
+  } catch(e) {
+    showLoading(false);
+    showToast('저장 실패 ❌');
+  }
+});
+
+/* Add notice */
+document.getElementById('add-notice-btn').addEventListener('click', async () => {
+  const title = document.getElementById('notice-title').value.trim();
+  const body  = document.getElementById('notice-body').value.trim();
+  if (!title || !body) { showToast('제목과 내용을 입력해주세요'); return; }
+  showLoading(true);
+  try {
+    await db.ref('classPortal/notices').push({ title, body, date: Date.now(), pinned: false });
+    showLoading(false);
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-body').value  = '';
+    showToast('공지 등록 완료 ✅');
+  } catch(e) {
+    showLoading(false);
+    showToast('등록 실패 ❌');
+  }
+});
+
+function renderTeacherNotices() {
+  const el = document.getElementById('t-notice-list');
+  if (!noticesCache.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text-sub)">없음</div>';
+    return;
+  }
+  el.innerHTML = noticesCache.map(n => `
+    <div class="t-notice-item">
+      <span class="t-notice-text">${esc(n.title)}</span>
+      <span class="t-notice-date">${fmtDate(n.date)}</span>
+      <button class="t-icon-btn" onclick="togglePin('${n.id}',${!n.pinned})" title="${n.pinned?'핀 해제':'고정'}">${n.pinned?'📌':'📍'}</button>
+      <button class="t-icon-btn" onclick="deleteNotice('${n.id}')">🗑</button>
+    </div>
+  `).join('');
+}
+
+async function togglePin(id, val) {
+  try { await db.ref(`classPortal/notices/${id}/pinned`).set(val); }
+  catch(e) { showToast('오류 발생'); }
+}
+
+async function deleteNotice(id) {
+  try {
+    await db.ref(`classPortal/notices/${id}`).remove();
+    showToast('공지가 삭제됐습니다');
+  } catch(e) { showToast('삭제 실패 ❌'); }
+}
+
+/* ════════════════════════════════
+   Init
+════════════════════════════════ */
+renderDots();
+if (sessionStorage.getItem('portalAuth') === '1') {
+  enterPortal();
+}
+</script>
+</body>
+</html>

@@ -653,13 +653,13 @@ html, body {
    Firebase
 ════════════════════════════════ */
 const firebaseConfig = {
-  apiKey: "AIzaSyB5twZbxD67Wsi3ydP74qcMBSPMBrXZk_g",
-  authDomain: "person1task.firebaseapp.com",
-  databaseURL: "https://person1task-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "person1task",
-  storageBucket: "person1task.firebasestorage.app",
-  messagingSenderId: "664269865774",
-  appId: "1:664269865774:web:b4dc3dc465002d3a5df0bf"
+  apiKey: "AIzaSyBCMQFpMMaQ4lAqDlAhmOIfGkOUWr5fI28",
+  authDomain: "class7-portal-2362b.firebaseapp.com",
+  databaseURL: "https://class7-portal-2362b-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "class7-portal-2362b",
+  storageBucket: "class7-portal-2362b.firebasestorage.app",
+  messagingSenderId: "43528792545",
+  appId: "1:43528792545:web:45c474c6c8ca82adcf0aa0"
 };
 firebase.initializeApp(firebaseConfig);
 const db   = firebase.database();
@@ -714,7 +714,7 @@ function setTodayInfo() {
 /* ════════════════════════════════
    PIN Gate
 ════════════════════════════════ */
-const PIN_MAX = 6;
+const PIN_MAX = 7;
 let pin = '';
 
 function renderDots() {
@@ -849,7 +849,7 @@ const overlay = document.getElementById('overlay-teacher');
 function openTeacher() {
   overlay.classList.add('show');
   const user = auth.currentUser;
-  showTeacherState(user && user.email === 'teacher@c27.local');
+  showTeacherState(user && user.email === 'geungschool@gmail.com');
 }
 function showTeacherState(loggedIn) {
   document.getElementById('t-login-section').style.display  = loggedIn ? 'none' : '';
@@ -868,7 +868,7 @@ document.getElementById('t-login-btn').addEventListener('click', async () => {
   if (!pw) return;
   showLoading(true);
   try {
-    await auth.signInWithEmailAndPassword('teacher@c27.local', pw);
+    await auth.signInWithEmailAndPassword('geungschool@gmail.com', pw);
     showLoading(false);
     document.getElementById('t-pw').value = '';
     showTeacherState(true);

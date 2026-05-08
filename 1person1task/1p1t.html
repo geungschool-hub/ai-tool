@@ -697,18 +697,17 @@ html, body {
 /* ── 담임 하단 툴바 ── */
 .teacher-toolbar {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   padding: 10px 16px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   background: var(--card);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 .toolbar-btn {
   flex: 1;
-  min-width: calc(50% - 4px);
-  padding: 11px 8px;
+  min-width: calc(33% - 4px);
+  padding: 10px 6px;
   border-radius: var(--radius-sm);
   border: none;
   font-size: 13px;
@@ -998,7 +997,17 @@ html, body {
       <button class="week-nav-btn" id="t-btn-next-week">›</button>
     </div>
 
-    <div style="padding:8px 16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:flex-end;">
+    <div class="teacher-toolbar">
+      <button class="toolbar-btn edit-mode"   id="btn-edit-mode">✏️ 편집 모드</button>
+      <button class="toolbar-btn manage-pw"  id="btn-manage-pw">🔑 비밀번호 관리</button>
+      <button class="toolbar-btn export-csv"  id="btn-export-csv">📄 CSV</button>
+      <button class="toolbar-btn export-json" id="btn-export-json">📦 백업</button>
+      <button class="toolbar-btn import-json" id="btn-import-json">📂 복원</button>
+      <button class="toolbar-btn view-log"   id="btn-view-log">📋 변경 로그</button>
+      <input type="file" id="t-import-file" accept=".json" style="display:none">
+    </div>
+
+    <div style="padding:6px 16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:flex-end;">
       <span class="unrecorded-badge" id="unrecorded-badge"></span>
     </div>
 
@@ -1012,16 +1021,6 @@ html, body {
         </thead>
         <tbody id="overview-tbody"></tbody>
       </table>
-    </div>
-
-    <div class="teacher-toolbar">
-      <button class="toolbar-btn export-csv"  id="btn-export-csv">📄 CSV 내보내기</button>
-      <button class="toolbar-btn export-json" id="btn-export-json">📦 JSON 백업</button>
-      <button class="toolbar-btn import-json" id="btn-import-json">📂 JSON 불러오기</button>
-      <button class="toolbar-btn edit-mode"   id="btn-edit-mode">✏️ 편집 모드</button>
-      <button class="toolbar-btn view-log"   id="btn-view-log">📋 변경 로그</button>
-      <button class="toolbar-btn manage-pw"  id="btn-manage-pw">🔑 비밀번호 관리</button>
-      <input type="file" id="t-import-file" accept=".json" style="display:none">
     </div>
   </div>
 

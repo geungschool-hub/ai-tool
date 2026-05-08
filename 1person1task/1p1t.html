@@ -41,8 +41,7 @@ html, body {
 #app {
   max-width: 480px;
   margin: 0 auto;
-  height: 100dvh;
-  overflow: hidden;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--card);
@@ -74,8 +73,6 @@ html, body {
 
 .entry-body {
   flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   padding: 24px 20px 12px;
   display: flex;
   flex-direction: column;
@@ -531,7 +528,9 @@ html, body {
    담임 화면
 ════════════════════════ */
 #screen-teacher {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 .teacher-header {
   background: #264653;

@@ -522,6 +522,8 @@ html, body {
   text-align: center;
   margin-top: 10px;
   min-height: 20px;
+  white-space: pre-line;   /* \n 줄바꿈 표시 */
+  line-height: 1.45;
 }
 
 /* ════════════════════════
@@ -1216,6 +1218,54 @@ const db   = firebase.database();
 const auth = firebase.auth();
 // Firebase Auth 상태는 IndexedDB에 자동 저장 (기본값 LOCAL)
 
+// ── 로그인 에러 코드 → 사용자 안내 메시지 ──
+// (이전 버전은 모든 에러를 "비밀번호가 틀렸습니다"로 덮어써서,
+//  요청 과다 차단(too-many-requests)을 비밀번호 오류로 착각해 계속 재시도 → 차단 심화됐음)
+function authErrorMessage(e) {
+  switch (e?.code) {
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+    case 'auth/user-not-found':
+      return '비밀번호가 틀렸습니다.';
+    case 'auth/too-many-requests':
+      return '로그인 시도가 많아 잠시 잠겼어요.\n잠시 후 다시 하거나 선생님께 알려주세요.';
+    case 'auth/network-request-failed':
+      return '인터넷 연결이 불안정해요.\n잠시 후 다시 시도해주세요.';
+    case 'auth/user-disabled':
+      return '계정이 잠겼어요. 선생님께 문의하세요.';
+    default:
+      return '로그인에 실패했어요.' + (e?.code ? ' (' + e.code + ')' : '');
+  }
+}
+
+// ── 학생 PIN 과다 시도 방지 (auth/too-many-requests 사전 예방) ──
+// 연속 실패가 쌓이면 키패드를 잠시 잠가, 서버가 기기/IP를 차단하기 전에 멈추게 함
+let spwFailCount = 0;     // 연속 실패 횟수
+let spwLockUntil = 0;     // 이 시각(ms)까지 입력 잠금
+let spwLockTimer = null;
+
+function spwIsLocked() { return Date.now() < spwLockUntil; }
+
+function startSpwLock(seconds, baseMsg) {
+  spwLockUntil = Date.now() + seconds * 1000;
+  const errEl = document.getElementById('spw-error');
+  clearInterval(spwLockTimer);
+  const tick = () => {
+    const remain = Math.ceil((spwLockUntil - Date.now()) / 1000);
+    if (remain <= 0) {
+      clearInterval(spwLockTimer);
+      spwLockTimer = null;
+      spwFailCount = 0;
+      errEl.textContent = '이제 다시 입력할 수 있어요.';
+      return;
+    }
+    errEl.textContent = `${baseMsg}\n(${remain}초 후 다시 시도 가능)`;
+  };
+  tick();
+  spwLockTimer = setInterval(tick, 1000);
+}
+
 // ── Firebase 경로 유틸 ──
 function weekKey(year, week) {
   return `${year}_W${String(week).padStart(2,'0')}`;
@@ -1585,8 +1635,8 @@ async function pwConfirm() {
     await auth.signInWithEmailAndPassword(TEACHER_EMAIL, pwBuffer);
     document.getElementById('pw-modal').classList.remove('show');
     openTeacherScreen();
-  } catch {
-    errEl.textContent = '비밀번호가 틀렸습니다.';
+  } catch(e) {
+    errEl.textContent = authErrorMessage(e);
     pwBuffer = '';
     document.getElementById('pw-display').textContent = '　';
   } finally {
@@ -1815,6 +1865,7 @@ function updateSpwUI() {
 }
 
 function spwInput(d) {
+  if (spwIsLocked()) return;
   if (spwBuffer.length >= 4) return;
   spwBuffer += d;
   document.getElementById('spw-display').textContent = '●'.repeat(spwBuffer.length);
@@ -1832,18 +1883,31 @@ async function spwConfirm() {
   const errEl = document.getElementById('spw-error');
 
   if (spwMode === 'enter') {
+    if (spwIsLocked()) return;
     // Firebase Auth 로그인
     showLoading(true);
     try {
       await auth.signInWithEmailAndPassword(
         studentEmail(spwStudent), spwBuffer + '#s27'
       );
+      spwFailCount = 0;
       document.getElementById('student-pw-modal').classList.remove('show');
       proceedAsStudent(spwStudent);
-    } catch {
-      errEl.textContent = '비밀번호가 틀렸습니다.';
+    } catch(e) {
       spwBuffer = '';
       document.getElementById('spw-display').textContent = '　';
+      if (e?.code === 'auth/too-many-requests') {
+        // 서버가 이미 차단 → 더 두드리지 않도록 90초 잠금
+        startSpwLock(90, '로그인 시도가 많아 잠시 잠겼어요.');
+      } else {
+        spwFailCount++;
+        if (spwFailCount >= 5) {
+          // 차단당하기 전에 선제적으로 60초 쉬게 함
+          startSpwLock(60, '여러 번 틀렸어요. 잠깐 쉬었다 다시 해요.');
+        } else {
+          errEl.textContent = authErrorMessage(e);
+        }
+      }
     } finally {
       showLoading(false);
     }
@@ -1869,9 +1933,15 @@ async function spwConfirm() {
         showToast('비밀번호가 설정됐어요 🔑');
         proceedAsStudent(spwStudent);
       } catch(e) {
-        errEl.textContent = '저장 실패. 다시 시도해주세요.';
         spwBuffer = '';
         document.getElementById('spw-display').textContent = '　';
+        if (e?.code === 'auth/too-many-requests') {
+          startSpwLock(90, '시도가 많아 잠시 잠겼어요.');
+        } else if (e?.code === 'auth/network-request-failed') {
+          errEl.textContent = '인터넷 연결이 불안정해요.\n잠시 후 다시 시도해주세요.';
+        } else {
+          errEl.textContent = '저장 실패. 다시 시도해주세요.' + (e?.code ? '\n(' + e.code + ')' : '');
+        }
       } finally {
         showLoading(false);
       }

@@ -1,0 +1,20 @@
+{
+  "name": "할 일 관리",
+  "short_name": "할 일",
+  "description": "교사 개인용 할 일 관리 — 데이터는 기기 내부(localStorage)에만 저장됩니다.",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef1f5",
+  "theme_color": "#5b7fa6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

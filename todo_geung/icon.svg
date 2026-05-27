@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#5b7fa6"/>
+  <!-- 체크된 항목 -->
+  <rect x="120" y="138" width="48" height="48" rx="12" fill="#cfe6d6"/>
+  <path d="M132 162 l11 11 l21 -23" fill="none" stroke="#2f8f5b" stroke-width="11"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="192" y="150" width="200" height="22" rx="11" fill="#ffffff"/>
+  <!-- 체크된 항목 -->
+  <rect x="120" y="232" width="48" height="48" rx="12" fill="#cfe6d6"/>
+  <path d="M132 256 l11 11 l21 -23" fill="none" stroke="#2f8f5b" stroke-width="11"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="192" y="244" width="200" height="22" rx="11" fill="#ffffff"/>
+  <!-- 미완료 항목 -->
+  <rect x="122" y="328" width="44" height="44" rx="11" fill="none" stroke="#ffffff" stroke-width="11"/>
+  <rect x="192" y="338" width="150" height="22" rx="11" fill="#ffffff" opacity="0.7"/>
+</svg>

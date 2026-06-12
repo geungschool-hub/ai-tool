@@ -1,0 +1,795 @@
+# =============================================================
+#  majors.yaml — 계열·학과·대학 매핑 데이터 (MVP: 환경 계열)
+# -------------------------------------------------------------
+#  · 코드와 분리된 순수 데이터. 학과·대학 추가/수정은 이 파일만 고치면 됨.
+#  · 모든 대학·학과명은 2026-06 기준 실제 대학 페이지에서 검증함(source 참고).
+#  · 없는 학과·대학을 임의로 만들지 말 것(hallucination 금지).
+#    검증 못 한 항목은 name 에 "확인 필요" 로 표기.
+#  · keywords = questions.yaml 옵션이 방출하는 태그와 같은 단어집(두 파일을 잇는 계약).
+# =============================================================
+
+meta:
+  version: "0.3"
+  scope: "환경 5 + 공학 4 + 의생명 4 + 인문사회 5 + 법학 1 + 교육 2 + 예체능 2 = 총 23트랙. 전부 실제 대학 페이지 검증."
+  # q8 내신 등급대 → universities 의 어느 칸을 보여줄지 결정
+  grade_bands: [top, mid_high, mid, 모름]
+  region_options: [수도권, 지방거점, 무관]
+  # 티어 라벨의 의미(상담용 안내 문구)
+  tier_labels:
+    top: "상위권"
+    mid_high: "중상위권"
+    mid: "중위권"
+
+tracks:
+  # ───────────────────────────────────────────────────────────
+  - id: env_eco_restore
+    name: 환경생태·복원
+    college: 농생대 / 자연대
+    one_liner: 생태계 보전·복원과 산림·자연자원 관리에 초점. 관찰력과 야외 활동을 좋아하면 잘 맞아요.
+    keywords: [자연관찰, 생물, 야외, 생태, 복원, 과학, 연구형, 현장야외, 환경]
+    majors:
+      - 환경생태공학부
+      - 산림과학부
+      - 산림환경자원학과
+      - 산림자원학과
+    universities:
+      top:
+        - { name: 고려대학교, college: 생명과학대학, major: 환경생태공학부 }
+        - { name: 서울대학교, college: 농업생명과학대학, major: 산림과학부 }
+      mid_high:
+        - { name: 경북대학교, college: 농업생명과학대학, major: 산림과학·조경학부 }
+        - { name: 충남대학교, college: 농업생명과학대학, major: 산림환경자원학과 }
+      mid:
+        - { name: 강원대학교, college: 산림환경과학대학, major: 산림자원학과 }
+        - { name: 충북대학교, college: 농업생명환경대학, major: 산림학과 }
+    careers:
+      - 생태복원·환경영향평가 기업
+      - 국립공원공단·산림청 등 공공기관
+      - 환경부·지자체 환경직 공무원
+      - 대학원 진학(생태·산림 연구)
+    notes: >
+      고려대 환경생태공학부는 '공대'가 아니라 생명과학대학 소속(복원 분야에 가장 부합).
+      강원대는 과거 '산림과학부' 통합에서 현재 개별 학과 체제로 개편됨 — 모집단위 재확인 권장.
+      충북대 소속 단과대는 일반적인 '농업생명과학대학'이 아니라 '농업생명환경대학'.
+    source:
+      - "고려대 환경생태공학부 https://lifesci.korea.ac.kr/lifesci/faculty/faculty4.do"
+      - "서울대 산림과학부 https://cals.snu.ac.kr/academics/undergraduate?deptidx=27"
+      - "경북대 산림과학·조경학부 https://land.knu.ac.kr/"
+      - "충남대 산림환경자원학과 https://forestry.cnu.ac.kr/ , https://cals.cnu.ac.kr/cals/major/major03.do"
+      - "강원대 산림환경과학대학 https://forest.kangwon.ac.kr/forest/department/intro.do"
+      - "충북대 산림학과 https://forestscience.cbnu.ac.kr/"
+
+  # ───────────────────────────────────────────────────────────
+  - id: env_engineering
+    name: 환경공학
+    college: 공대
+    one_liner: 수질·대기·폐기물 처리 등 환경 문제를 공학적으로 해결. 수학·화학과 실험·설계를 좋아하면 잘 맞아요.
+    keywords: [수학, 화학, 과학, 실험, 만들기, 공학, 취업형, 실험실, 현장야외, 환경]
+    majors:
+      - 환경공학과
+      - 건설환경공학과
+      - 환경에너지공학과
+    universities:
+      top:
+        - { name: 서울대학교, college: 공과대학, major: 건설환경공학부 }
+        - { name: 한양대학교, college: 공과대학, major: 건설환경공학과 }
+      mid_high:
+        - { name: 부산대학교, college: 공과대학, major: 환경공학과 }
+        - { name: 경북대학교, college: 공과대학, major: 환경공학과 }
+        - { name: 충남대학교, college: 공과대학, major: 환경공학과 }
+      mid:
+        - { name: 전남대학교, college: 공과대학, major: 환경에너지공학과 }
+    careers:
+      - 환경 엔지니어·환경기사
+      - 환경컨설팅·환경설비 기업
+      - K-water·환경공단 등 공공기관
+      - 대기업 EHS(환경안전) 부서
+    notes: >
+      서울대는 학과 홈 표기 '건설환경공학부'와 공과대학 공식 '건설환경도시공학부'가 혼용 — 토목·도시 포함, 환경공학은 세부영역.
+      고려대(서울)에는 독립 환경공학과가 없고 '건축사회환경공학부' 내 환경 트랙으로 존재.
+      서울과기대 환경공학과는 '공과대학'이 아니라 '에너지바이오대학' 소속이라 본 트랙 기준에서 제외함.
+    source:
+      - "서울대 건설환경공학부 https://cee.snu.ac.kr/ , https://eng.snu.ac.kr/"
+      - "한양대 건설환경공학과 http://civil.hanyang.ac.kr/"
+      - "부산대 환경공학과 https://pnuenv.pusan.ac.kr/"
+      - "경북대 환경공학과 https://env.knu.ac.kr/"
+      - "충남대 환경공학과 https://envi.cnu.ac.kr/"
+      - "전남대 환경에너지공학과 https://eng.jnu.ac.kr/"
+
+  # ───────────────────────────────────────────────────────────
+  - id: env_atmos_climate
+    name: 대기·기후과학
+    college: 자연대
+    one_liner: 대기·기후·지구환경을 과학적으로 연구. 과학·수학과 데이터 분석을 좋아하면 잘 맞아요.
+    keywords: [과학, 수학, 자연관찰, 데이터, 연구형, 실내사무, 실험실, 기후, 환경]
+    majors:
+      - 대기과학과
+      - 대기환경과학과
+      - 지구환경과학부
+    universities:
+      top:
+        - { name: 서울대학교, college: 자연과학대학, major: 지구환경과학부 }
+        - { name: 연세대학교, college: 이과대학, major: 대기과학과 }
+      mid_high:
+        - { name: 부산대학교, college: 자연과학대학, major: 대기환경과학과 }
+        - { name: 경북대학교, college: 자연과학대학, major: 지구시스템과학부 천문대기과학전공 }
+      mid:
+        - { name: 국립공주대학교, college: 자연과학대학, major: 대기과학과 }
+        - { name: 국립강릉원주대학교, college: 자연과학대학, major: 대기환경과학과 }
+    careers:
+      - 기상청·기상직 공무원
+      - 기후·대기환경 연구원(연구소·대학원)
+      - 환경·에너지 기업 데이터 분석
+      - 재난·환경 컨설팅
+    notes: >
+      대기과학 계열은 전국 개설 대학이 7곳 안팎으로 적음 — 위 6곳이 주요 학과 대부분.
+      서울대는 단독 '대기과학과'가 아니라 '지구환경과학부' 내 대기과학전공.
+      연세대 소속 단과대 명칭은 '이과대학'(타 대학의 자연과학대학에 해당하는 연세대 공식 명칭).
+      경북대는 '지구시스템과학부 천문대기과학전공'으로 통합 편제(입시 모집도 학부 단위).
+    source:
+      - "서울대 지구환경과학부 https://sees.snu.ac.kr/"
+      - "연세대 대기과학과 https://atmos.yonsei.ac.kr/"
+      - "부산대 대기환경과학과 https://atmos.pusan.ac.kr/"
+      - "경북대 지구시스템과학부 https://hanl.knu.ac.kr/"
+      - "공주대 대기과학과 https://atmos.kongju.ac.kr/"
+      - "강릉원주대 대기환경과학과 https://atmos.gwnu.ac.kr/"
+
+  # ───────────────────────────────────────────────────────────
+  - id: env_urban_policy
+    name: 환경·도시정책
+    college: 사회대 / 도시과학대
+    one_liner: 환경·도시 문제를 정책·행정·사회과학으로 다룸. 글쓰기·사람 돕기와 공공 분야를 좋아하면 잘 맞아요.
+    keywords: [사회, 글쓰기, 사람돕기, 공공형, 실내사무, 사람응대, 도시, 환경, 복지]
+    majors:
+      - 도시행정학과
+      - 도시사회학과
+      - 지리학과
+      - 도시계획·부동산학과
+    universities:
+      top:
+        - { name: 서울시립대학교, college: 도시과학대학(인문사회계열), major: 도시행정학과 }
+        - { name: 서울대학교, college: 사회과학대학, major: 지리학과 }
+      mid_high:
+        - { name: 서울시립대학교, college: 도시과학대학(인문사회계열), major: 도시사회학과 }
+        - { name: 중앙대학교, college: 사회과학대학, major: 도시계획·부동산학과 }
+      mid:
+        - { name: 단국대학교, college: 사회과학대학, major: 도시계획·부동산학부 }
+    careers:
+      - 환경직·행정직 공무원
+      - 도시·환경 정책 연구원
+      - 공공기관(지자체·환경/국토 관련)
+      - 환경대학원 진학 후 정책 전문가
+    notes: >
+      ⚠ '환경정책/환경행정' 독립 학부는 한국 4년제에 사실상 없음(대부분 대학원 과정).
+      사회과학적 환경 진로의 실제 통로는 도시·행정·지리 계열 — 그래서 트랙명을 '환경·도시정책'으로 현실화함.
+      서울시립대 도시행정/도시사회학과는 '사회과학대'가 아니라 '도시과학대학'(인문사회+자연 혼합) 소속.
+      학부는 도시·행정·지리로 진학 후 환경대학원(예: 서울대 환경대학원)으로 심화하는 경로가 현실적.
+    source:
+      - "서울시립대 도시행정학과 https://www.uos.ac.kr/urbansciences/urbanadmin/main.do"
+      - "서울시립대 도시사회학과 https://www.uos.ac.kr/urbansciences/usocio/"
+      - "서울대 지리학과(사회과학대) https://geog.snu.ac.kr/"
+      - "중앙대 도시계획·부동산학과(사회과학대) https://society.cau.ac.kr/class/sub07.asp"
+      - "단국대 사회과학대 학과목록 https://www.dankook.ac.kr/web/sosci/"
+
+  # ───────────────────────────────────────────────────────────
+  - id: env_health
+    name: 환경보건
+    college: 보건/의생명
+    one_liner: 환경이 사람 건강에 미치는 영향과 보건·위생을 다룸. 생물·실험과 사람 돕기를 좋아하면 잘 맞아요.
+    keywords: [생물, 과학, 실험, 사람돕기, 사람응대, 실험실, 건강, 환경, 공공형]
+    majors:
+      - 환경보건학과
+      - 보건환경융합과학부
+      - 산업보건학전공
+    universities:
+      top:
+        # ⚠ 상위권 자연대 학부 단위가 희소함(서울대는 보건대학원만 운영, 학부 없음).
+        - { name: 고려대학교, college: 보건과학대학, major: 보건환경융합과학부(환경보건안전 트랙) }
+      mid_high:
+        - { name: 순천향대학교, college: 자연과학대학, major: 환경보건학과 }
+        - { name: 대구가톨릭대학교, college: 바이오메디대학, major: 산업보건학전공 }
+      mid:
+        # 검증된 추가 학과를 찾지 못함 — 임의 생성하지 않고 비워둠(확장 시 보강).
+        - { name: 확인 필요, college: 확인 필요, major: 확인 필요 }
+    careers:
+      - 환경보건 공무원(보건직)
+      - 산업위생관리·보건안전 관리자
+      - 국립환경과학원 등 공공기관
+      - 환경·보건 연구원(대학원 진학)
+    notes: >
+      환경보건 학부는 개설 대학이 희소함(검증된 곳 3곳). 채우려 임의 학과를 만들지 않음.
+      서울대 환경보건학과는 '보건대학원' 석·박사 과정으로 학부과정 없음.
+      연세대 보건과학대학 '환경공학부'는 순수 환경공학이라 본 트랙(환경보건)에서는 제외.
+      '환경이 건강에 미치는 영향'에 가장 정확히 맞는 단일 학부는 순천향대 환경보건학과.
+    source:
+      - "고려대 보건환경융합과학부 https://hes.korea.ac.kr/ , https://chs.korea.ac.kr/undergraduate/hes.html"
+      - "순천향대 환경보건학과 https://home.sch.ac.kr/ehs/index.jsp"
+      - "대구가톨릭대 산업보건학전공 https://academics.cu.ac.kr/occuhealth/"
+      - "(서울대 환경보건학과=대학원) https://health.snu.ac.kr/"
+
+  # ═══════════════════ 공학 계열 ═══════════════════
+  - id: mech_robot
+    name: 기계·로봇공학
+    college: 공대
+    one_liner: 기계·로봇·자동차 등을 설계하고 만드는 분야. 손으로 만들기와 수학·물리를 좋아하면 잘 맞아요.
+    keywords: [만들기, 기계, 공학, 수학, 과학, 취업형, 실험실, 현장야외]
+    majors: [기계공학부, 기계공학과, 기계로봇에너지공학과, 로봇공학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 공과대학, major: 기계공학부 }
+        - { name: 한양대학교, college: 공과대학, major: 기계공학부 }
+      mid_high:
+        - { name: 경북대학교, college: 공과대학, major: 기계공학부 }
+        - { name: 부산대학교, college: 공과대학, major: 기계공학부 }
+      mid:
+        - { name: 충남대학교, college: 공과대학, major: 기계공학부 }
+        - { name: 동국대학교, college: 공과대학, major: 기계로봇에너지공학과 }
+    careers:
+      - 자동차·항공·조선·로봇 분야 엔지니어
+      - 제조 대기업 연구개발(R&D)
+      - 플랜트·설비 설계
+      - 대학원 진학(기계·로봇 연구)
+    source:
+      - "서울대 기계공학부 https://eng.snu.ac.kr/academics/undergraduate-programs/mechanical-engineering"
+      - "한양대 기계공학부 https://me.hanyang.ac.kr/"
+      - "경북대 기계공학부 https://me.knu.ac.kr/"
+      - "부산대 기계공학부 https://me.pusan.ac.kr/"
+      - "충남대 기계공학부 https://eng.cnu.ac.kr/eng/department/mechanical.do"
+      - "동국대 기계로봇에너지공학과 https://engineer.dongguk.edu/page/1872"
+
+  - id: elec_electronic
+    name: 전기·전자공학
+    college: 공대
+    one_liner: 전기·전자·반도체·통신 시스템을 다루는 분야. 수학·물리와 회로·기기 만들기를 좋아하면 잘 맞아요.
+    keywords: [만들기, 공학, 수학, 과학, 데이터, 취업형, 실험실, 컴퓨터]
+    majors: [전기·정보공학부, 전기전자공학부, 융합전자공학부, 전자공학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 공과대학, major: 전기·정보공학부 }
+        - { name: 고려대학교, college: 공과대학, major: 전기전자공학부 }
+      mid_high:
+        - { name: 한양대학교, college: 공과대학, major: 융합전자공학부 }
+        - { name: 부산대학교, college: 공과대학, major: 전기전자공학부 }
+      mid:
+        - { name: 충남대학교, college: 공과대학, major: 전기공학과 }
+        - { name: 전남대학교, college: 공과대학, major: 전자공학과 }
+    careers:
+      - 반도체·전자 기업 엔지니어
+      - 통신·회로·시스템 설계
+      - 대기업 연구개발(R&D)
+      - 전기직 기술 공무원
+    notes: >
+      성균관대 전자전기공학부는 '정보통신대학', 경북대 전자공학부는 'IT대학' 소속으로 공과대학이 아님(제외).
+    source:
+      - "서울대 전기·정보공학부 https://ece.snu.ac.kr/"
+      - "고려대 전기전자공학부 https://ee.korea.ac.kr/"
+      - "한양대 융합전자공학부 http://electronic.hanyang.ac.kr/"
+      - "부산대 전기전자공학부 https://eec.pusan.ac.kr/"
+      - "충남대 전기공학과 https://eng.cnu.ac.kr/eng/department/electrical.do"
+      - "전남대 전자공학과 https://ee.jnu.ac.kr/"
+
+  - id: computer_sw
+    name: 컴퓨터·소프트웨어
+    college: 공대 / SW대
+    one_liner: 프로그래밍·AI·데이터로 서비스를 만드는 분야. 컴퓨터로 만들기와 논리·수학을 좋아하면 잘 맞아요.
+    keywords: [컴퓨터, 데이터, 만들기, 수학, 공학, 창업형, 실내사무]
+    majors: [컴퓨터공학부, 컴퓨터학과, 소프트웨어학과, 정보컴퓨터공학부, 인공지능학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 공과대학, major: 컴퓨터공학부 }
+        - { name: 고려대학교, college: 정보대학, major: 컴퓨터학과 }
+      mid_high:
+        - { name: 경북대학교, college: IT대학, major: 컴퓨터학부 }
+        - { name: 부산대학교, college: 정보의생명공학대학, major: 정보컴퓨터공학부 }
+      mid:
+        - { name: 충남대학교, college: 공과대학, major: 컴퓨터융합학부 }
+        - { name: 아주대학교, college: 소프트웨어융합대학, major: 소프트웨어학과 }
+    careers:
+      - 소프트웨어 개발자
+      - AI·데이터 엔지니어
+      - IT 스타트업 창업
+      - 게임·플랫폼 서비스 기업
+    notes: >
+      같은 컴퓨터라도 소속이 공과대학(서울대·충남대)/정보대학(고려대)/IT대학(경북대)/
+      정보의생명공학대학(부산대)/소프트웨어융합대학(아주대) 등 제각각. 입학 단위도 학부 통합선발이 많음.
+    source:
+      - "서울대 컴퓨터공학부 https://cse.snu.ac.kr/"
+      - "고려대 컴퓨터학과(정보대학) https://info.korea.ac.kr/info/under/computer_intro.do"
+      - "경북대 컴퓨터학부(IT대학) https://computer.knu.ac.kr/"
+      - "부산대 정보컴퓨터공학부(정보의생명공학대학) https://cse.pusan.ac.kr/"
+      - "충남대 컴퓨터융합학부 https://eng.cnu.ac.kr/eng/department/computerconverge.do"
+      - "아주대 소프트웨어학과 https://www.ajou.ac.kr/sw/department/soft-info.do"
+
+  - id: chem_material
+    name: 화학·신소재공학
+    college: 공대
+    one_liner: 화학공정·신소재·배터리 등을 개발하는 분야. 화학·과학 실험과 만들기를 좋아하면 잘 맞아요.
+    keywords: [과학, 실험, 만들기, 공학, 연구형, 실험실, 수학]
+    majors: [화학생물공학부, 화학공학과, 신소재공학부, 화공생명공학과, 재료공학부]
+    universities:
+      top:
+        - { name: 서울대학교, college: 공과대학, major: 화학생물공학부 }
+        - { name: 한양대학교, college: 공과대학, major: 화학공학과 }
+      mid_high:
+        - { name: 경북대학교, college: 공과대학, major: 신소재공학부 }
+        - { name: 부산대학교, college: 공과대학, major: 재료공학부 }
+      mid:
+        - { name: 충남대학교, college: 공과대학, major: 신소재공학과 }
+        - { name: 인하대학교, college: 공과대학, major: 화학공학과 }
+    careers:
+      - 화학·정유·소재 기업 엔지니어
+      - 반도체·배터리 소재 연구개발
+      - 제약·화장품 연구
+      - 대학원 진학(화공·재료 연구)
+    source:
+      - "서울대 화학생물공학부 https://cbe.snu.ac.kr/"
+      - "한양대 화학공학과 https://chemeng.hanyang.ac.kr/"
+      - "경북대 신소재공학부 https://mse.knu.ac.kr/"
+      - "부산대 재료공학부 https://mse.pusan.ac.kr/"
+      - "충남대 신소재공학과 https://mse.cnu.ac.kr/"
+      - "인하대 화학공학과 https://chemeng.inha.ac.kr/"
+
+  # ═══════════════════ 의생명·보건 계열 ═══════════════════
+  - id: medicine
+    name: 의예·의학
+    college: 의대
+    one_liner: 사람의 병을 진단·치료하는 의사를 길러내는 분야. 생물·과학과 사람 돕기를 좋아하면 잘 맞아요.
+    keywords: [생물, 과학, 사람돕기, 사람응대, 건강, 연구형, 실험실]
+    majors: [의예과, 의학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 의과대학, major: 의예과·의학과 }
+        - { name: 연세대학교, college: 의과대학, major: 의예과·의학과 }
+      mid_high:
+        - { name: 경북대학교, college: 의과대학, major: 의예과·의학과 }
+        - { name: 부산대학교, college: 의과대학, major: 의예과·의학과 }
+      mid:
+        - { name: 건양대학교, college: 의과대학, major: 의학과 }
+        - { name: 을지대학교, college: 의과대학, major: 의예과·의학과 }
+    careers:
+      - 의사(임상 진료)
+      - 의과학 연구(기초·임상)
+      - 공공보건·의료행정
+      - 대학병원 교수
+    notes: >
+      의대는 전 대학이 최상위권 — 티어 간 격차보다 '의대 전체가 최상위'라는 점을 안내할 것.
+      학부는 의예과(2년)+의학과(4년) 6년제 구조.
+    source:
+      - "서울대 의과대학 https://medicine.snu.ac.kr/"
+      - "연세대 의과대학 https://medicine.yonsei.ac.kr/"
+      - "경북대 의과대학 https://med.knu.ac.kr/"
+      - "부산대 의과대학 https://medicine.pusan.ac.kr/"
+      - "건양대 의과대학 https://med.konyang.ac.kr/med.do"
+      - "을지대 의과대학 https://medicine.eulji.ac.kr/"
+
+  - id: pharmacy
+    name: 약학
+    college: 약대
+    one_liner: 약을 개발·조제하고 안전한 사용을 돕는 분야. 화학·생물 실험과 사람 돕기를 좋아하면 잘 맞아요.
+    keywords: [생물, 과학, 실험, 건강, 연구형, 실험실, 사람돕기]
+    majors: [약학과, 약학부]
+    universities:
+      top:
+        - { name: 서울대학교, college: 약학대학, major: 약학과 }
+        - { name: 성균관대학교, college: 약학대학, major: 약학과 }
+      mid_high:
+        - { name: 경북대학교, college: 약학대학, major: 약학과 }
+        - { name: 부산대학교, college: 약학대학, major: 약학과 }
+      mid:
+        - { name: 충남대학교, college: 약학대학, major: 약학과 }
+        - { name: 조선대학교, college: 약학대학, major: 약학과 }
+    careers:
+      - 약사(약국·병원)
+      - 제약·바이오 연구개발
+      - 식약처 등 공공기관
+      - 임상시험·규제 전문가
+    notes: >
+      2022학년도부터 통합 6년제 학부 신입 선발로 전환됨(고1 단계에서 약대 진학 가능).
+    source:
+      - "서울대 약학과 https://snupharm.snu.ac.kr/"
+      - "성균관대 약학과 https://pharm.skku.edu/college/degree02"
+      - "경북대 약학과 https://pharmacy.knu.ac.kr/"
+      - "부산대 약학과 https://pharmacy.pusan.ac.kr/"
+      - "충남대 약학과 https://pharm.cnu.ac.kr/pharm/faculty/info.do"
+      - "조선대 약학과 https://pharmacy.chosun.ac.kr/"
+
+  - id: nursing
+    name: 간호
+    college: 간호대
+    one_liner: 환자를 돌보고 건강을 지키는 간호사를 길러내는 분야. 사람 돕기·응대와 생물을 좋아하면 잘 맞아요.
+    keywords: [생물, 사람돕기, 사람응대, 건강, 취업형, 공공형, 실내사무]
+    majors: [간호학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 간호대학, major: 간호학과 }
+        - { name: 연세대학교, college: 간호대학, major: 간호학과 }
+      mid_high:
+        - { name: 부산대학교, college: 간호대학, major: 간호학과 }
+        - { name: 경북대학교, college: 간호대학, major: 간호학과 }
+      mid:
+        - { name: 제주대학교, college: 간호대학, major: 간호학과 }
+        - { name: 조선대학교, college: 의과대학, major: 간호학과 }
+    careers:
+      - 간호사(병원·임상)
+      - 보건·산업 간호
+      - 보건직 공무원
+      - 간호 연구·교육(대학원)
+    notes: >
+      조선대는 간호학과가 '의과대학' 소속(간호대학 아님). '조선간호대학교'와는 전혀 다른 학교.
+      연세대는 신촌 본교 간호대학 기준(원주 캠퍼스와 구분).
+    source:
+      - "서울대 간호대학 https://nursing.snu.ac.kr/"
+      - "연세대 간호대학(신촌) https://nursingcollege.yonsei.ac.kr/"
+      - "부산대 간호학과 https://nursing.pusan.ac.kr/"
+      - "경북대 간호학과 https://nurs.knu.ac.kr/"
+      - "제주대 간호대학 https://nursing.jejunu.ac.kr/"
+      - "조선대 간호학과(의과대학) https://medical.chosun.ac.kr/medical/11311/subview.do"
+
+  - id: life_science
+    name: 생명과학·바이오
+    college: 자연대 / 생명대
+    one_liner: 생명 현상을 실험으로 연구하는 분야. 생물·과학 실험과 탐구를 좋아하면 잘 맞아요.
+    keywords: [생물, 과학, 실험, 자연관찰, 연구형, 실험실, 건강]
+    majors: [생명과학부, 생명과학과, 생명공학과, 분자생물학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 자연과학대학, major: 생명과학부 }
+        - { name: 고려대학교, college: 생명과학대학, major: 생명과학부 }
+      mid_high:
+        - { name: 부산대학교, college: 자연과학대학, major: 분자생물학과 }
+        - { name: 전남대학교, college: 자연과학대학, major: 생명과학기술학부 }
+      mid:
+        - { name: 충북대학교, college: 자연과학대학, major: 생물학과 }
+        - { name: 강원대학교, college: 자연과학대학, major: 생명과학과 }
+    careers:
+      - 생명과학 연구원
+      - 제약·바이오 연구개발(R&D)
+      - 의·약학전문대학원 진학
+      - 중등 과학교사(교직 이수 시)
+    notes: >
+      고려대는 '생명과학대학', 연세대는 '생명시스템대학', 충남대는 '생명시스템과학대학' 등
+      자연대가 아닌 별도 단과대인 경우가 많음.
+    source:
+      - "서울대 생명과학부 https://biosci.snu.ac.kr/"
+      - "고려대 생명과학부 https://lifesci.korea.ac.kr/lifesci/faculty/faculty1.do"
+      - "부산대 분자생물학과 https://natural.pusan.ac.kr/natural/12891/subview.do"
+      - "전남대 생명과학기술학부 https://natural.jnu.ac.kr/natural/14504/subview.do"
+      - "충북대 생물학과 https://www.chungbuk.ac.kr/"
+      - "강원대 생명과학과 https://natursci.kangwon.ac.kr/natursci/department/department02.do"
+
+  # ═══════════════════ 인문·사회 계열 ═══════════════════
+  - id: biz_econ
+    name: 경영·경제
+    college: 경영대 / 상경대
+    one_liner: 기업 경영·금융·시장을 분석하고 이끄는 분야. 사회·수학과 사람 응대·도전을 좋아하면 잘 맞아요.
+    keywords: [사회, 수학, 데이터, 취업형, 창업형, 사람응대, 실내사무, 경제]
+    majors: [경영학과, 경제학부, 경영학부, 경제학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 경영대학, major: 경영학과 }
+        - { name: 연세대학교, college: 상경대학, major: 경제학부 }
+      mid_high:
+        - { name: 경북대학교, college: 경상대학, major: 경영학부 }
+        - { name: 중앙대학교, college: 경영경제대학, major: 경영학부 }
+      mid:
+        - { name: 부산대학교, college: 경영대학, major: 경영학과 }
+        - { name: 전남대학교, college: 경영대학, major: 경제학부 }
+    careers:
+      - 기업 경영·금융·회계
+      - 컨설팅·마케팅
+      - 창업
+      - 공기업·금융 공공기관
+    notes: >
+      같은 상경이라도 경영=경영대학, 경제=상경대학/경제대학/경상대학 등으로 단과대가 갈림.
+    source:
+      - "서울대 경영학과 https://cba.snu.ac.kr/"
+      - "연세대 경제학부(상경대학) https://economics.yonsei.ac.kr/"
+      - "경북대 경영학부(경상대학) https://biz.knu.ac.kr/"
+      - "중앙대 경영학부(경영경제대학) https://bne.cau.ac.kr/"
+      - "부산대 경영학과 https://biz.pusan.ac.kr/"
+      - "전남대 경제학부 https://eco.jnu.ac.kr/"
+
+  - id: psychology
+    name: 심리학
+    college: 사회대 / 문과대
+    one_liner: 사람의 마음과 행동을 과학적으로 연구하는 분야. 사람에 대한 관심과 데이터 분석을 좋아하면 잘 맞아요.
+    keywords: [사회, 사람돕기, 사람응대, 데이터, 연구형, 건강, 심리]
+    majors: [심리학과, 심리학부]
+    universities:
+      top:
+        - { name: 서울대학교, college: 사회과학대학, major: 심리학과 }
+        - { name: 연세대학교, college: 문과대학, major: 심리학과 }
+      mid_high:
+        - { name: 경북대학교, college: 사회과학대학, major: 심리학과 }
+        - { name: 부산대학교, college: 사회과학대학, major: 심리학과 }
+      mid:
+        - { name: 전남대학교, college: 사회과학대학, major: 심리학과 }
+        - { name: 충북대학교, college: 사회과학대학, major: 심리학과 }
+    careers:
+      - 임상·상담 심리사(대학원 후)
+      - 기업 인사(HR)·UX 리서치
+      - 심리 연구
+      - 공공 상담·복지기관
+    notes: >
+      연세대는 '문과대학', 고려대는 '독립학부'(단과대 없음) 등 소속이 갈림.
+      상담·임상 심리사는 대부분 대학원 진학이 필요함.
+    source:
+      - "서울대 심리학과 https://social.snu.ac.kr/"
+      - "연세대 심리학과(문과대학) https://libart.yonsei.ac.kr/libart/about/psychology.do"
+      - "경북대 심리학과 https://psy.knu.ac.kr/"
+      - "부산대 심리학과 https://ss.pusan.ac.kr/socio/74931/subview.do"
+      - "전남대 심리학과 https://psyche.jnu.ac.kr/"
+      - "충북대 심리학과 https://psychology.chungbuk.ac.kr/"
+
+  - id: polisci_intl
+    name: 정치외교·국제
+    college: 사회대 / 정경대
+    one_liner: 정치·외교·국제 문제를 분석하고 정책을 다루는 분야. 사회·영어와 글쓰기·토론을 좋아하면 잘 맞아요.
+    keywords: [사회, 글쓰기, 영어, 사람응대, 공공형, 실내사무, 국제]
+    majors: [정치외교학부, 정치외교학과, 국제학부]
+    universities:
+      top:
+        - { name: 서울대학교, college: 사회과학대학, major: 정치외교학부 }
+        - { name: 고려대학교, college: 정경대학, major: 정치외교학과 }
+      mid_high:
+        - { name: 경북대학교, college: 사회과학대학, major: 정치외교학과 }
+        - { name: 경희대학교, college: 정경대학, major: 정치외교학과 }
+      mid:
+        - { name: 부산대학교, college: 사회과학대학, major: 정치외교학과 }
+        - { name: 한국외국어대학교, college: 사회과학대학, major: 정치외교학과 }
+    careers:
+      - 외교관·행정 공무원
+      - 국제기구·NGO
+      - 언론·정책 연구
+      - 기업 대외·국제 업무
+    notes: >
+      고려대·경희대는 '정경대학', 조선대는 '법사회대학' 등 단과대 명칭이 다양.
+      국제학부(고려대 국제대학·한국외대 독립학부)는 정치외교학과와 별개 조직.
+    source:
+      - "서울대 정치외교학부 https://social.snu.ac.kr/"
+      - "고려대 정치외교학과(정경대학) https://politics.korea.ac.kr/"
+      - "경북대 정치외교학과 https://politics.knu.ac.kr/"
+      - "경희대 정치외교학과(정경대학) https://politics.khu.ac.kr/"
+      - "부산대 정치외교학과 https://ss.pusan.ac.kr/socio/74928/subview.do"
+      - "한국외대 정치외교학과 https://hufspol.hufs.ac.kr/"
+
+  - id: media_comm
+    name: 언론·미디어
+    college: 사회대 / 미디어대
+    one_liner: 뉴스·방송·광고 등 미디어와 소통을 다루는 분야. 글쓰기·사람 응대와 콘텐츠 만들기를 좋아하면 잘 맞아요.
+    keywords: [글쓰기, 사회, 사람응대, 창업형, 미디어, 실내사무]
+    majors: [언론홍보영상학부, 미디어학부, 미디어커뮤니케이션학과, 신문방송학과]
+    universities:
+      top:
+        - { name: 연세대학교, college: 사회과학대학, major: 언론홍보영상학부 }
+        - { name: 고려대학교, college: 미디어대학, major: 미디어학부 }
+      mid_high:
+        - { name: 부산대학교, college: 사회과학대학, major: 미디어커뮤니케이션학과 }
+        - { name: 한양대학교, college: 사회과학대학, major: 미디어커뮤니케이션학과 }
+      mid:
+        - { name: 경북대학교, college: 사회과학대학, major: 미디어커뮤니케이션학과 }
+        - { name: 강원대학교, college: 사회과학대학, major: 신문방송학과 }
+    careers:
+      - 기자·PD·방송 종사자
+      - 광고·홍보·마케팅
+      - 콘텐츠·미디어 기업
+      - 1인 미디어·콘텐츠 창업
+    notes: >
+      고려대 미디어학부는 2025년 '미디어대학'으로 승격(사회과학대 아님).
+      여러 대학이 '신문방송학과'→'미디어커뮤니케이션학과'로 명칭을 바꿈.
+    source:
+      - "연세대 언론홍보영상학부 https://socsci.yonsei.ac.kr/socsci/intro/communication.do"
+      - "고려대 미디어학부(미디어대학) https://mediacom.korea.ac.kr/"
+      - "부산대 미디어커뮤니케이션학과 https://comm.pusan.ac.kr/"
+      - "한양대 미디어커뮤니케이션학과 https://comm.hanyang.ac.kr/home"
+      - "경북대 미디어커뮤니케이션학과 https://mediacomm.knu.ac.kr/"
+      - "강원대 신문방송학과 https://wwwk.kangwon.ac.kr/www/contents.do?key=1770"
+
+  - id: humanities_lit
+    name: 어문·문학
+    college: 인문대
+    one_liner: 언어·문학을 깊이 읽고 쓰는 분야. 국어·영어와 글쓰기·독서를 좋아하면 잘 맞아요.
+    keywords: [국어, 영어, 글쓰기, 사회, 연구형, 실내사무]
+    majors: [국어국문학과, 영어영문학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 인문대학, major: 국어국문학과 }
+        - { name: 연세대학교, college: 문과대학, major: 영어영문학과 }
+      mid_high:
+        - { name: 경북대학교, college: 인문대학, major: 국어국문학과 }
+        - { name: 중앙대학교, college: 인문대학, major: 영어영문학과 }
+      mid:
+        - { name: 충남대학교, college: 인문대학, major: 국어국문학과 }
+        - { name: 전남대학교, college: 인문대학, major: 영어영문학과 }
+    careers:
+      - 작가·출판·편집
+      - 국어/영어 교사·논술강사(교직)
+      - 문화콘텐츠·번역
+      - 언론·기업 홍보
+    notes: >
+      연세대·고려대·성균관대는 '문과대학', 서울대·경북대 등은 '인문대학'으로 표기.
+    source:
+      - "서울대 국어국문학과 https://korean.snu.ac.kr/"
+      - "연세대 영어영문학과(문과대학) https://ysenglish.yonsei.ac.kr/"
+      - "경북대 국어국문학과 https://korean.knu.ac.kr/"
+      - "중앙대 영어영문학과 https://human.cau.ac.kr/class/sub02.asp"
+      - "충남대 국어국문학과 https://korean.cnu.ac.kr/"
+      - "전남대 영어영문학과 https://ell.jnu.ac.kr/"
+
+  # ═══════════════════ 법학 계열 ═══════════════════
+  - id: law
+    name: 법학
+    college: 법과대학
+    one_liner: 법을 배우고 사회 갈등을 규칙으로 푸는 분야. 사회·글쓰기와 토론·논리를 좋아하면 잘 맞아요.
+    keywords: [사회, 글쓰기, 공공형, 실내사무, 사람응대, 법]
+    majors: [법학과, 법학부]
+    universities:
+      top:
+        - { name: 동국대학교, college: 법과대학, major: 법학과 }
+        - { name: 숙명여자대학교, college: 법과대학(여대), major: 법학부 }
+      mid_high:
+        - { name: 홍익대학교, college: 법과대학, major: 법학부 }
+        - { name: 국민대학교, college: 법과대학, major: 법학부 }
+      mid:
+        - { name: 단국대학교, college: 법과대학, major: 법학과 }
+        - { name: 숭실대학교, college: 법과대학, major: 법학과 }
+        - { name: 조선대학교, college: 법사회대학, major: 법학과 }
+    careers:
+      - 법조인(변호사·판사·검사) — 로스쿨 진학 후
+      - 법원·검찰 공무원, 행정·입법 공무원
+      - 기업 법무팀·준법(컴플라이언스)
+      - 경찰·세무·노무 등 자격·공직
+    notes: >
+      ⚠ 가장 중요한 점: 2009년 로스쿨(법학전문대학원) 도입으로 서울대·연세대·고려대·성균관대 등
+      로스쿨 설치 25개 대학은 학부 법학과를 폐지함(2008년이 마지막 학부 신입생).
+      따라서 위 목록은 '로스쿨이 없어 학부 법학과를 유지하는 대학'들임.
+      변호사·판사·검사가 되려면 어느 학부를 나오든 졸업 후 로스쿨(3년) 진학이 일반 경로 —
+      반드시 학부 법학과가 아니어도 됨. 별도로 경찰대학 법학과는 전액 국비·졸업 후 경찰 간부 임용(특수목적·최상위).
+    source:
+      - "동국대 법과대학 법학과 https://law.dongguk.edu/main"
+      - "숙명여대 법학부 https://www.sookmyung.ac.kr/kr/university-graduate/law.do"
+      - "숭실대 법과대학 법학과 https://law.ssu.ac.kr/"
+      - "조선대 법사회대학 법학과 https://lawdep.chosun.ac.kr/"
+      - "홍익대·국민대·단국대 법과대학(법학부/법학과): 나무위키 '법과대학' 항목에서 확인, 각 대학 모집요강 재확인 권장 https://namu.wiki/w/법과대학"
+
+  # ═══════════════════ 교육 계열 ═══════════════════
+  - id: edu_elementary
+    name: 초등교육
+    college: 교육대학교 / 사범대학
+    one_liner: 초등학교 선생님을 길러내는 분야. 아이들을 가르치고 돕는 일과 여러 과목을 두루 좋아하면 잘 맞아요.
+    keywords: [사람돕기, 사람응대, 교육, 공공형]
+    majors: [초등교육과]
+    universities:
+      top:
+        - { name: 서울교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 경인교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 이화여자대학교, college: 사범대학, major: 초등교육과 }
+      mid_high:
+        - { name: 한국교원대학교, college: 제1대학, major: 초등교육과 }
+        - { name: 부산교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 대구교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+      mid:
+        - { name: 춘천교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 공주교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 전주교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 광주교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 진주교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 청주교육대학교, college: 국립 교육대학교, major: 초등교육과 }
+        - { name: 제주대학교, college: 교육대학, major: 초등교육과 }
+    careers:
+      - 초등학교 교사(국·공립 임용시험 / 사립)
+      - 교육청·교육행정
+      - 교육 콘텐츠·출판
+      - 교육대학원 진학(교육 연구)
+    notes: >
+      전국 10개 교육대학교(서울·경인·부산·대구·광주·춘천·공주·전주·진주·청주)는 대학 전체가
+      초등교원 양성기관이라 일반 '단과대' 구분이 없음.
+      종합대학 중에는 이화여대(사범대 초등교육과)·한국교원대(제1대학)·제주대(교육대학)에 초등교육과가 있음.
+      졸업 시 초등 2급 정교사 자격, 국·공립 교사는 임용시험 합격 필요. 수도권(서울·경인) 입결이 가장 높음.
+    source:
+      - "전국 교육대학 목록 https://ko.wikipedia.org/wiki/대한민국의_교육대학"
+      - "한국교원대 제1대학 초등교육과 https://www.knue.ac.kr/www/contents.do?key=745"
+      - "이화여대 사범대학 초등교육과: 이화여대 입학처 모집단위에서 확인(사립 종합대 중 유일)"
+
+  - id: edu_secondary
+    name: 중등교육·사범
+    college: 사범대학
+    one_liner: 중·고등학교 교과 선생님을 길러내는 분야. 특정 과목을 깊이 좋아하고 가르치는 일에 끌리면 잘 맞아요.
+    keywords: [사람돕기, 사람응대, 교육, 공공형, 연구형]
+    majors: [국어교육과, 수학교육과, 영어교육과, 과학교육과, 사회교육과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 사범대학, major: 국어·수학·영어·과학교육과 등 }
+        - { name: 고려대학교, college: 사범대학, major: 국어·영어·수학·역사교육과 등 }
+      mid_high:
+        - { name: 한국교원대학교, college: 제2·3대학, major: 교과별 교육과 }
+        - { name: 경북대학교, college: 사범대학, major: 교과별 교육과 }
+        - { name: 부산대학교, college: 사범대학, major: 교과별 교육과 }
+      mid:
+        - { name: 충남대학교, college: 사범대학, major: 교과별 교육과 }
+        - { name: 전남대학교, college: 사범대학, major: 교과별 교육과 }
+        - { name: 국립공주대학교, college: 사범대학, major: 교과별 교육과 }
+    careers:
+      - 중·고등학교 교사(임용시험 합격)
+      - 학원·인터넷강의 강사, 교육 콘텐츠
+      - 교육청·교육행정, 교육 연구
+      - 교육대학원 진학
+    notes: >
+      사범대는 본인이 가르칠 '과목별 교육과'(국어교육·수학교육·영어교육·물리/화학/생물/지구과학교육·
+      사회/역사/지리/윤리교육 등)로 따로 모집함 → 자신 있는 과목의 교육과로 지원.
+      졸업 시 중등 2급 정교사 자격, 국·공립 교사는 임용시험 합격 필요.
+      비사범대 학생은 교직이수(학과별 소수)나 교육대학원으로도 교원자격 취득 가능.
+    source:
+      - "서울대 사범대학 학과 https://edu.snu.ac.kr/"
+      - "고려대 사범대학 학과 https://kuedu.korea.ac.kr/educa/course/under.do"
+      - "한국교원대 학과 구성(제1~4대학) https://www.knue.ac.kr/www/contents.do?key=745"
+      - "부산대 사범대학 https://edu.pusan.ac.kr/ , 경북대 사범대학(예: 체육교육과 https://sport.knu.ac.kr/)"
+
+  # ═══════════════════ 예체능 계열 ═══════════════════
+  - id: art_design
+    name: 디자인·미술
+    college: 미술대학 / 조형대학 / 예술대학
+    one_liner: 그림·디자인으로 생각을 시각화하는 분야. 그리기·만들기와 창의적 표현을 좋아하면 잘 맞아요.
+    keywords: [예체능, 디자인, 만들기, 미디어, 창업형]
+    majors: [시각디자인과, 산업디자인과, 회화과, 공예과, 조소과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 미술대학, major: 디자인과 }
+        - { name: 홍익대학교, college: 미술대학, major: 시각디자인과·산업디자인과 }
+      mid_high:
+        - { name: 국민대학교, college: 조형대학, major: 시각디자인학과·공업디자인학과 }
+        - { name: 서울과학기술대학교, college: 조형대학, major: 디자인학과(시각·산업) }
+      mid:
+        - { name: 경북대학교, college: 예술대학, major: 디자인학과·미술학과 }
+        - { name: 부산대학교, college: 예술대학, major: 디자인학과 }
+    careers:
+      - 디자이너(시각·UX·제품·패션)
+      - 미술작가·일러스트레이터
+      - 미술교사(교직 이수 시)
+      - 광고·콘텐츠·브랜딩
+    notes: >
+      ⚠ 디자인·미술은 대부분 실기(그림·포트폴리오) 전형 비중이 큼 → 내신 등급만으로 입결을 가늠하기 어려움.
+      위 티어는 일반전형 기준 참고치이며, 실기 위주 전형은 평가 기준이 다름.
+      단과대 이름이 대학마다 미술대학(서울대·홍익대)/조형대학(국민대·서울과기대)/예술대학(경북대·부산대)/
+      디자인대학 등으로 제각각. 홍익대 미대는 실기 없는 비실기(학생부) 전형도 운영(연도별 확인).
+    source:
+      - "서울대 미술대학 디자인과 https://art.snu.ac.kr/"
+      - "홍익대 미술대학 시각디자인과 https://cfa.hongik.ac.kr/ , https://sidi.hongik.ac.kr/"
+      - "국민대 조형대학 https://design.kookmin.ac.kr/"
+      - "서울과기대 조형대학 디자인학과 https://design.seoultech.ac.kr/"
+      - "경북대 예술대학 디자인학과 https://vcd.knu.ac.kr/ , 미술학과 https://arts.knu.ac.kr/"
+      - "부산대 디자인학과(예술대학) https://design.pusan.ac.kr/ — 모집요강 재확인 권장"
+
+  - id: sports_pe
+    name: 체육·스포츠
+    college: 사범대학(체육교육) / 체육대학 / 예술체육대학
+    one_liner: 운동·스포츠를 가르치고 과학적으로 다루는 분야. 몸 쓰는 활동과 사람을 이끄는 일을 좋아하면 잘 맞아요.
+    keywords: [예체능, 스포츠, 사람응대, 사람돕기, 건강, 취업형]
+    majors: [체육교육과, 체육학과, 스포츠과학과, 스포츠산업학과]
+    universities:
+      top:
+        - { name: 서울대학교, college: 사범대학, major: 체육교육과 }
+        - { name: 경희대학교, college: 체육대학, major: 체육학과 }
+      mid_high:
+        - { name: 한양대학교, college: 예술·체육대학, major: 스포츠과학부 }
+        - { name: 연세대학교, college: 교육과학대학, major: 스포츠응용산업학과 }
+      mid:
+        - { name: 부산대학교, college: 사범대학, major: 체육교육과 }
+        - { name: 경북대학교, college: 사범대학, major: 체육교육과 }
+    careers:
+      - 체육교사(체육교육과 → 임용시험)
+      - 스포츠 지도자·트레이너·코치
+      - 스포츠산업·마케팅·구단 행정
+      - 운동처방·재활, 스포츠 미디어
+    notes: >
+      ⚠ 체육계열은 실기(체력장·종목 실기) 전형이 많아 내신만으로 입결을 가늠하기 어려움.
+      진로 방향이 둘로 갈림: ① 체육교사는 '사범대 체육교육과'(임용시험), ② 지도자·산업·과학 쪽은
+      '체육대학/스포츠과학과/스포츠산업학과'. 같은 학교라도 체육교육과(사범대)와 스포츠과학과(별도 단과대)는
+      소속·목표가 다름. 한양대는 2022년 체육학과·스포츠산업학과를 스포츠과학부(예술·체육대학)로 통합.
+    source:
+      - "서울대 체육교육과(사범대) https://sports.snu.ac.kr/ , https://edu.snu.ac.kr/"
+      - "경희대 체육대학 https://sports.khu.ac.kr/"
+      - "한양대 예술·체육대학 스포츠과학부 http://sportsnarts.hanyang.ac.kr/sport/"
+      - "연세대 교육과학대학 스포츠응용산업학과 https://ysces.yonsei.ac.kr/yses/edu/sports02.do"
+      - "부산대 사범대학 체육교육과 https://edu.pusan.ac.kr/edu/13080/subview.do"
+      - "경북대 사범대학 체육교육과 https://sport.knu.ac.kr/"

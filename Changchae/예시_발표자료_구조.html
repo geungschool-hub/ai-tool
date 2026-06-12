@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>진로 심화 탐구 보고서 — 예시 발표자료 구조 안내</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-pastel:#C5E3F7;
+    --green-pastel:#C3E9CC;
+    --amber-pastel:#FDE9C9;
+    --blue-dark:#1255A0;
+    --green-dark:#2A7A38;
+    --red-accent:#C0392B;
+    --amber:#E67E22;
+    --text-main:#1A1A1A;
+    --text-light:#555;
+    --line:#BBBBBB;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:#d0d0d0;
+    font-family:'Noto Sans KR',sans-serif;
+    color:var(--text-main);
+    padding:20px;
+    display:flex;flex-direction:column;align-items:center;gap:20px;
+  }
+  .page{
+    width:210mm;min-height:297mm;
+    padding:16mm 16mm 12mm;
+    background:#fff;
+    box-shadow:0 4px 12px rgba(0,0,0,.15);
+    display:flex;flex-direction:column;
+    position:relative;
+  }
+  .page-header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2.5px solid var(--blue-dark);
+    padding-bottom:6px;margin-bottom:12px;
+  }
+  .subject{font-size:13pt;font-weight:700;color:var(--blue-dark);}
+  .breadcrumb{font-size:7.5pt;color:var(--text-light);margin-top:2px;}
+  .header-right{text-align:right;font-size:9pt;color:var(--text-main);line-height:1.5;}
+  .header-right b{color:var(--blue-dark);}
+
+  .page-content{flex:1;}
+  .page-footer{
+    margin-top:auto;padding-top:8px;
+    display:flex;justify-content:center;
+  }
+  .page-badge{
+    background:var(--blue-dark);color:#fff;
+    font-size:8.5pt;font-weight:500;
+    padding:3px 14px;border-radius:10px;letter-spacing:.5px;
+  }
+
+  .section-title{
+    font-size:12.5pt;font-weight:700;color:var(--blue-dark);
+    border-left:4px solid var(--blue-dark);
+    background:var(--blue-pastel);
+    padding:6px 10px;margin:14px 0 8px;
+  }
+  .section-title.green{color:var(--green-dark);border-left-color:var(--green-dark);background:var(--green-pastel);}
+
+  p{font-size:10pt;line-height:1.65;margin:0 0 6px;}
+  b,strong{color:var(--blue-dark);}
+
+  .lead-box{
+    border:1.5px solid var(--blue-dark);background:#F4F9FE;
+    padding:10px 14px;margin:0 0 8px;
+    font-size:10pt;line-height:1.65;border-radius:4px;
+  }
+  .lead-box .lead-title{
+    font-weight:700;color:var(--blue-dark);font-size:11.5pt;
+    margin-bottom:4px;display:block;
+  }
+
+  .meta-table{
+    width:100%;border-collapse:collapse;margin:0 0 6px;
+    font-size:9.5pt;
+  }
+  .meta-table td{
+    border:1px solid var(--line);
+    padding:5px 9px;vertical-align:middle;
+  }
+  .meta-table td.label{
+    width:22%;background:#F4F4F4;
+    font-weight:700;color:var(--blue-dark);
+    text-align:center;
+  }
+  .meta-table td.value{text-align:left;line-height:1.55;}
+
+  /* Slide cards */
+  .slide-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin:6px 0;
+  }
+  .slide-card{
+    border:1px solid var(--line);
+    border-top:3px solid var(--blue-dark);
+    background:#FAFCFE;
+    padding:8px 11px 9px;
+    font-size:9pt;line-height:1.55;
+    display:flex;flex-direction:column;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .slide-card.green{border-top-color:var(--green-dark);background:#F3FAF4;}
+  .slide-card.amber{border-top-color:var(--amber);background:#FFFAF0;}
+
+  .slide-head{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:8pt;
+    border-bottom:1px dashed var(--line);
+    padding-bottom:3px;margin-bottom:5px;
+  }
+  .slide-num{font-weight:700;color:var(--blue-dark);letter-spacing:.6px;}
+  .slide-card.green .slide-num{color:var(--green-dark);}
+  .slide-card.amber .slide-num{color:#9C5212;}
+  .slide-time{color:var(--amber);font-weight:600;}
+  .slide-card.green .slide-time{color:#A05E1B;}
+
+  .slide-title{
+    font-size:10.5pt;font-weight:700;color:var(--blue-dark);
+    margin-bottom:5px;line-height:1.3;
+  }
+  .slide-card.green .slide-title{color:var(--green-dark);}
+  .slide-card.amber .slide-title{color:#9C5212;}
+
+  .slide-card ul{
+    padding-left:14px;margin:0 0 6px;
+    font-size:9pt;line-height:1.6;
+  }
+  .slide-card ul li{margin-bottom:1px;}
+  .slide-card ul li b{color:inherit;}
+
+  .slide-tag{
+    display:inline-block;font-size:8pt;font-weight:600;
+    padding:0 5px;border-radius:3px;
+    background:#fff;color:var(--text-light);
+    border:1px solid var(--line);
+    margin-left:4px;
+  }
+
+  .slide-visual{
+    margin-top:auto;font-size:8.5pt;
+    color:var(--text-main);
+    background:#fff;border:1px solid var(--line);border-radius:3px;
+    padding:4px 7px;line-height:1.55;
+  }
+  .slide-visual .v-label{color:var(--green-dark);font-weight:700;margin-right:4px;}
+
+  /* Tip card (span) */
+  .tip-card{
+    grid-column:2 / 4;
+    border:1px solid var(--line);
+    border-top:3px solid var(--amber);
+    background:#FFFBE6;
+    padding:9px 13px;
+    font-size:9pt;line-height:1.7;
+    display:flex;flex-direction:column;justify-content:center;
+    break-inside:avoid;
+  }
+  .tip-title{
+    font-weight:700;color:#9C5212;font-size:10.5pt;margin-bottom:4px;
+  }
+  .tip-list{
+    display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;
+    padding-left:14px;margin:0;font-size:9pt;
+  }
+
+  /* Print */
+  @media print{
+    @page{size:A4;margin:0;}
+    body{background:none;padding:0;gap:0;}
+    .page{box-shadow:none;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .page:last-child{page-break-after:avoid;}
+    .slide-card,.tip-card{break-inside:avoid;page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="subject">진로 연관 심화 탐구 보고서</div>
+      <div class="breadcrumb">예시 발표자료 구조 안내</div>
+    </div>
+    <div class="header-right">
+      <div><b>지도교사</b> 고 은 표</div>
+      <div>2026학년도 1학기</div>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="lead-box">
+      <span class="lead-title">발표 자료, 어떻게 짤까요?</span>
+      보고서를 5분 발표로 압축할 때 슬라이드를 어떻게 구성할지 안내예요.<br>
+      <b>이 문서는 슬라이드 자체가 아니라 "슬라이드 구조 안내"</b>입니다. 실제 슬라이드는 PowerPoint·Keynote 등으로 직접 디자인하세요.
+    </div>
+
+    <table class="meta-table">
+      <tbody>
+        <tr>
+          <td class="label">주제</td>
+          <td class="value">본인이 정한 탐구 주제 <span style="color:var(--text-light);font-size:9pt;">(의문문 또는 평서문 문장형, 예: 「○○은 ××에 어떤 영향을 미치는가?」)</span></td>
+        </tr>
+        <tr>
+          <td class="label">발표 시간</td>
+          <td class="value"><b>5분</b> (질의응답 별도)</td>
+        </tr>
+        <tr>
+          <td class="label">슬라이드 수</td>
+          <td class="value"><b>7장</b> · 장당 약 30~60초</td>
+        </tr>
+        <tr>
+          <td class="label">보고서와 매핑</td>
+          <td class="value">보고서 4쪽 → 슬라이드 7장 (1:1 대응)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 class="section-title">슬라이드 7장 구성</h2>
+
+    <div class="slide-grid">
+
+      <!-- Slide 1 — 표지 -->
+      <div class="slide-card">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 1</span>
+          <span class="slide-time">약 15초</span>
+        </div>
+        <div class="slide-title">표지</div>
+        <ul>
+          <li>보고서 제목 (의문문 그대로)</li>
+          <li>학번 · 이름</li>
+          <li>발표 일자</li>
+        </ul>
+      </div>
+
+      <!-- Slide 2 — 탐구 동기 + 질문 -->
+      <div class="slide-card">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 2</span>
+          <span class="slide-time">약 50초</span>
+        </div>
+        <div class="slide-title">탐구 동기 &amp; 질문<span class="slide-tag">보고서 Ⅰ</span></div>
+        <ul>
+          <li>주제의 시의성·중요성을 보여주는 통계나 사례 1~2문장</li>
+          <li>탐구 질문 ①②③ 한 화면에 정리
+            <ul style="padding-left:14px;">
+              <li>① 개념·기전</li>
+              <li>② 비교·조사</li>
+              <li>③ 적용·평가</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Slide 3 — 이론적 배경 -->
+      <div class="slide-card green">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 3</span>
+          <span class="slide-time">약 40초</span>
+        </div>
+        <div class="slide-title">이론적 배경<span class="slide-tag">보고서 Ⅱ</span></div>
+        <ul>
+          <li>주제와 관련된 학문 분야 위치 (1줄)</li>
+          <li>핵심 용어 1~2개 짧게 정의</li>
+          <li>탐구 질문 본격 답 들어가기 전 <b>준비 단계</b></li>
+        </ul>
+      </div>
+
+      <!-- Slide 4 — 탐구 질문 ① 개념·기전 -->
+      <div class="slide-card">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 4</span>
+          <span class="slide-time">약 60초</span>
+        </div>
+        <div class="slide-title">탐구 질문 ① 개념·기전<span class="slide-tag">보고서 Ⅲ</span></div>
+        <ul>
+          <li>질문 ①에 답하는 주요 자료 (저자·연도)</li>
+          <li><b>작동 원리·메커니즘·구조</b>의 핵심</li>
+          <li>가장 중요한 사실 한 줄 강조</li>
+        </ul>
+      </div>
+
+      <!-- Slide 5 — 탐구 질문 ② 비교·조사 -->
+      <div class="slide-card">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 5</span>
+          <span class="slide-time">약 60초</span>
+        </div>
+        <div class="slide-title">탐구 질문 ② 비교·조사<span class="slide-tag">보고서 Ⅲ</span></div>
+        <ul>
+          <li>질문 ②에 답하는 주요 자료 (저자·연도)</li>
+          <li>핵심 <b>수치·비교 결과</b> 표 또는 그래프로</li>
+          <li>결과에 대한 짧은 해석 한 줄</li>
+        </ul>
+      </div>
+
+      <!-- Slide 6 — 결론 -->
+      <div class="slide-card green">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 6</span>
+          <span class="slide-time">약 60초</span>
+        </div>
+        <div class="slide-title">결론 &amp; 시사점<span class="slide-tag">보고서 Ⅳ</span></div>
+        <ul>
+          <li><b>한계</b>: 자료·표본·범위의 제한점</li>
+          <li><b>분석·해석</b>: 질문 ①② 결과 종합</li>
+          <li><b>개선 방안·주장</b>: 본인의 제안 (질문 ③ 적용·평가 흐름 반영)</li>
+        </ul>
+      </div>
+
+      <!-- Slide 7 — 진로 + 참고 -->
+      <div class="slide-card amber">
+        <div class="slide-head">
+          <span class="slide-num">SLIDE 7</span>
+          <span class="slide-time">약 35초</span>
+        </div>
+        <div class="slide-title">진로 연결 &amp; 참고문헌<span class="slide-tag">보고서 Ⅳ+Ⅴ</span></div>
+        <ul>
+          <li><b>진로 연결</b>: 탐구로 확인한 관점·태도 한 줄</li>
+          <li>주요 참고문헌 5~7건 (저자·연도만 간략히)</li>
+          <li>감사 인사 &amp; Q&amp;A</li>
+        </ul>
+      </div>
+
+      <!-- Tip Card (col 2-3 span) -->
+      <div class="tip-card">
+        <div class="tip-title">슬라이드 디자인 팁</div>
+        <ul class="tip-list">
+          <li>한 장 = 한 메시지</li>
+          <li>본문 글자 24pt 이상</li>
+          <li>표·도식·그림 적극, 글자 최소화</li>
+          <li>색은 2~3가지로 절제</li>
+          <li>인용 출처는 슬라이드 하단 작게</li>
+          <li>발표 연습 시 시간 측정 필수</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="page-footer"><div class="page-badge">발표자료 구조 안내</div></div>
+</div>
+
+</body>
+</html>

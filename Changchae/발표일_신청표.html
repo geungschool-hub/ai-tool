@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>진로 발표일 신청표</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-dark:#1255A0;
+    --green-dark:#2A7A38;
+    --blue-pastel:#C5E3F7;
+    --green-pastel:#C3E9CC;
+    --amber:#E67E22;
+    --red-accent:#C0392B;
+    --text-main:#1A1A1A;
+    --text-light:#555;
+    --line:#BBBBBB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Noto Sans KR',sans-serif;
+    background:#d0d0d0;
+    color:var(--text-main);
+    display:flex;flex-direction:column;align-items:center;
+    padding:20px;gap:20px;
+  }
+  .page{
+    width:210mm;height:297mm;
+    background:#fff;
+    box-shadow:0 2px 12px rgba(0,0,0,.25);
+    padding:16mm 14mm;
+    display:flex;flex-direction:column;
+  }
+
+  /* ── 머리말 ── */
+  .title{
+    text-align:center;
+    font-size:24pt;font-weight:900;color:var(--blue-dark);
+    letter-spacing:-.5px;
+  }
+  .subtitle{
+    text-align:center;
+    font-size:11pt;color:var(--text-light);
+    margin-top:4px;
+  }
+  .meta{
+    display:flex;justify-content:flex-end;gap:24px;
+    font-size:10pt;color:var(--text-light);
+    margin-top:10px;
+  }
+  .meta b{color:var(--text-main);}
+  .rule{height:2.5px;background:var(--blue-dark);margin-top:8px;}
+
+  /* ── 안내 박스 ── */
+  .guide{
+    border:1.5px solid var(--line);
+    background:#FAFAFA;
+    border-radius:6px;
+    padding:11px 16px;
+    margin-top:14px;
+    font-size:10pt;line-height:1.75;
+  }
+  .guide .gt{
+    display:inline-block;
+    font-weight:700;color:#fff;background:var(--amber);
+    padding:1px 10px;border-radius:4px;font-size:9.5pt;
+    margin-bottom:6px;
+  }
+  .guide ul{list-style:none;}
+  .guide li{padding-left:18px;position:relative;}
+  .guide li::before{
+    content:"›";position:absolute;left:4px;top:-1px;
+    color:var(--amber);font-weight:900;
+  }
+  .guide b{color:var(--red-accent);}
+
+  /* ── 신청 카드 3열 ── */
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-top:16px;
+    flex:1;
+  }
+  .card{
+    border:1.5px solid var(--line);
+    border-radius:8px;overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .card-head{
+    text-align:center;padding:9px 4px;
+    background:var(--blue-pastel);
+    border-bottom:1.5px solid var(--line);
+  }
+  .card-head .ord{
+    font-size:9pt;font-weight:700;color:var(--blue-dark);
+    letter-spacing:.5px;
+  }
+  .card-head .date{
+    font-size:16pt;font-weight:900;color:var(--blue-dark);
+    margin-top:1px;
+  }
+  .card-head .cap{
+    font-size:8.5pt;color:var(--text-light);margin-top:2px;
+  }
+  /* 카드별 색 변형 */
+  .card.c2 .card-head{background:var(--green-pastel);}
+  .card.c2 .card-head .ord,.card.c2 .card-head .date{color:var(--green-dark);}
+  .card.c3 .card-head{background:#FDE9C9;}
+  .card.c3 .card-head .ord,.card.c3 .card-head .date{color:#B45309;}
+
+  .rows{flex:1;display:flex;flex-direction:column;}
+  .row{
+    flex:1;display:flex;align-items:center;gap:7px;
+    padding:0 8px;
+    border-bottom:1px dashed #D5D5D5;
+  }
+  .row:last-child{border-bottom:none;}
+  .num{
+    flex:none;width:18px;height:18px;border-radius:50%;
+    background:var(--blue-dark);color:#fff;
+    font-size:8.5pt;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .card.c2 .num{background:var(--green-dark);}
+  .card.c3 .num{background:var(--amber);}
+  .write{
+    flex:1;height:1px;border-bottom:1.3px solid #9AA0A6;
+    align-self:flex-end;margin-bottom:7px;
+  }
+
+  .footer-note{
+    text-align:center;font-size:8.5pt;color:var(--text-light);
+    margin-top:12px;
+  }
+
+  @media print{
+    body{background:none;padding:0;gap:0;}
+    .page{box-shadow:none;width:210mm;height:296mm;padding:11mm 12mm;}
+    @page{size:A4;margin:0;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="title">진로 발표일 신청표</div>
+  <div class="subtitle">진로 연관 심화 탐구 보고서 — 발표 일정 선택</div>
+  <div class="meta">
+    <span>학급 <b>(&emsp;&emsp;)</b>반</span>
+    <span>담임 <b>(&emsp;&emsp;&emsp;)</b></span>
+  </div>
+  <div class="rule"></div>
+
+  <div class="guide">
+    <span class="gt">신청 방법</span>
+    <ul>
+      <li>발표는 <b>1인 5분</b>. 세 날짜 중 <b>원하는 날짜 칸</b>에 본인 <b>학번·이름</b>을 적으세요.</li>
+      <li>각 날짜 <b>정원 10명</b>. 빈칸이 남은 날짜에만 적을 수 있어요 — 정원이 차면 다른 날을 고르세요.</li>
+      <li>먼저 적은 사람이 우선이에요(<b>선착순</b>). 한 사람은 <b>한 칸에만</b> 적고, 중복·정정은 안 됩니다.</li>
+    </ul>
+  </div>
+
+  <div class="cards">
+    <!-- 1차 -->
+    <div class="card c1">
+      <div class="card-head">
+        <div class="ord">발표 1차</div>
+        <div class="date">6 / 16 (화)</div>
+        <div class="cap">정원 10명 · 기말 전</div>
+      </div>
+      <div class="rows">
+        <div class="row"><span class="num">1</span><span class="write"></span></div>
+        <div class="row"><span class="num">2</span><span class="write"></span></div>
+        <div class="row"><span class="num">3</span><span class="write"></span></div>
+        <div class="row"><span class="num">4</span><span class="write"></span></div>
+        <div class="row"><span class="num">5</span><span class="write"></span></div>
+        <div class="row"><span class="num">6</span><span class="write"></span></div>
+        <div class="row"><span class="num">7</span><span class="write"></span></div>
+        <div class="row"><span class="num">8</span><span class="write"></span></div>
+        <div class="row"><span class="num">9</span><span class="write"></span></div>
+        <div class="row"><span class="num">10</span><span class="write"></span></div>
+      </div>
+    </div>
+    <!-- 2차 -->
+    <div class="card c2">
+      <div class="card-head">
+        <div class="ord">발표 2차</div>
+        <div class="date">7 / 7 (화)</div>
+        <div class="cap">정원 10명 · 기말 후</div>
+      </div>
+      <div class="rows">
+        <div class="row"><span class="num">1</span><span class="write"></span></div>
+        <div class="row"><span class="num">2</span><span class="write"></span></div>
+        <div class="row"><span class="num">3</span><span class="write"></span></div>
+        <div class="row"><span class="num">4</span><span class="write"></span></div>
+        <div class="row"><span class="num">5</span><span class="write"></span></div>
+        <div class="row"><span class="num">6</span><span class="write"></span></div>
+        <div class="row"><span class="num">7</span><span class="write"></span></div>
+        <div class="row"><span class="num">8</span><span class="write"></span></div>
+        <div class="row"><span class="num">9</span><span class="write"></span></div>
+        <div class="row"><span class="num">10</span><span class="write"></span></div>
+      </div>
+    </div>
+    <!-- 3차 -->
+    <div class="card c3">
+      <div class="card-head">
+        <div class="ord">발표 3차</div>
+        <div class="date">7 / 14 (화)</div>
+        <div class="cap">정원 10명 · 기말 후</div>
+      </div>
+      <div class="rows">
+        <div class="row"><span class="num">1</span><span class="write"></span></div>
+        <div class="row"><span class="num">2</span><span class="write"></span></div>
+        <div class="row"><span class="num">3</span><span class="write"></span></div>
+        <div class="row"><span class="num">4</span><span class="write"></span></div>
+        <div class="row"><span class="num">5</span><span class="write"></span></div>
+        <div class="row"><span class="num">6</span><span class="write"></span></div>
+        <div class="row"><span class="num">7</span><span class="write"></span></div>
+        <div class="row"><span class="num">8</span><span class="write"></span></div>
+        <div class="row"><span class="num">9</span><span class="write"></span></div>
+        <div class="row"><span class="num">10</span><span class="write"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    ※ <b>보고서</b>는 <b>PDF 또는 HWP</b> 파일로 <b>리로스쿨</b>에 제출 — 발표일과 관계없이 <b>6/23(화)</b>까지<br>
+    ※ <b>발표 자료</b>는 <b>각자 본인의 발표일</b>까지 선생님 이메일(<b>geungschool@hyehwa-h.sen.hs.kr</b>)로 제출
+  </div>
+
+</div>
+</body>
+</html>

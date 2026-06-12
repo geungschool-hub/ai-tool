@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>진화론 논설문 수행평가 — 1차시 자료조사 워크시트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC; --blue-dark:#1255A0; --green-dark:#2A7A38;
+      --red-accent:#C0392B; --amber:#E67E22; --text-main:#1A1A1A; --text-light:#555; --line:#BBBBBB; --white:#fff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Noto Sans KR',sans-serif; font-size:10pt; color:var(--text-main); background:#d0d0d0; display:flex; flex-direction:column; align-items:center; gap:24px; padding:24px; }
+    .page { width:210mm; height:297mm; background:var(--white); box-shadow:0 2px 14px rgba(0,0,0,.18); display:flex; flex-direction:column; padding:8mm 12mm 7mm 12mm; overflow:hidden; }
+    .page-header { display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:5px; border-bottom:2.5px solid var(--blue-dark); margin-bottom:8px; flex-shrink:0; }
+    .header-left .subject { font-size:13pt; font-weight:700; color:var(--blue-dark); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .header-right { display:flex; gap:16px; }
+    .input-field { font-size:9pt; display:flex; align-items:center; gap:5px; }
+    .input-field .uline { display:inline-block; width:90px; height:15px; border-bottom:1.5px solid var(--text-main); }
+    .page-footer { display:flex; justify-content:center; align-items:center; padding-top:5px; border-top:1px solid var(--line); flex-shrink:0; margin-top:auto; }
+    .page-badge { background:var(--blue-pastel); color:var(--blue-dark); font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px; }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:6px; }
+    .section { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:5px; flex-shrink:0; }
+    .section-title { font-size:11pt; font-weight:700; padding:4px 10px; border-radius:4px; border-left:4px solid var(--blue-dark); background:var(--blue-pastel); }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    .section-title.amber { border-left-color:var(--amber); background:#FDE9C9; }
+    .section-title.red { border-left-color:var(--red-accent); background:#FDDEDE; }
+    .section-title .pt { font-size:8.5pt; font-weight:700; color:var(--blue-dark); float:right; }
+    .info-box { border:1px solid var(--line); border-radius:4px; padding:7px 12px; font-size:9.2pt; line-height:1.8; background:#FAFAFA; }
+    .key-box { border:2px solid var(--blue-dark); border-radius:5px; padding:9px 13px; font-size:10pt; line-height:1.7; background:var(--blue-pastel); }
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th { background:var(--green-pastel); font-weight:700; padding:5px 6px; border:1px solid var(--line); text-align:center; line-height:1.3; }
+    .data-table td { padding:5px 7px; border:1px solid var(--line); text-align:center; vertical-align:middle; }
+    .src-row td { height:46px; }
+    .write-line { border-bottom:1.3px solid #999; height:24px; }
+    .num-badge { display:inline-block; min-width:18px; height:18px; line-height:18px; border-radius:50%; background:var(--blue-dark); color:#fff; font-size:8.5pt; font-weight:700; text-align:center; }
+    .num-badge.g { background:var(--green-dark); } .num-badge.a { background:var(--amber); } .num-badge.r { background:var(--red-accent); }
+    .outline-box { border:1px solid var(--line); border-radius:4px; padding:7px 10px; background:#FAFAFA; }
+    .outline-box .lbl { font-size:9.3pt; font-weight:700; margin-bottom:3px; }
+    .outline-box .hint { font-size:8.2pt; color:var(--text-light); font-weight:400; }
+    .chk { font-size:8.4pt; color:var(--green-dark); }
+    .mis-table { width:100%; border-collapse:collapse; font-size:8.7pt; }
+    .mis-table th { background:#FDDEDE; color:var(--red-accent); font-weight:700; padding:4px 6px; border:1px solid var(--line); }
+    .mis-table td { padding:4px 8px; border:1px solid var(--line); vertical-align:middle; line-height:1.5; }
+    .mis-table td.x { color:var(--red-accent); text-align:center; width:40%; }
+    .mis-table td.o { color:var(--green-dark); width:55%; }
+    .credit-line { font-size:7.5pt; color:#aaa; text-align:right; margin-top:3px; }
+    @page { size:A4; margin:0; }
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page { width:210mm; height:296mm; box-shadow:none; page-break-after:always; padding:8mm 12mm 7mm 12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════ PAGE 1 — 논제 + 자료조사 + 핵심문장 ════════ -->
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학 — 진화론 논설문 수행평가 〈1차시 · 자료조사 워크시트〉</div>
+      <div class="breadcrumb">III. 생명의 연속성과 다양성 &gt; 진화 (12생과03-03) · 개인 · 컴퓨터실</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- 논제 -->
+    <div class="key-box">
+      ✍ <b>논제</b> — 자연선택의 <b>사례</b>를 들어 진화가 일어나는 <b>원리</b>를 설명하고, 진화론이 생명과학을 넘어
+      <b>우리 사회·문화에 끼친 영향</b>을 제시하며, <b>현대 사회에서 진화론이 갖는 가치</b>에 대한 자신의 입장을 논술하시오.
+    </div>
+
+    <div class="info-box" style="border-color:var(--amber); background:#FFF8EE; font-size:8.8pt; line-height:1.65; padding:6px 12px;">
+      🖥 <b>오늘(1차시)의 미션</b> — 컴퓨터실에서 자료를 조사하여 <b>① 출처 3개 · ② 핵심 문장 3개 · ③ 논설문 개요</b>를 이 워크시트에 채운다.
+      <b style="color:var(--red-accent);">이 워크시트는 2차시 논설문 작성 때 가지고 들어올 수 있는 유일한 자료</b>이므로, 2차시에 쓸 내용을 여기에 충분히 정리해 둘 것! · <b>제출 후 회수 → 2차시에 돌려받음</b>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- A. 자료 조사 -->
+    <div class="section">
+      <div class="section-title green">A. 자료 조사 — 출처 기록 <span class="pt">채점 ① 자료조사의 적절성 (5점)</span></div>
+      <div class="info-box" style="font-size:8.6pt; line-height:1.6; padding:5px 11px;">
+        ✅ <b>믿을 수 있는 출처</b>: 교과서 · 학술지/논문 · 정부기관 · 대학·공공기관 누리집 &nbsp;|&nbsp;
+        ⚠ <b>주의</b>: 개인 블로그·위키백과만으로는 부족(보조로만). &nbsp;|&nbsp;
+        🔎 <b>검색어는 "실제로 입력한 문장 그대로"</b> 적기 — 선생님이 같은 검색어로 출처를 다시 찾아 확인합니다.
+        (예: 한두 단어 ✗ &nbsp;→&nbsp; <b>갈라파고스 핀치 부리 자연선택</b> ✓)
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:6%;">#</th>
+            <th style="width:30%;">실제 입력한 검색어</th>
+            <th style="width:15%;">검색 플랫폼<br><span style="font-weight:400; font-size:7.5pt;">(구글·네이버·지식백과 등)</span></th>
+            <th style="width:18%;">발행처 / 사이트명</th>
+            <th style="width:23%;">자료 제목</th>
+            <th style="width:8%;">접근일</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="src-row"><td><span class="num-badge g">1</span></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr class="src-row"><td><span class="num-badge g">2</span></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr class="src-row"><td><span class="num-badge g">3</span></td><td></td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- B. 핵심 문장 -->
+    <div class="section">
+      <div class="section-title amber">B. 핵심 문장 3개 — 논설문에 쓸 근거 모으기</div>
+      <div class="info-box" style="font-size:8.6pt; line-height:1.6; padding:5px 11px;">
+        조사한 자료에서 <b>논설문에 직접 쓸 핵심 내용</b>을 한 문장씩 <b>내 말로 요약</b>해 적는다. 끝에 <b>어느 출처(1·2·3)</b>에서 가져왔는지 번호를 쓴다.
+        (베껴 쓰기 ✗ · 내 문장으로 정리 ✓)
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+        <div>
+          <div style="font-size:9pt; font-weight:700; margin-bottom:2px;"><span class="num-badge a">1</span> 핵심 문장 &nbsp;<span style="font-size:8pt; font-weight:400; color:var(--text-light);">(출처 번호: &nbsp;___&nbsp;)</span></div>
+          <div class="write-line"></div><div class="write-line"></div>
+        </div>
+        <div>
+          <div style="font-size:9pt; font-weight:700; margin-bottom:2px;"><span class="num-badge a">2</span> 핵심 문장 &nbsp;<span style="font-size:8pt; font-weight:400; color:var(--text-light);">(출처 번호: &nbsp;___&nbsp;)</span></div>
+          <div class="write-line"></div><div class="write-line"></div>
+        </div>
+        <div>
+          <div style="font-size:9pt; font-weight:700; margin-bottom:2px;"><span class="num-badge a">3</span> 핵심 문장 &nbsp;<span style="font-size:8pt; font-weight:400; color:var(--text-light);">(출처 번호: &nbsp;___&nbsp;)</span></div>
+          <div class="write-line"></div><div class="write-line"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <footer class="page-footer"><div class="page-badge">진화론 논설문 수행평가 · 1차시 워크시트 1 / 2</div></footer>
+</div>
+
+<!-- ════════ PAGE 2 — 개요 + 오개념 점검 ════════ -->
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">C. 논설문 개요 짜기 &amp; 오개념 자가점검</div>
+      <div class="breadcrumb">2차시에 이 개요를 바탕으로 논설문을 자필 작성합니다 · 칸이 모자라면 뒷면 사용</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- C. 개요 -->
+    <div class="section">
+      <div class="section-title">C. 논설문 개요 — 아래 흐름대로 쓸 내용을 메모 <span class="pt">채점 ②③④의 밑그림</span></div>
+
+      <div class="outline-box" style="margin-top:2px;">
+        <div class="lbl">서론 <span class="hint">— 진화·자연선택이 무엇인지, 무엇을 주장할지 짧게</span></div>
+        <div class="write-line"></div>
+      </div>
+
+      <div class="section-spacer" style="height:4px;"></div>
+
+      <div class="outline-box" style="border-color:var(--green-dark); background:#F2FBF4;">
+        <div class="lbl" style="color:var(--green-dark);">본론 1 — 자연선택 사례와 원리 &nbsp;<span class="hint">[채점 ②]</span></div>
+        <div style="font-size:8.3pt; color:var(--text-light); margin-bottom:3px; line-height:1.5;">
+          자연선택 사례 1개를 정하고, 아래 <b>4요소</b>를 사례에 맞춰 메모 (3개 이상 다루면 충족) —
+          <span class="chk">☐ 변이 &nbsp; ☐ 선택압 &nbsp; ☐ 차등 생존·번식 &nbsp; ☐ 집단의 형질 빈도 변화</span>
+        </div>
+        <div style="font-size:8.6pt; font-weight:700;">· 내가 고른 사례: <span style="display:inline-block; width:60%; border-bottom:1.2px solid #999;">&nbsp;</span></div>
+        <div class="write-line"></div><div class="write-line"></div>
+      </div>
+
+      <div class="section-spacer" style="height:4px;"></div>
+
+      <div class="outline-box" style="border-color:var(--blue-dark); background:#F1F7FD;">
+        <div class="lbl" style="color:var(--blue-dark);">본론 2 — 진화론이 사회에 끼친 영향 &nbsp;<span class="hint">[채점 ③]</span></div>
+        <div style="font-size:8.3pt; color:var(--text-light); margin-bottom:3px; line-height:1.5;">
+          <b>생명과학 밖 분야</b>(의학·농학·사회·문화·예술 중)에서 영향 사례 1개 + "진화론의 <b>어떤 개념</b> → 그 분야의 <b>어떤 변화</b>" 인과를 메모
+        </div>
+        <div style="font-size:8.6pt; font-weight:700;">· 분야 / 사례: <span style="display:inline-block; width:64%; border-bottom:1.2px solid #999;">&nbsp;</span></div>
+        <div class="write-line"></div><div class="write-line"></div>
+      </div>
+
+      <div class="section-spacer" style="height:4px;"></div>
+
+      <div class="outline-box" style="border-color:var(--amber); background:#FFF8EE;">
+        <div class="lbl" style="color:var(--amber);">결론 — 현대 사회에서 진화론의 가치, 나의 입장 &nbsp;<span class="hint">[채점 ④]</span></div>
+        <div style="font-size:8.3pt; color:var(--text-light); margin-bottom:3px; line-height:1.5;">
+          진화론의 가치에 대한 <b>내 입장</b>을 한 문장으로 + 앞의 사례·근거로 뒷받침 + <span class="chk">(가능하면 ☐ 예상 반론 1개와 그에 대한 답까지 → 가점)</span>
+        </div>
+        <div class="write-line"></div><div class="write-line"></div>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- D. 오개념 자가점검 -->
+    <div class="section">
+      <div class="section-title red">D. 오개념 자가점검 — 이렇게 쓰면 감점! <span class="pt">왼쪽처럼 쓰지 말고 오른쪽처럼</span></div>
+      <table class="mis-table">
+        <thead><tr><th style="width:40%;">✗ 흔한 오개념 표현</th><th style="width:55%;">✓ 올바른 표현</th><th style="width:5%;">확인</th></tr></thead>
+        <tbody>
+          <tr><td class="x">"더 우수한 종으로 진화한다"</td><td class="o">환경에 적응한 형질의 <b>빈도가 증가</b>한다 (진화 ≠ 진보)</td><td style="text-align:center;">☐</td></tr>
+          <tr><td class="x">"강한 자만 살아남는다"</td><td class="o">주어진 <b>환경에 적합한</b> 개체가 더 많이 <b>번식</b>한다 (적자생존 ≠ 최강자)</td><td style="text-align:center;">☐</td></tr>
+          <tr><td class="x">"기린이 목을 늘려 자손에게 물려줬다"</td><td class="o">후천적으로 얻은 형질의 유전(용불용설)은 <b>현재 주류 학설이 아님</b></td><td style="text-align:center;">☐</td></tr>
+          <tr><td class="x">"이 개체가 진화했다"</td><td class="o">진화는 개체가 아니라 <b>집단의 유전자 빈도</b>가 변하는 것</td><td style="text-align:center;">☐</td></tr>
+          <tr><td class="x">"다윈이 우생학을 주장했다"</td><td class="o">우생학·사회진화론은 스펜서·골턴 등이 다윈 이론을 <b>오용</b>한 별개 사상</td><td style="text-align:center;">☐</td></tr>
+          <tr><td class="x">"돌연변이로 진화한다"</td><td class="o">돌연변이는 <b>변이의 원천</b>일 뿐, 진화는 그 변이의 <b>빈도 변화</b></td><td style="text-align:center;">☐</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+  <footer class="page-footer"><div class="page-badge">진화론 논설문 수행평가 · 1차시 워크시트 2 / 2</div></footer>
+</div>
+
+</body>
+</html>

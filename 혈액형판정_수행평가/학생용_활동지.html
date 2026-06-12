@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>혈액형 판정 수행평가 — 학생용 활동지</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel: #C5E3F7;
+      --green-pastel: #C3E9CC;
+      --blue-dark:   #1255A0;
+      --green-dark:  #2A7A38;
+      --red-accent:  #C0392B;
+      --amber:       #E67E22;
+      --text-main:   #1A1A1A;
+      --text-light:  #555;
+      --line:        #BBBBBB;
+      --white:       #ffffff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Noto Sans KR', sans-serif; font-size:10pt; color:var(--text-main);
+      background:#d0d0d0; display:flex; flex-direction:column; align-items:center;
+      gap:24px; padding:24px;
+    }
+    .page {
+      width:210mm; height:297mm; background:var(--white);
+      box-shadow:0 2px 14px rgba(0,0,0,0.18); display:flex; flex-direction:column;
+      padding:8mm 12mm 7mm 12mm; overflow:hidden;
+    }
+    .page-header {
+      display:flex; justify-content:space-between; align-items:flex-end;
+      padding-bottom:5px; border-bottom:2.5px solid var(--blue-dark);
+      margin-bottom:8px; flex-shrink:0;
+    }
+    .header-left .subject    { font-size:13pt; font-weight:700; color:var(--blue-dark); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .header-right { display:flex; gap:16px; }
+    .input-field  { font-size:9pt; display:flex; align-items:center; gap:5px; }
+    .input-field .uline { display:inline-block; width:90px; height:15px; border-bottom:1.5px solid var(--text-main); }
+    .page-footer {
+      display:flex; justify-content:center; align-items:center;
+      padding-top:5px; border-top:1px solid var(--line); flex-shrink:0; margin-top:auto;
+    }
+    .page-badge { background:var(--blue-pastel); color:var(--blue-dark); font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px; }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:5px; }
+    .section { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:6px; flex-shrink:0; }
+    .section-title {
+      font-size:11pt; font-weight:700; padding:4px 10px; border-radius:4px;
+      border-left:4px solid var(--blue-dark); background:var(--blue-pastel); color:var(--text-main);
+    }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    .section-title.amber { border-left-color:var(--amber);      background:#FDE9C9; }
+    .section-title.red   { border-left-color:var(--red-accent); background:#FDDEDE; }
+    .info-box { border:1px solid var(--line); border-radius:4px; padding:7px 12px; font-size:9.5pt; line-height:2.0; background:#FAFAFA; }
+    .key-box  { border:2px solid var(--blue-dark); border-radius:4px; padding:6px 11px; font-size:9.5pt; line-height:1.9; background:var(--blue-pastel); }
+    .two-col   { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .step-box { border:1px solid var(--line); border-radius:4px; padding:6px 10px; font-size:9pt; line-height:1.8; display:flex; gap:8px; align-items:flex-start; background:#FAFAFA; }
+    .data-table { width:100%; border-collapse:collapse; font-size:9.5pt; }
+    .data-table th { background:var(--blue-pastel); font-weight:700; padding:6px 8px; border:1px solid var(--line); text-align:center; }
+    .data-table th.g { background:var(--green-pastel); }
+    .data-table td { padding:7px 9px; border:1px solid var(--line); text-align:center; vertical-align:middle; line-height:1.8; }
+    .b    { display:inline-block; min-width:72px; height:16px; border-bottom:1.8px solid var(--text-main); vertical-align:bottom; margin:0 2px; }
+    .b.sm { min-width:50px; } .b.lg { min-width:108px; } .b.xl { min-width:136px; } .b.xs { min-width:32px; }
+    .write-line { border-bottom:1.3px solid #999; height:22px; }
+    /* C 섹션 서술형 문항 — 줄맞춤·행잉 인덴트 */
+    .c-q { margin:0; }
+    .c-q.second { margin-top:11px; }
+    .c-note { font-size:8.5pt; color:var(--text-light); }
+    .c-item { display:flex; gap:7px; margin:5px 0 0 18px; }
+    .c-item .mk { color:var(--red-accent); font-weight:700; flex-shrink:0; }
+    .c-item .ct { flex:1; }
+    .c-item .ct br { line-height:2.2; }
+    @page { size:A4; margin:0; }
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page { width:210mm; height:296mm; box-shadow:none; page-break-after:avoid; padding:8mm 12mm 7mm 12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생명과학 — 혈액형 판정 수행평가</div>
+      <div class="breadcrumb">II. 항상성과 몸의 조절 &gt; 항원항체반응의 활용 — ABO 혈액형 판정</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- ─── 미션 + 내 시료번호 ─── -->
+    <div class="key-box" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+      <div style="font-size:10pt;">
+        🔬 <b>목표</b> — 번호만 적힌 <b>미지 혈액 시료</b>의 ABO 혈액형을<br>
+        항 A·항 B 혈청과의 <b>응집 반응</b>으로 직접 판정하라.
+      </div>
+      <div style="white-space:nowrap; font-size:11pt; font-weight:700; color:var(--blue-dark);">
+        나의 시료 번호<br>
+        <span style="font-size:16pt;">(&nbsp;&nbsp;&nbsp;&nbsp;)</span> ,
+        <span style="font-size:16pt;">(&nbsp;&nbsp;&nbsp;&nbsp;)</span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── A. 실험 방법 ─── -->
+    <div class="section">
+      <div class="section-title green">A. 실험 방법</div>
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <div class="step-box"><span style="font-weight:700; color:var(--green-dark); white-space:nowrap;">❶</span>
+          <span>판정판 두 칸에 <b>같은 시료</b>를 각각 한 방울씩 떨어뜨린다. (시료 1개당 2칸 사용)</span></div>
+        <div class="step-box"><span style="font-weight:700; color:var(--green-dark); white-space:nowrap;">❷</span>
+          <span>한 칸엔 <b>항 A 혈청</b>, 다른 칸엔 <b>항 B 혈청</b>을 한 방울씩 떨어뜨린다.</span></div>
+        <div class="step-box"><span style="font-weight:700; color:var(--green-dark); white-space:nowrap;">❸</span>
+          <span>각 칸을 <b>이쑤시개로 섞고</b> 1~2분간 관찰한다. <b style="color:var(--red-accent);">이쑤시개는 칸마다 새로운 쪽으로!</b></span></div>
+        <div class="step-box"><span style="font-weight:700; color:var(--green-dark); white-space:nowrap;">❹</span>
+          <span>결과를 관찰하고 활동지에 기록한다.</span></div>
+      </div>
+      <div class="info-box" style="border-color:var(--amber); background:#FFF8EE; font-size:8.7pt; line-height:1.7; padding:5px 11px;">
+        ⚠ <b>유의</b> — 혈청 스포이트 끝이 시료에 닿지 않게(교차 오염 방지) · 모의 혈액이므로 인체에 무해하나 입·눈에 넣지 말 것 · 흘리면 즉시 닦기
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── B. 실험 결과 기록 ─── -->
+    <div class="section">
+      <div class="section-title amber">B. 실험 결과 기록</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:16%;">시료 번호</th>
+            <th style="width:24%;">항 A 혈청 응집 여부</th>
+            <th style="width:24%;">항 B 혈청 응집 여부</th>
+            <th style="width:36%;">판정한 혈액형</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-size:13pt; font-weight:700;">(&nbsp;&nbsp;&nbsp;)</td><td>( O / X )</td><td>( O / X )</td><td><b style="font-size:12pt;">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)형</b></td></tr>
+          <tr><td style="font-size:13pt; font-weight:700;">(&nbsp;&nbsp;&nbsp;)</td><td>( O / X )</td><td>( O / X )</td><td><b style="font-size:12pt;">(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)형</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- ─── C. 판정 근거 서술 & 고찰 ─── -->
+    <div class="section">
+      <div class="section-title red">C. 판정 근거 서술 &amp; 고찰</div>
+      <div class="info-box" style="line-height:2.2;">
+        <div class="c-q"><b>1.</b> 아래 예시 문장을 완성하여, 두 시료를 그렇게 판정한 <b>근거</b>를 서술하시오. <span class="c-note">(응집이 일어나 응집원이 있으면 '있음', 응집이 일어나지 않아 응집원이 없으면 '없음'에 ○표)</span></div>
+        <div class="c-item">
+          <span class="mk">▸</span>
+          <span class="ct"><b>첫번째 시료</b> : 항 A 혈청과의 응집 결과로부터 응집원 <span class="b xs"></span>가 <b style="white-space:nowrap;">( 있음 · 없음 )</b>, 항 B 혈청과의 응집 결과로부터 응집원 <span class="b xs"></span>가 <b style="white-space:nowrap;">( 있음 · 없음 )</b>을 알 수 있다. 따라서 <span class="b xs"></span>번 혈액은 <span class="b xs"></span>형이다.</span>
+        </div>
+        <div class="c-item">
+          <span class="mk">▸</span>
+          <span class="ct"><b>두번째 시료</b> : 항 A 혈청과의 응집 결과로부터 응집원 <span class="b xs"></span>가 <b style="white-space:nowrap;">( 있음 · 없음 )</b>, 항 B 혈청과의 응집 결과로부터 응집원 <span class="b xs"></span>가 <b style="white-space:nowrap;">( 있음 · 없음 )</b>을 알 수 있다. 따라서 <span class="b xs"></span>번 혈액은 <span class="b xs"></span>형이다.</span>
+        </div>
+        <div class="c-q second"><b>2.</b> 내가 판정한 혈액을 아래 환자에게 <b>소량 수혈</b>할 때, 빈칸을 채우고 알맞은 말에 ○표 하시오. <span class="c-note">(소량 수혈이므로 공혈자의 혈장에 든 응집소는 충분히 희석되어 무시한다.)</span></div>
+        <div class="c-item">
+          <span class="mk">▸</span>
+          <span class="ct">나의 <b>첫번째</b> 시료(<span class="b xs"></span>번, <span class="b xs"></span>형)를 <b>O형 환자</b>에게 소량 수혈하면,<br>O형 환자 혈장에는 응집소 <span class="b xs"></span>·<span class="b xs"></span>가 모두 있고, 내 시료의 응집원은 <span class="b sm"></span>(이)므로 응집 반응이 <b style="white-space:nowrap;">( 일어난다 &nbsp;·&nbsp; 일어나지 않는다 )</b>.</span>
+        </div>
+        <div class="c-item">
+          <span class="mk">▸</span>
+          <span class="ct">나의 <b>두번째</b> 시료(<span class="b xs"></span>번, <span class="b xs"></span>형)를 <b>AB형 환자</b>에게 소량 수혈하면,<br>AB형 환자 혈장에는 응집소가 <span class="b sm"></span>. 따라서 응집 반응이 <b style="white-space:nowrap;">( 일어난다 &nbsp;·&nbsp; 일어나지 않는다 )</b>.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer">
+    <div class="page-badge">혈액형 판정 수행평가 · 학생용</div>
+  </footer>
+</div>
+
+</body>
+</html>

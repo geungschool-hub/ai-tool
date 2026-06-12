@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>혈액형 판정 수행평가 — 채점 루브릭</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC; --blue-dark:#1255A0; --green-dark:#2A7A38; --red-accent:#C0392B; --amber:#E67E22; --text-main:#1A1A1A; --text-light:#555; --line:#BBBBBB; --white:#fff; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Noto Sans KR',sans-serif; font-size:10pt; color:var(--text-main); background:#d0d0d0; display:flex; flex-direction:column; align-items:center; gap:24px; padding:24px; }
+    .page { width:210mm; height:297mm; background:var(--white); box-shadow:0 2px 14px rgba(0,0,0,.18); display:flex; flex-direction:column; padding:8mm 12mm 7mm 12mm; overflow:hidden; }
+    .page-header { display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:5px; border-bottom:2.5px solid var(--blue-dark); margin-bottom:8px; flex-shrink:0; }
+    .header-left .subject { font-size:13pt; font-weight:700; color:var(--blue-dark); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .teacher-badge { border:2px solid var(--blue-dark); color:var(--blue-dark); font-weight:700; font-size:10pt; padding:3px 12px; border-radius:6px; }
+    .page-footer { display:flex; justify-content:center; align-items:center; padding-top:5px; border-top:1px solid var(--line); flex-shrink:0; margin-top:auto; }
+    .page-badge { background:var(--blue-pastel); color:var(--blue-dark); font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px; }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
+    .section { display:flex; flex-direction:column; gap:4px; }
+    .section-title { font-size:11pt; font-weight:700; padding:4px 10px; border-radius:4px; border-left:4px solid var(--blue-dark); background:var(--blue-pastel); }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    .section-title.amber { border-left-color:var(--amber); background:#FDE9C9; }
+    .rubric { width:100%; border-collapse:collapse; font-size:9.2pt; }
+    .rubric th { background:var(--blue-pastel); font-weight:700; padding:6px 8px; border:1px solid var(--line); text-align:center; }
+    .rubric td { padding:7px 9px; border:1px solid var(--line); vertical-align:middle; line-height:1.7; }
+    .rubric td.crit { text-align:center; font-weight:700; background:#F4FAFF; }
+    .rubric td.pt { text-align:center; font-weight:700; color:var(--blue-dark); }
+    .rubric td.lv { text-align:left; }
+    .rubric tr.total td { background:#EAF4FF; font-weight:700; }
+    .info-box { border:1px solid var(--line); border-radius:4px; padding:8px 12px; font-size:9.3pt; line-height:1.9; background:#FAFAFA; }
+    .sample { border:1px solid var(--line); border-left:4px solid var(--green-dark); border-radius:4px; padding:11px 14px; font-size:9.8pt; line-height:2.0; background:#F6FBF7; margin-bottom:11px; }
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page { width:210mm; height:297mm; box-shadow:none; page-break-after:always; padding:8mm 12mm 7mm 12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<style>
+  .rubric-toolbar { width:210mm; max-width:100%; display:flex; gap:10px; justify-content:center; margin-bottom:4px; }
+  .rubric-toolbar button { font-family:'Noto Sans KR',sans-serif; font-size:10pt; font-weight:700; padding:9px 16px; border:none; border-radius:8px; cursor:pointer; }
+  .rubric-toolbar .b-all { background:#1255A0; color:#fff; }
+  .rubric-toolbar .b-one { background:#2A7A38; color:#fff; }
+  @media print {
+    .rubric-toolbar { display:none !important; }
+    body.only-rubric #sec-notes, body.only-rubric #page-2 { display:none !important; }
+    body.only-rubric #page-1 { page-break-after:avoid !important; }
+  }
+</style>
+<div class="rubric-toolbar">
+  <button class="b-all" onclick="printAll()">🖨 전체 인쇄</button>
+  <button class="b-one" onclick="printRubricOnly()">🖨 채점 기준표만 인쇄</button>
+</div>
+
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">혈액형 판정 수행평가 — 채점 루브릭</div>
+      <div class="breadcrumb">생명과학 · ABO 혈액형 판정 · 총 20점 · 학기초 평가계획서 기준</div>
+    </div>
+    <div class="teacher-badge">교 사 용</div>
+  </header>
+
+  <div class="page-content">
+
+    <div class="section" id="sec-rubric">
+      <div class="section-title">■ 평가 영역별 채점 기준</div>
+      <table class="rubric">
+        <thead>
+          <tr><th style="width:19%;">채점 요소</th><th>기대 수행</th><th style="width:9%;">척도</th><th style="width:9%;">배점</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="crit" rowspan="3">응집 결과와<br>미지 시료<br>판정 성공 여부</td>
+            <td class="lv">적절한 응집 결과를 바탕으로 제시된 <b>모든</b> 미지 시료의 혈액형 판정을 성공적으로 완료함.</td>
+            <td class="pt">8</td>
+            <td class="pt" rowspan="3">8</td>
+          </tr>
+          <tr>
+            <td class="lv">응집 결과에 일부 오류가 발생하거나 제시된 미지 시료 중 <b>일부</b>의 혈액형 판정만을 성공적으로 완료함.</td>
+            <td class="pt">5</td>
+          </tr>
+          <tr>
+            <td class="lv">제시된 미지 시료의 혈액형 판정을 <b>모두 실패</b>함.</td>
+            <td class="pt">2</td>
+          </tr>
+          <tr>
+            <td class="crit" rowspan="5">탐구 보고서<br>완성도<br><span style="font-size:7.5pt; font-weight:400; color:var(--text-light);">(활동지 C섹션)</span></td>
+            <td class="lv"><b>완성도 100~80%</b> — [C-1] 판정 근거 문장(응집원·시료번호·혈액형)과 [C-2] O형·AB형 환자 수혈(빈칸·○표) 항목을 <b>모두</b> 정확히 채우고 <b>응집원·응집소 개념을 정확히</b> 적용함.</td>
+            <td class="pt">10</td>
+            <td class="pt" rowspan="5">10</td>
+          </tr>
+          <tr><td class="lv"><b>완성도 80~60%</b> — C-1·C-2 빈칸을 대부분 정확히 채웠으나, 한두 칸 누락·표기 오류가 있거나 응집원·응집소 용어가 일부 부정확함.</td><td class="pt">8</td></tr>
+          <tr><td class="lv"><b>완성도 60~40%</b> — C-1과 C-2 중 한 영역에 개념 오류가 있거나, 빈칸의 절반가량만 채움.</td><td class="pt">6</td></tr>
+          <tr><td class="lv"><b>완성도 40~20%</b> — C 빈칸 일부만 채우고 대부분 비우거나 오개념을 보임.</td><td class="pt">4</td></tr>
+          <tr><td class="lv"><b>완성도 20~0%</b> — C섹션을 거의 작성하지 않았거나 학습 개념(응집원·응집소) 적용 흔적이 거의 없음.</td><td class="pt">2</td></tr>
+          <tr>
+            <td class="crit" rowspan="2">실험 과정의<br>적절성</td>
+            <td class="lv">실험실 안전 수칙을 준수함.</td>
+            <td class="pt">2</td>
+            <td class="pt" rowspan="2">2</td>
+          </tr>
+          <tr><td class="lv">실험실 안전 수칙을 준수하지 않음.</td><td class="pt">1</td></tr>
+          <tr class="total">
+            <td class="crit" colspan="3" style="text-align:center;">합 계 (만점)</td>
+            <td class="pt">20</td>
+          </tr>
+          <tr class="total">
+            <td class="crit" colspan="2">미참여</td>
+            <td class="pt">0</td>
+            <td class="pt">0</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section" id="sec-notes">
+      <div class="section-title amber">■ 채점 시 유의</div>
+      <div class="info-box">
+        • <b>①판정 성공(8)</b> : 학생 답안의 두 혈액형을 교사용 운영자료 2쪽 <b>배정표 정답 열</b>과 순서 무관하게 대조 → 둘 다 정확 <b>8</b> / 응집 기록 오류 또는 한 개만 정확 <b>5</b> / 둘 다 실패 <b>2</b>.<br>
+        • <b>②탐구 보고서 완성도(10)</b> : <b>학생 활동지 C섹션</b>(C-1 판정 근거 빈칸 문장 + C-2 수혈 빈칸·○표)이 채점 대상. 응집원·응집소 등 <b>학습 개념을 적용해 채운 정도</b>를 완성도 %로 환산해 10·8·6·4·2 부여. (B 결과 기록의 판정 정확성은 ①에서 평가)<br>
+        • <b>③실험 과정의 적절성(2)</b> : 안전 수칙(교차 오염 방지, 모의 혈액 취급) 준수 <b>2</b> / 미준수 <b>1</b>.<br>
+        • <b>미참여 0점.</b> Rh는 평가 대상이 아니므로 학생이 Rh를 언급해도 가·감점하지 않음.
+      </div>
+      <div class="info-box" style="border-color:var(--green-dark); background:#F6FBF7; margin-top:5px;">
+        <b>[C-2 정답 원리]</b> 공혈자 = 학생 본인 시료 → 학생마다 답이 다름. 아래 규칙으로 채점.<br>
+        • <b>O형 환자</b> : 혈장에 응집소 α·β 모두 존재 → 내 시료가 <b>A·B·AB형이면 응집 O</b>(응집원과 응집소 결합), <b>O형이면 응집 X</b>(응집원 없음).<br>
+        • <b>AB형 환자</b> : 혈장에 응집소 <b>없음</b> → 내 시료가 무엇이든 <b>항상 응집 X</b>.
+      </div>
+    </div>
+
+  </div>
+  <footer class="page-footer"><div class="page-badge">채점 루브릭 1 / 2 · 채점 기준·유의</div></footer>
+</div>
+
+<!-- ════════ PAGE 2 — NEIS 세특 연계 문구 ════════ -->
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">채점 루브릭 — NEIS 세특 연계 문구</div>
+      <div class="breadcrumb">생명과학 · ABO 혈액형 판정 · 수준별 예시(상·중·하)</div>
+    </div>
+    <div class="teacher-badge">교 사 용</div>
+  </header>
+
+  <div class="page-content">
+
+    <div class="section" id="sec-sd">
+      <div class="section-title green">■ NEIS 세특 연계 문구 예시 <span style="font-size:8.5pt; font-weight:400; color:var(--text-light);">(수준별 — 실제 관찰 내용으로 수정)</span></div>
+      <div class="sample"><b>[상]</b> 미지 시료의 ABO 혈액형을 항A·항B 혈청과의 응집 반응으로 정확히 판정하고, 적혈구의 응집원과 혈장의 응집소가 특이적으로 결합하여 응집이 일어나는 원리를 들어 판정 근거를 논리적으로 서술함. O형·AB형 환자에게 수혈할 때의 응집 여부까지 응집원-응집소 관계로 정확히 추론하여 항원항체반응의 특이성에 대한 깊은 이해를 보임.</div>
+      <div class="sample"><b>[중]</b> 항A·항B 혈청과의 응집 여부를 관찰해 미지 시료의 혈액형을 판정하였으며, 응집 반응을 근거로 혈액형을 설명함. 실험 절차를 성실히 수행하고 결과를 기록하는 과정에서 항원항체반응이 혈액형 판정에 활용됨을 이해함.</div>
+      <div class="sample"><b>[하]</b> 혈액형 판정 실험에 참여하여 항A·항B 혈청을 이용한 응집 반응 관찰 방법을 익히고, 응집원과 응집소의 개념을 실험을 통해 확인함.</div>
+    </div>
+
+  </div>
+  <footer class="page-footer"><div class="page-badge">채점 루브릭 2 / 2 · NEIS 세특</div></footer>
+</div>
+
+<script>
+  function printAll(){ document.body.classList.remove('only-rubric'); window.print(); }
+  function printRubricOnly(){
+    document.body.classList.add('only-rubric');
+    window.addEventListener('afterprint', function h(){ document.body.classList.remove('only-rubric'); window.removeEventListener('afterprint', h); });
+    window.print();
+  }
+</script>
+</body>
+</html>

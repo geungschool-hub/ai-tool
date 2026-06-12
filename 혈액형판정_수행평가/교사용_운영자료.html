@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>혈액형 판정 수행평가 — 교사용 운영자료</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC; --blue-dark:#1255A0; --green-dark:#2A7A38;
+      --red-accent:#C0392B; --amber:#E67E22; --text-main:#1A1A1A; --text-light:#555; --line:#BBBBBB; --white:#fff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Noto Sans KR',sans-serif; font-size:10pt; color:var(--text-main); background:#d0d0d0; display:flex; flex-direction:column; align-items:center; gap:18px; padding:18px; }
+
+    /* ── 컨트롤 바 (화면 전용) ── */
+    .toolbar { width:210mm; max-width:100%; background:#fff; border:1px solid #ccc; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.12); padding:12px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .toolbar h2 { font-size:11pt; color:var(--red-accent); margin-right:6px; white-space:nowrap; }
+    .toolbar .grp { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .toolbar select, .toolbar input[type=text] { font-family:inherit; font-size:10pt; padding:6px 9px; border:1.5px solid #bbb; border-radius:7px; min-height:38px; }
+    .btn { font-family:inherit; font-size:9.5pt; font-weight:700; padding:8px 12px; border:none; border-radius:8px; cursor:pointer; min-height:38px; }
+    .btn:active { transform:translateY(1px); }
+    .btn.blue { background:var(--blue-dark); color:#fff; }
+    .btn.green { background:var(--green-dark); color:#fff; }
+    .btn.amber { background:var(--amber); color:#fff; }
+    .btn.gray { background:#e4e7eb; color:#333; }
+    .btn.red { background:var(--red-accent); color:#fff; }
+    .save-status { font-size:9pt; color:var(--green-dark); margin-left:auto; font-weight:700; }
+    .save-status.dirty { color:var(--amber); }
+    .hint { width:210mm; max-width:100%; font-size:8.8pt; color:#444; background:#fff8ee; border:1px solid #f0d9b0; border-radius:8px; padding:8px 14px; line-height:1.7; }
+
+    .page { width:210mm; height:297mm; background:var(--white); box-shadow:0 2px 14px rgba(0,0,0,.18); display:flex; flex-direction:column; padding:8mm 12mm 7mm 12mm; overflow:hidden; }
+    .page-header { display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:5px; border-bottom:2.5px solid var(--red-accent); margin-bottom:8px; flex-shrink:0; }
+    .header-left .subject { font-size:13pt; font-weight:700; color:var(--red-accent); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .teacher-badge { border:2px solid var(--red-accent); color:var(--red-accent); font-weight:700; font-size:10pt; padding:3px 12px; border-radius:6px; white-space:nowrap; }
+    .page-footer { display:flex; justify-content:center; align-items:center; padding-top:5px; border-top:1px solid var(--line); flex-shrink:0; margin-top:auto; }
+    .page-badge { background:#FDDEDE; color:var(--red-accent); font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px; }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:6px; }
+    .section { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:6px; flex-shrink:0; }
+    .section-title { font-size:11pt; font-weight:700; padding:4px 10px; border-radius:4px; border-left:4px solid var(--blue-dark); background:var(--blue-pastel); }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    .section-title.amber { border-left-color:var(--amber); background:#FDE9C9; }
+    .section-title.red { border-left-color:var(--red-accent); background:#FDDEDE; }
+    .info-box { border:1px solid var(--line); border-radius:4px; padding:7px 12px; font-size:9.3pt; line-height:1.9; background:#FAFAFA; }
+    .key-box { border:2px solid var(--red-accent); border-radius:4px; padding:7px 12px; font-size:9.5pt; line-height:1.9; background:#FDDEDE; }
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th { background:var(--blue-pastel); font-weight:700; padding:5px 7px; border:1px solid var(--line); text-align:center; }
+    .data-table th.g { background:var(--green-pastel); }
+    .data-table td { padding:4px 7px; border:1px solid var(--line); text-align:center; vertical-align:middle; line-height:1.5; }
+    .data-table td.num { background:#FDECEC; color:var(--red-accent); font-weight:700; }
+    .step-box { border:1px solid var(--line); border-radius:4px; padding:6px 10px; font-size:9.2pt; line-height:1.7; display:flex; gap:8px; background:#FAFAFA; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+    /* 마스터키 편집 셀렉트 */
+    .key-select { font-family:inherit; font-size:10pt; font-weight:700; padding:3px 4px; border:1.5px solid var(--blue-dark); border-radius:5px; background:#fff; text-align:center; width:74px; }
+    .abo-cell { font-weight:700; color:var(--green-dark); }
+    .aggl-cell { color:var(--text-light); }
+
+    /* 배정표 */
+    .assign-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .assign-table th { background:#FDDEDE; font-weight:700; padding:4px 6px; border:1px solid var(--line); text-align:center; }
+    .assign-table td { padding:2px 6px; border:1px solid var(--line); text-align:center; vertical-align:middle; }
+    .assign-table td.num { background:#FDECEC; color:var(--red-accent); font-weight:700; width:8%; }
+    .assign-table td.ans { font-weight:700; }
+    .name-input { font-family:inherit; font-size:9pt; width:100%; border:none; border-bottom:1px solid #ddd; padding:3px 2px; text-align:center; background:transparent; }
+    .name-input:focus { outline:none; border-bottom:1.5px solid var(--blue-dark); background:#f4f9ff; }
+
+    /* 점수 입력표 */
+    .score-table { width:100%; border-collapse:collapse; font-size:8.6pt; }
+    .score-table th { background:var(--green-pastel); font-weight:700; padding:4px 3px; border:1px solid var(--line); text-align:center; line-height:1.3; }
+    .score-table td { padding:2px 3px; border:1px solid var(--line); text-align:center; vertical-align:middle; }
+    .score-table td.num { background:#FDECEC; color:var(--red-accent); font-weight:700; }
+    .score-table td.nm  { font-weight:500; }
+    .score-table td.ans { color:var(--green-dark); font-weight:700; font-size:8.3pt; }
+    .score-table td.tot { font-weight:700; color:var(--blue-dark); background:#EAF4FF; font-size:9.5pt; }
+    .score-select { font-family:inherit; font-size:8.6pt; font-weight:700; padding:2px 1px; border:1.5px solid var(--green-dark); border-radius:4px; background:#fff; text-align:center; width:100%; min-width:38px; }
+    .score-summary { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+    .score-summary b { color:var(--blue-dark); }
+
+    /* 모달 */
+    .modal-back { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:100; }
+    .modal-back.on { display:flex; }
+    .modal { background:#fff; border-radius:12px; padding:22px 24px; width:340px; max-width:90%; box-shadow:0 8px 30px rgba(0,0,0,.3); }
+    .modal p { font-size:10.5pt; line-height:1.6; margin-bottom:18px; white-space:pre-line; }
+    .modal .row { display:flex; gap:10px; justify-content:flex-end; }
+
+    .credit { font-size:8.5pt; color:#888; text-align:center; padding:6px 0 2px; }
+
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .toolbar, .hint, .modal-back, .credit { display:none !important; }
+      .page { width:210mm; height:297mm; box-shadow:none; page-break-after:always; padding:8mm 12mm 7mm 12mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .page:last-child { page-break-after:avoid; }
+      .key-select { border:none; -webkit-appearance:none; appearance:none; background:none; width:auto; padding:0; }
+      .score-select { border:none; -webkit-appearance:none; appearance:none; background:none; width:auto; min-width:0; padding:0; font-size:9pt; }
+      .name-input { border-bottom:1px solid #ccc; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════ 컨트롤 바 ══════ -->
+  <div class="toolbar">
+    <h2>🩸 반별 운영 관리</h2>
+    <div class="grp">
+      <label style="font-size:9.5pt; font-weight:700;">반</label>
+      <select id="classSelect" title="반 선택"></select>
+      <button class="btn green" onclick="addClass()">＋ 반 추가</button>
+      <button class="btn gray" onclick="renameClass()">이름 변경</button>
+      <button class="btn red" onclick="deleteClass()">삭제</button>
+    </div>
+    <div class="grp">
+      <button class="btn amber" onclick="shuffleKey()">🔀 번호-병 무작위</button>
+      <button class="btn blue" onclick="window.print()">🖨 인쇄</button>
+      <button class="btn green" onclick="downloadAssignImage()" title="정답을 뺀 '배정#·이름·시료 번호' 표를 PNG 이미지로 저장합니다(학생 배부·게시용)">📷 학생용 배정표 이미지(정답X)</button>
+    </div>
+    <div class="grp">
+      <button class="btn green" onclick="exportCSV()">📊 성적 CSV</button>
+      <button class="btn gray" onclick="exportJSON()">⬇ 백업</button>
+      <button class="btn gray" onclick="document.getElementById('importFile').click()" title="백업 파일로 전체 데이터를 덮어씁니다(기존 반 모두 사라짐)">⬆ 복원(덮어쓰기)</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)">
+      <button class="btn green" onclick="document.getElementById('mergeFile').click()" title="기존 반은 그대로 두고, 백업에 있는 새 반만 추가합니다">➕ 병합 복원(반 추가)</button>
+      <input type="file" id="mergeFile" accept="application/json" style="display:none" onchange="mergeJSON(event)">
+    </div>
+    <span class="save-status" id="saveStatus">저장됨</span>
+  </div>
+  <div class="hint">
+    💡 <b>사용법</b> — ① 반을 선택(또는 추가)하고 → ② 페이지1 <b>마스터키</b>에서 번호마다 실제로 붙인 병을 고르면 → ③ 페이지2 <b>배정표 정답이 자동 계산</b>됩니다. 학생 이름을 입력하면 반별로 자동 저장돼요. 매 반 매칭을 바꾸려면 <b>🔀 무작위</b>를 누르세요. 채점은 <b>3쪽 점수 입력표</b>에서 학생별로 판정·보고서·안전 점수를 고르면 합계가 자동 계산됩니다(반별 저장). 모든 데이터는 이 브라우저에 저장되며, 기기 간 이동은 <b>백업/복원</b>(JSON), 성적 정리는 <b>📊 성적 CSV</b>를 쓰세요.<br>
+    📷 <b>학생용 배정표 이미지(정답X)</b> — 이름을 입력한 뒤 누르면 <b>정답을 뺀</b> '배정#·이름·시료 번호'만 담긴 PNG가 저장됩니다. 칠판 게시·단톡방 공유·쪽지 배부에 쓰세요(학생은 자기 이름의 시료 번호만 확인). 이름이 하나도 없으면 28개 번호쌍 전체가 번호만 나옵니다. <b>🔀 재배정은 정답만 바꾸므로 학생 배정 번호쌍은 그대로</b>라 이 이미지는 언제 뽑아도 동일합니다.<br>
+    🔁 <b>다른 PC의 반과 합치기</b> — 이 PC에서 만든 백업을 다른 PC로 가져가 <b>➕ 병합 복원(반 추가)</b>을 누르면, 그 PC의 기존 반은 그대로 두고 <b>새 반만 추가</b>됩니다. (예: 집에서 D반 작업 → 백업 → 학교 PC에서 병합 복원 → C반 유지 + D반 추가) · <b>⬆ 복원(덮어쓰기)</b>는 전체를 교체하므로 기존 반이 사라집니다 — 주의!
+  </div>
+
+<!-- ════════ PAGE 1 — 운영 가이드 + 마스터키 ════════ -->
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">혈액형 판정 수행평가 — 운영자료</div>
+      <div class="breadcrumb">생명과학 · 모의혈액형판정세트(ABO) · <span id="clsName1">—</span></div>
+    </div>
+    <div class="teacher-badge">교 사 용 · 대외비</div>
+  </header>
+
+  <div class="page-content">
+
+    <div class="section">
+      <div class="section-title red">① 평가 개요</div>
+      <div class="info-box">
+        • <b>방식</b> : 학생마다 <b>서로 다른 번호쌍(2개)</b>의 미지 시료를 받아, 항A·항B 혈청 응집으로 ABO형 판정<br>
+        • <b>Rh 제외</b> : 모의 키트 항D 반응이 약해 판정 분쟁 소지 → ABO만 평가 (항A·항B 혈청만 사용)<br>
+        • <b>개인별 상이</b> : 8개 번호병에서 2개 뽑는 조합 28가지를 학생별로 1개씩 배정 → 옆자리 베끼기 무력화<br>
+        • <b>소요</b> : 학생 1인당 시료 2개 × 혈청 2종 = 웰 4칸, 약 5분 내<br>
+        • <b>배점</b> : 총 20점 = 판정 성공(8) + 탐구 보고서 완성도(10) + 실험 과정 적절성(2), 미참여 0점 <span style="color:var(--text-light);">(학기초 평가계획서 기준 · 별지 루브릭)</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title amber">② 준비 — 번호병 만들기 (분주 금지·라벨만 가리기)</div>
+      <div class="info-box" style="border-color:var(--amber); background:#FFF8EE;">
+        키트의 빨간 합성혈액 <b>8병</b> 라벨(A+, A−, …)을 <b>불투명 테이프·번호 스티커로 덮어</b> ①~⑧로만 표시한다.<br>
+        ▷ 빈 용기에 미리 따라두면 <b style="color:var(--red-accent);">증발·농도변화</b>로 다음 반 사용 불가 → <b>원래 스포이트 병째로</b> 사용하고 끝나면 뚜껑 닫아 보관(재사용 가능).<br>
+        ▷ 학생은 검사 직전 그 자리에서 한 방울 떨어뜨리므로 마를 틈이 없음. 8병을 <b>시약 스테이션</b>에 두고 학생이 자기 번호만 사용.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">③ 마스터키 — 번호마다 붙인 병 선택 <span style="font-size:8.5pt; font-weight:400; color:var(--text-light);">(고르면 실제 ABO·예상 응집·배정표 정답이 자동 갱신)</span></div>
+      <div class="two-col">
+        <table class="data-table">
+          <thead><tr><th style="width:14%;">번호</th><th style="width:40%;">붙인 병</th><th class="g">실제 ABO</th><th>응집 A/B</th></tr></thead>
+          <tbody id="keyBodyL"></tbody>
+        </table>
+        <table class="data-table">
+          <thead><tr><th style="width:14%;">번호</th><th style="width:40%;">붙인 병</th><th class="g">실제 ABO</th><th>응집 A/B</th></tr></thead>
+          <tbody id="keyBodyR"></tbody>
+        </table>
+      </div>
+      <div class="info-box" style="font-size:8.7pt; line-height:1.6; padding:5px 11px;">
+        ※ Rh(+/−)는 학생이 검사하지 않으므로 같은 ABO형이 2병씩 있을 수 있음(예: A+, A− 모두 A형). 학생은 번호가 달라 같은 형인지 알 수 없음.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title green">④ 운영 순서</div>
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <div class="step-box"><b style="color:var(--green-dark);">❶</b><span>배정표(2쪽) 학생별 <b>시료 번호쌍</b>을 활동지 "나의 시료 번호"란에 적어 배부 (또는 쪽지로 전달).</span></div>
+        <div class="step-box"><b style="color:var(--green-dark);">❷</b><span>학생이 자기 번호 2병을 스테이션에서 가져와 판정판 4칸에 시료+혈청 점적·관찰.</span></div>
+        <div class="step-box"><b style="color:var(--green-dark);">❸</b><span>결과·판정·근거 작성 후 제출. 교사는 <b>배정표 정답 열</b>과 대조해 채점(루브릭 별지).</span></div>
+        <div class="step-box"><b style="color:var(--green-dark);">❹</b><span>병은 뚜껑 닫아 회수 → 다음 반/내년 재사용. <b>반마다 매칭을 바꾸면</b> 🔀로 섞고 정답표를 새로 인쇄.</span></div>
+      </div>
+    </div>
+
+  </div>
+  <footer class="page-footer"><div class="page-badge">교사용 1 / 3 · 운영 가이드</div></footer>
+</div>
+
+<!-- ════════ PAGE 2 — 학생별 배정표 + 정답 ════════ -->
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">학생별 시료 배정표 &amp; 정답</div>
+      <div class="breadcrumb"><span id="clsName2">—</span> · 번호쌍 28종(모두 상이) · 정답은 현재 마스터키 기준 자동 계산</div>
+    </div>
+    <div class="teacher-badge">교 사 용 · 대외비</div>
+  </header>
+
+  <div class="page-content">
+    <div class="info-box" style="font-size:8.8pt; line-height:1.6; padding:6px 11px; margin-bottom:2px;">
+      사용법 — 학생 출석부 순서대로 <b>1번 행부터</b> 한 명씩 이름 입력. 28명까지 모두 다른 번호쌍. 29명 이상이면 위에서부터 재사용(떨어진 자리끼리 같은 쌍이 되게 배치).
+    </div>
+    <div class="two-col" style="align-items:start;">
+      <table class="assign-table">
+        <thead><tr><th style="width:10%;">배정#</th><th style="width:42%;">학생 이름</th><th style="width:24%;">시료 번호</th><th style="width:24%;">정답</th></tr></thead>
+        <tbody id="assignL"></tbody>
+      </table>
+      <table class="assign-table">
+        <thead><tr><th style="width:10%;">배정#</th><th style="width:42%;">학생 이름</th><th style="width:24%;">시료 번호</th><th style="width:24%;">정답</th></tr></thead>
+        <tbody id="assignR"></tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+    <div class="key-box">
+      <b>채점 빠른 대조 (판정 성공 8점)</b> — 학생 답안의 두 혈액형을 위 "정답" 열과 <b>순서 무관</b>하게 대조.
+      <b>둘 다 일치 → 8점</b> / 응집 기록 오류 또는 한 개만 일치 → <b>5점</b> / 둘 다 실패 → <b>2점</b>.
+      보고서 완성도(10)·안전(2)은 별지 루브릭 참고.
+    </div>
+  </div>
+  <footer class="page-footer"><div class="page-badge">교사용 2 / 3 · 배정표·정답</div></footer>
+</div>
+
+<!-- ════════ PAGE 3 — 반별 점수 입력표 ════════ -->
+<div class="page" id="page-3">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">반별 채점 점수 입력표</div>
+      <div class="breadcrumb"><span id="clsName3">—</span> · 판정 8 + 보고서 10 + 안전 2 = 20점 · 합계 자동계산</div>
+    </div>
+    <div class="teacher-badge">교 사 용 · 대외비</div>
+  </header>
+
+  <div class="page-content">
+    <div class="info-box" style="font-size:8.8pt; line-height:1.6; padding:6px 11px; margin-bottom:2px;">
+      배정#·이름은 2쪽 배정표와 동일. 각 칸을 선택하면 <b>합계가 자동 계산</b>되고 반별로 저장됩니다. (판정 8/5/2 · 보고서 10/8/6/4/2 · 안전 2/1 · 미참여는 모두 0) · 성적 정리는 상단 <b>📊 성적 CSV</b>.
+    </div>
+    <div class="two-col" style="align-items:start;">
+      <table class="score-table">
+        <thead><tr><th style="width:9%;">#</th><th style="width:25%;">이름</th><th style="width:14%;">정답</th><th style="width:14%;">판정<br><span style="font-weight:400;">/8</span></th><th style="width:15%;">보고서<br><span style="font-weight:400;">/10</span></th><th style="width:11%;">안전<br><span style="font-weight:400;">/2</span></th><th style="width:12%;">합계</th></tr></thead>
+        <tbody id="scoreL"></tbody>
+      </table>
+      <table class="score-table">
+        <thead><tr><th style="width:9%;">#</th><th style="width:25%;">이름</th><th style="width:14%;">정답</th><th style="width:14%;">판정<br><span style="font-weight:400;">/8</span></th><th style="width:15%;">보고서<br><span style="font-weight:400;">/10</span></th><th style="width:11%;">안전<br><span style="font-weight:400;">/2</span></th><th style="width:12%;">합계</th></tr></thead>
+        <tbody id="scoreR"></tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+    <div class="key-box score-summary">
+      <span>📋 <b id="sumGraded">0</b> / <span id="sumNamed">0</span>명 채점 완료</span>
+      <span>· 반 평균 <b id="sumAvg">—</b> 점</span>
+      <span>· 최고 <b id="sumMax">—</b> / 최저 <b id="sumMin">—</b></span>
+    </div>
+  </div>
+  <footer class="page-footer"><div class="page-badge">교사용 3 / 3 · 점수 입력표</div></footer>
+</div>
+
+<div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+
+<!-- 커스텀 확인 모달 -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <p id="modalMsg"></p>
+    <div class="row">
+      <button class="btn gray" onclick="closeModal(false)">취소</button>
+      <button class="btn" id="modalOk" onclick="closeModal(true)">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── 고정 데이터 ──
+  const BOTTLES = ["A+","A-","B+","B-","O+","O-","AB+","AB-"];
+  const DEFAULT_KEY = {1:"A+",2:"B+",3:"O+",4:"AB+",5:"A-",6:"B-",7:"O-",8:"AB-"};
+  const CIRC = ["①","②","③","④","⑤","⑥","⑦","⑧"];
+  // 28개 고유 번호쌍 (배정#1~28)
+  const PAIRS = [[6,8],[2,5],[3,4],[1,7],[4,7],[1,3],[2,8],[5,6],[2,6],[5,8],[1,4],[3,7],[3,5],[7,8],
+                 [1,6],[2,4],[4,6],[1,2],[5,7],[3,8],[2,3],[1,8],[4,5],[6,7],[3,6],[2,7],[4,8],[1,5]];
+  const STORE_KEY = "bloodTypingTeacherData_v1";
+  // 채점 항목별 선택 가능 점수 (루브릭 기준)
+  const SCORE_OPTS = { j:[8,5,2,0], r:[10,8,6,4,2,0], s:[2,1,0] };
+
+  const abo = b => b.replace(/[+\-]/g, "");
+  const agglOf = t => ({A:"O / X", B:"X / O", AB:"O / O", O:"X / X"}[t] || "—");
+
+  // ── 상태 ──
+  let state = { current:null, classes:{} };
+
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.classes) state = s; } catch(e){}
+    if (Object.keys(state.classes).length === 0) {
+      state.classes["1반"] = newClassData();
+      state.current = "1반";
+    }
+    if (!state.current || !state.classes[state.current]) state.current = Object.keys(state.classes)[0];
+    // 구버전 백업 호환: scores 누락 시 보강
+    Object.values(state.classes).forEach(c => { if (!c.scores) c.scores = {}; });
+  }
+  function newClassData() { return { key:{...DEFAULT_KEY}, names:{}, scores:{} }; }
+  function save(dirty) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    const el = document.getElementById('saveStatus');
+    el.textContent = "저장됨 ✓"; el.classList.remove('dirty');
+  }
+  function cur() { return state.classes[state.current]; }
+
+  // ── 렌더 ──
+  function renderClassSelect() {
+    const sel = document.getElementById('classSelect');
+    sel.innerHTML = "";
+    Object.keys(state.classes).forEach(name => {
+      const o = document.createElement('option'); o.value = name; o.textContent = name;
+      if (name === state.current) o.selected = true;
+      sel.appendChild(o);
+    });
+    document.getElementById('clsName1').textContent = state.current;
+    document.getElementById('clsName2').textContent = state.current;
+    document.getElementById('clsName3').textContent = state.current;
+  }
+
+  function renderKey() {
+    const k = cur().key;
+    [["keyBodyL",[1,2,3,4]],["keyBodyR",[5,6,7,8]]].forEach(([id,nums]) => {
+      const tb = document.getElementById(id); tb.innerHTML = "";
+      nums.forEach(n => {
+        const t = abo(k[n]);
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          `<td class="num">${CIRC[n-1]}</td>`+
+          `<td><select class="key-select" data-n="${n}">`+
+            BOTTLES.map(b => `<option value="${b}" ${b===k[n]?"selected":""}>${b}</option>`).join("")+
+          `</select></td>`+
+          `<td class="abo-cell" id="abo-${n}">${t}형</td>`+
+          `<td class="aggl-cell" id="aggl-${n}">${agglOf(t)}</td>`;
+        tb.appendChild(tr);
+      });
+    });
+    tb_bindKey();
+  }
+  function tb_bindKey() {
+    document.querySelectorAll('.key-select').forEach(s => {
+      s.onchange = () => {
+        const n = +s.dataset.n;
+        cur().key[n] = s.value;
+        const t = abo(s.value);
+        document.getElementById('abo-'+n).textContent = t+"형";
+        document.getElementById('aggl-'+n).textContent = agglOf(t);
+        renderAssign(); renderScores();
+        save();
+      };
+    });
+  }
+
+  function renderAssign() {
+    const k = cur().key, names = cur().names;
+    [["assignL",0,14],["assignR",14,28]].forEach(([id,start,end]) => {
+      const tb = document.getElementById(id); tb.innerHTML = "";
+      for (let i=start; i<end; i++) {
+        const no = i+1, [a,b] = PAIRS[i];
+        const ans = `${abo(k[a])} · ${abo(k[b])}`;
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          `<td class="num">${no}</td>`+
+          `<td><input class="name-input" data-no="${no}" value="${(names[no]||"").replace(/"/g,'&quot;')}" placeholder="이름"></td>`+
+          `<td style="font-size:11pt; letter-spacing:2px;">${CIRC[a-1]} ${CIRC[b-1]}</td>`+
+          `<td class="ans">${ans}</td>`;
+        tb.appendChild(tr);
+      }
+    });
+    document.querySelectorAll('.name-input').forEach(inp => {
+      inp.oninput = () => {
+        const no = +inp.dataset.no;
+        cur().names[no] = inp.value;
+        const nmCell = document.getElementById('nm-'+no);
+        if (nmCell) nmCell.innerHTML = inp.value.replace(/</g,'&lt;') || '<span style="color:#bbb;">—</span>';
+        renderScoreSummary();
+        document.getElementById('saveStatus').textContent = "입력 중…";
+        document.getElementById('saveStatus').classList.add('dirty');
+        clearTimeout(window._nameT); window._nameT = setTimeout(save, 400);
+      };
+    });
+  }
+
+  // ── 점수 입력표 ──
+  function scoreTotal(sc) {
+    if (!sc || (sc.j==null && sc.r==null && sc.s==null)) return null;
+    return (sc.j||0) + (sc.r||0) + (sc.s||0);
+  }
+  function buildScoreSelect(field, no, val) {
+    const opts = ['<option value="">–</option>']
+      .concat(SCORE_OPTS[field].map(v => `<option value="${v}" ${val===v?"selected":""}>${v}</option>`));
+    return `<select class="score-select" data-no="${no}" data-f="${field}">${opts.join("")}</select>`;
+  }
+  function renderScores() {
+    const k = cur().key, names = cur().names, scores = cur().scores;
+    [["scoreL",0,14],["scoreR",14,28]].forEach(([id,start,end]) => {
+      const tb = document.getElementById(id); tb.innerHTML = "";
+      for (let i=start; i<end; i++) {
+        const no = i+1, [a,b] = PAIRS[i];
+        const ans = `${abo(k[a])}·${abo(k[b])}`;
+        const sc = scores[no] || {};
+        const tot = scoreTotal(sc);
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          `<td class="num">${no}</td>`+
+          `<td class="nm" id="nm-${no}">${(names[no]||"").replace(/</g,'&lt;') || '<span style="color:#bbb;">—</span>'}</td>`+
+          `<td class="ans">${ans}</td>`+
+          `<td>${buildScoreSelect('j',no,sc.j)}</td>`+
+          `<td>${buildScoreSelect('r',no,sc.r)}</td>`+
+          `<td>${buildScoreSelect('s',no,sc.s)}</td>`+
+          `<td class="tot" id="tot-${no}">${tot==null?'–':tot}</td>`;
+        tb.appendChild(tr);
+      }
+    });
+    document.querySelectorAll('.score-select').forEach(sel => {
+      sel.onchange = () => {
+        const no = +sel.dataset.no, f = sel.dataset.f;
+        if (!cur().scores[no]) cur().scores[no] = {};
+        cur().scores[no][f] = sel.value === "" ? null : +sel.value;
+        const tot = scoreTotal(cur().scores[no]);
+        document.getElementById('tot-'+no).textContent = (tot==null?'–':tot);
+        renderScoreSummary(); save();
+      };
+    });
+    renderScoreSummary();
+  }
+  function renderScoreSummary() {
+    const names = cur().names, scores = cur().scores;
+    let named = 0, totals = [];
+    for (let no=1; no<=28; no++) {
+      if ((names[no]||"").trim()) named++;
+      const sc = scores[no];
+      if (sc && sc.j!=null && sc.r!=null && sc.s!=null) totals.push(scoreTotal(sc));
+    }
+    const g = totals.length;
+    document.getElementById('sumGraded').textContent = g;
+    document.getElementById('sumNamed').textContent = named;
+    document.getElementById('sumAvg').textContent = g ? (totals.reduce((a,b)=>a+b,0)/g).toFixed(1) : '—';
+    document.getElementById('sumMax').textContent = g ? Math.max(...totals) : '—';
+    document.getElementById('sumMin').textContent = g ? Math.min(...totals) : '—';
+  }
+
+  function renderAll() { renderClassSelect(); renderKey(); renderAssign(); renderScores(); }
+
+  // ── 반 관리 ──
+  document.getElementById('classSelect').onchange = e => { state.current = e.target.value; save(); renderAll(); };
+
+  function addClass() {
+    const name = prompt("새 반 이름을 입력하세요 (예: 2학년 7반)");
+    if (!name) return;
+    if (state.classes[name]) { alert("이미 있는 반 이름입니다."); return; }
+    state.classes[name] = newClassData(); state.current = name; save(); renderAll();
+  }
+  function renameClass() {
+    const old = state.current;
+    const name = prompt("반 이름 변경", old);
+    if (!name || name === old) return;
+    if (state.classes[name]) { alert("이미 있는 반 이름입니다."); return; }
+    state.classes[name] = state.classes[old]; delete state.classes[old];
+    state.current = name; save(); renderAll();
+  }
+  function deleteClass() {
+    if (Object.keys(state.classes).length <= 1) { alert("마지막 반은 삭제할 수 없습니다."); return; }
+    confirmModal(`'${state.current}' 반을 삭제할까요? 입력한 이름·마스터키가 모두 사라집니다.`, true, () => {
+      delete state.classes[state.current];
+      state.current = Object.keys(state.classes)[0]; save(); renderAll();
+    });
+  }
+
+  function shuffleKey() {
+    confirmModal(`'${state.current}'의 번호-병 매칭을 무작위로 다시 섞을까요? 배정표 정답이 바뀝니다.`, false, () => {
+      const shuffled = [...BOTTLES];
+      for (let i=shuffled.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+      const k = {}; for (let n=1; n<=8; n++) k[n] = shuffled[n-1];
+      cur().key = k; save(); renderKey(); renderAssign(); renderScores();
+    });
+  }
+
+  // ── 백업/복원 ──
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "혈액형판정_운영자료_백업.json";
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+  function exportCSV() {
+    const k = cur().key, names = cur().names, scores = cur().scores;
+    const rows = [["배정#","이름","정답","판정(8)","보고서(10)","안전(2)","합계(20)"]];
+    for (let i=0; i<28; i++) {
+      const no = i+1, [a,b] = PAIRS[i];
+      const sc = scores[no] || {};
+      const tot = scoreTotal(sc);
+      rows.push([
+        no,
+        (names[no]||"").replace(/"/g,'""'),
+        `${abo(k[a])}·${abo(k[b])}`,
+        sc.j==null?"":sc.j, sc.r==null?"":sc.r, sc.s==null?"":sc.s,
+        tot==null?"":tot
+      ]);
+    }
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\r\n");
+    const blob = new Blob(["﻿"+csv], {type:"text/csv;charset=utf-8"});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `성적_${state.current}.csv`;
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  // ── 학생용 배정표 이미지 (정답 제외) ──
+  async function downloadAssignImage() {
+    if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch(e){} }
+    const names = cur().names;
+    const all = [];
+    for (let i=0; i<28; i++) {
+      const no = i+1, [a,b] = PAIRS[i];
+      all.push({ no, name:(names[no]||"").trim(), samples:`${CIRC[a-1]} ${CIRC[b-1]}` });
+    }
+    const named = all.filter(r => r.name);
+    const rows = named.length ? named : all;   // 입력된 이름이 없으면 28행 전체(번호만)
+
+    const SCALE=2, PAD=42, GAP=48, ROWH=36, HEADH=40, TITLEH=92, FOOTH=34;
+    const COLS = [{w:60,label:"배정#"},{w:160,label:"이름"},{w:130,label:"시료 번호"}];
+    const colTotal = COLS.reduce((s,c)=>s+c.w,0);
+    const half = Math.ceil(rows.length/2);
+    const left = rows.slice(0,half), right = rows.slice(half);
+    const bodyRows = Math.max(left.length, right.length, 1);
+    const W = PAD*2 + colTotal*2 + GAP;
+    const H = TITLEH + HEADH + bodyRows*ROWH + FOOTH + 8;
+    const FONT = "'Noto Sans KR','Malgun Gothic',sans-serif";
+
+    const cv = document.createElement('canvas');
+    cv.width = W*SCALE; cv.height = H*SCALE;
+    const ctx = cv.getContext('2d');
+    ctx.scale(SCALE,SCALE);
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+
+    // 제목
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#1255A0'; ctx.font = `700 22px ${FONT}`;
+    ctx.fillText(`${state.current} — 시료 번호 배정표`, W/2, 34);
+    ctx.fillStyle = '#555'; ctx.font = `400 13px ${FONT}`;
+    ctx.fillText('본인 이름을 찾아 시료 번호 2개를 확인하세요 · 시료는 번호로만 받습니다', W/2, 60);
+    ctx.strokeStyle = '#C0392B'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(PAD,78); ctx.lineTo(W-PAD,78); ctx.stroke();
+
+    function drawTable(x0, y0, arr) {
+      let cx = x0;
+      ctx.font = `700 14px ${FONT}`;
+      COLS.forEach(c => {
+        ctx.fillStyle = '#FDDEDE'; ctx.fillRect(cx,y0,c.w,HEADH);
+        ctx.strokeStyle = '#BBBBBB'; ctx.lineWidth = 1; ctx.strokeRect(cx,y0,c.w,HEADH);
+        ctx.fillStyle = '#1A1A1A'; ctx.textAlign = 'center';
+        ctx.fillText(c.label, cx+c.w/2, y0+HEADH/2);
+        cx += c.w;
+      });
+      for (let r=0; r<bodyRows; r++) {
+        const row = arr[r];
+        const ry = y0 + HEADH + r*ROWH;
+        let bx = x0;
+        COLS.forEach((c,ci) => {
+          if (row && ci===0) ctx.fillStyle = '#FDECEC';
+          else ctx.fillStyle = (r%2 ? '#FFFFFF' : '#FAFAFA');
+          ctx.fillRect(bx,ry,c.w,ROWH);
+          ctx.strokeStyle = '#BBBBBB'; ctx.lineWidth = 1; ctx.strokeRect(bx,ry,c.w,ROWH);
+          if (row) {
+            ctx.textAlign = 'center';
+            if (ci===0) { ctx.fillStyle='#C0392B'; ctx.font=`700 14px ${FONT}`; ctx.fillText(row.no, bx+c.w/2, ry+ROWH/2); }
+            if (ci===1) { ctx.fillStyle='#1A1A1A'; ctx.font=`500 15px ${FONT}`; ctx.fillText(row.name||'', bx+c.w/2, ry+ROWH/2); }
+            if (ci===2) { ctx.fillStyle='#1A1A1A'; ctx.font=`700 19px ${FONT}`; ctx.fillText(row.samples, bx+c.w/2, ry+ROWH/2); }
+          }
+          bx += c.w;
+        });
+      }
+    }
+    drawTable(PAD, TITLEH, left);
+    drawTable(PAD+colTotal+GAP, TITLEH, right);
+
+    ctx.fillStyle = '#999'; ctx.textAlign = 'center'; ctx.font = `400 11px ${FONT}`;
+    ctx.fillText('Claude AI로 이 앱을 제작함 by 고은표', W/2, H-16);
+
+    cv.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `시료배정_${state.current}.png`;
+      a.click(); URL.revokeObjectURL(a.href);
+    });
+  }
+
+  function importJSON(e) {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const s = JSON.parse(r.result);
+        if (!s.classes) throw 0;
+        confirmModal("백업 파일로 현재 데이터를 덮어쓸까요?", true, () => { state = s; if(!state.current||!state.classes[state.current]) state.current=Object.keys(state.classes)[0]; Object.values(state.classes).forEach(c => { if(!c.scores) c.scores={}; }); save(); renderAll(); });
+      } catch(_) { alert("올바른 백업 파일이 아닙니다."); }
+    };
+    r.readAsText(f); e.target.value = "";
+  }
+
+  function mergeJSON(e) {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const s = JSON.parse(r.result);
+        if (!s.classes) throw 0;
+        const incoming = Object.keys(s.classes);
+        const toAdd = incoming.filter(n => !state.classes[n]);
+        const dup   = incoming.filter(n => state.classes[n]);
+        if (toAdd.length === 0) { alert("추가할 새 반이 없습니다.\n(백업의 모든 반이 이미 존재합니다. 이미 있는 반의 내용을 바꾸려면 '복원(덮어쓰기)'을 쓰세요.)"); return; }
+        const msg = `병합 복원 — 새 반 ${toAdd.length}개를 추가합니다.\n추가: ${toAdd.join(", ")}`
+          + (dup.length ? `\n\n이미 있는 반 ${dup.length}개(${dup.join(", ")})는 그대로 둡니다(건드리지 않음).` : "")
+          + `\n\n진행할까요?`;
+        confirmModal(msg, false, () => {
+          toAdd.forEach(n => {
+            const c = s.classes[n];
+            if (!c.key)    c.key = {...DEFAULT_KEY};
+            if (!c.names)  c.names = {};
+            if (!c.scores) c.scores = {};
+            state.classes[n] = c;
+          });
+          state.current = toAdd[0];   // 새로 들어온 반으로 이동
+          save(); renderAll();
+          alert(`완료 — 새 반 ${toAdd.length}개(${toAdd.join(", ")})를 추가했습니다.`);
+        });
+      } catch(_) { alert("올바른 백업 파일이 아닙니다."); }
+    };
+    r.readAsText(f); e.target.value = "";
+  }
+
+  // ── 모달 ──
+  let _modalCb = null;
+  function confirmModal(msg, danger, cb) {
+    document.getElementById('modalMsg').textContent = msg;
+    const ok = document.getElementById('modalOk');
+    ok.className = "btn " + (danger ? "red" : "green");
+    _modalCb = cb;
+    document.getElementById('modalBack').classList.add('on');
+  }
+  function closeModal(yes) {
+    document.getElementById('modalBack').classList.remove('on');
+    if (yes && _modalCb) _modalCb();
+    _modalCb = null;
+  }
+
+  // ── 시작 ──
+  load(); renderAll();
+</script>
+</body>
+</html>

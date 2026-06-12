@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>👑 공주7반 영단어 챌린지</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --primary:#e35d97; --primary-lt:#f48cb6; --primary-tint:#ffe6f1; --primary-bd:#f7cfe0; --primary-ink:#c03a73;
+    --correct:#2563eb; --growth:#16a34a; --consist:#ea8a00;
+    --ink:#1c2030; --sub:#6b7280; --line:#f0dce6; --good:#16a34a; --bad:#ef4444; --grad:#d4a017;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; overflow:hidden;}
+  body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+    background:linear-gradient(160deg,#ffdcec 0%, #ffc6de 55%, #ffb6d4 100%); color:var(--ink);
+    display:flex; justify-content:center; height:100%; touch-action:manipulation;}
+  /* iOS Safari: #app must be a fixed-height viewport box (dvh handles the dynamic toolbar)
+     so the inner .scroll gets a bounded height and scrolls internally instead of the document. */
+  #app{width:100%; max-width:460px; height:100vh; height:100dvh; background:#fdf2f7; display:flex; flex-direction:column; position:relative; overflow:hidden;}
+
+  .topbar{background:linear-gradient(135deg,var(--primary),var(--primary-lt)); color:#fff; padding:11px 16px 12px; box-shadow:0 4px 16px rgba(180,60,110,.28);}
+  .topbar .title{font-size:14px; font-weight:800; letter-spacing:-.3px; display:flex; align-items:center; gap:7px;}
+  .topbar .me{display:flex; align-items:center; justify-content:space-between; margin-top:7px;}
+  .topbar .nick{font-size:16px; font-weight:800;}
+  .topbar .nick small{font-size:11.5px; font-weight:600; opacity:.85;}
+  .topbar .total{text-align:right;}
+  .topbar .total b{font-size:20px; font-weight:900; display:block; line-height:1;}
+  .topbar .total span{font-size:11px; opacity:.85;}
+
+  /* min-height:0 is essential — without it a flex item won't shrink below its content,
+     so overflow-y:auto never activates (the classic iOS non-scrolling bug). */
+  .scroll{flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:16px 16px 30px;}
+  .screen{display:none; animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  .card{background:#fff; border-radius:18px; padding:18px; box-shadow:0 2px 10px rgba(30,30,60,.06); margin-bottom:14px;}
+
+  .scores{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:14px;}
+  .scores2{grid-template-columns:repeat(2,1fr); margin-top:-7px;}
+  .chip{background:#fff; border-radius:14px; padding:12px 8px; text-align:center; box-shadow:0 2px 8px rgba(30,30,60,.05); cursor:pointer; transition:transform .08s;}
+  .chip:active{transform:scale(.97);}
+  .chip .v{font-size:20px; font-weight:900; line-height:1;}
+  .chip .l{font-size:11px; color:var(--sub); margin-top:5px; font-weight:600;}
+  .chip.correct .v{color:var(--correct);} .chip.growth .v{color:var(--growth);} .chip.consist .v{color:var(--consist);}
+  .chip.combo .v{color:#e35d97;} .chip.speed .v{color:#c98a00;}
+
+  .streak{display:flex; align-items:center; gap:8px; background:#fff7ed; border:1px solid #fed7aa; color:#b45309; border-radius:12px; padding:10px 14px; font-size:13px; font-weight:700; margin-bottom:14px;}
+  .wk-home{display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#ffe6f1,#ffd9ea); border:1px solid var(--primary-bd); color:var(--primary-ink); border-radius:12px; padding:11px 14px; font-size:14px; font-weight:800; margin-bottom:14px; cursor:pointer;}
+  .wk-home b{font-size:17px; font-weight:900;}
+  .wk-home .go{font-size:12px; font-weight:700; opacity:.8;}
+  .classgoal{background:linear-gradient(135deg,#ecfdf3,#dcfce7); border:1px solid #b6e8c6;}
+  .cg-head{display:flex; justify-content:space-between; align-items:baseline; font-size:14px; font-weight:800; color:#15803d; margin-bottom:9px;}
+  .cg-head #cgNums{font-size:13px; font-weight:900;}
+  .cg-bar{height:14px; background:#cdeed7; border-radius:99px; overflow:hidden;}
+  .cg-bar i{display:block; height:100%; background:linear-gradient(90deg,#16a34a,#22c55e); border-radius:99px; transition:width .5s; box-shadow:0 0 10px rgba(34,197,94,.5);}
+  .cg-sub{font-size:11.5px; color:#3f7a55; font-weight:700; margin-top:7px; text-align:center;}
+
+  .btn{display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:54px; border:none; border-radius:15px; font-size:17px; font-weight:800; cursor:pointer; transition:transform .08s, box-shadow .15s; margin-bottom:11px; color:#fff;}
+  .btn:active{transform:scale(.98);}
+  .btn.primary{background:linear-gradient(135deg,var(--primary),var(--primary-lt)); box-shadow:0 6px 16px rgba(227,93,151,.35);}
+  .btn.green{background:linear-gradient(135deg,#16a34a,#22c55e); box-shadow:0 6px 16px rgba(22,163,74,.3);}
+  .btn.gold{background:linear-gradient(135deg,#e0a90a,#f5c542); box-shadow:0 6px 16px rgba(212,160,23,.35);}
+  .btn.ghost{background:#fff; color:var(--primary); border:2px solid var(--primary-bd); box-shadow:none;}
+  .btn.small{min-height:44px; font-size:14px; border-radius:12px;}
+  .btn:disabled{opacity:.5;}
+
+  .sec-title{font-size:13px; font-weight:800; color:var(--sub); margin:4px 2px 9px; letter-spacing:.2px;}
+
+  .hero{text-align:center; padding:34px 10px 10px; color:#fff;}
+  .hero .emoji{font-size:60px;}
+  .hero h1{font-size:25px; font-weight:900; margin:12px 0 6px; letter-spacing:-.5px;}
+  .hero p{font-size:14px; opacity:.9; line-height:1.6;}
+  .nick-card{margin:22px 14px;}
+  .nick-card input{width:100%; height:54px; border:2px solid var(--line); border-radius:14px; padding:0 16px; font-size:18px; font-weight:700; text-align:center; outline:none;}
+  .nick-card input:focus{border-color:var(--primary);}
+  .nick-card .hint{font-size:12px; color:var(--sub); text-align:center; margin:10px 4px 0; line-height:1.5;}
+  .nick-err{color:#ffb4b4; font-size:13px; text-align:center; margin-top:12px; min-height:18px; font-weight:600;}
+  .lvlbtn{display:flex; align-items:center; gap:13px; width:100%; min-height:64px; border:2.5px solid var(--line); background:#fff; border-radius:16px; font-size:16.5px; font-weight:800; cursor:pointer; margin-bottom:11px; color:var(--ink); padding:10px 16px; transition:.15s; text-align:left; position:relative;}
+  .lvlbtn .lvl-radio{flex-shrink:0; width:25px; height:25px; border-radius:50%; border:2.5px solid #cdd1e8; background:#fff; transition:.15s; position:relative;}
+  .lvlbtn .lvl-name{flex:1; line-height:1.35;}
+  .lvlbtn .lvl-name small{display:block; font-size:11.5px; font-weight:600; color:var(--sub); margin-top:2px;}
+  .lvlbtn:active{transform:scale(.985);}
+  .lvlbtn.sel{border-color:var(--primary); background:var(--primary-tint); color:var(--primary); box-shadow:0 5px 18px rgba(227,93,151,.25); transform:translateY(-1px);}
+  .lvlbtn.sel .lvl-name small{color:#d27aa6;}
+  .lvlbtn.sel .lvl-radio{border-color:var(--primary); background:var(--primary);}
+  .lvlbtn.sel .lvl-radio::after{content:''; position:absolute; left:50%; top:50%; width:10px; height:10px; border-radius:50%; background:#fff; transform:translate(-50%,-50%);}
+
+  .week-head{display:flex; justify-content:space-between; font-size:13px; font-weight:800; margin-bottom:8px;}
+  .week-head .p{color:var(--sub); font-weight:700;}
+  .pbar{height:8px; background:#e7e9f0; border-radius:99px; overflow:hidden;}
+  .pbar i{display:block; height:100%; background:linear-gradient(90deg,var(--growth),#22c55e); border-radius:99px; transition:.3s;}
+  .week-range{margin-top:9px; font-size:12px; font-weight:800; color:var(--primary-ink); background:var(--primary-tint); border-radius:9px; padding:7px 10px; text-align:center; line-height:1.5;}
+  .week-range .nxt{color:#a85a86; font-weight:700;}
+
+  .qprog{display:flex; align-items:center; gap:6px; margin-bottom:16px;}
+  .qprog .bar{flex:1; height:8px; background:#e7e9f0; border-radius:99px; overflow:hidden;}
+  .qprog .bar i{display:block; height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-lt)); border-radius:99px; transition:width .3s;}
+  .qprog .n{font-size:12px; font-weight:800; color:var(--sub); white-space:nowrap;}
+  .qtype{display:inline-block; font-size:11px; font-weight:800; padding:4px 11px; border-radius:99px; margin-bottom:14px;}
+  .qtype.e2k{background:#e0e7ff; color:#4040d8;} .qtype.k2e{background:#dcfce7; color:#15803d;} .qtype.spell{background:#fef3c7; color:#b45309;}
+  .qtype.blank{background:#ffe6f1; color:var(--primary-ink);}
+  .qtype.grad{background:#fdf0c8; color:#9a7406;}
+  /* 줄어드는 타이머 바 + 콤보 배지 */
+  .qtimer-row{display:flex; align-items:center; gap:9px; margin:0 0 14px;}
+  .qtimer{flex:1; height:9px; background:#e7e9f0; border-radius:99px; overflow:hidden;}
+  .qtimer i{display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,#e35d97,#f48cb6);}
+  .combo-badge{display:inline-flex; align-items:center; font-size:12px; font-weight:900; color:#fff; background:linear-gradient(135deg,#fb7185,#e35d97); padding:4px 10px; border-radius:99px; white-space:nowrap; box-shadow:0 2px 8px rgba(227,93,151,.35);}
+  /* 빈칸 스펠링 */
+  .blanks{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding:18px 4px 6px;}
+  .bk-in{width:38px; height:48px; border:2px solid var(--line); border-radius:10px; text-align:center; font-size:24px; font-weight:800; outline:none; text-transform:lowercase; color:var(--ink); background:#fff;}
+  .bk-in:focus{border-color:var(--primary); background:var(--primary-tint);}
+  .bk-in.ok{border-color:var(--good); background:#f0fdf4; color:var(--good);}
+  .bk-in.no{border-color:var(--bad); background:#fef2f2; color:var(--bad);}
+  .bk-fix{display:inline-flex; align-items:center; justify-content:center; width:38px; height:48px; font-size:24px; font-weight:800; color:var(--sub);}
+  .bk-sep{display:inline-flex; align-items:center; justify-content:center; min-width:12px; height:48px; font-size:24px; font-weight:800; color:var(--sub);}
+  .fx-cmb{display:inline-block; color:#e35d97; font-weight:900;}
+  .fx-spd{display:inline-block; color:#c98a00; font-weight:900;}
+  .qreview{background:#fae8ff; color:#a21caf; font-size:11px; font-weight:800; padding:4px 11px; border-radius:99px; margin-left:6px;}
+  .qday{display:inline-block; font-size:11px; font-weight:800; padding:4px 11px; border-radius:99px; margin-right:6px; margin-bottom:14px; background:var(--primary-tint); color:var(--primary-ink);}
+  .wv-day{display:inline-block; font-size:10px; font-weight:800; color:#d27aa6; background:var(--primary-tint); border-radius:6px; padding:1px 5px; margin-right:3px;}
+  .prompt{font-size:34px; font-weight:900; text-align:center; padding:26px 10px; letter-spacing:-.5px; word-break:keep-all;}
+  .prompt.ko{font-size:27px;}
+  .opt{width:100%; min-height:58px; border:2px solid var(--line); background:#fff; border-radius:15px; font-size:18px; font-weight:700; cursor:pointer; margin-bottom:10px; padding:0 14px; transition:.12s; color:var(--ink);}
+  .opt:active{transform:scale(.99);}
+  .opt.correct{border-color:var(--good); background:#f0fdf4; color:var(--good);}
+  .opt.wrong{border-color:var(--bad); background:#fef2f2; color:var(--bad);}
+  .opt:disabled{cursor:default;}
+  .spell-in{width:100%; height:58px; border:2px solid var(--line); border-radius:15px; text-align:center; font-size:22px; font-weight:800; outline:none; letter-spacing:1px;}
+  .spell-in:focus{border-color:var(--consist);}
+  .feedback{text-align:center; font-size:16px; font-weight:800; min-height:26px; margin:14px 0 6px;}
+  .feedback.good{color:var(--good);} .feedback.bad{color:var(--bad);}
+  .feedback .ans{display:block; font-size:13px; color:var(--sub); font-weight:700; margin-top:4px;}
+
+  .result-hero{text-align:center; padding:14px 0 6px;}
+  .result-hero .big{font-size:46px;}
+  .result-hero h2{font-size:22px; font-weight:900; margin-top:6px;}
+  .result-hero p{color:var(--sub); font-size:14px; margin-top:4px;}
+  .gain{display:flex; justify-content:space-between; align-items:center; padding:11px 4px; border-bottom:1px dashed var(--line); font-size:15px;}
+  .gain:last-child{border-bottom:none;}
+  .gain .g-l{font-weight:700; display:flex; align-items:center; gap:8px;}
+  .gain .g-v{font-weight:900;}
+  .gain .dot{width:9px; height:9px; border-radius:50%;}
+
+  .rank-row{display:flex; align-items:center; gap:12px; padding:12px 6px; border-bottom:1px solid #f1f2f7;}
+  .rank-row:last-child{border-bottom:none;}
+  .rank-row.me{background:var(--primary-tint); border-radius:12px; padding:12px;}
+  .rank-num{width:30px; text-align:center; font-size:16px; font-weight:900; color:var(--sub);}
+  .rank-name{flex:1; font-size:16px; font-weight:800;}
+  .rank-name small{font-size:11px; color:var(--sub); font-weight:600;}
+  .rank-pts{font-size:16px; font-weight:900; color:var(--primary);}
+  .clap{margin-left:9px; border:1.5px solid #f0d0e8; background:#fdf4fb; color:#a21caf; border-radius:99px; font-size:13px; font-weight:800; padding:6px 11px; min-height:34px; cursor:pointer; white-space:nowrap;}
+  .clap b{font-weight:900;}
+  .clap:active{transform:scale(.94);}
+  .clap.done{opacity:.55;}
+  .clap.got{border-color:#e7d3f5; background:#f6ecfd; cursor:default;}
+  .medal{font-size:19px;}
+  .hof{background:linear-gradient(135deg,#fff7e0,#ffeec0); border:1.5px solid #f0d27a; border-radius:14px; padding:13px 15px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
+  .hof .crown{font-size:30px;}
+  .hof .info{flex:1;}
+  .hof .info .lab{font-size:11px; font-weight:800; color:#a9802a; letter-spacing:.2px;}
+  .hof .info .who{font-size:18px; font-weight:900; color:#7a5b10; margin-top:1px;}
+  .hof .info .pt{font-size:11.5px; color:#a9802a; font-weight:700;}
+  .awards{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:14px;}
+  .awards2{grid-template-columns:repeat(2,1fr); margin-top:-7px;}
+  .award{background:#fff; border-radius:14px; padding:13px 6px; text-align:center; box-shadow:0 2px 8px rgba(30,30,60,.05);}
+  .award .ic{font-size:24px;} .award .t{font-size:11px; color:var(--sub); font-weight:700; margin-top:4px;}
+  .award .who{font-size:13px; font-weight:900; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+  .statbar{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:14px;}
+  .statbar .s{background:#fff; border-radius:14px; padding:13px 6px; text-align:center; box-shadow:0 2px 8px rgba(30,30,60,.05);}
+  .statbar .s b{font-size:20px; font-weight:900; display:block;}
+  .statbar .s span{font-size:11px; color:var(--sub); font-weight:600;}
+  .wv{display:flex; justify-content:space-between; align-items:center; padding:11px 4px; border-bottom:1px solid #f1f2f7;}
+  .wv:last-child{border-bottom:none;}
+  .wv .en{font-size:16px; font-weight:800;} .wv .ko{font-size:13px; color:var(--sub); font-weight:600; margin-left:8px;}
+  .wv .lvl{font-size:13px; font-weight:800; white-space:nowrap;}
+  .empty{text-align:center; color:var(--sub); padding:40px 10px; font-size:14px; line-height:1.7;}
+
+  .nav{display:flex; background:#fff; border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); flex:none;}
+  .nav button{flex:1; border:none; background:none; padding:9px 0 11px; cursor:pointer; color:var(--sub); font-weight:700;}
+  .nav button .ic{font-size:21px; display:block;} .nav button .lb{font-size:11px; margin-top:2px;}
+  .nav button.on{color:var(--primary);}
+
+  .credit{text-align:center; font-size:11px; color:#aab; padding:14px 0 4px;}
+  .toast{position:fixed; left:50%; top:18px; transform:translateX(-50%); background:#11131f; color:#fff; padding:11px 18px; border-radius:12px; font-size:14px; font-weight:700; z-index:50; opacity:0; transition:.25s; pointer-events:none; box-shadow:0 8px 24px rgba(0,0,0,.3);}
+  .toast.show{opacity:1; top:26px;}
+  .full-load{position:fixed; inset:0; background:rgba(20,20,40,.45); display:none; align-items:center; justify-content:center; z-index:60;}
+  .full-load.show{display:flex;}
+  .spin{width:38px; height:38px; border:4px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:rot .8s linear infinite;}
+  @keyframes rot{to{transform:rotate(360deg);}}
+
+  .modal-back{position:fixed; inset:0; background:rgba(20,20,40,.5); display:none; align-items:center; justify-content:center; z-index:70; padding:20px;}
+  .modal-back.on{display:flex; animation:fade .18s ease;}
+  .modal-card{background:#fff; border-radius:20px; padding:22px 20px; width:100%; max-width:360px; box-shadow:0 12px 40px rgba(0,0,0,.32);}
+  .modal-card h3{font-size:18px; font-weight:900; text-align:center;}
+  .modal-card .sub{font-size:13px; color:var(--sub); text-align:center; margin:8px 2px 16px; line-height:1.6;}
+  .modal-card input{width:100%; height:52px; border:2px solid var(--line); border-radius:14px; padding:0 16px; font-size:18px; font-weight:700; text-align:center; outline:none;}
+  .modal-card input:focus{border-color:var(--primary);}
+  .modal-card input:disabled{background:#f4f5fb; color:#bbb;}
+  .modal-err{color:var(--bad); font-size:13px; text-align:center; min-height:18px; margin-top:10px; font-weight:600;}
+  .modal-row{display:flex; gap:10px; margin-top:6px;}
+  .modal-row .btn{flex:1; width:auto; margin-bottom:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- NICKNAME / 시작 -->
+  <div id="screen-nick" class="screen active" style="flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; background:linear-gradient(160deg,#f372a6 0%, #e85c92 52%, #d14a80 100%);">
+    <div class="hero">
+      <div class="emoji">👑✨</div>
+      <h1>공주7반 영단어 챌린지</h1>
+      <p style="font-weight:800; opacity:1; margin-bottom:5px;">👑 공주7반 단어 왕국에 오신 걸 환영해요 ✨</p>
+      <p>학번·이름으로 시작해요!<br>친구에겐 닉네임만 보여요 — 부담 없이 도전!</p>
+    </div>
+    <div class="card nick-card">
+      <!-- STEP 1: 학번 + 이름 + 닉네임 -->
+      <div id="loginStep1">
+        <input id="sidInput" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="학번 (예: 20701)" autocomplete="off" disabled style="margin-bottom:10px;">
+        <input id="nameInput" maxlength="10" placeholder="이름" autocomplete="off" disabled>
+        <button class="btn primary" id="nextBtn1" style="margin-top:14px;" onclick="loginNext()" disabled>연결 중...</button>
+        <p class="hint">학번·이름은 <b>선생님만</b> 봐요. 친구들에겐 <b>닉네임</b>만 보여요!<br><b>처음</b>이면 다음 화면에서 닉네임·수준을 정하고, <b>다시 올 땐</b> 학번·이름만 넣으면 돼요.</p>
+      </div>
+      <!-- STEP 2: PIN -->
+      <div id="loginStep2" style="display:none;">
+        <div id="loginWho" style="font-size:15px; font-weight:800; text-align:center; margin-bottom:4px;"></div>
+        <div id="loginDesc2" style="font-size:12.5px; color:var(--sub); text-align:center; margin-bottom:14px;"></div>
+        <div id="nickField" style="display:none; margin-bottom:14px;">
+          <div style="font-size:13px; font-weight:800; text-align:center; margin-bottom:9px;">랭킹에 보일 닉네임을 정해요 🙂</div>
+          <input id="nickNew" maxlength="10" placeholder="닉네임 (랭킹에 보여요)" autocomplete="off">
+        </div>
+        <div id="levelField" style="display:none; margin-bottom:16px;">
+          <div style="font-size:15px; font-weight:800; text-align:center; margin-bottom:11px;">나에게 맞는 단어 수준을 골라요 🙂</div>
+          <div id="levelBtns"></div>
+          <div style="font-size:11.5px; color:var(--sub); text-align:center; margin-top:4px; line-height:1.5;">부담 갖지 말고 편하게 골라요! 나중에 선생님이 맞춰 바꿔줄 수 있어요.</div>
+        </div>
+        <div id="pinHint" style="display:none; font-size:12px; text-align:center; margin-bottom:9px; line-height:1.55;"></div>
+        <input id="pinInput" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="PIN 숫자 4자리" autocomplete="off" style="letter-spacing:6px; -webkit-text-security:disc; text-security:disc;">
+        <div id="pinConfirmField" style="display:none; margin-top:10px;">
+          <input id="pinInput2" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="PIN 다시 입력" autocomplete="off" style="letter-spacing:6px; -webkit-text-security:disc; text-security:disc;">
+        </div>
+        <button class="btn primary" id="pinSubmit" style="margin-top:14px;" onclick="loginPinSubmit()">로그인</button>
+        <button class="btn ghost" id="pinBack" style="margin-top:0;" onclick="loginBack()">← 학번 다시 입력</button>
+      </div>
+      <div class="nick-err" id="nickErr"></div>
+    </div>
+    <div class="credit" style="margin-top:auto;">Claude AI로 이 앱을 제작함 by 고은표</div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main" style="display:none; flex:1; min-height:0; flex-direction:column; height:100%; overflow:hidden;">
+    <div class="topbar">
+      <div class="title">👑 공주7반 영단어 챌린지</div>
+      <div class="me">
+        <div class="nick" id="topNick"></div>
+        <div class="total"><b id="topTotal">0</b><span>종합 점수</span></div>
+      </div>
+    </div>
+
+    <div class="scroll">
+
+      <!-- HOME -->
+      <div id="screen-home" class="screen active">
+        <div class="card classgoal" id="classGoalCard" style="display:none;">
+          <div class="cg-head"><span>🤝 우리 7반 공동 목표</span><span id="cgNums"></span></div>
+          <div class="cg-bar"><i id="cgBar" style="width:0%"></i></div>
+          <div class="cg-sub" id="cgSub"></div>
+        </div>
+        <div class="scores">
+          <div class="chip correct" onclick="scoreInfo('c')" title="새 단어를 맞히면 +10"><div class="v" id="scCorrect">0</div><div class="l">정답 점수 ⓘ</div></div>
+          <div class="chip growth" onclick="scoreInfo('g')" title="복습 단어를 맞히면 +5"><div class="v" id="scGrowth">0</div><div class="l">성장 점수 ⓘ</div></div>
+          <div class="chip consist" onclick="scoreInfo('k')" title="매일 참여 +10, 연속 보너스"><div class="v" id="scConsist">0</div><div class="l">꾸준 점수 ⓘ</div></div>
+        </div>
+        <div class="scores scores2">
+          <div class="chip combo" onclick="scoreInfo('cb')" title="연속 정답 보너스"><div class="v" id="scCombo">0</div><div class="l">🔥 콤보 점수 ⓘ</div></div>
+          <div class="chip speed" onclick="scoreInfo('sp')" title="빠르게 맞히면 보너스(감점 없음)"><div class="v" id="scSpeed">0</div><div class="l">⚡ 속도 점수 ⓘ</div></div>
+        </div>
+        <div class="streak" id="streakBox"></div>
+        <div class="wk-home" id="wkHome" onclick="go('rank')">
+          <span>🔥 이번 주 점수 <b id="wkHomePts">0</b>점</span>
+          <span class="go">랭킹 보기 →</span>
+        </div>
+
+        <div class="card" id="weekCard">
+          <div class="week-head"><span id="weekLabel">이번 주 · Week 1</span><span class="p" id="weekProg">0 / 0 학습</span></div>
+          <div class="pbar"><i id="weekBar" style="width:0%"></i></div>
+          <div class="week-range" id="weekRange" style="display:none;"></div>
+        </div>
+
+        <button class="btn" id="adminBtn" style="display:none; background:linear-gradient(135deg,#1f2233,#3a3f59);" onclick="location.href='admin.html'">🛠 관리자 화면으로</button>
+        <div id="testerBox" style="display:none; background:#fff7ed; border:1.5px solid #fed7aa; border-radius:12px; padding:10px 13px; margin-bottom:11px; font-size:13px; font-weight:700; color:#b45309;">
+          🧪 테스트 계정 · 레벨 전환 <span style="font-weight:600; color:#a06a2c;">(진도 초기화됨)</span><div id="testerLevelBtns" style="margin-top:6px;"></div>
+        </div>
+        <button class="btn primary" id="startBtn" onclick="startSession()">📖 오늘의 학습 시작</button>
+        <button class="btn ghost" onclick="go('rank')">🏆 공주7반 랭킹 보기</button>
+
+        <div class="sec-title" style="margin-top:18px;">💡 어떻게 진행돼요?</div>
+        <div class="card" style="font-size:13px; line-height:1.85; color:#444;">
+          <span id="howLead"></span><br>
+          📖 매일 들어와 <b>새 단어</b>를 조금씩 배우는 게 핵심이에요.<br>
+          🌱 한 번 배운 단어는 <b>가끔 복습</b>으로 살짝씩 다시 나와요.<br>
+          ❌ 틀린 단어는 <b>곧</b> 다시, ⭕ 맞힌 단어는 점점 <b>나중에</b> 나와요.
+        </div>
+        <div class="sec-title">🏆 점수</div>
+        <div class="card" style="font-size:13px; line-height:1.9; color:#444;">
+          <b style="color:var(--correct)">정답 점수</b> 새 단어를 맞히면 +10<br>
+          <b style="color:var(--growth)">성장 점수</b> 복습으로 나온 단어를 맞히면 +5<br>
+          <b style="color:var(--consist)">꾸준 점수</b> 매일 참여 +10, 연속 3일/7일 보너스<br>
+          <b style="color:#e35d97">🔥 콤보 점수</b> 연속으로 맞히면 보너스 (5연속+, 10연속+)<br>
+          <b style="color:#c98a00">⚡ 속도 점수</b> 빠르게 맞히면 보너스 — 천천히 해도 <b>감점은 없어요!</b>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:center; margin-top:6px;">
+          <button class="btn ghost small" style="width:auto; display:inline-flex; padding:0 16px;" onclick="openNickModal()">✏️ 닉네임 변경</button>
+          <button class="btn ghost small" style="width:auto; display:inline-flex; padding:0 16px;" onclick="logout()">로그아웃</button>
+        </div>
+        <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+      </div>
+
+      <!-- QUIZ -->
+      <div id="screen-quiz" class="screen">
+        <div class="qprog"><div class="bar"><i id="qBar"></i></div><div class="n" id="qNum">1 / 12</div></div>
+        <div id="qTypeBox"></div>
+        <div class="qtimer-row">
+          <div class="qtimer"><i id="timerBar"></i></div>
+          <span id="comboBadge" class="combo-badge" style="display:none;"></span>
+        </div>
+        <div class="card">
+          <div id="qPrompt" class="prompt"></div>
+          <div id="qBody"></div>
+          <div id="qFeedback" class="feedback"></div>
+        </div>
+        <button class="btn primary" id="nextBtn" style="display:none;" onclick="nextQuestion()">다음 →</button>
+      </div>
+
+      <!-- RESULT (daily) -->
+      <div id="screen-result" class="screen">
+        <div class="result-hero">
+          <div class="big" id="resEmoji">🎉</div>
+          <h2 id="resTitle">학습 완료!</h2>
+          <p id="resSub"></p>
+        </div>
+        <div class="card">
+          <div class="gain"><span class="g-l"><span class="dot" style="background:var(--correct)"></span>정답 점수 (새 단어)</span><span class="g-v" id="gainCorrect" style="color:var(--correct)">+0</span></div>
+          <div class="gain"><span class="g-l"><span class="dot" style="background:var(--growth)"></span>성장 점수 (복습)</span><span class="g-v" id="gainGrowth" style="color:var(--growth)">+0</span></div>
+          <div class="gain"><span class="g-l"><span class="dot" style="background:var(--consist)"></span>꾸준 점수</span><span class="g-v" id="gainConsist" style="color:var(--consist)">+0</span></div>
+          <div class="gain"><span class="g-l"><span class="dot" style="background:#e35d97"></span>🔥 콤보 점수</span><span class="g-v" id="gainCombo" style="color:#e35d97">+0</span></div>
+          <div class="gain"><span class="g-l"><span class="dot" style="background:#eab308"></span>⚡ 속도 점수</span><span class="g-v" id="gainSpeed" style="color:#c98a00">+0</span></div>
+          <div class="gain" style="border-top:2px solid var(--line); margin-top:4px; padding-top:12px;"><span class="g-l">🏆 이번에 얻은 총점</span><span class="g-v" id="gainTotal" style="color:var(--primary); font-size:18px;">+0</span></div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:13px; color:var(--sub); font-weight:700;">🔥 이번 주 순위</div>
+          <div style="font-size:30px; font-weight:900; color:var(--primary); margin-top:4px;" id="resRank">#-</div>
+        </div>
+        <button class="btn primary" onclick="go('rank')">🏆 랭킹 확인하기</button>
+        <button class="btn ghost" onclick="go('home')">🏠 홈으로</button>
+      </div>
+
+      <!-- RANKING -->
+      <div id="screen-rank" class="screen">
+        <div id="adminRankView" style="display:none;"></div>
+        <div id="studentRankView">
+        <div id="hofBanner" class="hof" style="display:none;"></div>
+        <div class="sec-title">🔥 이번 주 랭킹 <span id="seasonLabel" style="color:var(--sub);font-weight:600;"></span></div>
+        <div class="card" id="weekRankList"></div>
+        <div class="sec-title">이번 주의 주인공 🌟</div>
+        <div class="awards">
+          <div class="award"><div class="ic">🎯</div><div class="t">정답왕</div><div class="who" id="awCorrect">-</div></div>
+          <div class="award"><div class="ic">🔥</div><div class="t">꾸준왕</div><div class="who" id="awConsist">-</div></div>
+          <div class="award"><div class="ic">🌱</div><div class="t">성장왕</div><div class="who" id="awGrowth">-</div></div>
+        </div>
+        <div class="awards awards2">
+          <div class="award"><div class="ic">💥</div><div class="t">콤보왕</div><div class="who" id="awCombo">-</div></div>
+          <div class="award"><div class="ic">⚡</div><div class="t">스피드왕</div><div class="who" id="awSpeed">-</div></div>
+        </div>
+        <div class="sec-title">📊 종합 랭킹 (전체 누적) <span id="rankCount" style="color:var(--sub);font-weight:600;"></span></div>
+        <div class="card" id="rankList"></div>
+        </div><!-- /studentRankView -->
+        <button class="btn ghost" onclick="renderRank()">🔄 새로고침</button>
+        <button class="btn ghost" onclick="go('home')">🏠 홈으로</button>
+      </div>
+
+      <!-- STATUS -->
+      <div id="screen-status" class="screen">
+        <div id="adminStatusView" style="display:none;"></div>
+        <div id="studentStatusView">
+        <div class="sec-title">내 단어 현황 📊</div>
+        <div class="statbar">
+          <div class="s"><b id="stSeen" style="color:var(--primary)">0</b><span>본 단어</span></div>
+          <div class="s"><b id="stLearning" style="color:var(--consist)">0</b><span>외우는 중</span></div>
+          <div class="s"><b id="stMaster" style="color:var(--growth)">0</b><span>거의 마스터</span></div>
+        </div>
+        <div class="card" id="statusList"></div>
+        </div><!-- /studentStatusView -->
+        <button class="btn ghost" onclick="renderStatus()">🔄 새로고침</button>
+        <button class="btn ghost" onclick="go('home')">🏠 홈으로</button>
+      </div>
+
+    </div>
+
+    <div class="nav">
+      <button id="nav-home" class="on" onclick="go('home')"><span class="ic">🏠</span><span class="lb">홈</span></button>
+      <button id="nav-status" onclick="go('status')"><span class="ic">📊</span><span class="lb">현황</span></button>
+      <button id="nav-rank" onclick="go('rank')"><span class="ic">🏆</span><span class="lb">랭킹</span></button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="full-load" id="fullLoad"><div class="spin"></div></div>
+
+  <!-- 닉네임 변경 모달 (한 달에 한 번) -->
+  <div class="modal-back" id="scoreModal" onclick="if(event.target===this)closeScoreInfo()">
+    <div class="modal-card">
+      <h3 id="scoreModalTitle"></h3>
+      <div class="sub" id="scoreModalBody"></div>
+      <div class="modal-row"><button class="btn primary small" onclick="closeScoreInfo()">알겠어요 👍</button></div>
+    </div>
+  </div>
+  <div class="modal-back" id="nickModal">
+    <div class="modal-card">
+      <h3>✏️ 닉네임 변경</h3>
+      <div class="sub" id="nickModalSub"></div>
+      <input id="nickEditInput" maxlength="10" placeholder="새 닉네임" autocomplete="off">
+      <div class="modal-err" id="nickEditErr"></div>
+      <div class="modal-row">
+        <button class="btn ghost small" onclick="closeNickModal()">취소</button>
+        <button class="btn primary small" id="nickSaveBtn" onclick="submitNickChange()">변경</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================
+   Firebase
+   ========================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDbEgNhJr24GjWPYBx63zQ4MyW2dZA6XSs",
+  authDomain: "gongju7-vocab.firebaseapp.com",
+  databaseURL: "https://gongju7-vocab-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gongju7-vocab",
+  storageBucket: "gongju7-vocab.firebasestorage.app",
+  messagingSenderId: "249343659059",
+  appId: "1:249343659059:web:532b7d74d0a38286c2a746"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+/* ===== 기본값(폴백) — 관리자 화면에서 단어/설정을 넣으면 그게 우선 ===== */
+const SEED_CFG = { weekSize:40, newPerDay:8, reviewPerDay:3, periodDays:7, startDate:'2026-06-02', goalTarget:2000, daysPerPeriod:2 };
+const SEED_WORDS = [
+  {id:1,en:'achieve',ko:'달성하다'},{id:2,en:'benefit',ko:'혜택, 이익'},{id:3,en:'consider',ko:'고려하다'},
+  {id:4,en:'decline',ko:'감소하다'},{id:5,en:'establish',ko:'설립하다'},{id:6,en:'generate',ko:'발생시키다'},
+  {id:7,en:'improve',ko:'향상시키다'},{id:8,en:'maintain',ko:'유지하다'},{id:9,en:'observe',ko:'관찰하다'},
+  {id:10,en:'predict',ko:'예측하다'},{id:11,en:'reduce',ko:'줄이다'},{id:12,en:'require',ko:'요구하다'},
+  {id:13,en:'suggest',ko:'제안하다'},{id:14,en:'acquire',ko:'습득하다'},{id:15,en:'contribute',ko:'기여하다'},
+  {id:16,en:'determine',ko:'결정하다'},{id:17,en:'emphasize',ko:'강조하다'},{id:18,en:'illustrate',ko:'삽화로 설명하다'},
+  {id:19,en:'participate',ko:'참여하다'},{id:20,en:'recognize',ko:'인식하다'},{id:21,en:'represent',ko:'대표하다'},
+  {id:22,en:'demonstrate',ko:'입증하다'},{id:23,en:'encounter',ko:'마주치다'},{id:24,en:'overcome',ko:'극복하다'},
+  {id:25,en:'analyze',ko:'분석하다'},{id:26,en:'approach',ko:'접근하다'},{id:27,en:'assume',ko:'가정하다'},
+  {id:28,en:'conclude',ko:'결론짓다'},{id:29,en:'distribute',ko:'분배하다'},{id:30,en:'estimate',ko:'추정하다'},
+  {id:31,en:'examine',ko:'조사하다'},{id:32,en:'indicate',ko:'가리키다'},{id:33,en:'interpret',ko:'해석하다'},
+  {id:34,en:'modify',ko:'수정하다'},{id:35,en:'obtain',ko:'얻다'},{id:36,en:'perceive',ko:'인지하다'},
+  {id:37,en:'pursue',ko:'추구하다'},{id:38,en:'reveal',ko:'드러내다'},{id:39,en:'seek',ko:'찾다'},
+  {id:40,en:'transform',ko:'변형시키다'},{id:41,en:'adapt',ko:'적응하다'},{id:42,en:'conduct',ko:'수행하다'},
+  {id:43,en:'derive',ko:'끌어내다'},{id:44,en:'enhance',ko:'강화하다'},{id:45,en:'expand',ko:'확장하다'},
+  {id:46,en:'imply',ko:'암시하다'},{id:47,en:'justify',ko:'정당화하다'},{id:48,en:'preserve',ko:'보존하다'},
+  {id:49,en:'resolve',ko:'해결하다'},{id:50,en:'sustain',ko:'지속시키다'},
+  {id:51,en:'acknowledge',ko:'인정하다'},{id:52,en:'anticipate',ko:'예상하다'},{id:53,en:'attain',ko:'이루다'},
+  {id:54,en:'cease',ko:'중단하다'},{id:55,en:'cite',ko:'인용하다'},{id:56,en:'comprehend',ko:'이해하다'},
+  {id:57,en:'constitute',ko:'구성하다'},{id:58,en:'convey',ko:'전달하다'},{id:59,en:'cope',ko:'대처하다'},
+  {id:60,en:'diminish',ko:'약해지다'},{id:61,en:'emerge',ko:'나타나다'},{id:62,en:'evaluate',ko:'평가하다'},
+  {id:63,en:'exhibit',ko:'전시하다'},{id:64,en:'facilitate',ko:'촉진하다'},{id:65,en:'foster',ko:'육성하다'},
+  {id:66,en:'hinder',ko:'방해하다'},{id:67,en:'implement',ko:'실행하다'},{id:68,en:'incorporate',ko:'포함하다'},
+  {id:69,en:'induce',ko:'유도하다'},{id:70,en:'integrate',ko:'통합하다'},{id:71,en:'manipulate',ko:'조작하다'},
+  {id:72,en:'negotiate',ko:'협상하다'},{id:73,en:'prohibit',ko:'금지하다'},{id:74,en:'reinforce',ko:'보강하다'},
+  {id:75,en:'restrain',ko:'억제하다'},{id:76,en:'retain',ko:'보유하다'},{id:77,en:'simulate',ko:'모의실험하다'},
+  {id:78,en:'tackle',ko:'다루다'},{id:79,en:'undergo',ko:'겪다'},{id:80,en:'yield',ko:'산출하다'},
+];
+const INTERVALS = {1:1, 2:2, 3:4, 4:7, 5:15, 6:30};
+const MAXBOX = 6;
+const SESSION_KEY = 'vocab_v5_session';   // {accountId, studentId} 캐시(원본은 클라우드)
+const PIN_SALT = 'gj7vocab.v1.salt';      // PIN 해시용 고정 솔트(클라이언트 사이드)
+const ADMIN_SID = '20700';                // 이 학번으로 로그인하면 관리자
+const HIDDEN_SIDS = [ADMIN_SID, '20000']; // 랭킹·집계에서 제외(관리자·테스트 계정)
+// 레벨(난이도) 기본값 — 관리자에서 이름 수정 가능. 레벨별 단어장은 vocab/levels/{id}/words
+const SEED_LEVELS = [ {id:'basic', name:'🌱 기초부터 차근차근'}, {id:'plus', name:'🌳 어휘 자신 있어요'} ];
+
+/* ===== 런타임 상태 ===== */
+let CFG = {...SEED_CFG};
+let LEVELS = SEED_LEVELS.slice();
+let WORDS = SEED_WORDS.slice();   // 로그인한 학생의 레벨 단어장
+let uid = null;                 // 익명 인증 uid(DB 접근용)
+let accountId = null;           // 학생 계정 레코드 키(학번 기반 식별)
+let myLevel = 'basic';          // 로그인한 학생의 레벨 id
+let classGoalCount = 0;         // 반 공동 목표 누적(모든 레벨 합산)
+let classGoalBound = false;     // 리스너 중복 부착 방지
+let isAdmin = false;
+let state = null;   // {nickname, studentId, name, level, streak, lastStudyDay, week, scores:{c,g,k}, prog:{}}
+// 로그인 1단계 판정 결과 (닉네임은 1단계에서 함께 입력받음)
+let loginAcct=null, loginMode=null, loginSid='', loginName='', loginNick='', loginLevel=null;
+
+/* ===== 유틸 ===== */
+const $ = id => document.getElementById(id);
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+function sample(arr,n){ return shuffle(arr).slice(0,n); }
+function total(s){ return (s.c||0)+(s.g||0)+(s.k||0)+(s.cb||0)+(s.sp||0); }
+function wordById(id){ return WORDS.find(w=>w.id===id); }
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1700); }
+function escAttr(s){ return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toArray(v){ if(Array.isArray(v)) return v; if(v&&typeof v==='object') return Object.values(v); return []; }
+function loading(on){ $('fullLoad').classList.toggle('show', !!on); }
+async function sha256(t){ const b=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+function pinHashFor(sid, pin){ return sha256(PIN_SALT+'|'+sid+'|'+pin); }
+async function findByStudentId(sid){
+  const snap = await db.ref('vocab/students').orderByChild('studentId').equalTo(sid).once('value');
+  let found=null; snap.forEach(ch=>{ if(!found) found={id:ch.key, ...ch.val()}; });
+  return found;
+}
+function levelName(id){ const l=LEVELS.find(x=>x.id===id); return l?l.name:(id||''); }
+function validLevel(id){ return LEVELS.some(l=>l.id===id) ? id : (LEVELS[0]?LEVELS[0].id:'basic'); }
+// 해당 레벨의 단어장 로드 → 전역 WORDS. 비어 있으면 빈 상태(학습은 '준비 중'으로 잠김)
+// ※ 샘플로 폴백하지 않음 — 실제 단어장 투입 전 학습하면 ID 충돌로 진도가 꼬이기 때문
+async function loadLevelWords(levelId){
+  try {
+    const ws = await db.ref('vocab/levels/'+levelId+'/words').once('value');
+    WORDS = toArray(ws.val()).filter(Boolean).map(w=>({id:w.id, en:w.en, ko:w.ko, day:w.day||0, hidden:!!w.hidden}));
+  } catch(e){ console.error('레벨 단어 로드 실패', e); WORDS = []; }
+}
+
+/* ===== 날짜 → 학습 일차 (모든 학생 공통 달력 기준) ===== */
+function todayIndex(){
+  const sd = (cfgVal('startDate','2026-06-02'));
+  const parts = sd.split('-').map(Number);
+  const startMid = new Date(parts[0], (parts[1]||1)-1, parts[2]||1).getTime();
+  const now = new Date();
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return Math.max(1, Math.floor((todayMid-startMid)/86400000)+1);
+}
+
+/* ===== 주간 시즌(매주 월요일 0시 리셋) — 실제 달력 기준 ===== */
+function seasonKeyOf(d){
+  const x=new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const mon=(x.getDay()+6)%7;           // 월=0 … 일=6
+  x.setDate(x.getDate()-mon);           // 그 주의 월요일로
+  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+}
+function currentSeason(){ return seasonKeyOf(new Date()); }
+function prevSeason(){ const x=new Date(); x.setDate(x.getDate()-7); return seasonKeyOf(x); }
+
+/* ===== 레벨별 설정(per-level): CFG.levelCfg[myLevel]가 있으면 우선, 없으면 전역 CFG, 없으면 기본값 ===== */
+function LC(){ return (CFG.levelCfg && typeof CFG.levelCfg==='object' && CFG.levelCfg[myLevel]) || {}; }
+function cfgVal(k,d){ const o=LC(); if(o[k]!==undefined && o[k]!==null) return o[k]; if(CFG[k]!==undefined && CFG[k]!==null) return CFG[k]; return d; }
+
+/* ===== 단어 / 기간(달력 기준 자동 개방) ===== */
+function activeWords(){ return WORDS.filter(w=>!w.hidden); }
+function periodDays(){ return Math.max(1, cfgVal('periodDays',7)); }
+function maxPeriod(){ return Math.max(1, Math.ceil(activeWords().length/Math.max(1,cfgVal('weekSize',140)))); }
+// 시작일로부터 흐른 날에 따라 단어 묶음이 자동으로 열림(졸업 테스트 없음)
+function currentPeriod(){ return Math.min(maxPeriod(), Math.max(1, Math.ceil(todayIndex()/periodDays()))); }
+// ── DAY 기반(교재 DAY1~60): 단어에 day 필드가 있으면 DAY 단위로 순차 개방 ──
+function hasDays(){ return activeWords().some(w=>w.day); }
+function daysPerPeriod(){ return Math.max(1, cfgVal('daysPerPeriod',2)); }
+function maxDay(){ return activeWords().reduce((m,w)=>Math.max(m, w.day||0), 0); }
+// 개방 요일(0=일,1=월…5=금,6=토)이 지정되면: 시작일~오늘 사이 그 요일마다 교재 DAY 1개씩 열림(예: 월·수·금=[1,3,5])
+function openWeekdays(){ const w=cfgVal('openWeekdays',null); return (Array.isArray(w)&&w.length)? w.map(Number).filter(n=>n>=0&&n<=6) : null; }
+function openDayCount(){
+  const md=maxDay(), ws=openWeekdays();
+  if(ws && ws.length){
+    const sd=String(cfgVal('startDate','2026-06-02')).split('-').map(Number);
+    let d=new Date(sd[0],(sd[1]||1)-1,sd[2]||1);
+    const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+    let count=0, guard=0;
+    while(d.getTime()<=today && guard++<3650){ if(ws.includes(d.getDay())) count++; d.setDate(d.getDate()+1); }
+    return Math.min(md, Math.max(1, count));   // 시작 직후엔 최소 DAY1 개방
+  }
+  // 요일 미지정: 기존 방식(periodDays마다 daysPerPeriod개 DAY를 한꺼번에)
+  return Math.min(md, daysPerPeriod()*Math.max(1, Math.ceil(todayIndex()/periodDays())));
+}
+// 요일 배열 → "월·수·금" 텍스트
+function wdListText(ws){ const WD=['일','월','화','수','목','금','토']; return ws.slice().sort((a,b)=>((a+6)%7)-((b+6)%7)).map(n=>WD[n]).join('·'); }
+// 다음 DAY가 열리는 날(요일 방식일 때만): {days:며칠후, wd:'금'} / 모두 열렸으면 null
+function nextOpenInfo(){
+  const ws=openWeekdays(); if(!ws || openDayCount()>=maxDay()) return null;
+  const WD=['일','월','화','수','목','금','토'];
+  const now=new Date(); let d=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  for(let i=1;i<=21;i++){ d.setDate(d.getDate()+1); if(ws.includes(d.getDay())) return { days:i, wd:WD[d.getDay()] }; }
+  return null;
+}
+function unlockedIds(){
+  if(hasDays()){ const od=openDayCount(); return activeWords().filter(w=>(w.day||1)<=od).map(w=>w.id); }
+  const n=currentPeriod()*Math.max(1,cfgVal('weekSize',140)); return activeWords().slice(0, n).map(w=>w.id);
+}
+
+/* 오늘 학습 = 새 단어 우선(newPerDay), 복습은 소량만(reviewPerDay) */
+function buildToday(){
+  const D=todayIndex();
+  const unlocked=unlockedIds();
+  const newIds=unlocked.filter(id=>!state.prog[id]).slice(0, cfgVal('newPerDay',20));
+  const due=Object.keys(state.prog).map(Number)
+    .filter(id=>wordById(id) && !wordById(id).hidden && state.prog[id].due<=D)
+    .sort((a,b)=>state.prog[a].due-state.prog[b].due);
+  const reviewIds=due.slice(0, Math.max(0, cfgVal('reviewPerDay',7)));
+  const ids=[...newIds, ...reviewIds];
+  return {ids, reviewSet:new Set(reviewIds)};
+}
+
+/* ===== 부팅 ===== */
+async function initFirebase(){
+  try {
+    await auth.signInAnonymously();
+    uid = auth.currentUser.uid;
+  } catch(e){
+    console.error('익명 로그인 실패', e);
+    $('nickErr').innerHTML = (e && e.code==='auth/operation-not-allowed')
+      ? '⚠️ 아직 준비 중이에요.<br>선생님께 "익명 로그인 켜주세요"라고 알려 주세요.'
+      : '⚠️ 서버 연결에 실패했어요. 잠시 후 새로고침해 주세요.';
+    return;
+  }
+  // 설정(레벨 이름 포함) 로드 — 단어장은 로그인 후 학생 레벨에 맞춰 로드
+  try {
+    const cs = await db.ref('vocab/config').once('value');
+    if(cs.val()){ CFG = {...SEED_CFG, ...cs.val()}; if(Array.isArray(CFG.levels) && CFG.levels.length) LEVELS = CFG.levels; }
+  } catch(e){ console.error('설정 로드 실패 — 기본값 사용', e); }
+
+  // 저장된 세션으로 자동 로그인
+  try {
+    const sess = JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    if(sess && sess.accountId){
+      const ss = await db.ref('vocab/students/'+sess.accountId).once('value');
+      const s = ss.val();
+      if(s && s.nickname){ await loadAccount(sess.accountId, s); return; }
+    }
+  } catch(e){ console.error('세션 로드 실패', e); }
+
+  // 로그인 1단계 활성화
+  ['sidInput','nameInput'].forEach(id=>{ $(id).disabled=false; });
+  const b=$('nextBtn1'); b.disabled=false; b.textContent='다음';
+  $('sidInput').focus();
+}
+
+async function loadAccount(id, s){
+  accountId = id;
+  isAdmin = (String(s.studentId)===ADMIN_SID);
+  myLevel = validLevel(s.level);
+  const ps = await db.ref('vocab/progress/'+id).once('value');
+  state = { nickname:s.nickname, nickChangedAt:s.nickChangedAt||0, studentId:s.studentId||'', name:s.name||'', level:myLevel, streak:s.streak||0, lastStudyDay:s.lastStudyDay||0, week:s.week||1,
+            scores:{c:s.c||0, g:s.g||0, k:s.k||0, cb:s.cb||0, sp:s.sp||0},
+            ansTotal:s.ansTotal||0, ansCorrect:s.ansCorrect||0,
+            wkSeason:s.wkSeason||'', wkC:s.wkC||0, wkG:s.wkG||0, wkK:s.wkK||0, wkCb:s.wkCb||0, wkSp:s.wkSp||0,
+            prog: ps.val() || {} };
+  await loadLevelWords(myLevel);
+  localStorage.setItem(SESSION_KEY, JSON.stringify({accountId:id, studentId:state.studentId}));
+  enterApp();
+}
+
+// 1단계: 학번+이름 → 신규/재방문/초기화 판정
+async function loginNext(){
+  const sid=$('sidInput').value.trim();
+  const name=$('nameInput').value.trim();
+  $('nickErr').textContent='';
+  if(!/^\d{4,5}$/.test(sid)){ $('nickErr').textContent='학번을 숫자 4~5자리로 입력해 주세요'; return; }
+  if(!name){ $('nickErr').textContent='이름을 입력해 주세요'; return; }
+  if(!uid){ $('nickErr').textContent='서버 연결을 기다려 주세요'; return; }
+  const b=$('nextBtn1'); b.disabled=true; b.textContent='확인 중...';
+  try {
+    const acct = await findByStudentId(sid);
+    if(acct && acct.name && acct.name!==name){ $('nickErr').textContent='이 학번은 다른 이름으로 등록돼 있어요. 이름을 확인하거나 선생님께 문의하세요.'; return; }
+    loginAcct=acct; loginSid=sid; loginName=name; loginNick='';
+    loginMode = (acct && acct.pinHash) ? 'verify' : (acct ? 'reset' : 'new');
+    showPinStep();
+  } catch(e){ console.error(e); $('nickErr').textContent='오류가 발생했어요. 다시 시도해 주세요.'; }
+  finally { b.disabled=false; if(b.textContent==='확인 중...') b.textContent='다음'; }
+}
+
+function showPinStep(){
+  $('loginStep1').style.display='none';
+  $('loginStep2').style.display='block';
+  $('nickErr').textContent='';
+  $('loginWho').textContent = loginSid+' · '+loginName + (loginSid===ADMIN_SID?' 🛠 (관리자)':'');
+  $('pinInput').value=''; $('pinInput2').value='';
+  const isNew = loginMode==='new';
+  $('pinConfirmField').style.display = (loginMode==='verify') ? 'none':'block';
+  $('nickField').style.display = isNew ? 'block':'none';
+  $('levelField').style.display = isNew ? 'block':'none';
+  if(isNew){ $('nickNew').value=''; loginLevel=null; renderLevelBtns(); }
+  const ph=$('pinHint'); ph.style.display='block';
+  if(loginMode==='verify'){
+    $('loginDesc2').textContent='PIN을 입력하세요.'; $('pinSubmit').textContent= loginSid===ADMIN_SID?'관리자 로그인':'로그인';
+    ph.style.color='var(--sub)';
+    ph.innerHTML='🔒 가입할 때 정한 <b>나만의 PIN 4자리</b>를 입력하세요.';
+  } else if(loginMode==='reset'){
+    $('loginDesc2').textContent='PIN이 초기화된 계정이에요. 사용할 새 PIN(숫자 4자리)을 정하세요.'; $('pinSubmit').textContent='PIN 설정하고 시작';
+    ph.style.color='var(--sub)';
+    ph.innerHTML='🔒 PIN은 <b>나만의 비밀번호</b>예요. <b>다음부터는 이 PIN으로 로그인</b>하니 꼭 기억하세요!';
+  } else {
+    $('loginDesc2').textContent='처음 오셨네요, 공주님! 닉네임과 수준을 정하고 PIN을 만들어요.'; $('pinSubmit').textContent='가입하고 시작';
+    ph.style.color='var(--primary-ink)';
+    ph.innerHTML='🔒 PIN은 <b>나만 아는 비밀번호 4자리</b>예요.<br><b>다음에 로그인할 땐 학번·이름과 함께 이 PIN을 입력</b>해요 — 잊지 않게 기억하세요!';
+  }
+  if(isNew) $('nickNew').focus(); else $('pinInput').focus();
+}
+const LVL_HINTS = ['영어가 아직 낯설거나 천천히 익히고 싶어요', '기본 단어는 익숙해요 — 더 도전하고 싶어요'];
+function renderLevelBtns(){
+  $('levelBtns').innerHTML = LEVELS.map((l,i)=>
+    '<button type="button" class="lvlbtn'+(l.id===loginLevel?' sel':'')+'" onclick="pickLevel(\''+escAttr(l.id)+'\')">'
+    +'<span class="lvl-radio"></span>'
+    +'<span class="lvl-name">'+escHtml(l.name)+(LVL_HINTS[i]?'<small>'+escHtml(LVL_HINTS[i])+'</small>':'')+'</span>'
+    +'</button>').join('');
+}
+function pickLevel(id){ if(!LEVELS.some(l=>l.id===id)) return; loginLevel=id; renderLevelBtns(); $('nickErr').textContent=''; }
+
+function loginBack(){
+  $('loginStep2').style.display='none';
+  $('loginStep1').style.display='block';
+  $('nickErr').textContent='';
+  loginMode=null; loginAcct=null;
+  $('sidInput').focus();
+}
+
+// 2단계: PIN 검증(재방문) 또는 설정(신규/초기화)
+async function loginPinSubmit(){
+  const pin=$('pinInput').value.trim();
+  $('nickErr').textContent='';
+  if(!/^\d{4}$/.test(pin)){ $('nickErr').textContent='PIN은 숫자 4자리예요'; return; }
+  if(loginMode==='new'){
+    if(!$('nickNew').value.trim()){ $('nickErr').textContent='닉네임을 입력해 주세요 (랭킹에 보여요)'; $('nickNew').focus(); return; }
+    if(!LEVELS.some(l=>l.id===loginLevel)){ $('nickErr').textContent='단어 수준(난이도)을 먼저 골라 주세요 🙂'; return; }
+  }
+  const b=$('pinSubmit'); const orig=b.textContent; b.disabled=true; b.textContent='확인 중...';
+  try {
+    if(loginMode==='verify'){
+      const h=await pinHashFor(loginSid, pin);
+      if(h===loginAcct.pinHash){ await loadAccount(loginAcct.id, loginAcct); return; }
+      $('nickErr').textContent='PIN이 올바르지 않아요.'; return;
+    }
+    // new / reset
+    const pin2=$('pinInput2').value.trim();
+    if(pin!==pin2){ $('nickErr').textContent='PIN이 일치하지 않아요. 다시 확인해 주세요.'; return; }
+    const hash=await pinHashFor(loginSid, pin);
+    if(loginMode==='reset'){
+      const rec={...loginAcct, pinHash:hash, name:loginName};
+      await db.ref('vocab/students/'+loginAcct.id).update({ pinHash:hash, name:loginName, updatedAt:firebase.database.ServerValue.TIMESTAMP });
+      await loadAccount(loginAcct.id, rec); return;
+    }
+    // new
+    const nick=$('nickNew').value.trim(); loginNick=nick;
+    if(!nick){ $('nickErr').textContent='닉네임을 입력해 주세요'; return; }
+    const all = Object.values((await db.ref('vocab/students').once('value')).val()||{});
+    if(all.some(s=>s && s.nickname===nick) && !confirm('"'+nick+'" 닉네임을 쓰는 친구가 이미 있어요. 그래도 쓸까요?')){ b.disabled=false; b.textContent=orig; return; }
+    const rec={ studentId:loginSid, name:loginName, nickname:nick, pinHash:hash, level:validLevel(loginLevel), c:0,g:0,k:0, streak:0, lastStudyDay:0, week:1, createdAt:firebase.database.ServerValue.TIMESTAMP, updatedAt:firebase.database.ServerValue.TIMESTAMP };
+    const ref=db.ref('vocab/students').push();
+    await ref.set(rec);
+    await loadAccount(ref.key, rec); return;
+  } catch(e){ console.error(e); $('nickErr').textContent='오류가 발생했어요. 다시 시도해 주세요.'; }
+  finally { b.disabled=false; if(b.textContent==='확인 중...') b.textContent=orig; }
+}
+
+function enterApp(){ $('screen-nick').style.display='none'; $('main').style.display='flex';
+  const perTxt = periodDays()===7 ? '일주일' : periodDays()+'일';
+  const ws=openWeekdays();
+  $('howLead').innerHTML = (hasDays() && ws)
+    ? '<b>'+wdListText(ws)+'</b>마다 교재 <b>DAY가 1개씩</b> <b>저절로 열려요</b>.'
+    : hasDays()
+      ? '<b>'+perTxt+'</b>마다 교재 <b>'+daysPerPeriod()+'개 DAY</b>가 <b>저절로 열려요</b>.'
+      : '<b>'+perTxt+'</b>마다 새 단어 <b>'+cfgVal('weekSize',140)+'</b>개 묶음이 <b>저절로 열려요</b>.';
+  $('adminBtn').style.display = isAdmin?'flex':'none'; renderHome(); maybeRollOnLoad(); bindClassGoal(); }
+
+/* ===== 반 공동 목표(통합, 모든 레벨 합산) ===== */
+function bindClassGoal(){
+  if(classGoalBound) return; classGoalBound=true;
+  db.ref('vocab/classGoal/count').on('value', snap=>{ classGoalCount = snap.val()||0; renderClassGoal(); });
+}
+function renderClassGoal(){
+  const card=$('classGoalCard'); if(!card) return;
+  const target=Math.max(1, CFG.goalTarget||2000);
+  const pct=Math.min(100, classGoalCount/target*100);
+  card.style.display='block';
+  $('cgNums').textContent=classGoalCount.toLocaleString()+' / '+target.toLocaleString()+'개';
+  $('cgBar').style.width=pct+'%';
+  $('cgSub').innerHTML = classGoalCount>=target
+    ? '🎉 목표 달성! 우리 반이 함께 해냈어요!'
+    : '함께 맞힌 단어가 쌓이고 있어요 — 한 문제씩 맞힐 때마다 우리 반 목표가 채워져요!<br><span style="color:#b45309;">✨ '+target.toLocaleString()+'개를 채우면 좋은 일이 생길지도?</span>';
+}
+// 새 주에 처음 들어오면: 지난 시즌 점수를 명예의 전당에 박제하고 주간점수 0으로 리셋
+async function maybeRollOnLoad(){
+  if(isAdmin) return;
+  if(state.wkSeason && state.wkSeason!==currentSeason()){
+    await rollSeason(); save(); renderHome();
+  }
+}
+
+function logout(){
+  if(!confirm('로그아웃 할까요? 점수·진도는 서버에 저장돼 있어, 학번+PIN으로 다시 로그인하면 이어집니다.')) return;
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+/* ===== 닉네임 변경 (한 달=30일에 한 번) ===== */
+const NICK_COOLDOWN_DAYS = 30;
+function nextNickChangeInfo(){
+  const last = state.nickChangedAt||0;
+  if(!last) return {allowed:true};
+  const cd = NICK_COOLDOWN_DAYS*86400000;
+  const elapsed = Date.now()-last;
+  if(elapsed>=cd) return {allowed:true};
+  const next = new Date(last+cd);
+  return { allowed:false, remainDays:Math.ceil((cd-elapsed)/86400000), nextStr:(next.getMonth()+1)+'월 '+next.getDate()+'일' };
+}
+/* ===== 테스트 계정(학번 20000) 셀프 레벨 전환 ===== */
+function renderTester(){
+  const box=$('testerBox');
+  if(String(state.studentId)!=='20000'){ box.style.display='none'; return; }
+  box.style.display='block';
+  $('testerLevelBtns').innerHTML = LEVELS.map(l=>
+    '<button class="btn '+(l.id===myLevel?'primary':'ghost')+' small" style="width:auto; display:inline-flex; padding:0 13px; min-height:38px; margin:0 6px 0 0;" onclick="switchMyLevel(\''+escAttr(l.id)+'\')">'+escHtml(l.name)+(l.id===myLevel?' ✓':'')+'</button>').join('');
+}
+async function switchMyLevel(id){
+  id=validLevel(id);
+  if(id===myLevel) return;
+  if(!confirm('테스트 레벨을 ['+levelName(id)+'](으)로 바꿀까요?\n진도(외운 단어 기록)는 초기화돼요. (점수는 유지)')) return;
+  loading(true);
+  try{
+    myLevel=id; state.level=id; state.prog={};
+    await loadLevelWords(id);
+    save();   // level + 빈 progress 저장
+    toast('레벨을 ['+levelName(id)+']로 바꿨어요 🧪');
+    renderHome();
+  }catch(e){ console.error('레벨 전환 실패', e); toast('레벨 변경 실패 — 다시 시도'); }
+  finally{ loading(false); }
+}
+const SCORE_INFO={
+  c:['🎯 정답 점수','새 단어를 처음 맞히면 <b>+10점</b>이에요. 새로운 단어를 많이 익힐수록 쑥쑥 올라가요.'],
+  g:['🌱 성장 점수','복습으로 다시 나온 단어를 맞히면 <b>+5점</b>. 배운 걸 오래 기억할수록 쌓여요.'],
+  k:['🔥 꾸준 점수','매일 학습에 참여하면 <b>+10점</b>, 연속 3일·7일이면 보너스! 빠지지 않고 오는 게 제일 중요해요.'],
+  cb:['🔥 콤보 점수','연속으로 맞힐수록 보너스! <b>5연속부터 +1, 10연속부터 +2</b>예요. (한 번 틀리면 콤보는 0부터 다시!)'],
+  sp:['⚡ 속도 점수','빠르게 맞히면 보너스가 붙어요(번개·빠름·양호). <b>천천히 해도 감점은 전혀 없으니</b> 부담 없이 — 보너스 찬스일 뿐이에요!']
+};
+function scoreInfo(k){ const m=SCORE_INFO[k]; if(!m)return; $('scoreModalTitle').textContent=m[0]; $('scoreModalBody').innerHTML=m[1]+'<br><br><span style="color:var(--sub);font-size:12px;">다섯 점수를 모두 더한 게 <b>종합 점수</b>가 되고, 랭킹에 반영돼요.</span>'; $('scoreModal').classList.add('on'); }
+function closeScoreInfo(){ $('scoreModal').classList.remove('on'); }
+function openNickModal(){
+  const info=nextNickChangeInfo();
+  const sub=$('nickModalSub'), inp=$('nickEditInput'), btn=$('nickSaveBtn');
+  $('nickEditErr').textContent='';
+  inp.value=state.nickname||'';
+  if(info.allowed){
+    sub.innerHTML='새 닉네임을 정해요. <b>한 달에 한 번</b> 바꿀 수 있어요.';
+    inp.disabled=false; btn.disabled=false; btn.style.display='';
+    setTimeout(()=>{ inp.focus(); inp.select&&inp.select(); },60);
+  } else {
+    sub.innerHTML='이번 달엔 이미 닉네임을 바꿨어요 😅<br><b>'+info.nextStr+'</b>부터 다시 바꿀 수 있어요 (약 '+info.remainDays+'일 후).';
+    inp.disabled=true; btn.disabled=true; btn.style.display='none';
+  }
+  $('nickModal').classList.add('on');
+}
+function closeNickModal(){ $('nickModal').classList.remove('on'); }
+async function submitNickChange(){
+  if(!nextNickChangeInfo().allowed) return;
+  const nick=$('nickEditInput').value.trim();
+  const err=$('nickEditErr'); err.textContent='';
+  if(!nick){ err.textContent='닉네임을 입력해 주세요'; return; }
+  if(nick===state.nickname){ err.textContent='지금 닉네임과 같아요'; return; }
+  const btn=$('nickSaveBtn'); const o=btn.textContent; btn.disabled=true; btn.textContent='저장 중...';
+  try {
+    const all=Object.values((await db.ref('vocab/students').once('value')).val()||{});
+    if(all.some(s=>s && s.nickname===nick) && !confirm('"'+nick+'" 닉네임을 쓰는 친구가 이미 있어요. 그래도 쓸까요?')){ btn.disabled=false; btn.textContent=o; return; }
+    const now=Date.now();
+    await db.ref('vocab/students/'+accountId).update({ nickname:nick, nickChangedAt:now, updatedAt:firebase.database.ServerValue.TIMESTAMP });
+    state.nickname=nick; state.nickChangedAt=now;
+    closeNickModal(); renderHome(); toast('닉네임을 바꿨어요! 🎉');
+  } catch(e){ console.error(e); err.textContent='오류가 발생했어요. 다시 시도해 주세요.'; }
+  finally { btn.disabled=false; if(btn.textContent==='저장 중...') btn.textContent=o; }
+}
+
+function save(){
+  if(!accountId || !state) return;
+  state.week = hasDays() ? openDayCount() : currentPeriod();
+  db.ref('vocab/students/'+accountId).update({ nickname:state.nickname, studentId:state.studentId||'', name:state.name||'', level:state.level||myLevel, c:state.scores.c, g:state.scores.g, k:state.scores.k, cb:state.scores.cb||0, sp:state.scores.sp||0,
+    ansTotal:state.ansTotal||0, ansCorrect:state.ansCorrect||0,
+    wkSeason:state.wkSeason||'', wkC:state.wkC||0, wkG:state.wkG||0, wkK:state.wkK||0, wkCb:state.wkCb||0, wkSp:state.wkSp||0,
+    streak:state.streak, lastStudyDay:state.lastStudyDay, week:state.week, updatedAt:firebase.database.ServerValue.TIMESTAMP });
+  db.ref('vocab/progress/'+accountId).set(state.prog);
+}
+
+/* ===== 화면 전환 ===== */
+function go(name){
+  ['home','quiz','result','rank','status'].forEach(s=> $('screen-'+s).classList.toggle('active', s===name));
+  ['home','status','rank'].forEach(n=>{ const b=$('nav-'+n); if(b) b.classList.toggle('on', n===name); });
+  if(name==='home') renderHome();
+  if(name==='rank') renderRank();
+  if(name==='status') renderStatus();
+  document.querySelector('.scroll').scrollTop=0;
+}
+
+/* ===== 홈 ===== */
+function renderHome(){
+  const per=currentPeriod();
+  const dayMode=hasDays();
+  $('topNick').innerHTML = escHtml(state.nickname)+' 👑<br><small>'+(dayMode? 'DAY '+openDayCount()+'까지 열림' : per+'번째 단어 묶음')+' · '+todayIndex()+'일째</small>';
+  $('topTotal').textContent = total(state.scores);
+  $('scCorrect').textContent = state.scores.c;
+  $('scGrowth').textContent = state.scores.g;
+  $('scConsist').textContent = state.scores.k;
+  $('scCombo').textContent = state.scores.cb||0;
+  $('scSpeed').textContent = state.scores.sp||0;
+  renderTester();
+  $('streakBox').innerHTML = state.streak>0 ? '🔥 연속 '+state.streak+'일 학습 중! 내일도 이어가요' : '🔥 연속 0일 — 오늘 첫 학습을 시작해요!';
+  $('wkHomePts').textContent = (state.wkSeason===currentSeason()) ? (state.wkC+state.wkG+state.wkK+(state.wkCb||0)+(state.wkSp||0)) : 0;
+
+  const startBtn=$('startBtn');
+  if(activeWords().length===0){
+    $('weekLabel').textContent='단어장 준비 중'; $('weekProg').textContent='가입 완료 ✅'; $('weekBar').style.width='0%';
+    startBtn.style.display='flex'; startBtn.disabled=true; startBtn.innerHTML='⏳ 단어장이 곧 들어와요!';
+    return;
+  }
+  const unlocked=unlockedIds();
+  const seenU=unlocked.filter(id=>state.prog[id]).length;
+  const allDone = unlocked.length>0 && seenU>=unlocked.length && (dayMode? openDayCount()>=maxDay() : per>=maxPeriod());
+  $('weekLabel').textContent = allDone ? '🎉 열린 단어를 모두 배웠어요!' : (dayMode? '📖 지금 열린 범위 · DAY 1~'+openDayCount() : '지금까지 열린 단어 · '+per+'묶음');
+  $('weekProg').textContent = seenU+' / '+unlocked.length+' 단어';
+  $('weekBar').style.width = (unlocked.length? seenU/unlocked.length*100:0)+'%';
+  // 열린 DAY 범위 + 다음 개방일 안내(요일 개방 방식일 때)
+  const wr=$('weekRange'), ws=openWeekdays();
+  if(dayMode && ws){
+    const od=openDayCount(), no=nextOpenInfo();
+    let html='👑 현재 <b>DAY 1~'+od+'</b> 열림';
+    if(no) html+=' <span class="nxt">· 다음 DAY '+no.wd+'요일'+(no.days===1?'(내일)':' ('+no.days+'일 후)')+' 열려요</span>';
+    else if(od>=maxDay()) html+=' <span class="nxt">· 마지막 DAY까지 모두 열렸어요</span>';
+    wr.innerHTML=html; wr.style.display='block';
+  } else wr.style.display='none';
+
+  const cnt=buildToday().ids.length;
+  startBtn.style.display='flex';
+  if(cnt>0){ startBtn.disabled=false; startBtn.innerHTML='📖 오늘의 학습 시작 ('+cnt+'단어)'; }
+  else { startBtn.disabled=true; startBtn.innerHTML='✅ 오늘 학습 완료! 내일 또 만나요'; }
+}
+
+/* ===== 세션 ===== */
+let session=null;
+/* ── 보너스 점수 규칙 ── */
+const SPEED_TIERS=[[2000,3],[3500,2],[5000,1]];   // [ms한계, 보너스] (4지선다 기준)
+const SPEED_TYPE_MULT=2.5;                          // 빈칸/타이핑 문제는 시간 한계 ×2.5
+const SPEED_CAP=30, COMBO_CAP=20;                   // 세션당 보너스 상한
+function speedBonus(ms,isType){ const m=isType?SPEED_TYPE_MULT:1; for(const [t,b] of SPEED_TIERS){ if(ms<=t*m) return b; } return 0; }
+function speedLabel(ms,isType){ const m=isType?SPEED_TYPE_MULT:1; if(ms<=2000*m)return '⚡⚡⚡번개'; if(ms<=3500*m)return '⚡⚡빠름'; if(ms<=5000*m)return '⚡양호'; return ''; }
+function comboBonus(combo){ return combo>=10?2 : combo>=5?1 : 0; }   // 5연속+1·10연속+2
+function speedWindow(isType){ return (isType?SPEED_TYPE_MULT:1)*5000; }  // 타이머 바가 0이 되는 시간(=양호 한계)
+/* ── 빈칸 스펠링 레벨별 설정(levelCfg로 조절 가능) ── */
+function blankCount(){ return Math.max(0, Math.round(cfgVal('blankCount', myLevel==='basic'?3:1))); }
+function maskRatio(){ return Math.min(0.9, Math.max(0.1, cfgVal('maskRatio', myLevel==='basic'?0.3:0.6))); }
+
+function startSession(){
+  const {ids, reviewSet} = buildToday();
+  if(ids.length===0){ toast('오늘 학습할 단어가 없어요 🎉'); return; }
+  const pool = shuffle(ids).map(wordById).filter(Boolean);
+  const nBlank = Math.min(pool.length, blankCount());
+  const single = pool.map((_,i)=>i).filter(i=>!/\s/.test(pool[i].en));   // 빈칸은 가급적 단어(구/숙어 제외)에서
+  const blankIdx = new Set(sample(single.length>=nBlank?single:pool.map((_,i)=>i), nBlank));
+  const ratio = maskRatio();
+  const questions = pool.map((w,i)=> blankIdx.has(i) ? makeBlank(w, ratio) : makeMC(w, Math.random()<0.5?'e2k':'k2e'));
+  session = { questions, idx:0, results:[], reviewSet, mode:'daily', combo:0, bestCombo:0, cbPts:0, spPts:0, qStart:0, timerRAF:null };
+  go('quiz'); renderQuestion();
+}
+function makeMC(w,type){
+  let prompt,answer,field;
+  if(type==='e2k'){ prompt=w.en; answer=w.ko; field='ko'; } else { prompt=w.ko; answer=w.en; field='en'; }
+  let others=[...new Set(WORDS.filter(x=>x.id!==w.id).map(x=>x[field]))].filter(o=>o!==answer);
+  const options=shuffle([answer, ...sample(others,3)]);
+  return { wordId:w.id, type, prompt, answer, options };
+}
+// 빈칸 스펠링: 일부 글자만 가림(첫 글자는 항상 노출). mask=가릴 글자 인덱스 목록
+function makeBlank(w, ratio){
+  const en=w.en;
+  const idxs=[...en].map((ch,i)=>/[A-Za-z]/.test(ch)?i:-1).filter(i=>i>=0);
+  const maskable=idxs.slice(1);   // 첫 글자 제외
+  const k=Math.max(1, Math.round(maskable.length*ratio));
+  const mask=sample(maskable, Math.min(k, maskable.length));
+  return { wordId:w.id, type:'blank', prompt:w.ko, answer:en, mask, options:null };
+}
+
+function isTypeQ(q){ return q.type==='blank'; }
+function renderQuestion(){
+  const q=session.questions[session.idx], n=session.questions.length;
+  $('qBar').style.width=(session.idx/n*100)+'%';
+  $('qNum').textContent=(session.idx+1)+' / '+n;
+  $('qFeedback').textContent=''; $('qFeedback').className='feedback';
+  $('nextBtn').style.display='none';
+  const isReview=session.reviewSet.has(q.wordId);
+  const tl=q.type==='e2k'?'영어 → 뜻':q.type==='k2e'?'뜻 → 영어':'빈칸 채우기';
+  const qw=wordById(q.wordId); const qdy=(qw&&qw.day)?qw.day:0;
+  let chips = (qdy?'<span class="qday">DAY '+qdy+'</span>':'') + '<span class="qtype '+q.type+'">'+tl+'</span>' + (isReview?'<span class="qreview">🌱 복습</span>':'');
+  $('qTypeBox').innerHTML=chips;
+  renderCombo();
+  $('qPrompt').className='prompt'+(q.type==='e2k'?'':' ko');
+  $('qPrompt').textContent=q.prompt;
+  const body=$('qBody');
+  if(q.type==='blank'){
+    const en=q.answer, maskSet=new Set(q.mask);
+    let h='<div class="blanks">';
+    [...en].forEach((ch,i)=>{
+      if(!/[A-Za-z]/.test(ch)){ h+='<span class="bk-sep">'+(ch===' '?'&nbsp;':escHtml(ch))+'</span>'; }
+      else if(maskSet.has(i)){ h+='<input class="bk-in" data-i="'+i+'" type="text" maxlength="1" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">'; }
+      else { h+='<span class="bk-fix">'+escHtml(ch)+'</span>'; }
+    });
+    h+='</div><button class="btn primary small" style="margin-top:14px;" onclick="submitBlank()">확인</button>';
+    body.innerHTML=h;
+    setTimeout(()=>{ const ins=[...document.querySelectorAll('.bk-in')]; if(ins[0])ins[0].focus();
+      ins.forEach((inp,k)=>{
+        inp.addEventListener('input',()=>{ inp.value=inp.value.replace(/[^A-Za-z]/g,'').slice(-1); if(inp.value && ins[k+1]) ins[k+1].focus(); });
+        inp.addEventListener('keydown',e=>{ if(e.key==='Backspace'&&!inp.value&&ins[k-1]){ ins[k-1].focus(); e.preventDefault(); } if(e.key==='Enter') submitBlank(); });
+      });
+    },50);
+  } else {
+    body.innerHTML=q.options.map(o=>'<button class="opt" onclick="answerMC(this,\''+escAttr(o)+'\')">'+escHtml(o)+'</button>').join('');
+  }
+  startTimer(isTypeQ(q));
+}
+/* ── 줄어드는 타이머 바(보너스 찬스 표시, 감점 없음) ── */
+function startTimer(isType){
+  cancelTimer();
+  session.qStart=performance.now();
+  const win=speedWindow(isType), bar=$('timerBar');
+  const t1=(isType?SPEED_TYPE_MULT:1)*2000, t2=(isType?SPEED_TYPE_MULT:1)*3500;
+  (function frame(){
+    const el=performance.now()-session.qStart, pct=Math.max(0,1-el/win);
+    bar.style.width=(pct*100)+'%';
+    bar.style.background = el<=t1?'linear-gradient(90deg,#e35d97,#f48cb6)' : el<=t2?'#16a34a' : '#eab308';
+    if(pct>0) session.timerRAF=requestAnimationFrame(frame); else { bar.style.background='#cbd0dd'; session.timerRAF=null; }
+  })();
+}
+function cancelTimer(){ if(session&&session.timerRAF){ cancelAnimationFrame(session.timerRAF); session.timerRAF=null; } }
+function renderCombo(){ const b=$('comboBadge'); if(session.combo>=2){ b.style.display='inline-flex'; b.textContent='🔥 콤보 '+session.combo; } else b.style.display='none'; }
+function answerMC(btn,chosen){
+  const q=session.questions[session.idx], correct=chosen===q.answer;
+  const el=performance.now()-session.qStart; cancelTimer();
+  document.querySelectorAll('.opt').forEach(b=>{ b.disabled=true; if(b.textContent===q.answer)b.classList.add('correct'); else if(b===btn&&!correct)b.classList.add('wrong'); });
+  recordAnswer(correct, el, false);
+}
+function submitBlank(){
+  const ins=[...document.querySelectorAll('.bk-in')]; if(!ins.length || ins[0].disabled) return;
+  const q=session.questions[session.idx], en=q.answer;
+  let built=[...en]; ins.forEach(inp=>{ built[+inp.dataset.i]=inp.value||'·'; });
+  const correct=built.join('').toLowerCase()===en.toLowerCase();
+  const el=performance.now()-session.qStart; cancelTimer();
+  ins.forEach(inp=>{ inp.disabled=true; const want=en[+inp.dataset.i]||''; inp.classList.add(((inp.value||'').toLowerCase()===want.toLowerCase())?'ok':'no'); });
+  const b=document.querySelector('#qBody .btn'); if(b)b.disabled=true;
+  recordAnswer(correct, el, true);
+}
+function recordAnswer(correct, elapsed, isType){
+  const q=session.questions[session.idx], isReview=session.reviewSet.has(q.wordId);
+  session.results.push({ wordId:q.wordId, correct, isReview });
+  const fb=$('qFeedback');
+  if(correct){
+    session.combo++; session.bestCombo=Math.max(session.bestCombo, session.combo);
+    let cbG=0, spG=0;
+    if(session.cbPts<COMBO_CAP){ cbG=Math.min(comboBonus(session.combo), COMBO_CAP-session.cbPts); session.cbPts+=cbG; }
+    if(session.spPts<SPEED_CAP){ spG=Math.min(speedBonus(elapsed,isType), SPEED_CAP-session.spPts); session.spPts+=spG; }
+    let extra='';
+    if(session.combo>=2) extra+=' <span class="fx-cmb">🔥콤보 '+session.combo+(cbG?' +'+cbG:'')+'</span>';
+    if(spG>0) extra+=' <span class="fx-spd">'+speedLabel(elapsed,isType)+' +'+spG+'</span>';
+    fb.className='feedback good';
+    fb.innerHTML=(isReview?'🌱 복습 정답! (+5)':'⭕ 정답! (+10)')+extra;
+  } else {
+    session.combo=0;
+    fb.className='feedback bad';
+    fb.innerHTML='❌ 아쉬워요 — 곧 다시 나와요<span class="ans">정답: '+escHtml(q.answer)+'</span>';
+  }
+  renderCombo();
+  $('nextBtn').style.display='flex';
+  $('nextBtn').textContent=(session.idx===session.questions.length-1)?'결과 보기 🎯':'다음 →';
+}
+function nextQuestion(){
+  session.idx++;
+  if(session.idx>=session.questions.length){ finishSession(); return; }
+  renderQuestion();
+}
+
+/* ===== SRS ===== */
+function schedule(id, correct, D){
+  let p = state.prog[id] || {box:0, due:D, seen:false};
+  if(correct) p.box = p.box>=1 ? Math.min(p.box+1, MAXBOX) : 2;
+  else p.box = 1;
+  p.due = D + INTERVALS[p.box];
+  p.seen = true;
+  state.prog[id] = p;
+}
+
+async function finishSession(){
+  loading(true);
+  const D=todayIndex();
+  let gainC=0,gainG=0,gainK=0,correctN=0;
+  session.results.forEach(r=>{
+    if(r.correct){ correctN++; if(r.isReview) gainG+=5; else gainC+=10; }
+    schedule(r.wordId, r.correct, D);
+  });
+  if(state.lastStudyDay!==D){
+    gainK+=10;
+    if(state.lastStudyDay>0 && D===state.lastStudyDay+1) state.streak++; else state.streak=1;
+    if(state.streak>=7) gainK+=15; else if(state.streak>=3) gainK+=5;
+    state.lastStudyDay=D;
+  }
+  const gainCb=session.cbPts||0, gainSp=session.spPts||0;
+  state.scores.c+=gainC; state.scores.g+=gainG; state.scores.k+=gainK;
+  state.scores.cb=(state.scores.cb||0)+gainCb; state.scores.sp=(state.scores.sp||0)+gainSp;
+  state.ansTotal=(state.ansTotal||0)+session.results.length; state.ansCorrect=(state.ansCorrect||0)+correctN;
+  await rollSeason();   // 주가 바뀌었으면 지난 시즌 박제 후 0으로 리셋
+  state.wkC+=gainC; state.wkG+=gainG; state.wkK+=gainK; state.wkCb=(state.wkCb||0)+gainCb; state.wkSp=(state.wkSp||0)+gainSp;
+  save();
+  if(correctN>0){ try { db.ref('vocab/classGoal/count').transaction(c=>(c||0)+correctN); } catch(e){ console.error('공동목표 적립 실패', e); } }
+  $('gainCorrect').textContent='+'+gainC; $('gainGrowth').textContent='+'+gainG; $('gainConsist').textContent='+'+gainK;
+  $('gainCombo').textContent='+'+gainCb; $('gainSpeed').textContent='+'+gainSp;
+  $('gainTotal').textContent='+'+(gainC+gainG+gainK+gainCb+gainSp);
+  const n=session.results.length;
+  $('resSub').innerHTML=n+'문제 중 '+correctN+'개 정답'+(session.bestCombo>=2?' · 🔥 최고 콤보 '+session.bestCombo:'')+(correctN>0?' · 🤝 공동목표 +'+correctN:'');
+  if(correctN===n){ $('resEmoji').textContent='👑'; $('resTitle').textContent='완벽해요, 공주님!'; }
+  else if(correctN>=n*0.6){ $('resEmoji').textContent='✨'; $('resTitle').textContent='잘했어요, 공주님!'; }
+  else { $('resEmoji').textContent='💪'; $('resTitle').textContent='괜찮아요, 내일 또 도전!'; }
+  let rank='-';
+  try { rank = await myWeekRank(); } catch(e){}
+  $('resRank').textContent='#'+rank;
+  loading(false);
+  go('result');
+}
+
+/* 주가 바뀌면 지난 시즌 최종 주간점수를 명예의 전당 아카이브에 기록하고 0으로 리셋 */
+async function rollSeason(){
+  const cur=currentSeason();
+  if(state.wkSeason===cur) return;
+  const oldTotal=(state.wkC||0)+(state.wkG||0)+(state.wkK||0)+(state.wkCb||0)+(state.wkSp||0);
+  if(state.wkSeason && oldTotal>0){
+    try { await db.ref('vocab/seasons/'+state.wkSeason+'/'+myLevel+'/'+accountId).set({ nick:state.nickname, pts:oldTotal }); }
+    catch(e){ console.error('시즌 아카이브 실패', e); }
+  }
+  state.wkSeason=cur; state.wkC=0; state.wkG=0; state.wkK=0; state.wkCb=0; state.wkSp=0;
+}
+
+/* ===== 랭킹 (클라우드 공유) ===== */
+// 랭킹은 같은 레벨끼리만 격리(다른 레벨은 보이지 않음). 관리자(20700) 계정은 제외.
+async function fetchStudents(){
+  const snap = await db.ref('vocab/students').once('value');
+  const obj = snap.val() || {};
+  const cur=currentSeason();
+  const wk=v=> (v.wkSeason===cur)?{wc:v.wkC||0, wg:v.wkG||0, wk:v.wkK||0, wcb:v.wkCb||0, wsp:v.wkSp||0}:{wc:0,wg:0,wk:0,wcb:0,wsp:0};
+  let list = Object.entries(obj)
+    .filter(([k,v])=> v && !HIDDEN_SIDS.includes(String(v.studentId)) && validLevel(v.level)===myLevel)
+    .map(([k,v])=>{ const w=wk(v); return { uid:k, name:v.nickname||'(이름없음)', c:v.c||0, g:v.g||0, k:v.k||0, t:(v.c||0)+(v.g||0)+(v.k||0)+(v.cb||0)+(v.sp||0),
+      wc:w.wc, wg:w.wg, wk:w.wk, wcb:w.wcb, wsp:w.wsp, wt:w.wc+w.wg+w.wk+w.wcb+w.wsp, me:k===accountId }; });
+  if(state && !isAdmin && !list.some(x=>x.me)){
+    const mine=(state.wkSeason===cur);
+    list.push({ uid:accountId, name:state.nickname, c:state.scores.c, g:state.scores.g, k:state.scores.k, t:total(state.scores),
+      wc:mine?state.wkC:0, wg:mine?state.wkG:0, wk:mine?state.wkK:0, wcb:mine?(state.wkCb||0):0, wsp:mine?(state.wkSp||0):0, wt:mine?(state.wkC+state.wkG+state.wkK+state.wkCb+state.wkSp):0, me:true });
+  }
+  list.sort((a,b)=> b.t-a.t || b.c-a.c);
+  return list;
+}
+async function myWeekRank(){ const l=(await fetchStudents()).slice().sort((a,b)=> b.wt-a.wt || b.t-a.t); const i=l.findIndex(r=>r.me); return i<0?'-':(i+1); }
+
+const medals=['👑','🥈','🥉'];
+const cheeredThisView=new Set();
+function rankRows(arr, ptField, cheers){
+  return arr.map((r,i)=>{
+    let clap='';
+    if(cheers){
+      const cnt=cheers[r.uid]||0;
+      clap = r.me ? '<span class="clap got" title="받은 응원">👏 '+cnt+'</span>'
+                  : '<button class="clap'+(cheeredThisView.has(r.uid)?' done':'')+'" onclick="cheer(\''+escAttr(r.uid)+'\',this)">👏 <b>'+cnt+'</b></button>';
+    }
+    return '<div class="rank-row'+(r.me?' me':'')+'">'
+      +'<div class="rank-num">'+(i<3?'<span class="medal">'+medals[i]+'</span>':(i+1))+'</div>'
+      +'<div class="rank-name">'+escHtml(r.name)+(r.me?' <small>(나)</small>':'')+'</div>'
+      +'<div class="rank-pts">'+r[ptField]+'점</div>'+clap+'</div>';
+  }).join('');
+}
+async function cheer(uid, btn){
+  if(uid===accountId) return;
+  if(cheeredThisView.has(uid)){ toast('이미 응원했어요 🙂'); return; }
+  cheeredThisView.add(uid);
+  const b=btn.querySelector('b'); if(b) b.textContent=(parseInt(b.textContent,10)||0)+1;
+  btn.classList.add('done');
+  toast('👏 응원을 보냈어요!');
+  try { await db.ref('vocab/cheers/'+uid).transaction(c=>(c||0)+1); }
+  catch(e){ console.error('응원 실패', e); }
+}
+/* ===== 관리자: 전체 레벨 랭킹 + 학급 현황 ===== */
+async function fetchAllStudents(){
+  const snap=await db.ref('vocab/students').once('value'); const obj=snap.val()||{};
+  const cur=currentSeason();
+  const wk=v=> (v.wkSeason===cur)?{wc:v.wkC||0,wg:v.wkG||0,wk:v.wkK||0,wcb:v.wkCb||0,wsp:v.wkSp||0}:{wc:0,wg:0,wk:0,wcb:0,wsp:0};
+  return Object.entries(obj).filter(([k,v])=>v && !HIDDEN_SIDS.includes(String(v.studentId)))
+    .map(([k,v])=>{ const w=wk(v); return { uid:k, level:validLevel(v.level), name:v.nickname||'(이름없음)', sid:String(v.studentId||''),
+      c:v.c||0,g:v.g||0,k:v.k||0,cb:v.cb||0,sp:v.sp||0, t:(v.c||0)+(v.g||0)+(v.k||0)+(v.cb||0)+(v.sp||0),
+      wc:w.wc,wg:w.wg,wk:w.wk,wcb:w.wcb,wsp:w.wsp, wt:w.wc+w.wg+w.wk+w.wcb+w.wsp }; });
+}
+function adminRankRow(r,i,f){ const m=i<3?['🥇','🥈','🥉'][i]:(i+1)+''; return '<div class="rank-row"><div class="rank-num">'+m+'</div><div class="rank-name">'+escHtml(r.name)+' <small style="color:var(--sub);font-weight:600;">'+escHtml(r.sid)+'</small></div><div class="rank-pts">'+r[f]+'점</div></div>'; }
+async function renderAdminRank(){
+  $('adminRankView').style.display=''; $('studentRankView').style.display='none';
+  const box=$('adminRankView'); box.innerHTML='<div class="sec-title">👑 관리자 · 전체 레벨 랭킹</div><div class="empty">불러오는 중…</div>';
+  let all; try{ all=await fetchAllStudents(); }catch(e){ box.innerHTML='<div class="empty">불러오지 못했어요<br><span style="font-size:11px;color:#c0392b;">('+escHtml((e&&e.message)||String(e))+')</span></div>'; return; }
+  let html='<div class="sec-title">👑 관리자 · 전체 레벨 랭킹</div>';
+  LEVELS.forEach(l=>{
+    const studs=all.filter(s=>s.level===l.id);
+    const wkTop=studs.slice().sort((a,b)=>b.wt-a.wt||b.t-a.t).filter(x=>x.wt>0);
+    const cuTop=studs.slice().sort((a,b)=>b.t-a.t).filter(x=>x.t>0);
+    html+='<div class="card"><div style="font-weight:900;font-size:15px;margin-bottom:4px;">'+escHtml(l.name)+' <span style="color:var(--sub);font-weight:600;font-size:12px;">'+studs.length+'명</span></div>';
+    html+='<div style="font-size:12.5px;font-weight:800;color:#c0392b;margin:8px 0 5px;">🔥 이번 주</div>';
+    html+= wkTop.length? wkTop.map((r,i)=>adminRankRow(r,i,'wt')).join('') : '<div style="font-size:12px;color:var(--sub);padding:3px 0;">아직 이번 주 점수 없음</div>';
+    html+='<div style="font-size:12.5px;font-weight:800;color:var(--primary);margin:11px 0 5px;">📊 누적</div>';
+    html+= cuTop.length? cuTop.map((r,i)=>adminRankRow(r,i,'t')).join('') : '<div style="font-size:12px;color:var(--sub);padding:3px 0;">아직 누적 점수 없음</div>';
+    html+='</div>';
+  });
+  box.innerHTML=html;
+}
+async function renderAdminStatus(){
+  $('adminStatusView').style.display=''; $('studentStatusView').style.display='none';
+  const box=$('adminStatusView'); box.innerHTML='<div class="sec-title">👑 관리자 · 학급 현황</div><div class="empty">불러오는 중…</div>';
+  let all; try{ all=await fetchAllStudents(); }catch(e){ box.innerHTML='<div class="empty">불러오지 못했어요</div>'; return; }
+  const active=all.filter(s=>s.t>0).length, wkAct=all.filter(s=>s.wt>0).length;
+  let html='<div class="sec-title">👑 관리자 · 학급 현황</div>';
+  html+='<div class="statbar"><div class="s"><b style="color:var(--primary)">'+all.length+'</b><span>전체 학생</span></div><div class="s"><b style="color:var(--growth)">'+active+'</b><span>점수 보유</span></div><div class="s"><b style="color:var(--consist)">'+wkAct+'</b><span>이번 주 참여</span></div></div>';
+  LEVELS.forEach(l=>{
+    const studs=all.filter(s=>s.level===l.id);
+    const act=studs.filter(s=>s.t>0).length;
+    const avg=studs.length?Math.round(studs.reduce((a,s)=>a+s.t,0)/studs.length):0;
+    const top=studs.slice().sort((a,b)=>b.t-a.t)[0];
+    const s=studs.reduce((a,v)=>({c:a.c+v.c,g:a.g+v.g,k:a.k+v.k,cb:a.cb+v.cb,sp:a.sp+v.sp}),{c:0,g:0,k:0,cb:0,sp:0});
+    const tot=(s.c+s.g+s.k+s.cb+s.sp)||1;
+    const seg=[['정답',s.c,'#2563eb'],['복습',s.g,'#16a34a'],['꾸준',s.k,'#ea8a00'],['콤보',s.cb,'#e35d97'],['속도',s.sp,'#eab308']];
+    html+='<div class="card"><div style="font-weight:900;font-size:15px;margin-bottom:6px;">'+escHtml(l.name)+'</div>';
+    html+='<div style="font-size:13px;line-height:1.95;color:#444;">참여 <b>'+act+' / '+studs.length+'</b>명 · 평균 종합 <b>'+avg+'점</b><br>최고 <b>'+(top&&top.t>0?escHtml(top.name)+' '+top.t+'점':'-')+'</b></div>';
+    html+='<div style="display:flex;height:13px;border-radius:99px;overflow:hidden;margin-top:9px;background:#eef0f5;">'+seg.map(p=>p[1]>0?'<i style="display:block;height:100%;width:'+(p[1]/tot*100)+'%;background:'+p[2]+'"></i>':'').join('')+'</div>';
+    html+='<div style="font-size:11px;color:var(--sub);margin-top:5px;">'+seg.map(p=>p[0]+' '+Math.round(p[1]/tot*100)+'%').join(' · ')+'</div>';
+    html+='</div>';
+  });
+  box.innerHTML=html;
+}
+async function renderRank(){
+  if(isAdmin){ return renderAdminRank(); }
+  $('studentRankView').style.display=''; $('adminRankView').style.display='none';
+  const wkEl=$('weekRankList'), cuEl=$('rankList');
+  wkEl.innerHTML='<div class="empty">불러오는 중…</div>'; cuEl.innerHTML='';
+  $('seasonLabel').textContent='';
+  let ranked, cheers={};
+  try { ranked = await fetchStudents(); }
+  catch(e){ console.error('랭킹 로드 실패', e); wkEl.innerHTML='<div class="empty">랭킹을 불러오지 못했어요.<br><span style="font-size:11px;color:#c0392b;">('+escHtml((e&&e.message)||String(e))+')</span><br>잠시 후 다시 시도해 주세요.</div>'; return; }
+  try { cheers=(await db.ref('vocab/cheers').once('value')).val()||{}; } catch(e){}
+
+  // 이번 주 랭킹(주간 점수 기준) + 친구 응원(👏)
+  const week=ranked.slice().sort((a,b)=> b.wt-a.wt || b.t-a.t);
+  $('seasonLabel').textContent='(월요일 리셋 · 👏로 응원)';
+  const anyWk=week.some(r=>r.wt>0);
+  wkEl.innerHTML = anyWk ? rankRows(week,'wt',cheers)
+    : '<div class="empty">이번 주는 아직 점수가 없어요!<br>오늘 학습하면 이번 주 1등도 노릴 수 있어요 🔥</div>';
+
+  // 이번 주의 주인공(주간 부문별)
+  const topC=week.reduce((a,b)=>b.wc>a.wc?b:a,week[0]), topK=week.reduce((a,b)=>b.wk>a.wk?b:a,week[0]), topG=week.reduce((a,b)=>b.wg>a.wg?b:a,week[0]);
+  const topCb=week.reduce((a,b)=>(b.wcb||0)>(a.wcb||0)?b:a,week[0]), topSp=week.reduce((a,b)=>(b.wsp||0)>(a.wsp||0)?b:a,week[0]);
+  $('awCorrect').textContent=(topC&&topC.wc>0)?topC.name+(topC.me?' (나)':''):'-';
+  $('awConsist').textContent=(topK&&topK.wk>0)?topK.name+(topK.me?' (나)':''):'-';
+  $('awGrowth').textContent=(topG&&topG.wg>0)?topG.name+(topG.me?' (나)':''):'-';
+  $('awCombo').textContent=(topCb&&(topCb.wcb||0)>0)?topCb.name+(topCb.me?' (나)':''):'-';
+  $('awSpeed').textContent=(topSp&&(topSp.wsp||0)>0)?topSp.name+(topSp.me?' (나)':''):'-';
+
+  // 종합 랭킹(누적)
+  $('rankCount').textContent='('+ranked.length+'명)';
+  cuEl.innerHTML = rankRows(ranked,'t');
+
+  renderHallOfFame();
+}
+
+// 명예의 전당 — 지난 주(시즌) 우리 레벨 1등
+async function renderHallOfFame(){
+  const banner=$('hofBanner');
+  try {
+    const snap=await db.ref('vocab/seasons/'+prevSeason()+'/'+myLevel).once('value');
+    const obj=snap.val()||{};
+    let champ=null;
+    Object.values(obj).forEach(v=>{ if(v && (!champ || (v.pts||0)>champ.pts)) champ={nick:v.nick||'(이름없음)', pts:v.pts||0}; });
+    if(champ && champ.pts>0){
+      banner.style.display='flex';
+      banner.innerHTML='<div class="crown">👑</div><div class="info"><div class="lab">지난 주 챔피언 · 명예의 전당</div>'
+        +'<div class="who">'+escHtml(champ.nick)+'</div><div class="pt">'+champ.pts+'점으로 1등 🎉</div></div>';
+    } else { banner.style.display='none'; }
+  } catch(e){ console.error('명예의 전당 로드 실패', e); banner.style.display='none'; }
+}
+
+/* ===== 현황 ===== */
+function lvlBadge(box){ if(box>=6) return '🏆 마스터'; if(box>=5) return '🌳 거의 완성'; if(box>=3) return '🌿 자라는 중'; return '🌱 새싹'; }
+function renderStatus(){
+  if(isAdmin){ return renderAdminStatus(); }
+  $('studentStatusView').style.display=''; $('adminStatusView').style.display='none';
+  const ids=Object.keys(state.prog).map(Number).filter(id=>wordById(id)), seen=ids.length;
+  const master=ids.filter(id=>state.prog[id].box>=5).length;
+  $('stSeen').textContent=seen; $('stLearning').textContent=seen-master; $('stMaster').textContent=master;
+  const box=$('statusList');
+  if(seen===0){ box.innerHTML='<div class="empty">아직 학습한 단어가 없어요!<br>홈에서 오늘의 학습을 시작해 보세요 📖</div>'; return; }
+  const sorted=ids.map(id=>({w:wordById(id),box:state.prog[id].box})).filter(x=>x.w).sort((a,b)=>b.box-a.box);
+  box.innerHTML=sorted.map(x=>'<div class="wv"><span><span class="en">'+escHtml(x.w.en)+'</span><span class="ko">'+escHtml(x.w.ko)+'</span></span><span class="lvl">'+(x.w.day?'<span class="wv-day">D'+x.w.day+'</span> ':'')+lvlBadge(x.box)+'</span></div>').join('');
+}
+
+// 엔터키: 1단계는 loginNext, 2단계는 loginPinSubmit
+['sidInput','nameInput'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') loginNext(); }); });
+['pinInput','pinInput2','nickNew'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') loginPinSubmit(); }); });
+{ const el=$('nickEditInput'); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') submitNickChange(); }); }
+
+initFirebase();
+</script>
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영단어 챌린지 · 관리자</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="xlsx.full.min.js"></script>
+<style>
+  :root{ --primary:#e35d97; --ink:#1c2030; --sub:#6b7280; --line:#f0dce6; --good:#16a34a; --bad:#ef4444; --amber:#ea8a00; --bg:#fdeef4; --tint:#ffe6f1; }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;justify-content:center;padding:16px;min-height:100vh;}
+  .wrap{width:100%;max-width:920px;}
+  .card{background:#fff;border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 3px 14px rgba(40,30,90,.06);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 18px;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;color:#fff;}
+  .btn:active{transform:scale(.98);} .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.primary{background:var(--primary);} .btn.green{background:var(--good);} .btn.amber{background:var(--amber);}
+  .btn.danger{background:var(--bad);} .btn.ghost{background:#fff;color:var(--primary);border:2px solid var(--tint);}
+  .btn.mini{min-height:36px;padding:7px 12px;font-size:12.5px;}
+  .pin-card{max-width:380px;margin:60px auto 0;text-align:center;}
+  .pin-card .lock{font-size:40px;} .pin-card h1{font-size:20px;color:var(--primary);margin:8px 0 4px;}
+  .pin-card .desc{color:var(--sub);font-size:13px;margin-bottom:20px;}
+  .pin-card input{width:100%;max-width:240px;height:52px;border:2px solid var(--line);border-radius:12px;text-align:center;font-size:20px;letter-spacing:6px;outline:none;}
+  .pin-card input:focus{border-color:var(--primary);}
+  .err{color:var(--bad);font-size:13px;min-height:18px;margin-top:10px;font-weight:600;}
+  .head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .head h1{font-size:19px;color:var(--primary);}
+  .head .sub{font-size:12px;color:var(--sub);}
+  .tabs{display:flex;gap:6px;background:#fff;border-radius:12px;padding:6px;margin-bottom:14px;box-shadow:0 3px 14px rgba(40,30,90,.06);flex-wrap:wrap;}
+  .tab{flex:1;min-width:90px;padding:11px;border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:800;color:var(--sub);border-radius:8px;cursor:pointer;}
+  .tab.on{background:var(--primary);color:#fff;}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  .stat{font-size:13px;color:var(--sub);font-weight:700;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:var(--tint);color:var(--primary);padding:9px 8px;font-size:12px;text-align:center;}
+  td{padding:7px 8px;border-bottom:1px solid #f0f1f6;text-align:center;vertical-align:middle;}
+  .tbl-wrap{overflow-x:auto;}
+  .stu-search{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
+  .stu-search input{flex:1;height:46px;border:2px solid var(--line);border-radius:12px;padding:0 14px;font-size:15px;font-family:inherit;outline:none;background:#fff;}
+  .stu-search input:focus{border-color:var(--primary);}
+  .stu-search .btn{flex:none;min-height:46px;}
+  .wd-picker{display:flex;flex-wrap:wrap;gap:7px;}
+  .wd-chip{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13.5px;font-weight:700;cursor:pointer;user-select:none;}
+  .wd-chip:has(input:checked){border-color:var(--primary);background:var(--tint);color:var(--primary);}
+  .wd-chip input{accent-color:var(--primary);width:16px;height:16px;}
+  .sb-block{margin-bottom:20px;}
+  .sb-title{font-size:14.5px;font-weight:800;margin-bottom:9px;}
+  .sb-row{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+  .sb-lab{width:34px;font-size:12.5px;font-weight:800;color:var(--sub);flex:none;}
+  .sb-bar{flex:1;height:15px;background:#eef0f5;border-radius:99px;overflow:hidden;}
+  .sb-bar i{display:block;height:100%;border-radius:99px;transition:width .4s;}
+  .sb-val{width:118px;text-align:right;font-size:12px;font-weight:700;flex:none;}
+  @media(max-width:640px){ .sb-val{width:92px;font-size:11px;} .sb-lab{width:30px;} }
+  .sr-block{margin-bottom:16px;}
+  .sr-title{font-size:14px;font-weight:800;margin-bottom:7px;padding-bottom:5px;border-bottom:1.5px solid var(--tint);}
+  .sr-row{display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px solid #f3f4f8;}
+  .sr-row:last-child{border-bottom:none;}
+  .sr-rank{width:30px;text-align:center;font-size:14px;font-weight:900;color:var(--sub);flex:none;}
+  .sr-nick{flex:1;font-size:14px;font-weight:700;}
+  .sr-pts{font-size:13.5px;font-weight:900;color:var(--primary);flex:none;}
+  .w-row input{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13.5px;font-family:inherit;}
+  .w-row input:focus{outline:none;border-color:var(--primary);}
+  .w-row.hidden{opacity:.5;background:#f7f8fb;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:800;color:var(--sub);margin-bottom:5px;}
+  .field input{width:100%;max-width:260px;height:44px;border:2px solid var(--line);border-radius:10px;padding:0 12px;font-size:15px;font-family:inherit;}
+  .field input:focus{outline:none;border-color:var(--primary);}
+  .field .hint{font-size:11.5px;color:var(--sub);margin-top:4px;}
+  textarea{width:100%;min-height:160px;border:2px solid var(--line);border-radius:10px;padding:12px;font-size:14px;font-family:'D2Coding','Consolas',monospace;line-height:1.6;resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--primary);}
+  .empty{text-align:center;color:var(--sub);padding:34px;font-size:14px;line-height:1.7;}
+  .credit{text-align:center;font-size:11px;color:#aab;padding:16px 0 4px;}
+  .danger-box{border:1.5px solid #f3c0c0;background:#fff5f5;border-radius:12px;padding:16px;margin-bottom:12px;}
+  .danger-box h3{color:var(--bad);font-size:15px;margin-bottom:6px;}
+  .danger-box p{font-size:12.5px;color:#7a4a4a;line-height:1.6;margin-bottom:10px;}
+  .pill{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px;background:var(--tint);color:var(--primary);}
+  .full-load{position:fixed;inset:0;background:rgba(255,255,255,.7);display:none;align-items:center;justify-content:center;z-index:90;}
+  .full-load.show{display:flex;}
+  .spin{width:36px;height:36px;border:4px solid #dfe2ee;border-top-color:var(--primary);border-radius:50%;animation:rot .8s linear infinite;}
+  @keyframes rot{to{transform:rotate(360deg);}}
+  @media(max-width:640px){
+    body{padding:9px;}
+    .card{padding:14px;border-radius:14px;}
+    .head h1{font-size:17px;}
+    .tab{min-width:0;font-size:12.5px;padding:11px 4px;}
+    .toolbar{gap:7px;}
+    .toolbar .stat{font-size:12.5px;line-height:1.55;}
+    .btn.mini{min-height:40px;font-size:13px;}
+    /* 학생·랭킹 표 → 모바일 카드 (가로 스크롤 제거, 한눈에 보이게) */
+    .tbl-students thead{display:none;}
+    .tbl-students, .tbl-students tbody, .tbl-students tr, .tbl-students td{display:block;width:100%;}
+    .tbl-students tr{border:1.5px solid var(--line);border-radius:13px;padding:11px 13px 12px;margin-bottom:11px;background:#fff;box-shadow:0 2px 9px rgba(40,30,90,.06);}
+    .tbl-students tr.adminrow{border-color:var(--primary);background:var(--tint);}
+    .tbl-students td{border:none;padding:5px 0;min-height:30px;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:right;font-size:14.5px;}
+    .tbl-students td::before{content:attr(data-l);font-size:11.5px;font-weight:800;color:var(--sub);text-align:left;white-space:nowrap;}
+    .tbl-students td.c-num{display:none;}
+    .tbl-students td.c-nick{justify-content:flex-start;font-size:18px;font-weight:900;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:5px;}
+    .tbl-students td.c-nick::before{display:none;}
+    .tbl-students td.c-act{justify-content:flex-start;flex-wrap:wrap;gap:6px;border-top:1px solid var(--line);padding-top:10px;margin-top:5px;}
+    .tbl-students td.c-act::before{display:none;}
+    .tbl-students td.c-act .btn{flex:1;min-width:92px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- GATE -->
+  <div id="screen-gate">
+    <div class="card pin-card">
+      <div class="lock">🔐</div>
+      <h1>영단어 챌린지 관리자</h1>
+      <div class="desc" id="gateMsg" style="line-height:1.6;">확인 중...</div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;">
+        <button class="btn ghost" onclick="location.href='index.html'">학생 화면 / 로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASH -->
+  <div id="screen-dash" style="display:none;">
+    <div class="head">
+      <div><h1>👑 영단어 챌린지 관리자</h1><div class="sub">gongju7-vocab · 공주7반 학급특색</div></div>
+      <button class="btn ghost mini" onclick="location.href='index.html'">학생 화면</button>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-t="words" onclick="tab('words')">📝 단어 관리</button>
+      <button class="tab" data-t="settings" onclick="tab('settings')">⚙️ 설정</button>
+      <button class="tab" data-t="students" onclick="tab('students')">🏆 학생·랭킹</button>
+      <button class="tab" data-t="stats" onclick="tab('stats')">📊 통계</button>
+      <button class="tab" data-t="danger" onclick="tab('danger')">🧹 초기화</button>
+    </div>
+
+    <!-- WORDS -->
+    <div id="tab-words" class="tabc">
+      <div class="card">
+        <div class="toolbar" style="margin-bottom:10px;border-bottom:1px solid #f0f1f6;padding-bottom:10px;">
+          <span class="stat">📚 레벨:</span>
+          <span id="levelTabs" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
+          <span style="flex:1"></span>
+          <span class="stat" id="levelHint" style="color:var(--amber);"></span>
+        </div>
+        <div class="toolbar">
+          <span class="stat">📅 DAY</span>
+          <select id="daySel" onchange="onDayFilter(this.value)" style="font-family:inherit;font-size:13px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;min-height:36px;display:none;"></select>
+          <span class="stat" id="wordStat">단어 0개</span>
+          <span style="flex:1"></span>
+          <button class="btn green mini" onclick="saveWords()">💾 저장(반영)</button>
+          <button class="btn ghost mini" onclick="addWord()">＋ 단어 추가</button>
+          <button class="btn ghost mini" onclick="toggleBulk()">📋 텍스트 일괄입력</button>
+          <button class="btn ghost mini" onclick="exportWordsXlsx()">⬇ 엑셀</button>
+          <button class="btn ghost mini" onclick="document.getElementById('wXlsx').click()">⬆ 엑셀</button>
+          <input type="file" id="wXlsx" accept=".xlsx,.xls" style="display:none" onchange="importWordsXlsx(event)">
+        </div>
+        <div id="bulkBox" style="display:none;margin-bottom:12px;">
+          <div class="field" style="margin-bottom:8px;"><label>한 줄에 단어 하나씩 — <b>영어[탭 또는 쉼표]뜻</b> (예: achieve  달성하다)</label>
+          <textarea id="bulkText" placeholder="achieve&#9;달성하다&#10;benefit&#9;혜택, 이익&#10;consider&#9;고려하다"></textarea></div>
+          <button class="btn danger mini" onclick="applyBulk('replace')">전부 교체</button>
+          <button class="btn primary mini" onclick="applyBulk('append')">맨 뒤에 추가</button>
+          <span class="stat" style="margin-left:8px;">교체는 기존 단어를 모두 새 목록으로 바꿉니다(학습 시작 전 권장).</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th style="width:56px;">DAY</th><th>영어</th><th>뜻</th><th style="width:70px;">숨김</th></tr></thead>
+            <tbody id="wordRows"></tbody>
+          </table>
+        </div>
+        <div id="wordsEmpty" class="empty" style="display:none;">단어가 없습니다. [텍스트 일괄입력] 또는 [엑셀]로 단어장을 넣어 주세요.</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="tabc" style="display:none;">
+      <div class="card">
+        <div class="field"><label>한 묶음 단어 수</label><input id="cfgWeek" type="number" min="5" max="200"><div class="hint">한 기간 동안 새로 열리는 단어 개수입니다. <b>교재 DAY가 지정된 단어장(능률VOCA 등)은 DAY 단위로 열리므로 이 값은 무시</b>돼요.</div></div>
+        <div class="field"><label>개방 주기 (일)</label><input id="cfgPeriod" type="number" min="1" max="60"><div class="hint">이 일수가 지날 때마다 다음 단어가 <b>자동으로</b> 열려요. (예: 7 = 일주일마다)</div></div>
+        <div class="field"><label>개방 주기마다 열리는 교재 DAY 수</label><input id="cfgDpp" type="number" min="1" max="10"><div class="hint"><b>교재 DAY가 있는 단어장</b>에서, 위 '개방 주기(일)'마다 몇 개의 DAY를 열지 정해요. (예: 7일 + 2 → <b>일주일마다 2 DAY</b>)</div></div>
+        <div class="field"><label>하루 새 단어 수</label><input id="cfgNew" type="number" min="1" max="50"><div class="hint">학생이 하루에 새로 배우는 단어 수입니다.</div></div>
+        <div class="field"><label>하루 복습 단어 수 (소량)</label><input id="cfgReview" type="number" min="0" max="30"><div class="hint">새 단어 학습이 우선이라, 복습은 매일 소량만 섞여요. (권장 2~4개)</div></div>
+        <div class="field"><label>프로그램 시작일</label><input id="cfgStart" type="date"><div class="hint">이 날짜를 1일째로 계산해요. 과거로 두면 더 많은 묶음이 열립니다(테스트용).</div></div>
+        <div class="field"><label>반 공동 목표치 (함께 맞힐 단어 수)</label><input id="cfgGoal" type="number" min="100" max="1000000"><div class="hint">모든 레벨 학생이 함께 채우는 게이지의 목표. 현재 누적: <b id="goalNow">-</b>개 · <button class="btn ghost mini" type="button" onclick="resetGoal()" style="margin-left:6px;">누적 0으로</button></div></div>
+        <div style="border-top:1px solid #f0f1f6;margin:6px 0 14px;padding-top:14px;">
+          <div class="field" style="margin-bottom:8px;"><label>레벨 1 이름 (기초 수준)</label><input id="cfgLvl0" maxlength="24" placeholder="🌱 기초부터 차근차근"><div class="hint">학생 가입 화면에 그대로 보여요. 이모지 가능. (수준이 드러나 부끄럽지 않게 친근한 이름 권장)</div></div>
+          <div class="field" style="margin-bottom:0;"><label>레벨 2 이름 (실력 수준)</label><input id="cfgLvl1" maxlength="24" placeholder="🌳 어휘 자신 있어요"></div>
+        </div>
+        <button class="btn green" onclick="saveSettings()">💾 설정 저장</button>
+        <div class="hint" style="margin-top:8px;">※ 위 <b>개방·하루 단어 값</b>은 <b>레벨별 설정이 없을 때 적용되는 기본값</b>이에요. 레벨마다 다르게 하려면 아래에서 설정하세요.</div>
+      </div>
+
+      <!-- 레벨별 개방·학습 설정 -->
+      <div class="card">
+        <div class="head" style="margin-bottom:10px;"><h1 style="font-size:16px;">📅 레벨별 개방·학습 설정</h1></div>
+        <div class="field"><label>설정할 레벨</label>
+          <select id="lpLevel" onchange="fillLevelPacing(this.value)" style="font-family:inherit;font-size:15px;padding:0 12px;height:44px;border:2px solid var(--line);border-radius:10px;max-width:260px;"></select>
+        </div>
+        <div class="field"><label>새 DAY 개방 요일</label>
+          <div id="lpWeekdays" class="wd-picker"></div>
+          <div class="hint">체크한 <b>요일마다 교재 DAY 1개씩</b> 열려요 (예: 월·수·금 = 주 3 DAY). <b>교재 DAY가 지정된 단어장</b>(능률VOCA 등)에서 작동하고, 하나도 체크 안 하면 위 '기본값(개방 주기)' 방식으로 돌아가요.</div>
+        </div>
+        <div class="field"><label>하루 새 단어 수</label><input id="lpNew" type="number" min="1" max="60"><div class="hint">이 레벨 학생이 하루에 새로 배우는 단어 수.</div></div>
+        <div class="field"><label>하루 복습 단어 수 (소량)</label><input id="lpReview" type="number" min="0" max="40"><div class="hint">새 단어가 우선이라 복습은 매일 소량만 섞여요.</div></div>
+        <div class="field"><label>한 회차 빈칸 스펠링 문제 수</label><input id="lpBlank" type="number" min="0" max="20"><div class="hint">한 번 학습할 때 <b>빈칸 채우기</b> 문제를 몇 개 낼지. (기초=많이, 실력=적게 권장)</div></div>
+        <div class="field"><label>빈칸 가림 비율 (%)</label><input id="lpMask" type="number" min="10" max="90"><div class="hint">단어에서 몇 %의 글자를 가릴지. 낮으면 쉽고(예: 30), 높으면 어려워요(예: 60). 첫 글자는 항상 보여줘요.</div></div>
+        <button class="btn green" onclick="saveLevelPacing()">💾 이 레벨 설정 저장</button>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="tab-students" class="tabc" style="display:none;">
+      <div class="card">
+        <div class="toolbar">
+          <span class="stat" id="stuStat">학생 0명</span>
+          <span style="flex:1"></span>
+          <button class="btn ghost mini" onclick="loadStudents()">🔄 새로고침</button>
+          <button class="btn ghost mini" onclick="exportStudentsCsv()">⬇ CSV</button>
+        </div>
+        <div class="stu-search">
+          <input id="stuQuery" type="search" inputmode="search" autocomplete="off" placeholder="🔍 이름·학번·닉네임으로 학생 찾기" oninput="applyStuFilter()">
+          <button class="btn ghost mini" type="button" onclick="clearStuQuery()" title="검색 지우기">✕</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl-students">
+            <thead><tr><th style="width:34px;">#</th><th>닉네임</th><th>학번</th><th>이름</th><th>레벨</th><th>종합</th><th>정답률</th><th>정답</th><th>성장</th><th>꾸준</th><th>진도</th><th>연속</th><th>PIN</th><th>관리</th></tr></thead>
+            <tbody id="stuRows"></tbody>
+          </table>
+        </div>
+        <div id="stuEmpty" class="empty" style="display:none;">아직 참여한 학생이 없습니다.</div>
+      </div>
+
+      <div class="card" id="levelLogCard">
+        <div class="toolbar">
+          <span class="stat">🔁 레벨 변경 이력</span>
+          <span style="flex:1"></span>
+          <button class="btn ghost mini" onclick="loadLevelLog()">🔄 새로고침</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>일시</th><th>학번</th><th>이름</th><th>닉네임</th><th>변경</th></tr></thead>
+            <tbody id="logRows"></tbody>
+          </table>
+        </div>
+        <div id="logEmpty" class="empty">아직 레벨 변경 기록이 없습니다.</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div id="tab-stats" class="tabc" style="display:none;">
+      <div class="card">
+        <div class="toolbar">
+          <span class="stat">📊 점수 구성 비중</span>
+          <span style="flex:1"></span>
+          <button class="btn ghost mini" onclick="loadStats()">🔄 새로고침</button>
+        </div>
+        <div class="hint" style="margin-bottom:14px;">학생들이 얻은 점수가 <b>정답·복습·꾸준·콤보·속도</b> 중 어디서 왔는지 비중을 보여줘요. 보너스(콤보·속도) 비중이 과하면 설계 균형을 조정하세요.</div>
+        <div id="statsBox"><div class="empty">새로고침을 눌러 주세요.</div></div>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <span class="stat">🗓️ 주간 순위 기록</span>
+          <span style="flex:1"></span>
+          <select id="seasonWeek" onchange="renderSeasonRanking()" style="font-family:inherit;font-size:13.5px;padding:0 10px;height:38px;border:1.5px solid var(--line);border-radius:8px;max-width:220px;"></select>
+        </div>
+        <div class="hint" style="margin-bottom:12px;">매주 <b>월요일에 마감된 지난 주차 순위</b>가 자동 보관돼요(레벨별). 이번 주 실시간 순위는 학생 화면 랭킹에서 봐요.</div>
+        <div id="seasonBox"><div class="empty">불러오는 중…</div></div>
+      </div>
+    </div>
+
+    <!-- DANGER -->
+    <div id="tab-danger" class="tabc" style="display:none;">
+      <div class="card">
+        <div class="danger-box">
+          <h3>학생 데이터 전체 초기화</h3>
+          <p>모든 학생의 점수·진도·계정을 삭제합니다(단어장·설정은 유지). <b>새 학기/새 단어장 시작</b> 때 사용하세요. 되돌릴 수 없습니다.</p>
+          <button class="btn danger mini" onclick="resetStudents()">학생 데이터 전체 초기화</button>
+        </div>
+        <div class="danger-box">
+          <h3>단어장 비우기 (선택된 레벨)</h3>
+          <p>[단어 관리] 탭에서 <b>지금 선택된 레벨</b>의 단어를 모두 삭제합니다. 되돌릴 수 없습니다(엑셀로 미리 백업하세요).</p>
+          <button class="btn danger mini" onclick="clearWords()">단어장 비우기</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+</div>
+<div class="full-load" id="fullLoad"><div class="spin"></div></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDbEgNhJr24GjWPYBx63zQ4MyW2dZA6XSs",
+  authDomain: "gongju7-vocab.firebaseapp.com",
+  databaseURL: "https://gongju7-vocab-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gongju7-vocab",
+  storageBucket: "gongju7-vocab.firebasestorage.app",
+  messagingSenderId: "249343659059",
+  appId: "1:249343659059:web:532b7d74d0a38286c2a746"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+// 관리자 = 학번 20700(긍고쌤) 계정. 학생앱에서 그 계정으로 로그인하면 세션이 생기고, 여기서 그 세션을 확인.
+const ADMIN_SID = '20700';
+const NONSTUDENT_SIDS = [ADMIN_SID, '20000'];   // 학생 수·목록·CSV에서 제외(관리자·테스트 계정)
+const SESSION_KEY = 'vocab_v5_session';
+const SEED_LEVELS = [ {id:'basic', name:'🌱 기초부터 차근차근'}, {id:'plus', name:'🌳 어휘 자신 있어요'} ];
+const DEFAULT_CFG = { weekSize:40, newPerDay:8, reviewPerDay:3, periodDays:7, startDate:'2026-06-02', goalTarget:2000, daysPerPeriod:2, levels:SEED_LEVELS, levelCfg:{} };
+
+const $ = id => document.getElementById(id);
+function toArray(v){ if(Array.isArray(v)) return v; if(v&&typeof v==='object') return Object.values(v); return []; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function loading(on){ $('fullLoad').classList.toggle('show', !!on); }
+
+let wordsModel=[], cfg={...DEFAULT_CFG}, students=[];
+let LEVELS = SEED_LEVELS.slice();   // 관리 중 레벨 목록(이름)
+let curLevel = 'basic';             // 단어관리 탭에서 보고 있는 레벨
+let dayFilter = null;               // 단어관리 DAY 필터(null=전체, 숫자=해당 DAY)
+function levelName(id){ const l=LEVELS.find(x=>x.id===id); return l?l.name:(id||''); }
+function validLevel(id){ return LEVELS.some(l=>l.id===id) ? id : (LEVELS[0]?LEVELS[0].id:'basic'); }
+
+async function init(){
+  try { await auth.signInAnonymously(); }
+  catch(e){ console.error(e); $('gateMsg').innerHTML = (e&&e.code==='auth/operation-not-allowed') ? '⚠️ 익명 로그인이 꺼져 있어요. Firebase 콘솔 → Authentication에서 [익명]을 켜 주세요.' : '⚠️ 서버 연결 실패 — 새로고침 해주세요.'; return; }
+  let sess=null; try{ sess=JSON.parse(localStorage.getItem(SESSION_KEY)||'null'); }catch(e){}
+  if(!sess || !sess.accountId){
+    $('gateMsg').innerHTML='관리자(긍고쌤) 계정으로 먼저 <b>로그인</b>해 주세요.<br><span style="font-size:12px;">학생 화면에서 <b>학번 20700</b>으로 로그인하면 홈에 [🛠 관리자 화면으로] 버튼이 나와요.</span>';
+    return;
+  }
+  try {
+    const s = (await db.ref('vocab/students/'+sess.accountId).once('value')).val();
+    if(s && String(s.studentId)===ADMIN_SID){
+      $('screen-gate').style.display='none'; $('screen-dash').style.display='block';
+      loadAll();
+    } else {
+      $('gateMsg').innerHTML='이 계정은 관리자가 아니에요.<br><span style="font-size:12px;">관리자(학번 20700) 계정으로 로그인해 주세요.</span>';
+    }
+  } catch(e){ console.error(e); $('gateMsg').innerHTML='확인 실패: '+esc(e.message); }
+}
+
+function tab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on', b.dataset.t===name));
+  document.querySelectorAll('.tabc').forEach(c=>c.style.display='none');
+  $('tab-'+name).style.display='block';
+  if(name==='students'){ loadStudents(); loadLevelLog(); }
+  if(name==='stats'){ loadStats(); loadSeasonWeeks(); }
+}
+
+/* ===== 주간 순위 기록(시즌 아카이브) ===== */
+let seasonsData={};
+function fmtWeek(key){ const p=String(key).split('-').map(Number); if(p.length<3) return key;
+  const mon=new Date(p[0],p[1]-1,p[2]), sun=new Date(p[0],p[1]-1,p[2]+6);
+  return (mon.getMonth()+1)+'/'+mon.getDate()+' ~ '+(sun.getMonth()+1)+'/'+sun.getDate()+' 주'; }
+async function loadSeasonWeeks(){
+  $('seasonBox').innerHTML='<div class="empty">불러오는 중…</div>';
+  try{
+    seasonsData=(await db.ref('vocab/seasons').once('value')).val()||{};
+    const weeks=Object.keys(seasonsData).sort().reverse();
+    const sel=$('seasonWeek');
+    if(!weeks.length){ sel.innerHTML='<option value="">기록 없음</option>'; $('seasonBox').innerHTML='<div class="empty">아직 마감된 주차가 없어요.<br>다음 주 월요일부터 자동으로 쌓여요.</div>'; return; }
+    sel.innerHTML=weeks.map(w=>`<option value="${esc(w)}">${esc(fmtWeek(w))}</option>`).join('');
+    sel.value=weeks[0]; renderSeasonRanking();
+  }catch(e){ console.error(e); $('seasonBox').innerHTML='<div class="empty">로드 실패: '+esc(e.message)+'</div>'; }
+}
+function renderSeasonRanking(){
+  const wk=$('seasonWeek').value; const data=(seasonsData&&seasonsData[wk])||{};
+  let html='';
+  LEVELS.forEach(l=>{
+    const lvl=data[l.id]||{};
+    const arr=Object.values(lvl).map(v=>({nick:(v&&v.nick)||'?',pts:(v&&v.pts)||0})).sort((a,b)=>b.pts-a.pts);
+    if(!arr.length) return;
+    html+='<div class="sr-block"><div class="sr-title">'+esc(levelName(l.id))+' <span style="color:var(--sub);font-weight:600;font-size:12px;">'+arr.length+'명</span></div>';
+    html+=arr.map((r,i)=>'<div class="sr-row"><span class="sr-rank">'+(i<3?['🥇','🥈','🥉'][i]:(i+1))+'</span><span class="sr-nick">'+esc(r.nick)+'</span><span class="sr-pts">'+r.pts.toLocaleString()+'점</span></div>').join('');
+    html+='</div>';
+  });
+  $('seasonBox').innerHTML = html || '<div class="empty">이 주차엔 순위 기록이 없어요.</div>';
+}
+
+/* ===== 통계: 점수 구성 비중 ===== */
+function sumScores(arr){ return arr.reduce((a,v)=>({c:a.c+(v.c||0),g:a.g+(v.g||0),k:a.k+(v.k||0),cb:a.cb+(v.cb||0),sp:a.sp+(v.sp||0)}),{c:0,g:0,k:0,cb:0,sp:0}); }
+function statBreakdown(title, s){
+  const parts=[['정답',s.c,'#2563eb'],['복습',s.g,'#16a34a'],['꾸준',s.k,'#ea8a00'],['콤보',s.cb,'#e35d97'],['속도',s.sp,'#eab308']];
+  const tot=parts.reduce((a,p)=>a+p[1],0)||1;
+  const rows=parts.map(p=>{ const pct=Math.round(p[1]/tot*100);
+    return `<div class="sb-row"><span class="sb-lab">${p[0]}</span><div class="sb-bar"><i style="width:${(p[1]/tot*100).toFixed(1)}%;background:${p[2]}"></i></div><span class="sb-val">${p[1].toLocaleString()}점 · ${pct}%</span></div>`;
+  }).join('');
+  const bonus=Math.round((s.cb+s.sp)/tot*100);
+  return `<div class="sb-block"><div class="sb-title">${esc(title)} <span style="color:var(--sub);font-weight:600;font-size:12px;">· 총 ${tot.toLocaleString()}점 · 보너스 ${bonus}%</span></div>${rows}</div>`;
+}
+async function loadStats(){
+  $('statsBox').innerHTML='<div class="empty">불러오는 중…</div>'; loading(true);
+  try{
+    const obj=(await db.ref('vocab/students').once('value')).val()||{};
+    const studs=Object.values(obj).filter(v=>!NONSTUDENT_SIDS.includes(String(v.studentId||'')));
+    if(!studs.length){ $('statsBox').innerHTML='<div class="empty">아직 학생이 없습니다.</div>'; return; }
+    const active=studs.filter(v=>((v.c||0)+(v.g||0)+(v.k||0)+(v.cb||0)+(v.sp||0))>0).length;
+    let html=`<div class="hint" style="margin-bottom:14px;">학생 <b>${studs.length}</b>명 · 점수 보유 <b>${active}</b>명</div>`;
+    html+=statBreakdown('전체 합산', sumScores(studs));
+    LEVELS.forEach(l=>{ const ls=studs.filter(v=>validLevel(v.level)===l.id); if(ls.length) html+=statBreakdown(levelName(l.id)+' ('+ls.length+'명)', sumScores(ls)); });
+    $('statsBox').innerHTML=html;
+  }catch(e){ console.error(e); $('statsBox').innerHTML='<div class="empty">로드 실패: '+esc(e.message)+'</div>'; }
+  finally{ loading(false); }
+}
+
+async function loadAll(){
+  loading(true);
+  try {
+    cfg = {...DEFAULT_CFG, ...((await db.ref('vocab/config').once('value')).val()||{})};
+    if(Array.isArray(cfg.levels) && cfg.levels.length) LEVELS = cfg.levels;
+    curLevel = validLevel(curLevel);
+    fillSettings();
+    renderLevelTabs();
+    await loadLevelWords(curLevel);
+  } catch(e){ console.error(e); alert('로드 실패: '+e.message); }
+  finally { loading(false); }
+}
+
+/* ===== 단어 관리 (레벨별) ===== */
+function renderLevelTabs(){
+  $('levelTabs').innerHTML = LEVELS.map(l=>
+    `<button class="btn ${l.id===curLevel?'primary':'ghost'} mini" onclick="switchLevel('${esc(l.id)}')">${esc(l.name)}</button>`).join('');
+}
+async function switchLevel(id){
+  id=validLevel(id); if(id===curLevel){ return; }
+  if(!confirm('레벨을 바꿀까요?\n\n⚠️ 지금 화면의 단어를 [💾 저장]하지 않았다면 변경이 사라집니다.')) return;
+  curLevel=id; renderLevelTabs(); await loadLevelWords(curLevel);
+}
+async function loadLevelWords(level){
+  loading(true);
+  try {
+    let ws = (await db.ref('vocab/levels/'+level+'/words').once('value')).val();
+    let legacy=false;
+    if(!ws){ // 구버전 단일 단어장(vocab/words)을 첫 레벨로 1회 마이그레이션 편의
+      const old = (await db.ref('vocab/words').once('value')).val();
+      if(old && level===(LEVELS[0]&&LEVELS[0].id)){ ws=old; legacy=true; }
+    }
+    wordsModel = toArray(ws).filter(Boolean).map(w=>({id:w.id, en:w.en||'', ko:w.ko||'', day:w.day||0, hidden:!!w.hidden}));
+    dayFilter = wordsModel.some(w=>w.day) ? 1 : null;
+    $('levelHint').textContent = legacy ? '※ 기존 단어를 불러왔어요 — [저장]하면 이 레벨에 반영됩니다' : '';
+    renderWords();
+  } catch(e){ console.error(e); alert('단어 로드 실패: '+e.message); }
+  finally { loading(false); }
+}
+function maxDayOf(){ return wordsModel.reduce((m,w)=>Math.max(m, w.day||0), 0); }
+function renderDaySelector(){
+  const sel=$('daySel'); const mx=maxDayOf();
+  if(mx<=0){ sel.style.display='none'; return; }
+  sel.style.display='';
+  let html='<option value="">전체 보기</option>';
+  for(let d=1; d<=mx; d++) html+='<option value="'+d+'">DAY '+d+'</option>';
+  sel.innerHTML=html;
+  sel.value = (dayFilter==null)?'':String(dayFilter);
+}
+function onDayFilter(v){ syncWordsFromDom(); dayFilter = (v==='')?null:+v; renderWords(); }
+function renderWords(){
+  renderDaySelector();
+  const rows = wordsModel.map((w,i)=>({w,i})).filter(o=> dayFilter==null || (o.w.day||0)===dayFilter);
+  $('wordStat').textContent = levelName(curLevel)+' · '+(dayFilter==null
+      ? '단어 '+wordsModel.length+'개 (노출 '+wordsModel.filter(w=>!w.hidden).length+')'
+      : 'DAY '+dayFilter+' · '+rows.length+'개');
+  const tb=$('wordRows');
+  $('wordsEmpty').style.display = rows.length? 'none':'block';
+  tb.innerHTML = rows.map(({w,i})=>`<tr class="w-row ${w.hidden?'hidden':''}" data-i="${i}">
+    <td><input class="wDay" inputmode="numeric" value="${w.day||''}" title="교재 DAY" style="width:46px;text-align:center;"></td>
+    <td><input class="wEn" value="${esc(w.en)}" placeholder="영어"></td>
+    <td><input class="wKo" value="${esc(w.ko)}" placeholder="뜻"></td>
+    <td><button class="btn ${w.hidden?'amber':'ghost'} mini" onclick="toggleHide(${i})">${w.hidden?'숨김':'표시'}</button></td>
+  </tr>`).join('');
+}
+function syncWordsFromDom(){
+  document.querySelectorAll('#wordRows .w-row').forEach(row=>{
+    const i=+row.dataset.i; if(!wordsModel[i]) return;
+    wordsModel[i].en = row.querySelector('.wEn').value.trim();
+    wordsModel[i].ko = row.querySelector('.wKo').value.trim();
+    const dv=row.querySelector('.wDay'); if(dv){ const d=parseInt(dv.value,10); wordsModel[i].day = (d>0)?d:0; }
+  });
+}
+function addWord(){ syncWordsFromDom(); const d=(dayFilter!=null)?dayFilter:maxDayOf(); wordsModel.push({id:nextId(), en:'', ko:'', day:d, hidden:false}); renderWords(); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }
+function toggleHide(i){ syncWordsFromDom(); wordsModel[i].hidden=!wordsModel[i].hidden; renderWords(); }
+function nextId(){ return wordsModel.reduce((m,w)=>Math.max(m, w.id||0), 0) + 1; }
+function toggleBulk(){ const b=$('bulkBox'); b.style.display = b.style.display==='none'?'block':'none'; }
+
+function parseBulk(text){
+  return text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    let parts = l.includes('\t') ? l.split('\t') : l.split(',');
+    if(parts.length<2){ parts = l.split(/\s{2,}|\s(?=[가-힣])/); }
+    const en=(parts[0]||'').trim(); const ko=parts.slice(1).join(',').trim();
+    return en&&ko ? {en,ko} : null;
+  }).filter(Boolean);
+}
+function applyBulk(mode){
+  const parsed=parseBulk($('bulkText').value);
+  if(!parsed.length){ alert('인식된 단어가 없어요. "영어[탭]뜻" 형식인지 확인해 주세요.'); return; }
+  const d=(dayFilter!=null)?dayFilter:0;
+  if(mode==='replace'){
+    if(!confirm(parsed.length+'개 단어로 단어장을 전부 교체할까요?\n(기존 단어 목록이 사라집니다. 학습 시작 전 권장)')) return;
+    wordsModel = parsed.map((w,i)=>({id:i+1, en:w.en, ko:w.ko, day:d, hidden:false}));
+  } else {
+    syncWordsFromDom();
+    let id=nextId(); wordsModel = wordsModel.concat(parsed.map(w=>({id:id++, en:w.en, ko:w.ko, day:d, hidden:false})));
+  }
+  $('bulkText').value=''; $('bulkBox').style.display='none'; renderWords();
+  toastSave(parsed.length+'개 반영됨 — [💾 저장]을 눌러 학생 화면에 적용하세요');
+}
+function toastSave(m){ alert(m); }
+
+async function saveWords(){
+  syncWordsFromDom();
+  const bad = wordsModel.findIndex(w=>!w.hidden && (!w.en || !w.ko));
+  if(bad>=0){ alert((bad+1)+'번 단어의 영어/뜻을 채워 주세요. (안 쓸 단어는 ‘숨김’)'); return; }
+  if(!confirm('['+levelName(curLevel)+'] 단어장을 저장할까요? 이 레벨 학생 화면에 바로 반영됩니다.\n노출 단어 '+wordsModel.filter(w=>!w.hidden).length+'개')) return;
+  loading(true);
+  try {
+    const arr = wordsModel.map(w=>{ const o={id:w.id, en:w.en, ko:w.ko}; if(w.day) o.day=w.day; if(w.hidden) o.hidden=true; return o; });
+    await db.ref('vocab/levels/'+curLevel+'/words').set(arr);
+    $('levelHint').textContent='';
+    alert('저장 완료! ['+levelName(curLevel)+'] 학생 화면에 반영되었습니다.');
+  } catch(e){ console.error(e); alert('저장 실패: '+e.message); }
+  finally { loading(false); }
+}
+
+function exportWordsXlsx(){
+  syncWordsFromDom();
+  const rows=[['번호','DAY','영어','뜻','숨김(Y)']];
+  wordsModel.forEach((w,i)=>rows.push([i+1, w.day||'', w.en, w.ko, w.hidden?'Y':'']));
+  const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:6},{wch:6},{wch:22},{wch:30},{wch:8}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'단어장');
+  XLSX.writeFile(wb, '영단어_'+levelName(curLevel).replace(/[^\w가-힣]/g,'')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+async function importWordsXlsx(ev){
+  const f=ev.target.files[0]; ev.target.value=''; if(!f) return;
+  try {
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    if(!rows.length){ alert('빈 파일이에요.'); return; }
+    // 헤더 자동 감지 + 열 매핑(영어/뜻/DAY/숨김)
+    const head=(rows[0]||[]).map(x=>String(x).trim());
+    const hasHeader=head.some(c=>/영어|english|word|뜻|kor|번호|day|숨김/i.test(c));
+    let cEn=-1,cKo=-1,cDay=-1,cHid=-1, start=0;
+    if(hasHeader){
+      start=1;
+      head.forEach((c,k)=>{ const s=c.toLowerCase();
+        if(cDay<0 && /day|데이/.test(s)) cDay=k;
+        else if(cEn<0 && /영어|english|word/.test(s)) cEn=k;
+        else if(cKo<0 && /뜻|의미|kor|mean/.test(s)) cKo=k;
+        else if(cHid<0 && /숨김|hidden/.test(s)) cHid=k; });
+    }
+    if(cEn<0||cKo<0){ // 헤더 매칭 실패 → 열 개수로 위치 추정
+      const w=(rows[start]||rows[0]||[]).length;
+      if(w>=5){ cDay=1; cEn=2; cKo=3; cHid=4; }
+      else if(w===4){ cEn=1; cKo=2; cHid=3; }
+      else if(w===3 && /^\d+$/.test(String((rows[start]||[])[0]).trim())){ cEn=1; cKo=2; }
+      else { cEn=0; cKo=1; cHid=2; }
+    }
+    const parsed=[];
+    for(let r=start;r<rows.length;r++){
+      const row=rows[r]; if(!row) continue;
+      const en=String(row[cEn]||'').trim(), ko=String(row[cKo]||'').trim();
+      const day=cDay>=0?parseInt(String(row[cDay]||'').trim(),10):0;
+      const hid=cHid>=0 && String(row[cHid]||'').trim().toUpperCase()==='Y';
+      if(en&&ko) parsed.push({en,ko,day:(day>0?day:0),hid});
+    }
+    if(!parsed.length){ alert('엑셀에서 단어를 찾지 못했어요. 영어·뜻 열을 확인해 주세요.'); return; }
+    if(!confirm('엑셀의 '+parsed.length+'개 단어로 ['+levelName(curLevel)+'] 단어장을 전부 교체할까요?\n(저장 전이라 되돌릴 수 있어요)')) return;
+    wordsModel=parsed.map((w,i)=>({id:i+1, en:w.en, ko:w.ko, day:w.day, hidden:!!w.hid}));
+    dayFilter = wordsModel.some(w=>w.day)?1:null;
+    renderWords(); alert(parsed.length+'개 불러옴 — [💾 저장]을 눌러 적용하세요.');
+  } catch(e){ console.error(e); alert('엑셀 읽기 실패: '+e.message); }
+}
+
+/* ===== 설정 ===== */
+function fillSettings(){
+  $('cfgWeek').value=cfg.weekSize; $('cfgPeriod').value=cfg.periodDays; $('cfgDpp').value=cfg.daysPerPeriod||2; $('cfgNew').value=cfg.newPerDay;
+  $('cfgReview').value=cfg.reviewPerDay; $('cfgStart').value=cfg.startDate; $('cfgGoal').value=cfg.goalTarget||2000;
+  $('cfgLvl0').value=(LEVELS[0]&&LEVELS[0].name)||''; $('cfgLvl1').value=(LEVELS[1]&&LEVELS[1].name)||'';
+  // 레벨별 개방·학습 설정
+  $('lpLevel').innerHTML = LEVELS.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+  const firstLvl = (LEVELS.find(l=>l.id==='plus')||LEVELS[0]||{}).id;   // 활동 중인 plus 우선 표시
+  if(firstLvl){ $('lpLevel').value=firstLvl; fillLevelPacing(firstLvl); }
+  db.ref('vocab/classGoal/count').once('value').then(s=>{ $('goalNow').textContent=(s.val()||0).toLocaleString(); }).catch(()=>{});
+}
+const WD_ORDER=[{n:1,t:'월'},{n:2,t:'화'},{n:3,t:'수'},{n:4,t:'목'},{n:5,t:'금'},{n:6,t:'토'},{n:0,t:'일'}];
+function renderWdPicker(sel){
+  $('lpWeekdays').innerHTML = WD_ORDER.map(d=>`<label class="wd-chip"><input type="checkbox" value="${d.n}" ${sel.includes(d.n)?'checked':''}>${d.t}</label>`).join('');
+}
+function fillLevelPacing(level){
+  const lc=(cfg.levelCfg&&cfg.levelCfg[level])||{};
+  renderWdPicker(Array.isArray(lc.openWeekdays)?lc.openWeekdays.map(Number):[]);
+  $('lpNew').value = (lc.newPerDay!=null)?lc.newPerDay:(cfg.newPerDay||20);
+  $('lpReview').value = (lc.reviewPerDay!=null)?lc.reviewPerDay:(cfg.reviewPerDay!=null?cfg.reviewPerDay:7);
+  const defBlank = level==='basic'?3:1, defMask = level==='basic'?30:60;
+  $('lpBlank').value = (lc.blankCount!=null)?lc.blankCount:defBlank;
+  $('lpMask').value = (lc.maskRatio!=null)?Math.round(lc.maskRatio*100):defMask;
+}
+async function saveLevelPacing(){
+  const level=$('lpLevel').value; if(!level) return;
+  const ws=[...document.querySelectorAll('#lpWeekdays input:checked')].map(c=>+c.value).sort((a,b)=>((a+6)%7)-((b+6)%7));
+  const obj={ newPerDay:Math.max(1,+$('lpNew').value||20), reviewPerDay:Math.max(0,+$('lpReview').value||0),
+    blankCount:Math.max(0,Math.min(20,+$('lpBlank').value||0)), maskRatio:Math.min(0.9,Math.max(0.1,(+$('lpMask').value||30)/100)) };
+  if(ws.length) obj.openWeekdays=ws;   // 비었으면 요일개방 해제(기본 개방주기 방식으로)
+  loading(true);
+  try{
+    await db.ref('vocab/config/levelCfg/'+level).set(obj);
+    cfg.levelCfg = {...(cfg.levelCfg||{})}; cfg.levelCfg[level]=obj;
+    alert('['+levelName(level)+'] 개방·학습 설정을 저장했어요!'+(ws.length?('\n개방 요일: '+ws.map(n=>WD_ORDER.find(d=>d.n===n).t).join('·')):'\n(요일 미지정 — 기본 개방주기 방식)'));
+  }catch(e){ console.error(e); alert('저장 실패: '+e.message); }
+  finally{ loading(false); }
+}
+async function saveSettings(){
+  const lv0=$('cfgLvl0').value.trim()||SEED_LEVELS[0].name, lv1=$('cfgLvl1').value.trim()||SEED_LEVELS[1].name;
+  const levels=[ {id:'basic', name:lv0}, {id:'plus', name:lv1} ];
+  const n={ weekSize:+$('cfgWeek').value||40, periodDays:Math.max(1,+$('cfgPeriod').value||7), daysPerPeriod:Math.max(1,+$('cfgDpp').value||2), newPerDay:+$('cfgNew').value||8,
+    reviewPerDay:Math.max(0,+$('cfgReview').value||0), startDate:$('cfgStart').value||DEFAULT_CFG.startDate, goalTarget:Math.max(1,+$('cfgGoal').value||2000), levels,
+    levelCfg: cfg.levelCfg||{} };   // 레벨별 설정 보존(전역 저장이 덮어쓰지 않게)
+  loading(true);
+  try { await db.ref('vocab/config').set({...n, updatedAt:firebase.database.ServerValue.TIMESTAMP}); cfg={...cfg,...n}; LEVELS=levels; renderLevelTabs(); alert('설정 저장 완료! 학생 화면에 반영됩니다.'); }
+  catch(e){ console.error(e); alert('저장 실패: '+e.message); }
+  finally { loading(false); }
+}
+async function resetGoal(){
+  if(!confirm('반 공동 목표 누적을 0으로 되돌릴까요?')) return;
+  try { await db.ref('vocab/classGoal/count').set(0); $('goalNow').textContent='0'; alert('공동 목표 누적을 0으로 초기화했습니다.'); }
+  catch(e){ console.error(e); alert('실패: '+e.message); }
+}
+
+/* ===== 학생·랭킹 ===== */
+async function loadStudents(){
+  $('stuRows').innerHTML=''; $('stuEmpty').style.display='none';
+  loading(true);
+  try {
+    const snap=await db.ref('vocab/students').once('value'); const obj=snap.val()||{};
+    students=Object.entries(obj).map(([uid,v])=>{ const at=v.ansTotal||0, ac=v.ansCorrect||0;
+      return {uid, nick:v.nickname||'(이름없음)', sid:String(v.studentId||''), realName:v.name||'', level:validLevel(v.level), c:v.c||0,g:v.g||0,k:v.k||0, cb:v.cb||0, sp:v.sp||0, t:(v.c||0)+(v.g||0)+(v.k||0)+(v.cb||0)+(v.sp||0), week:v.week||1, streak:v.streak||0, pinSet:!!v.pinHash, ansTotal:at, ansCorrect:ac, acc:at?Math.round(ac/at*100):null}; })
+      .filter(s=> !NONSTUDENT_SIDS.includes(s.sid));   // 관리자·테스트 계정 제외
+    students.sort((a,b)=> (parseInt(a.sid,10)||0)-(parseInt(b.sid,10)||0) || a.nick.localeCompare(b.nick,'ko'));
+    const byLevel = LEVELS.map(l=>({name:l.name, n:students.filter(s=>s.level===l.id).length}));
+    const lvlTxt = byLevel.map(x=>esc(x.name)+' <b>'+x.n+'</b>명').join(' · ');
+    $('stuStat').innerHTML='학생 <b>'+students.length+'</b>명'+(lvlTxt?'<span style="color:var(--sub);font-weight:400;"> &nbsp;|&nbsp; '+lvlTxt+'</span>':'');
+    applyStuFilter();   // 검색어가 있으면 적용, 없으면 전체 렌더
+  } catch(e){ console.error(e); $('stuRows').innerHTML=''; $('stuEmpty').style.display='block'; $('stuEmpty').textContent='로드 실패: '+e.message; }
+  finally { loading(false); }
+}
+function stuRowHtml(s,i){
+  const admin = s.sid===ADMIN_SID;
+  return `<tr${admin?' class="adminrow"':''}>
+      <td class="c-num" data-l="#">${i+1}</td><td class="c-nick" data-l="닉네임" style="font-weight:800;text-align:left;">${esc(s.nick)}${admin?' 🛠':''}</td>
+      <td data-l="학번">${esc(s.sid)}</td><td data-l="이름">${esc(s.realName)}</td>
+      <td data-l="레벨" style="font-size:12px;">${admin?'-':esc(levelName(s.level))}</td>
+      <td data-l="종합" style="font-weight:800;color:var(--primary)">${s.t}</td>
+      <td data-l="정답률">${s.ansTotal? `<b style="color:${s.acc>=80?'var(--good)':s.acc>=60?'var(--amber)':'var(--bad)'}">${s.acc}%</b> <span style="font-size:10px;color:var(--sub)">${s.ansCorrect}/${s.ansTotal}</span>` : '<span style="color:var(--sub)">–</span>'}</td>
+      <td data-l="정답">${s.c}</td><td data-l="성장">${s.g}</td><td data-l="꾸준">${s.k}</td>
+      <td data-l="진도">${s.week}</td><td data-l="연속">${s.streak}일</td>
+      <td data-l="PIN">${s.pinSet?'설정':'<span style="color:var(--amber);font-weight:700;">미설정</span>'}</td>
+      <td class="c-act" data-l="관리" style="white-space:nowrap;">
+        ${admin?'':`<button class="btn ghost mini" onclick="changeLevel('${s.uid}')">레벨변경</button>`}
+        <button class="btn ghost mini" onclick="resetPin('${s.uid}','${esc(s.nick)}')">PIN초기화</button>
+        ${admin?'':`<button class="btn danger mini" onclick="delStudent('${s.uid}','${esc(s.nick)}')">삭제</button>`}
+      </td>
+    </tr>`;
+}
+function renderStuRows(list){
+  if(!students.length){ $('stuRows').innerHTML=''; $('stuEmpty').style.display='block'; $('stuEmpty').textContent='아직 참여한 학생이 없습니다.'; return; }
+  if(!list.length){ $('stuRows').innerHTML=''; $('stuEmpty').style.display='block'; $('stuEmpty').textContent='🔍 검색 결과가 없어요. 다른 이름·학번으로 찾아보세요.'; return; }
+  $('stuEmpty').style.display='none';
+  $('stuRows').innerHTML=list.map((s,i)=>stuRowHtml(s,i)).join('');
+}
+function stuNorm(v){ return String(v||'').toLowerCase().replace(/\s+/g,''); }
+function applyStuFilter(){
+  const el=$('stuQuery'); const q=el?stuNorm(el.value):'';
+  if(!q){ renderStuRows(students); return; }
+  renderStuRows(students.filter(s=> stuNorm(s.nick).includes(q) || stuNorm(s.realName).includes(q) || s.sid.includes(q)));
+}
+function clearStuQuery(){ const el=$('stuQuery'); if(el){ el.value=''; el.focus(); } applyStuFilter(); }
+async function delStudent(uid,name){
+  const s=students.find(x=>x.uid===uid);
+  if(s && s.sid===ADMIN_SID){ alert('관리자 계정은 삭제할 수 없어요.'); return; }
+  if(!confirm(name+' 학생의 계정·점수·진도를 삭제할까요? 되돌릴 수 없습니다.')) return;
+  loading(true);
+  try { await db.ref('vocab/students/'+uid).remove(); await db.ref('vocab/progress/'+uid).remove(); await loadStudents(); }
+  catch(e){ console.error(e); alert('삭제 실패: '+e.message); }
+  finally { loading(false); }
+}
+async function resetPin(uid,name){
+  if(!confirm(name+' 학생의 PIN을 초기화할까요?\n학생은 다음 로그인 때 학번+이름으로 새 PIN을 정하게 됩니다.')) return;
+  loading(true);
+  try { await db.ref('vocab/students/'+uid+'/pinHash').remove(); alert('PIN을 초기화했습니다.'); await loadStudents(); }
+  catch(e){ console.error(e); alert('실패: '+e.message); }
+  finally { loading(false); }
+}
+async function changeLevel(uid){
+  const s=students.find(x=>x.uid===uid); if(!s) return;
+  const menu=LEVELS.map((l,i)=>(i+1)+'. '+l.name+(l.id===s.level?'  ← 현재':'')).join('\n');
+  const inp=prompt(s.nick+' 학생의 레벨 변경\n\n'+menu+'\n\n바꿀 레벨 번호를 입력하세요:');
+  if(inp===null) return;
+  const idx=parseInt(inp,10)-1;
+  if(!(idx>=0 && idx<LEVELS.length)){ alert('올바른 번호를 입력하세요.'); return; }
+  const nl=LEVELS[idx];
+  if(nl.id===s.level){ alert('이미 그 레벨이에요.'); return; }
+  if(!confirm('"'+s.nick+'" → '+nl.name+' (으)로 바꿀까요?\n\n⚠️ 단어장이 달라 이 학생의 학습 진도(외운 단어 기록)는 초기화됩니다. 점수·연속은 유지됩니다.')) return;
+  loading(true);
+  try {
+    await db.ref('vocab/students/'+uid+'/level').set(nl.id);
+    await db.ref('vocab/progress/'+uid).remove();
+    // 변경 이력 기록 (앞으로 누가 언제 어디서→어디로 바꿨는지 추적용)
+    await db.ref('vocab/levelLog').push({
+      ts: firebase.database.ServerValue.TIMESTAMP,
+      uid, sid: s.sid, name: s.realName||'', nick: s.nick||'',
+      from: s.level, fromName: levelName(s.level), to: nl.id, toName: nl.name,
+      by: ADMIN_SID
+    });
+    alert('레벨을 변경했습니다. ('+nl.name+')');
+    await loadStudents(); await loadLevelLog();
+  } catch(e){ console.error(e); alert('실패: '+e.message); }
+  finally { loading(false); }
+}
+
+/* ===== 레벨 변경 이력 ===== */
+async function loadLevelLog(){
+  try {
+    const obj=(await db.ref('vocab/levelLog').once('value')).val()||{};
+    const rows=Object.values(obj).sort((a,b)=>(b.ts||0)-(a.ts||0));
+    const tb=$('logRows'); tb.innerHTML='';
+    $('logEmpty').style.display = rows.length?'none':'block';
+    for(const r of rows){
+      const d=r.ts?new Date(r.ts):null;
+      const dt=d?(d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')):'-';
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>'+esc(dt)+'</td><td>'+esc(r.sid||'')+'</td><td>'+esc(r.name||'')+'</td><td>'+esc(r.nick||'')+'</td><td>'+esc(r.fromName||r.from||'?')+' → '+esc(r.toName||r.to||'?')+'</td>';
+      tb.appendChild(tr);
+    }
+  } catch(e){ console.error(e); }
+}
+
+function exportStudentsCsv(){
+  const rows=[['번호','닉네임','학번','이름','레벨','종합','정답률(%)','맞힌수','푼수','정답','성장','꾸준','콤보','속도','진도','연속']];
+  students.forEach((s,i)=>rows.push([i+1,s.nick,s.sid,s.realName,levelName(s.level),s.t,(s.acc==null?'':s.acc),s.ansCorrect,s.ansTotal,s.c,s.g,s.k,s.cb,s.sp,s.week,s.streak]));
+  const csv=rows.map(r=>r.map(c=>{const x=String(c==null?'':c);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;}).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}); const u=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=u; a.download='영단어_학생랭킹_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); URL.revokeObjectURL(u);
+}
+
+/* ===== 초기화 ===== */
+async function resetStudents(){
+  if(!confirm('모든 학생의 점수·진도·계정을 삭제할까요?\n(단어장·설정과 관리자 계정은 유지됩니다) 되돌릴 수 없습니다.')) return;
+  const t=prompt('확인을 위해 "초기화" 라고 입력하세요:'); if(t===null) return;
+  if(t.trim()!=='초기화'){ alert('취소되었습니다.'); return; }
+  loading(true);
+  try {
+    const obj=(await db.ref('vocab/students').once('value')).val()||{};
+    let adminKey=null;
+    for(const [k,v] of Object.entries(obj)){
+      if(String(v.studentId)===ADMIN_SID){ adminKey=k; continue; }
+      await db.ref('vocab/students/'+k).remove(); await db.ref('vocab/progress/'+k).remove();
+    }
+    if(adminKey){ await db.ref('vocab/students/'+adminKey).update({c:0,g:0,k:0,wkSeason:'',wkC:0,wkG:0,wkK:0,streak:0,lastStudyDay:0,week:1,updatedAt:firebase.database.ServerValue.TIMESTAMP}); await db.ref('vocab/progress/'+adminKey).remove(); }
+    await db.ref('vocab/seasons').remove();   // 명예의 전당 기록도 초기화
+    await db.ref('vocab/classGoal/count').set(0);  // 반 공동 목표 누적 초기화
+    await db.ref('vocab/cheers').remove();     // 친구 응원 기록 초기화
+    await db.ref('vocab/levelLog').remove();    // 레벨 변경 이력 초기화(학생이 사라지므로)
+    alert('학생 데이터를 초기화했습니다. (관리자 계정 유지)'); loadStudents();
+  } catch(e){ console.error(e); alert('초기화 실패: '+e.message); }
+  finally { loading(false); }
+}
+async function clearWords(){
+  if(!confirm('['+levelName(curLevel)+'] 단어장을 모두 비울까요? 되돌릴 수 없습니다(엑셀 백업 권장).')) return;
+  const t=prompt('확인을 위해 "비우기" 라고 입력하세요:'); if(t===null) return;
+  if(t.trim()!=='비우기'){ alert('취소되었습니다.'); return; }
+  loading(true);
+  try { await db.ref('vocab/levels/'+curLevel+'/words').remove(); wordsModel=[]; renderWords(); alert('['+levelName(curLevel)+'] 단어장을 비웠습니다.'); }
+  catch(e){ console.error(e); alert('실패: '+e.message); }
+  finally { loading(false); }
+}
+
+init();
+</script>
+</body>
+</html>

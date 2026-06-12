@@ -1,0 +1,33 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "database.rules.json",
+      "**/.*",
+      "**/.*/**",
+      ".firebase/**",
+      "**/node_modules/**",
+      "**/*.bak",
+      "**/*.pdf",
+      "**/*.md",
+      "**/*.txt",
+      "**/*.xlsx",
+      "**/*.csv",
+      "**/*.json",
+      "**/*.docx",
+      "**/*.png",
+      "**/*.hwp",
+      "**/*.hwpx",
+      "**/*.py",
+      "_*",
+      "_db_backup/**",
+      "능률VOCA어원편고등/**",
+      "워드마스터 고등 BASIC_문제,정답/**"
+    ]
+  }
+}

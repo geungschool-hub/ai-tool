@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>학습지 빌더</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue-pastel: #C5E3F7;
+  --green-pastel: #C3E9CC;
+  --blue-dark:   #1255A0;
+  --green-dark:  #2A7A38;
+  --red-accent:  #C0392B;
+  --amber:       #E67E22;
+  --text-main:   #1A1A1A;
+  --text-light:  #555;
+  --line:        #BBBBBB;
+
+  --app-bg:      #18182a;
+  --panel-bg:    #22223a;
+  --card-bg:     #2c2c46;
+  --card-hover:  #34345a;
+  --card-sel:    #0f2d5c;
+  --border:      #3c3c60;
+  --text-ui:     #dde0f5;
+  --text-muted:  #7878a8;
+  --btn-bg:      #2c2c46;
+  --btn-hover:   #3a3a60;
+}
+
+html, body { height: 100%; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; }
+
+/* ── Layout ── */
+#app { display: flex; flex-direction: column; height: 100vh; background: var(--app-bg); color: var(--text-ui); }
+
+#toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px; height: 50px; flex-shrink: 0;
+  background: var(--panel-bg); border-bottom: 1px solid var(--border);
+}
+
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Editor Panel ── */
+#editor-panel {
+  width: 360px; flex-shrink: 0;
+  background: var(--panel-bg); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+#ep-header {
+  padding: 10px 14px 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: var(--text-muted); border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+
+#block-list { flex: 1; overflow-y: auto; padding: 8px; }
+
+#block-list:empty::after {
+  content: '블록을 추가해 학습지를 구성하세요';
+  display: block; text-align: center; padding-top: 48px;
+  color: var(--text-muted); font-size: 12px; line-height: 1.8;
+}
+
+#block-list::-webkit-scrollbar { width: 6px; }
+#block-list::-webkit-scrollbar-track { background: transparent; }
+#block-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Block Cards ── */
+.bcard {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 6px; margin-bottom: 6px; overflow: hidden;
+  transition: border-color .15s;
+}
+.bcard:hover:not(.selected) { border-color: #5a5a90; }
+.bcard.selected { border-color: var(--blue-dark); background: var(--card-sel); }
+
+.bcard-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; cursor: pointer; user-select: none;
+}
+
+.type-badge {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: white;
+}
+.type-badge.H { background: var(--blue-dark); }
+.type-badge.P { background: var(--green-dark); }
+.type-badge.I { background: #5e5e9a; }
+.type-badge.B { background: #9b59b6; }
+.type-badge.T { background: #e67e22; }
+
+.bcard-preview {
+  flex: 1; font-size: 12px; color: var(--text-ui);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+
+.bcard-btns { display: flex; gap: 2px; flex-shrink: 0; }
+.bcard-btns button {
+  width: 24px; height: 24px; border: none; border-radius: 3px;
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  font-size: 13px; display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s;
+}
+.bcard-btns button:hover { background: rgba(255,255,255,.08); color: var(--text-ui); }
+.bcard-btns button.del:hover { background: rgba(192,57,43,.3); color: #e74c3c; }
+
+.bcard-body { display: none; padding: 10px 12px 12px; border-top: 1px solid var(--border); }
+.bcard.selected .bcard-body { display: block; }
+
+/* Form fields */
+.flabel {
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  letter-spacing: .4px; text-transform: uppercase;
+  margin-bottom: 4px; margin-top: 10px;
+}
+.flabel:first-child { margin-top: 0; }
+
+.finput, .ftextarea {
+  width: 100%; background: var(--app-bg); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text-ui); font-size: 12.5px;
+  font-family: inherit; padding: 6px 8px; resize: vertical;
+  transition: border-color .15s;
+}
+.finput:focus, .ftextarea:focus { outline: none; border-color: var(--blue-dark); }
+.ftextarea { min-height: 68px; line-height: 1.6; }
+
+.color-picker { display: flex; gap: 5px; margin-top: 4px; }
+.cbtn {
+  flex: 1; height: 26px; border: 2px solid transparent;
+  border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;
+  font-family: inherit; transition: all .1s;
+}
+.cbtn[data-c="blue"]  { background: var(--blue-pastel);  color: var(--blue-dark); }
+.cbtn[data-c="green"] { background: var(--green-pastel); color: var(--green-dark); }
+.cbtn[data-c="amber"] { background: #FDE9C9; color: var(--amber); }
+.cbtn[data-c="red"]   { background: #F7C5C5; color: var(--red-accent); }
+.cbtn.on { border-color: var(--text-ui); }
+
+/* Quick-insert (blank-fill) */
+.qi-row { display: flex; align-items: center; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.qi-label { font-size: 10px; color: var(--text-muted); }
+.qi-btn {
+  padding: 2px 8px; font-size: 11px; font-family: inherit;
+  background: var(--card-bg); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 3px;
+  cursor: pointer; transition: all .1s;
+}
+.qi-btn:hover { background: #9b59b6; color: white; border-color: #9b59b6; }
+.hint { font-size: 10px; color: var(--text-muted); margin-top: 5px; line-height: 1.6; }
+
+/* Table editor */
+.tbl-ctrl { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.tbl-ctrl-group { display: flex; align-items: center; gap: 4px; }
+.tc-lbl { font-size: 11px; color: var(--text-muted); }
+.tc-num { font-size: 13px; font-weight: 700; color: var(--text-ui); min-width: 18px; text-align: center; }
+.tc-btn {
+  width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 3px;
+  background: var(--card-bg); color: var(--text-ui); cursor: pointer;
+  font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tc-btn:hover { background: var(--card-hover); }
+.tc-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+
+.hdr-toggle { display: flex; align-items: center; gap: 6px; margin-top: 4px; cursor: pointer; }
+.hdr-toggle input { cursor: pointer; accent-color: var(--blue-dark); }
+.hdr-toggle span { font-size: 12px; color: var(--text-ui); }
+
+.tbl-wrap { overflow-x: auto; margin-top: 8px; }
+.tbl-editor { border-collapse: collapse; }
+.tbl-editor td { padding: 2px; }
+.tcell {
+  width: 72px; padding: 4px 5px; font-size: 11px; font-family: inherit;
+  background: var(--app-bg); border: 1px solid var(--border);
+  color: var(--text-ui); text-align: center;
+}
+.tcell:focus { outline: none; border-color: var(--blue-dark); }
+.tcell.hdr { background: rgba(18,85,160,.3); }
+.tcell.hdr-g { background: rgba(42,122,56,.25); }
+
+/* ── Toolbar ── */
+.tbtn {
+  height: 32px; padding: 0 12px;
+  background: var(--btn-bg); color: var(--text-ui);
+  border: 1px solid var(--border); border-radius: 5px;
+  font-size: 12px; font-family: inherit; cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+  transition: background .15s;
+}
+.tbtn:hover { background: var(--btn-hover); }
+.tbtn.pri { background: var(--blue-dark); border-color: var(--blue-dark); }
+.tbtn.pri:hover { background: #1a6fd4; border-color: #1a6fd4; }
+
+.tdiv { width: 1px; height: 26px; background: var(--border); margin: 0 2px; }
+.ttitle { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-right: 6px; }
+.tstatus { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+/* Dropdowns */
+.dd-wrap { position: relative; }
+#add-dd, #export-dd {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 100;
+  background: var(--panel-bg); border: 1px solid var(--border); border-radius: 6px;
+  overflow: hidden; min-width: 160px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5); display: none;
+}
+#add-dd.open, #export-dd.open { display: block; }
+.dd-item {
+  padding: 9px 14px; font-size: 12.5px; color: var(--text-ui);
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: background .1s;
+}
+.dd-item:hover { background: var(--card-hover); }
+.dd-badge {
+  width: 20px; height: 20px; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: white; flex-shrink: 0;
+}
+
+/* ── Preview Panel ── */
+#preview-panel {
+  flex: 1; overflow: auto; background: #c8c8c8;
+  padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+#preview-panel::-webkit-scrollbar { width: 8px; }
+#preview-panel::-webkit-scrollbar-track { background: #b0b0b0; }
+#preview-panel::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+
+/* ── 양식 B — Preview Page ── */
+.prev-page {
+  width: 210mm; min-height: 297mm;
+  background: white; box-shadow: 0 2px 16px rgba(0,0,0,.3);
+  padding: 14mm 14mm 12mm;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 10pt; color: var(--text-main); line-height: 1.7;
+  display: flex; flex-direction: column;
+}
+
+.prev-page-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  padding-bottom: 5px; border-bottom: 2.5px solid var(--blue-dark);
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.prev-page-header.ans { border-bottom-color: var(--red-accent); }
+
+.prev-header-left { display: flex; flex-direction: column; gap: 1px; }
+.prev-subject { font-size: 13pt; font-weight: 700; color: var(--blue-dark); }
+.prev-subject.ans { color: var(--red-accent); }
+.prev-breadcrumb { font-size: 7.5pt; color: var(--text-light); }
+.prev-header-right {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 9pt; color: var(--text-light);
+}
+.prev-uline { display: inline-block; width: 90px; border-bottom: 1.2px solid var(--text-main); }
+.prev-ans-badge {
+  border: 2px solid var(--red-accent); color: var(--red-accent);
+  font-weight: 700; padding: 2px 10px; font-size: 10pt; letter-spacing: 1px;
+}
+
+.prev-page-content { flex: 1; }
+.prev-page-footer { text-align: center; margin-top: 8px; flex-shrink: 0; }
+.prev-page-badge { font-size: 9pt; color: var(--text-light); font-weight: 700; }
+
+/* Preview blocks */
+.prev-section-title {
+  font-size: 11pt; font-weight: 700;
+  border-left: 4px solid var(--blue-dark); background: var(--blue-pastel);
+  padding: 5px 10px; margin: 10px 0 6px;
+  border-radius: 0 3px 3px 0; color: var(--text-main);
+}
+.prev-section-title.green { border-left-color: var(--green-dark); background: var(--green-pastel); }
+.prev-section-title.amber { border-left-color: var(--amber); background: #FDE9C9; }
+.prev-section-title.red   { border-left-color: var(--red-accent); background: #F7C5C5; }
+
+.prev-paragraph {
+  font-size: 10pt; line-height: 1.9; margin: 4px 0 8px;
+  color: var(--text-main); white-space: pre-wrap;
+}
+.prev-paragraph:empty::before { content: ' '; }
+
+.prev-info-box {
+  border: 1px solid var(--line); background: #FAFAFA;
+  padding: 8px 12px; margin: 6px 0 10px;
+  border-radius: 3px; font-size: 9.5pt; line-height: 2.1; white-space: pre-wrap;
+}
+.prev-info-box:empty::before { content: ' '; }
+
+.prev-bfill { font-size: 10pt; line-height: 2.3; margin: 4px 0 8px; color: var(--text-main); }
+
+/* Blank & answer spans */
+.prev-page .b {
+  display: inline-block; width: 72px;
+  border-bottom: 1.8px solid var(--text-main);
+  vertical-align: bottom; margin: 0 1px;
+}
+.prev-page .b.xs { width: 32px; }
+.prev-page .b.sm { width: 50px; }
+.prev-page .b.lg { width: 108px; }
+.prev-page .b.xl { width: 136px; }
+.prev-page .ans {
+  color: var(--red-accent); font-weight: 700;
+  border-bottom: 1.8px solid var(--red-accent);
+  display: inline-block; padding: 0 3px; vertical-align: bottom;
+}
+
+/* Preview table */
+.prev-tbl-wrap { margin: 6px 0 10px; }
+.prev-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+.prev-table th {
+  background: var(--blue-pastel); border: 1px solid var(--line);
+  padding: 5px 8px; font-weight: 700; text-align: center; vertical-align: middle;
+}
+.prev-table.g th { background: var(--green-pastel); }
+.prev-table td {
+  border: 1px solid var(--line); padding: 5px 8px;
+  text-align: center; vertical-align: middle;
+}
+
+/* ── Modal ── */
+#modal-bg {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.65); display: none;
+  align-items: center; justify-content: center;
+}
+#modal-bg.open { display: flex; }
+.modal {
+  background: var(--panel-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 24px; width: 390px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+}
+.modal h2 { font-size: 14px; color: var(--text-ui); margin-bottom: 18px; font-weight: 700; }
+.mfield { margin-bottom: 14px; }
+.mfield label { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+.mfield input {
+  width: 100%; background: var(--app-bg); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text-ui); font-size: 13px; font-family: inherit; padding: 7px 10px;
+}
+.mfield input:focus { outline: none; border-color: var(--blue-dark); }
+.mfield input[type="number"] { width: 72px; }
+.mactions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+/* ── Stage 4 block types ── */
+.type-badge.M { background: #16a085; }
+.type-badge.F { background: #795548; }
+.type-badge.C { background: #607d8b; }
+.type-badge.D { background: #95a5a6; }
+
+/* Image editor */
+.img-upload-area {
+  border: 2px dashed var(--border); border-radius: 4px; padding: 10px;
+  text-align: center; font-size: 11px; color: var(--text-muted);
+  min-height: 56px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; margin-top: 4px; transition: border-color .15s;
+}
+.img-upload-area:hover { border-color: #5a5a90; }
+.img-upload-area img { max-width: 100%; max-height: 110px; border-radius: 3px; }
+.width-picker { display: flex; gap: 4px; margin-top: 4px; }
+.wbtn {
+  flex: 1; height: 26px; border: 2px solid transparent; border-radius: 4px;
+  cursor: pointer; font-size: 11px; font-family: inherit;
+  background: var(--card-bg); color: var(--text-muted); transition: all .1s;
+}
+.wbtn:hover { background: var(--card-hover); color: var(--text-ui); }
+.wbtn.on { border-color: var(--text-ui); color: var(--text-ui); background: var(--btn-hover); }
+
+/* Flow editor */
+.flow-item-row { display: flex; gap: 4px; margin-bottom: 4px; }
+.flow-del {
+  width: 24px; height: 28px; flex-shrink: 0; border: 1px solid var(--border);
+  border-radius: 3px; background: transparent; color: var(--text-muted);
+  cursor: pointer; font-size: 12px; transition: all .1s;
+}
+.flow-del:hover { background: rgba(192,57,43,.3); color: #e74c3c; }
+
+/* Two-col editor */
+.ratio-picker { display: flex; gap: 5px; margin-top: 4px; }
+.rbtn {
+  flex: 1; height: 26px; border: 2px solid transparent; border-radius: 4px;
+  cursor: pointer; font-size: 11px; font-family: inherit;
+  background: var(--card-bg); color: var(--text-muted); transition: all .1s;
+}
+.rbtn:hover { background: var(--card-hover); color: var(--text-ui); }
+.rbtn.on { border-color: var(--text-ui); color: var(--text-ui); background: var(--btn-hover); }
+.two-col-ed { display: flex; gap: 6px; margin-top: 4px; }
+.two-col-ed > div { flex: 1; min-width: 0; }
+
+/* Page-break card */
+.bcard.pgbreak { opacity: .8; }
+.pgbreak-vis {
+  text-align: center; font-size: 10px; color: var(--text-muted);
+  padding: 6px 0; letter-spacing: 2px;
+  border-top: 1px dashed var(--border); border-bottom: 1px dashed var(--border);
+  margin: 4px 12px;
+}
+
+/* Preview: image */
+.prev-img-wrap { margin: 6px 0 10px; text-align: center; }
+.prev-img-caption { font-size: 8.5pt; color: var(--text-light); margin-top: 4px; }
+
+/* Preview: flow */
+.prev-flow-wrap { margin: 6px 0 10px; }
+.prev-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.prev-flow-box { border: 1.5px solid var(--blue-dark); padding: 4px 10px; border-radius: 3px; font-size: 9.5pt; }
+.prev-flow-arrow { color: var(--blue-dark); font-size: 13pt; font-weight: 700; }
+
+/* Preview: two-col */
+.prev-two-col { display: flex; gap: 5mm; margin: 4px 0 8px; }
+.prev-two-col > div { min-width: 0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <span class="ttitle">학습지 빌더</span>
+    <button class="tbtn" id="btn-settings">⚙ 문서 설정</button>
+    <div class="tdiv"></div>
+    <div class="dd-wrap">
+      <button class="tbtn pri" id="btn-add">＋ 블록 추가 ▾</button>
+      <div id="add-dd">
+        <div class="dd-item" data-type="section-title">
+          <span class="dd-badge" style="background:var(--blue-dark)">H</span>섹션 제목
+        </div>
+        <div class="dd-item" data-type="paragraph">
+          <span class="dd-badge" style="background:var(--green-dark)">P</span>본문 단락
+        </div>
+        <div class="dd-item" data-type="info-box">
+          <span class="dd-badge" style="background:#5e5e9a">I</span>정보 박스
+        </div>
+        <div class="dd-item" data-type="blank-fill">
+          <span class="dd-badge" style="background:#9b59b6">B</span>빈칸 텍스트
+        </div>
+        <div class="dd-item" data-type="table">
+          <span class="dd-badge" style="background:#e67e22">T</span>표
+        </div>
+        <div class="dd-item" data-type="image">
+          <span class="dd-badge" style="background:#16a085">M</span>이미지
+        </div>
+        <div class="dd-item" data-type="flow">
+          <span class="dd-badge" style="background:#795548">F</span>흐름도
+        </div>
+        <div class="dd-item" data-type="two-col">
+          <span class="dd-badge" style="background:#607d8b">C</span>2열 레이아웃
+        </div>
+        <div class="dd-item" data-type="page-break">
+          <span class="dd-badge" style="background:#95a5a6">D</span>페이지 구분
+        </div>
+      </div>
+    </div>
+    <div class="tdiv"></div>
+    <div class="dd-wrap">
+      <button class="tbtn" id="btn-export">⬇ 내보내기 ▾</button>
+      <div id="export-dd">
+        <div class="dd-item" data-export="student">📄 학생용 HTML</div>
+        <div class="dd-item" data-export="answer">📋 정답지 HTML</div>
+      </div>
+    </div>
+    <div class="tdiv"></div>
+    <button class="tbtn" id="btn-json-save">💾 저장</button>
+    <label class="tbtn" style="cursor:pointer" title="JSON 파일 불러오기">
+      📂 열기<input type="file" id="json-load-input" accept=".json" style="display:none">
+    </label>
+    <span class="tstatus" id="save-status">저장됨</span>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div id="editor-panel">
+      <div id="ep-header">블록 구성</div>
+      <div id="block-list"></div>
+    </div>
+    <div id="preview-panel">
+      <div id="pv"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="modal-bg">
+  <div class="modal">
+    <h2>⚙ 문서 설정</h2>
+    <div class="mfield">
+      <label>과목명</label>
+      <input type="text" id="ms-subject" placeholder="생명과학">
+    </div>
+    <div class="mfield">
+      <label>단원 경로 (breadcrumb)</label>
+      <input type="text" id="ms-bc" placeholder="II. 항상성과 몸의 조절 > 2-3">
+    </div>
+    <div class="mfield">
+      <label>시작 페이지 번호</label>
+      <input type="number" id="ms-pg" min="1" value="1">
+    </div>
+    <div class="mactions">
+      <button class="tbtn" id="btn-mc">취소</button>
+      <button class="tbtn pri" id="btn-ms">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const LS = 'wsb_v1';
+
+let S = {
+  settings: { subject: '생명과학', breadcrumb: 'II. 단원 > 소단원', pageStart: 1 },
+  blocks: [],
+  sel: null
+};
+
+// ── Persist ──
+function loadS() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS) || 'null');
+    if (d) { S.settings = d.settings || S.settings; S.blocks = d.blocks || []; }
+  } catch(e) {}
+}
+
+let saveTimer;
+function queueSave() {
+  setSt('저장 중...');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(LS, JSON.stringify({ settings: S.settings, blocks: S.blocks })); setSt('저장됨'); }
+    catch(e) { setSt('저장 실패'); }
+  }, 600);
+}
+
+function setSt(t) { document.getElementById('save-status').textContent = t; }
+
+// ── Block Factory ──
+function uid() { return 'b' + Date.now() + Math.random().toString(36).slice(2,7); }
+
+const DEFAULTS = {
+  'section-title': b => ({ ...b, text: '새 섹션', color: 'blue' }),
+  'paragraph':     b => ({ ...b, text: '' }),
+  'info-box':      b => ({ ...b, text: '' }),
+  'blank-fill':    b => ({ ...b, text: '' }),
+  'table':         b => ({
+    ...b, rows: 3, cols: 3, hasHeader: true, headerColor: 'blue',
+    cells: [['헤더1','헤더2','헤더3'],['','',''],['','','']]
+  }),
+  'image':      b => ({ ...b, src: '', caption: '', width: '100%' }),
+  'flow':       b => ({ ...b, items: ['항목 1', '항목 2', '항목 3'] }),
+  'two-col':    b => ({ ...b, ratio: '5050', leftText: '', rightText: '' }),
+  'page-break': b => ({ ...b })
+};
+
+function newBlock(type) { return DEFAULTS[type]({ id: uid(), type }); }
+
+// ── Mutations ──
+function addBlock(type) {
+  const b = newBlock(type);
+  S.blocks.push(b); S.sel = b.id;
+  render(); queueSave();
+  setTimeout(() => { const el = document.getElementById('block-list'); el.scrollTop = el.scrollHeight; }, 40);
+}
+
+function delBlock(id) {
+  const i = S.blocks.findIndex(b => b.id === id);
+  if (i < 0) return;
+  S.blocks.splice(i, 1);
+  if (S.sel === id) S.sel = S.blocks[Math.min(i, S.blocks.length - 1)]?.id ?? null;
+  render(); queueSave();
+}
+
+function moveBlock(id, d) {
+  const i = S.blocks.findIndex(b => b.id === id), j = i + d;
+  if (j < 0 || j >= S.blocks.length) return;
+  [S.blocks[i], S.blocks[j]] = [S.blocks[j], S.blocks[i]];
+  render(); queueSave();
+}
+
+function patchBlock(id, ch) {
+  const b = S.blocks.find(b => b.id === id);
+  if (!b) return;
+  Object.assign(b, ch);
+  updatePvBlock(id);
+  const prev = document.querySelector(`.bcard[data-id="${id}"] .bcard-preview`);
+  if (prev) prev.textContent = previewText(b);
+  queueSave();
+}
+
+function sel(id) { S.sel = id; renderEditor(); }
+
+// ── Render ──
+function render() { renderEditor(); renderPreview(); }
+
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function previewText(b) {
+  const t = (b.text || '').slice(0, 42);
+  if (b.type === 'section-title') return b.text || '(빈 섹션 제목)';
+  if (b.type === 'paragraph')     return t || '(빈 단락)';
+  if (b.type === 'info-box')      return t || '(빈 정보 박스)';
+  if (b.type === 'blank-fill')    return t || '(빈 빈칸 텍스트)';
+  if (b.type === 'table')         return `표  ${b.rows}행 × ${b.cols}열`;
+  if (b.type === 'image')         return b.caption || '이미지';
+  if (b.type === 'flow')          return (b.items || []).join(' → ').slice(0, 42);
+  if (b.type === 'two-col')       return '2열 레이아웃';
+  if (b.type === 'page-break')    return '── 페이지 구분 ──';
+  return '';
+}
+
+// ── Blank-fill Parser ──
+function parseSegments(text) {
+  const segs = [], re = /\[([^\]:]*)(?::(xs|sm|md|lg|xl))?\]/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) segs.push({ t: 'text', v: text.slice(last, m.index) });
+    segs.push({ t: 'blank', answer: m[1], size: m[2] || 'md' });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) segs.push({ t: 'text', v: text.slice(last) });
+  return segs;
+}
+
+function bfillInnerHtml(b, isAnswer) {
+  return parseSegments(b.text || '').map(seg => {
+    if (seg.t === 'text') return esc(seg.v);
+    return isAnswer
+      ? `<span class="ans">${esc(seg.answer)}</span>`
+      : `<span class="b ${seg.size}"></span>`;
+  }).join('');
+}
+
+// ── Table Helpers ──
+function tablePvInner(b) {
+  const colorCls = b.hasHeader && b.headerColor === 'green' ? ' g' : '';
+
+  function cellHtml(content, tag) {
+    const segs = parseSegments(content || '');
+    if (!segs.some(s => s.t === 'blank')) return `<${tag}>${esc(content)}</${tag}>`;
+    const inner = segs.map(s =>
+      s.t === 'text' ? esc(s.v) : `<span class="b ${s.size}"></span>`
+    ).join('');
+    return `<${tag}>${inner}</${tag}>`;
+  }
+
+  let html = `<table class="prev-table${colorCls}">`;
+  if (b.hasHeader && b.cells.length > 0) {
+    html += '<thead><tr>' + b.cells[0].map(c => cellHtml(c, 'th')).join('') + '</tr></thead>';
+  }
+  const bodyRows = b.hasHeader ? b.cells.slice(1) : b.cells;
+  if (bodyRows.length > 0) {
+    html += '<tbody>' + bodyRows.map(row =>
+      '<tr>' + row.map(c => cellHtml(c, 'td')).join('') + '</tr>'
+    ).join('') + '</tbody>';
+  }
+  return html + '</table>';
+}
+
+// ── Editor ──
+function renderEditor() {
+  document.getElementById('block-list').innerHTML = S.blocks.map(cardHtml).join('');
+  bindEditorEvents();
+}
+
+function cardHtml(b) {
+  const isSel = b.id === S.sel;
+  const BADGES = { 'section-title':'H', paragraph:'P', 'info-box':'I', 'blank-fill':'B', table:'T', image:'M', flow:'F', 'two-col':'C', 'page-break':'D' };
+  const badge = BADGES[b.type];
+  let body = '';
+
+  if (b.type === 'section-title') {
+    body = `
+      <div class="flabel">텍스트</div>
+      <input class="finput" data-f="text" value="${esc(b.text)}">
+      <div class="flabel">색상</div>
+      <div class="color-picker">
+        ${['blue','green','amber','red'].map(c =>
+          `<button class="cbtn${b.color===c?' on':''}" data-c="${c}">${{blue:'파랑',green:'초록',amber:'주황',red:'빨강'}[c]}</button>`
+        ).join('')}
+      </div>`;
+  } else if (b.type === 'blank-fill') {
+    body = `
+      <div class="flabel">내용 — 빈칸: [정답] 또는 [정답:크기]</div>
+      <textarea class="ftextarea" data-f="text" rows="4">${esc(b.text)}</textarea>
+      <div class="qi-row">
+        <span class="qi-label">빈칸 삽입:</span>
+        ${['xs','sm','md','lg','xl'].map(sz => `<button class="qi-btn" data-size="${sz}">${sz}</button>`).join('')}
+      </div>
+      <div class="hint">xs=32 · sm=50 · md=72 · lg=108 · xl=136 (px)</div>`;
+  } else if (b.type === 'table') {
+    const hdrColorPicker = b.hasHeader ? `
+      <div class="color-picker" style="margin-top:6px">
+        <button class="cbtn${b.headerColor==='blue'?' on':''}" data-hc="blue" style="background:#C5E3F7;color:#1255A0">파랑</button>
+        <button class="cbtn${b.headerColor==='green'?' on':''}" data-hc="green" style="background:#C3E9CC;color:#2A7A38">초록</button>
+        <button class="cbtn${b.headerColor==='none'?' on':''}" data-hc="none" style="background:#444466;color:#aaa">없음</button>
+      </div>` : '';
+
+    const cellGrid = b.cells.map((row, ri) => {
+      const isHdr = ri === 0 && b.hasHeader;
+      const cls = isHdr ? (b.headerColor === 'green' ? ' hdr-g' : ' hdr') : '';
+      return '<tr>' + row.map((cell, ci) =>
+        `<td><input class="tcell${cls}" data-row="${ri}" data-col="${ci}" value="${esc(cell)}"></td>`
+      ).join('') + '</tr>';
+    }).join('');
+
+    body = `
+      <div class="flabel">크기</div>
+      <div class="tbl-ctrl">
+        <div class="tbl-ctrl-group">
+          <span class="tc-lbl">행</span>
+          <button class="tc-btn" data-action="row-minus">−</button>
+          <span class="tc-num">${b.rows}</span>
+          <button class="tc-btn" data-action="row-plus">+</button>
+        </div>
+        <span class="tc-sep"></span>
+        <div class="tbl-ctrl-group">
+          <span class="tc-lbl">열</span>
+          <button class="tc-btn" data-action="col-minus">−</button>
+          <span class="tc-num">${b.cols}</span>
+          <button class="tc-btn" data-action="col-plus">+</button>
+        </div>
+      </div>
+      <div class="flabel">헤더</div>
+      <label class="hdr-toggle">
+        <input type="checkbox" class="hdr-chk"${b.hasHeader?' checked':''}>
+        <span>첫 행을 헤더로 사용</span>
+      </label>
+      ${hdrColorPicker}
+      <div class="flabel">내용</div>
+      <div class="tbl-wrap"><table class="tbl-editor"><tbody>${cellGrid}</tbody></table></div>
+      <div class="hint" style="margin-top:6px">셀 안에도 [정답] 또는 [정답:크기] 입력 가능</div>`;
+  } else if (b.type === 'image') {
+    const thumb = b.src
+      ? `<img src="${b.src}" style="max-width:100%;max-height:110px;border-radius:3px">`
+      : '클릭하여 이미지 선택';
+    body = `
+      <div class="flabel">이미지</div>
+      <div class="img-upload-area">${thumb}</div>
+      <input type="file" class="img-file-inp" accept="image/*" style="display:none">
+      <div class="flabel">너비</div>
+      <div class="width-picker">
+        ${['25%','50%','75%','100%'].map(w =>
+          `<button class="wbtn${b.width===w?' on':''}" data-w="${w}">${w}</button>`
+        ).join('')}
+      </div>
+      <div class="flabel">캡션 (선택)</div>
+      <input class="finput" data-f="caption" value="${esc(b.caption||'')}">`;
+  } else if (b.type === 'flow') {
+    const rows = (b.items||[]).map((item,i) => `
+      <div class="flow-item-row">
+        <input class="finput flow-inp" data-idx="${i}" value="${esc(item)}" style="flex:1">
+        <button class="flow-del" data-idx="${i}">✕</button>
+      </div>`).join('');
+    body = `
+      <div class="flabel">항목</div>
+      ${rows}
+      <button class="tbtn flow-add" style="margin-top:4px;width:100%;justify-content:center">＋ 항목 추가</button>`;
+  } else if (b.type === 'two-col') {
+    const ratioOpts = [['5050','50:50'],['4060','40:60'],['6040','60:40']];
+    body = `
+      <div class="flabel">비율</div>
+      <div class="ratio-picker">
+        ${ratioOpts.map(([v,l]) => `<button class="rbtn${b.ratio===v?' on':''}" data-ratio="${v}">${l}</button>`).join('')}
+      </div>
+      <div class="two-col-ed">
+        <div>
+          <div class="flabel">왼쪽</div>
+          <textarea class="ftextarea" data-f="leftText" rows="4">${esc(b.leftText||'')}</textarea>
+        </div>
+        <div>
+          <div class="flabel">오른쪽</div>
+          <textarea class="ftextarea" data-f="rightText" rows="4">${esc(b.rightText||'')}</textarea>
+        </div>
+      </div>
+      <div class="hint">[정답:크기] 빈칸 표기 사용 가능</div>`;
+  } else if (b.type === 'page-break') {
+    body = `<div class="pgbreak-vis">— 페이지 나눔 —</div>`;
+  } else {
+    body = `
+      <div class="flabel">내용</div>
+      <textarea class="ftextarea" data-f="text" rows="${b.type==='paragraph'?4:3}">${esc(b.text)}</textarea>`;
+  }
+
+  const pgClass = b.type === 'page-break' ? ' pgbreak' : '';
+  return `
+    <div class="bcard${isSel?' selected':''}${pgClass}" data-id="${b.id}">
+      <div class="bcard-head">
+        <span class="type-badge ${badge}">${badge}</span>
+        <span class="bcard-preview">${esc(previewText(b))}</span>
+        <div class="bcard-btns">
+          <button class="up" title="위로">↑</button>
+          <button class="dn" title="아래로">↓</button>
+          <button class="del" title="삭제">✕</button>
+        </div>
+      </div>
+      <div class="bcard-body">${body}</div>
+    </div>`;
+}
+
+function bindEditorEvents() {
+  document.querySelectorAll('.bcard').forEach(card => {
+    const id = card.dataset.id;
+
+    card.querySelector('.bcard-head').addEventListener('click', e => {
+      if (e.target.closest('.bcard-btns')) return;
+      sel(id);
+    });
+
+    card.querySelector('.up').addEventListener('click', e => { e.stopPropagation(); moveBlock(id, -1); });
+    card.querySelector('.dn').addEventListener('click', e => { e.stopPropagation(); moveBlock(id, 1); });
+    card.querySelector('.del').addEventListener('click', e => { e.stopPropagation(); delBlock(id); });
+
+    const inp = card.querySelector('.finput');
+    if (inp) inp.addEventListener('input', () => patchBlock(id, { [inp.dataset.f]: inp.value }));
+
+    card.querySelectorAll('.ftextarea').forEach(ta => {
+      ta.addEventListener('input', () => patchBlock(id, { [ta.dataset.f]: ta.value }));
+    });
+
+    card.querySelectorAll('.cbtn[data-c]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        patchBlock(id, { color: btn.dataset.c });
+        card.querySelectorAll('.cbtn[data-c]').forEach(b => b.classList.toggle('on', b === btn));
+      });
+    });
+
+    card.querySelectorAll('.qi-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const ta = card.querySelector('.ftextarea[data-f="text"]');
+        if (!ta) return;
+        const sz = btn.dataset.size;
+        const ins = sz === 'md' ? '[정답]' : `[정답:${sz}]`;
+        const s = ta.selectionStart, end = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + ins + ta.value.slice(end);
+        ta.selectionStart = ta.selectionEnd = s + ins.length;
+        ta.dispatchEvent(new Event('input'));
+        ta.focus();
+      });
+    });
+
+    // ── Image events ──
+    const imgArea = card.querySelector('.img-upload-area');
+    const imgInp  = card.querySelector('.img-file-inp');
+    if (imgArea && imgInp) {
+      imgArea.addEventListener('click', () => imgInp.click());
+      imgInp.addEventListener('change', () => {
+        const file = imgInp.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const src = ev.target.result;
+          const b = S.blocks.find(b => b.id === id);
+          if (b) { b.src = src; updatePvBlock(id); queueSave(); }
+          imgArea.innerHTML = `<img src="${src}" style="max-width:100%;max-height:110px;border-radius:3px">`;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    card.querySelectorAll('.wbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        patchBlock(id, { width: btn.dataset.w });
+        card.querySelectorAll('.wbtn').forEach(b => b.classList.toggle('on', b === btn));
+      });
+    });
+
+    // ── Flow events ──
+    card.querySelectorAll('.flow-inp').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const b = S.blocks.find(b => b.id === id);
+        if (!b) return;
+        b.items[parseInt(inp.dataset.idx)] = inp.value;
+        updatePvBlock(id); queueSave();
+      });
+    });
+    card.querySelectorAll('.flow-del').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const b = S.blocks.find(b => b.id === id);
+        if (!b || b.items.length <= 1) return;
+        b.items.splice(parseInt(btn.dataset.idx), 1);
+        render(); queueSave();
+      });
+    });
+    const flowAdd = card.querySelector('.flow-add');
+    if (flowAdd) flowAdd.addEventListener('click', e => {
+      e.stopPropagation();
+      const b = S.blocks.find(b => b.id === id);
+      if (!b) return;
+      b.items.push('');
+      render(); queueSave();
+    });
+
+    // ── Two-col events ──
+    card.querySelectorAll('.rbtn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        patchBlock(id, { ratio: btn.dataset.ratio });
+        card.querySelectorAll('.rbtn').forEach(b => b.classList.toggle('on', b === btn));
+      });
+    });
+
+    // ── Table events ──
+    card.querySelectorAll('.tc-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const b = S.blocks.find(b => b.id === id);
+        if (!b) return;
+        const action = btn.dataset.action;
+        if (action === 'row-plus') {
+          b.cells.push(new Array(b.cols).fill(''));
+          b.rows++;
+        } else if (action === 'row-minus') {
+          if (b.rows > 1) { b.cells.pop(); b.rows--; }
+        } else if (action === 'col-plus') {
+          b.cells.forEach(row => row.push(''));
+          b.cols++;
+        } else if (action === 'col-minus') {
+          if (b.cols > 1) { b.cells.forEach(row => row.pop()); b.cols--; }
+        }
+        render(); queueSave();
+      });
+    });
+
+    const hdrChk = card.querySelector('.hdr-chk');
+    if (hdrChk) {
+      hdrChk.addEventListener('change', () => {
+        const b = S.blocks.find(b => b.id === id);
+        if (!b) return;
+        b.hasHeader = hdrChk.checked;
+        render(); queueSave();
+      });
+    }
+
+    card.querySelectorAll('.cbtn[data-hc]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const b = S.blocks.find(b => b.id === id);
+        if (!b) return;
+        b.headerColor = btn.dataset.hc;
+        card.querySelectorAll('.cbtn[data-hc]').forEach(b => b.classList.toggle('on', b === btn));
+        updatePvBlock(id); queueSave();
+      });
+    });
+
+    card.querySelectorAll('.tcell').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const b = S.blocks.find(b => b.id === id);
+        if (!b) return;
+        b.cells[parseInt(inp.dataset.row)][parseInt(inp.dataset.col)] = inp.value;
+        updatePvBlock(id); queueSave();
+      });
+    });
+  });
+}
+
+// ── Preview ──
+function renderPreview() {
+  document.getElementById('pv').innerHTML = pageHtml(false);
+}
+
+function updatePvBlock(id) {
+  const b = S.blocks.find(b => b.id === id);
+  if (!b) return;
+  const el = document.querySelector(`[data-pv="${id}"]`);
+  if (!el) return;
+  if (b.type === 'blank-fill')   { el.innerHTML = bfillInnerHtml(b, false); }
+  else if (b.type === 'table')   { el.innerHTML = tablePvInner(b); }
+  else if (b.type === 'image')   { el.innerHTML = imgPvInner(b); }
+  else if (b.type === 'flow')    { el.innerHTML = '<div class="prev-flow">' + flowPvInner(b) + '</div>'; }
+  else if (b.type === 'two-col') { el.innerHTML = twoColInner(b); }
+  else { el.className = pvBlockClass(b); el.textContent = b.text || ''; }
+}
+
+function pvBlockClass(b) {
+  if (b.type === 'section-title') return 'prev-section-title' + (b.color !== 'blue' ? ' ' + b.color : '');
+  if (b.type === 'paragraph')     return 'prev-paragraph';
+  if (b.type === 'info-box')      return 'prev-info-box';
+  if (b.type === 'blank-fill')    return 'prev-bfill';
+  return '';
+}
+
+function imgPvInner(b) {
+  const img = b.src
+    ? `<img src="${b.src}" style="width:${b.width||'100%'};display:block;margin:0 auto">`
+    : `<div style="border:1px dashed #ccc;padding:16px;text-align:center;color:#aaa;font-size:9pt">이미지 없음</div>`;
+  return img + (b.caption ? `<div class="prev-img-caption">${esc(b.caption)}</div>` : '');
+}
+
+function flowPvInner(b) {
+  return (b.items||[]).map((item,i) =>
+    (i ? '<span class="prev-flow-arrow">→</span>' : '') +
+    `<div class="prev-flow-box">${esc(item)}</div>`
+  ).join('');
+}
+
+function twoColInner(b) {
+  const fl = { '5050':[1,1], '4060':[2,3], '6040':[3,2] }[b.ratio]||[1,1];
+  function col(text) {
+    const segs = parseSegments(text||'');
+    if (!segs.some(s=>s.t==='blank'))
+      return `<div class="prev-paragraph" style="margin:0">${esc(text)}</div>`;
+    return `<div class="prev-bfill" style="margin:0">${segs.map(s=>
+      s.t==='text'?esc(s.v):`<span class="b ${s.size}"></span>`).join('')}</div>`;
+  }
+  return `<div style="flex:${fl[0]};min-width:0">${col(b.leftText)}</div>`
+       + `<div style="flex:${fl[1]};min-width:0">${col(b.rightText)}</div>`;
+}
+
+function pvBlockHtml(b) {
+  if (b.type === 'table')
+    return `<div class="prev-tbl-wrap" data-pv="${b.id}">${tablePvInner(b)}</div>`;
+  if (b.type === 'image')
+    return `<div class="prev-img-wrap" data-pv="${b.id}">${imgPvInner(b)}</div>`;
+  if (b.type === 'flow')
+    return `<div class="prev-flow-wrap" data-pv="${b.id}"><div class="prev-flow">${flowPvInner(b)}</div></div>`;
+  if (b.type === 'two-col')
+    return `<div class="prev-two-col" data-pv="${b.id}">${twoColInner(b)}</div>`;
+  if (b.type === 'page-break') return '';
+  const cls = pvBlockClass(b);
+  if (b.type === 'blank-fill')
+    return `<div class="${cls}" data-pv="${b.id}">${bfillInnerHtml(b, false)}</div>`;
+  return `<div class="${cls}" data-pv="${b.id}">${esc(b.text)}</div>`;
+}
+
+function splitPages() {
+  const pages = []; let cur = [];
+  S.blocks.forEach(b => { if (b.type==='page-break') { pages.push(cur); cur=[]; } else cur.push(b); });
+  pages.push(cur);
+  return pages;
+}
+
+function singlePageHtml(blocks, pageNum, isAnswer) {
+  const { subject, breadcrumb } = S.settings;
+  const title = isAnswer ? subject + ' — 정답지' : subject;
+  const hdrCls = isAnswer ? ' ans' : '';
+  const subjCls = isAnswer ? ' ans' : '';
+  const hdrRight = isAnswer
+    ? `<span class="prev-ans-badge">【 정 답 지 】</span>`
+    : `학번&nbsp;<span class="prev-uline"></span>&nbsp;이름&nbsp;<span class="prev-uline"></span>`;
+  return `
+    <div class="prev-page">
+      <div class="prev-page-header${hdrCls}">
+        <div class="prev-header-left">
+          <span class="prev-subject${subjCls}">${esc(title)}</span>
+          <span class="prev-breadcrumb">${esc(breadcrumb)}</span>
+        </div>
+        <div class="prev-header-right">${hdrRight}</div>
+      </div>
+      <div class="prev-page-content">${blocks.map(pvBlockHtml).join('')}</div>
+      <div class="prev-page-footer"><span class="prev-page-badge">— ${pageNum} —</span></div>
+    </div>`;
+}
+
+function pageHtml(isAnswer) {
+  return splitPages().map((pg,i) => singlePageHtml(pg, S.settings.pageStart+i, isAnswer)).join('\n');
+}
+
+// ── Export ──
+function buildPageCss() {
+  return `
+:root{--blue-pastel:#C5E3F7;--green-pastel:#C3E9CC;--blue-dark:#1255A0;--green-dark:#2A7A38;--red-accent:#C0392B;--amber:#E67E22;--text-main:#1A1A1A;--text-light:#555;--line:#BBBBBB}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#d0d0d0;padding:24px;font-family:'Noto Sans KR',sans-serif;display:flex;flex-direction:column;align-items:center;gap:24px}
+.page{width:210mm;min-height:297mm;background:white;box-shadow:0 2px 12px rgba(0,0,0,.25);padding:14mm 14mm 12mm;font-family:'Noto Sans KR',sans-serif;font-size:10pt;color:var(--text-main);line-height:1.7;display:flex;flex-direction:column}
+.page-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:5px;border-bottom:2.5px solid var(--blue-dark);margin-bottom:10px;flex-shrink:0}
+.page-header.ans{border-bottom-color:var(--red-accent)}
+.header-left{display:flex;flex-direction:column;gap:1px}
+.subject{font-size:13pt;font-weight:700;color:var(--blue-dark)}
+.subject.ans{color:var(--red-accent)}
+.breadcrumb{font-size:7.5pt;color:var(--text-light)}
+.header-right{display:flex;align-items:center;gap:6px;font-size:9pt;color:var(--text-light)}
+.uline{display:inline-block;width:90px;border-bottom:1.2px solid var(--text-main)}
+.ans-badge{border:2px solid var(--red-accent);color:var(--red-accent);font-weight:700;padding:2px 10px;font-size:10pt;letter-spacing:1px}
+.page-content{flex:1}
+.page-footer{text-align:center;margin-top:8px;flex-shrink:0}
+.page-badge{font-size:9pt;color:var(--text-light);font-weight:700}
+.section-title{font-size:11pt;font-weight:700;border-left:4px solid var(--blue-dark);background:var(--blue-pastel);padding:5px 10px;margin:10px 0 6px;border-radius:0 3px 3px 0;color:var(--text-main)}
+.section-title.green{border-left-color:var(--green-dark);background:var(--green-pastel)}
+.section-title.amber{border-left-color:var(--amber);background:#FDE9C9}
+.section-title.red{border-left-color:var(--red-accent);background:#F7C5C5}
+.paragraph{font-size:10pt;line-height:1.9;margin:4px 0 8px;white-space:pre-wrap}
+.info-box{border:1px solid var(--line);background:#FAFAFA;padding:8px 12px;margin:6px 0 10px;border-radius:3px;font-size:9.5pt;line-height:2.1;white-space:pre-wrap}
+.blank-fill{font-size:10pt;line-height:2.3;margin:4px 0 8px}
+.b{display:inline-block;width:72px;border-bottom:1.8px solid var(--text-main);vertical-align:bottom;margin:0 1px}
+.b.xs{width:32px}.b.sm{width:50px}.b.lg{width:108px}.b.xl{width:136px}
+.ans{color:var(--red-accent);font-weight:700;border-bottom:1.8px solid var(--red-accent);display:inline-block;padding:0 3px;vertical-align:bottom}
+.data-table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:9.5pt}
+.data-table th{background:var(--blue-pastel);border:1px solid var(--line);padding:5px 8px;font-weight:700;text-align:center;vertical-align:middle}
+.data-table.g th{background:var(--green-pastel)}
+.data-table td{border:1px solid var(--line);padding:5px 8px;text-align:center;vertical-align:middle}
+@media print{body{background:none;padding:0;gap:0}.page{box-shadow:none;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}.page:last-child{page-break-after:avoid}}
+.img-wrap{text-align:center;margin:6px 0 10px}.img-wrap img{display:block}
+.img-caption{font-size:8.5pt;color:var(--text-light);margin-top:4px;text-align:center}
+.flow-chart{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:6px 0 10px}
+.flow-box{border:1.5px solid var(--blue-dark);padding:4px 10px;border-radius:3px;font-size:9.5pt}
+.flow-arrow{color:var(--blue-dark);font-size:13pt;font-weight:700}
+.two-col{display:flex;gap:5mm;margin:4px 0 8px}.col{min-width:0}`;
+}
+
+function exportBlockHtml(b, isAnswer) {
+  if (b.type === 'section-title') {
+    return `<div class="section-title${b.color!=='blue'?' '+b.color:''}">${esc(b.text)}</div>`;
+  }
+  if (b.type === 'paragraph')  return `<div class="paragraph">${esc(b.text)}</div>`;
+  if (b.type === 'info-box')   return `<div class="info-box">${esc(b.text)}</div>`;
+  if (b.type === 'blank-fill') {
+    const inner = parseSegments(b.text || '').map(seg =>
+      seg.t === 'text' ? esc(seg.v)
+        : isAnswer ? `<span class="ans">${esc(seg.answer)}</span>`
+        : `<span class="b ${seg.size}"></span>`
+    ).join('');
+    return `<div class="blank-fill">${inner}</div>`;
+  }
+  if (b.type === 'table') {
+    const colorCls = b.hasHeader && b.headerColor === 'green' ? ' g' : '';
+
+    function cellHtml(content, tag) {
+      const segs = parseSegments(content || '');
+      if (!segs.some(s => s.t === 'blank')) return `<${tag}>${esc(content)}</${tag}>`;
+      const inner = segs.map(s => {
+        if (s.t === 'text') return esc(s.v);
+        return isAnswer ? `<span class="ans">${esc(s.answer)}</span>` : `<span class="b ${s.size}"></span>`;
+      }).join('');
+      return `<${tag}>${inner}</${tag}>`;
+    }
+
+    let html = `<table class="data-table${colorCls}">`;
+    if (b.hasHeader && b.cells.length > 0) {
+      html += '<thead><tr>' + b.cells[0].map(c => cellHtml(c, 'th')).join('') + '</tr></thead>';
+    }
+    const bodyRows = b.hasHeader ? b.cells.slice(1) : b.cells;
+    if (bodyRows.length > 0) {
+      html += '<tbody>' + bodyRows.map(row =>
+        '<tr>' + row.map(c => cellHtml(c, 'td')).join('') + '</tr>'
+      ).join('') + '</tbody>';
+    }
+    return html + '</table>';
+  }
+  if (b.type === 'image') {
+    const img = b.src ? `<img src="${b.src}" style="width:${b.width||'100%'};display:block;margin:0 auto">` : '';
+    const cap = b.caption ? `<div class="img-caption">${esc(b.caption)}</div>` : '';
+    return `<div class="img-wrap">${img}${cap}</div>`;
+  }
+  if (b.type === 'flow') {
+    const inner = (b.items||[]).map((item,i) =>
+      (i ? '<span class="flow-arrow">→</span>' : '') + `<div class="flow-box">${esc(item)}</div>`
+    ).join('');
+    return `<div class="flow-chart">${inner}</div>`;
+  }
+  if (b.type === 'two-col') {
+    const fl = {'5050':[1,1],'4060':[2,3],'6040':[3,2]}[b.ratio]||[1,1];
+    function colEx(text) {
+      const segs = parseSegments(text||'');
+      if (!segs.some(s=>s.t==='blank')) return `<div class="paragraph" style="margin:0">${esc(text)}</div>`;
+      return `<div class="blank-fill" style="margin:0">${segs.map(s=>
+        s.t==='text'?esc(s.v):isAnswer?`<span class="ans">${esc(s.answer)}</span>`:`<span class="b ${s.size}"></span>`
+      ).join('')}</div>`;
+    }
+    return `<div class="two-col"><div class="col" style="flex:${fl[0]}">${colEx(b.leftText)}</div><div class="col" style="flex:${fl[1]}">${colEx(b.rightText)}</div></div>`;
+  }
+  return '';
+}
+
+function buildExportHtml(isAnswer) {
+  const { subject, breadcrumb, pageStart } = S.settings;
+  const title = isAnswer ? subject + ' — 정답지' : subject;
+  const hdrCls = isAnswer ? ' ans' : '';
+  const subjCls = isAnswer ? ' ans' : '';
+  const hdrRight = isAnswer
+    ? `<span class="ans-badge">【 정 답 지 】</span>`
+    : `학번&nbsp;<span class="uline"></span>&nbsp;이름&nbsp;<span class="uline"></span>`;
+
+  const pages = splitPages();
+  const pagesHtml = pages.map((pg, pi) => {
+    const blocks = pg.map(b => '    ' + exportBlockHtml(b, isAnswer)).join('\n');
+    return `<div class="page">
+  <div class="page-header${hdrCls}">
+    <div class="header-left">
+      <span class="subject${subjCls}">${esc(title)}</span>
+      <span class="breadcrumb">${esc(breadcrumb)}</span>
+    </div>
+    <div class="header-right">${hdrRight}</div>
+  </div>
+  <div class="page-content">
+${blocks}
+  </div>
+  <div class="page-footer"><span class="page-badge">— ${pageStart + pi} —</span></div>
+</div>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>${buildPageCss()}</style>
+</head>
+<body>
+${pagesHtml}
+</body>
+</html>`;
+}
+
+function downloadHtml(filename, html) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  a.download = filename; a.click();
+}
+
+function downloadFile(filename, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = filename; a.click();
+}
+
+// ── Toolbar Events ──
+document.getElementById('btn-add').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('add-dd').classList.toggle('open');
+  document.getElementById('export-dd').classList.remove('open');
+});
+
+document.getElementById('add-dd').addEventListener('click', e => {
+  const item = e.target.closest('.dd-item');
+  if (!item) return;
+  addBlock(item.dataset.type);
+  document.getElementById('add-dd').classList.remove('open');
+});
+
+document.getElementById('btn-export').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('export-dd').classList.toggle('open');
+  document.getElementById('add-dd').classList.remove('open');
+});
+
+document.getElementById('export-dd').addEventListener('click', e => {
+  const item = e.target.closest('.dd-item');
+  if (!item) return;
+  const isAnswer = item.dataset.export === 'answer';
+  const filename = (S.settings.subject || '학습지') + (isAnswer ? '_정답지' : '_학생용') + '.html';
+  downloadHtml(filename, buildExportHtml(isAnswer));
+  document.getElementById('export-dd').classList.remove('open');
+});
+
+document.addEventListener('click', () => {
+  document.getElementById('add-dd').classList.remove('open');
+  document.getElementById('export-dd').classList.remove('open');
+});
+
+// ── JSON 저장/불러오기 ──
+document.getElementById('btn-json-save').addEventListener('click', () => {
+  const data = JSON.stringify({ settings: S.settings, blocks: S.blocks }, null, 2);
+  downloadFile((S.settings.subject||'학습지') + '_저장.json', data, 'application/json');
+});
+
+document.getElementById('json-load-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.blocks) {
+        S.settings = d.settings || S.settings;
+        S.blocks = d.blocks;
+        S.sel = null;
+        render(); queueSave();
+      }
+    } catch(err) { alert('파일을 읽을 수 없습니다.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ── Settings Modal ──
+document.getElementById('btn-settings').addEventListener('click', () => {
+  document.getElementById('ms-subject').value = S.settings.subject;
+  document.getElementById('ms-bc').value      = S.settings.breadcrumb;
+  document.getElementById('ms-pg').value      = S.settings.pageStart;
+  document.getElementById('modal-bg').classList.add('open');
+});
+
+document.getElementById('btn-mc').addEventListener('click', () => {
+  document.getElementById('modal-bg').classList.remove('open');
+});
+
+document.getElementById('btn-ms').addEventListener('click', () => {
+  S.settings.subject    = document.getElementById('ms-subject').value.trim() || '생명과학';
+  S.settings.breadcrumb = document.getElementById('ms-bc').value.trim();
+  S.settings.pageStart  = parseInt(document.getElementById('ms-pg').value) || 1;
+  document.getElementById('modal-bg').classList.remove('open');
+  renderPreview(); queueSave();
+});
+
+document.getElementById('modal-bg').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').classList.remove('open');
+});
+
+// ── Init ──
+loadS();
+render();
+</script>
+</body>
+</html>

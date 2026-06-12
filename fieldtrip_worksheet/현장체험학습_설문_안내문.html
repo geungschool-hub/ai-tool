@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>현장체험학습 소감 작성 안내</title>
+<style>
+  :root{
+    --blue:#1255A0; --blue-soft:#C5E3F7; --blue-pale:#EAF4FC;
+    --green:#2A7A38; --amber:#E67E22; --amber-pale:#FDF1E3;
+    --ink:#1A1A1A; --gray:#5b6470; --line:#D9DEE5;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:#d6dbe2; color:var(--ink); display:flex; justify-content:center;
+    padding:24px; -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .sheet{
+    width:210mm; min-height:297mm; background:#fff; padding:18mm 16mm;
+    box-shadow:0 6px 24px rgba(0,0,0,.18); display:flex; flex-direction:column;
+  }
+
+  /* Header */
+  .head{border-bottom:3px solid var(--blue); padding-bottom:14px; margin-bottom:22px;}
+  .badge{display:inline-block; background:var(--blue); color:#fff; font-size:12.5pt;
+    font-weight:700; padding:4px 14px; border-radius:999px; letter-spacing:.5px;}
+  .head h1{font-size:25pt; font-weight:800; color:var(--blue); margin:12px 0 6px; letter-spacing:-.5px;}
+  .head p{font-size:12pt; color:var(--gray); line-height:1.6;}
+  .head p b{color:var(--green);}
+
+  /* Hero: QR */
+  .hero{display:flex; align-items:center; gap:26px; background:var(--blue-pale);
+    border:1.5px solid var(--blue-soft); border-radius:18px; padding:22px 26px; margin-bottom:24px;}
+  .qr-box{flex-shrink:0; width:190px; height:190px; background:#fff; border-radius:14px;
+    padding:12px; box-shadow:0 2px 8px rgba(18,85,160,.15);}
+  .qr-box svg{width:100%; height:100%; display:block;}
+  .hero-text{flex:1;}
+  .hero-text .h2{font-size:16pt; font-weight:800; color:var(--blue); margin-bottom:10px;}
+  .hero-text .sub{font-size:11.5pt; color:var(--gray); line-height:1.65; margin-bottom:14px;}
+  .url-pill{display:inline-flex; align-items:center; gap:8px; background:#fff;
+    border:2px solid var(--blue); border-radius:10px; padding:9px 16px;}
+  .url-pill .label{font-size:9pt; color:var(--gray); font-weight:700;}
+  .url-pill .url{font-size:14.5pt; font-weight:800; color:var(--blue); letter-spacing:.3px;}
+
+  /* Steps */
+  .section-title{font-size:14pt; font-weight:800; color:var(--ink); margin:6px 0 14px;
+    display:flex; align-items:center; gap:9px;}
+  .section-title::before{content:""; width:5px; height:20px; background:var(--blue); border-radius:3px;}
+  .steps{display:flex; flex-direction:column; gap:11px; margin-bottom:24px;}
+  .step{display:flex; align-items:flex-start; gap:14px;}
+  .step .num{flex-shrink:0; width:32px; height:32px; border-radius:50%; background:var(--blue);
+    color:#fff; font-size:14pt; font-weight:800; display:flex; align-items:center; justify-content:center;}
+  .step .txt{font-size:12.5pt; line-height:1.55; padding-top:3px;}
+  .step .txt b{color:var(--blue);}
+  .step .warn{color:var(--amber); font-weight:800;}
+
+  /* Notes */
+  .notes{background:var(--amber-pale); border:1.5px solid #F3D6B3; border-radius:16px;
+    padding:18px 22px; margin-top:auto;}
+  .notes .nt{font-size:13pt; font-weight:800; color:var(--amber); margin-bottom:12px;
+    display:flex; align-items:center; gap:8px;}
+  .notes ul{list-style:none; display:flex; flex-direction:column; gap:9px;}
+  .notes li{font-size:11.5pt; line-height:1.5; display:flex; gap:9px; align-items:flex-start;}
+  .notes li .ic{flex-shrink:0; font-size:13pt; line-height:1.4;}
+  .notes li b{color:var(--ink);}
+  .period{color:var(--amber); font-weight:800;}
+
+  /* Footer */
+  .foot{text-align:center; font-size:9pt; color:#9aa3ad; margin-top:18px;
+    border-top:1px solid var(--line); padding-top:12px;}
+
+  @page{size:A4; margin:0;}
+  @media print{
+    body{background:none; padding:0;}
+    .sheet{box-shadow:none; width:210mm; min-height:297mm; page-break-after:avoid;}
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+
+    <div class="head">
+      <span class="badge">2학년 현장체험학습</span>
+      <h1>현장체험학습 소감 작성 안내</h1>
+      <p>오늘 현장체험학습은 어땠나요? 😊 아래 QR 코드를 찍어 소감을 남겨 주세요.<br>
+         여러분이 적은 내용은 <b>생활기록부(생기부)</b> 작성에 소중하게 활용됩니다.</p>
+    </div>
+
+    <div class="hero">
+      <div class="qr-box">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 41 41" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h41v41H0z"/><path stroke="#1255A0" d="M4 4.5h7m1 0h3m2 0h1m1 0h1m2 0h6m2 0h7M4 5.5h1m5 0h1m2 0h2m3 0h3m1 0h1m1 0h2m2 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m3 0h1m1 0h2m1 0h2m3 0h3m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m4 0h1m2 0h2m2 0h1m2 0h1m2 0h1m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h5m1 0h4m2 0h3m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h2m1 0h1m4 0h1m1 0h2m1 0h4m1 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M13 11.5h1m1 0h4m1 0h1m1 0h4m1 0h1M5 12.5h7m4 0h2m2 0h2m1 0h1m2 0h3m2 0h2m3 0h1M4 13.5h1m1 0h4m1 0h2m2 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h2m2 0h2m1 0h4M5 14.5h1m2 0h1m1 0h2m2 0h2m1 0h1m2 0h2m2 0h1m1 0h1m1 0h3m1 0h1m1 0h2M4 15.5h1m1 0h2m6 0h1m1 0h4m1 0h2m9 0h3m1 0h1M4 16.5h1m1 0h1m2 0h4m5 0h1m4 0h6m2 0h3m1 0h2M4 17.5h1m2 0h3m1 0h2m2 0h2m3 0h1m1 0h1m2 0h1m2 0h1m1 0h1m2 0h4M4 18.5h3m2 0h2m1 0h1m2 0h1m2 0h1m1 0h2m2 0h1m3 0h3m4 0h1M7 19.5h3m1 0h1m1 0h3m6 0h1m2 0h1m2 0h3m2 0h2M6 20.5h2m2 0h1m1 0h1m1 0h1m1 0h3m2 0h1m2 0h1m1 0h1m1 0h2m1 0h2m3 0h1M6 21.5h1m1 0h2m1 0h1m6 0h3m2 0h3m1 0h1m2 0h2m1 0h2m1 0h1M4 22.5h2m1 0h2m1 0h1m3 0h1m1 0h3m1 0h2m3 0h1m3 0h4m1 0h1M11 23.5h3m1 0h1m2 0h3m4 0h2m3 0h6M5 24.5h2m1 0h1m1 0h1m5 0h1m1 0h1m4 0h1m1 0h1m3 0h1m1 0h3M4 25.5h1m1 0h1m2 0h1m1 0h3m2 0h1m2 0h1m4 0h1m1 0h2m2 0h1m2 0h2m1 0h1M4 26.5h1m1 0h1m2 0h5m1 0h4m2 0h3m1 0h1m2 0h2m2 0h4M4 27.5h1m2 0h1m3 0h2m3 0h6m1 0h4m1 0h1m1 0h2m1 0h4M4 28.5h1m5 0h1m2 0h1m3 0h2m1 0h2m1 0h1m2 0h1m1 0h6M12 29.5h1m3 0h2m2 0h2m1 0h2m1 0h1m1 0h1m3 0h1m1 0h1m1 0h1M4 30.5h7m1 0h4m1 0h1m1 0h3m2 0h1m1 0h3m1 0h1m1 0h1m1 0h2M4 31.5h1m5 0h1m1 0h1m3 0h1m2 0h1m1 0h2m1 0h1m2 0h2m3 0h5M4 32.5h1m1 0h3m1 0h1m1 0h1m2 0h2m2 0h1m3 0h4m1 0h6m1 0h1M4 33.5h1m1 0h3m1 0h1m1 0h1m3 0h4m2 0h1m2 0h1m1 0h3m2 0h1m1 0h1m1 0h1M4 34.5h1m1 0h3m1 0h1m1 0h1m2 0h4m3 0h1m1 0h2m4 0h2M4 35.5h1m5 0h1m1 0h1m3 0h1m1 0h3m1 0h1m2 0h1m1 0h1m4 0h3M4 36.5h7m2 0h1m1 0h3m1 0h3m5 0h3m1 0h1m3 0h1"/></svg>
+      </div>
+      <div class="hero-text">
+        <div class="h2">📱 휴대폰으로 QR 코드를 찍어 주세요</div>
+        <div class="sub">QR이 안 될 때는 인터넷 주소창에 아래 주소를<br>직접 입력해도 됩니다.</div>
+        <div class="url-pill">
+          <span class="label">주소</span>
+          <span class="url">fieldtrip-hyehwa.vercel.app</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">접속하고 작성하는 방법</div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div class="txt">휴대폰 <b>카메라</b>로 위 QR 코드를 찍어요. (또는 주소를 직접 입력)</div></div>
+      <div class="step"><div class="num">2</div><div class="txt"><b>학번 · 이름</b>을 입력하고, 본인의 <b>계열</b>을 선택해요.</div></div>
+      <div class="step"><div class="num">3</div><div class="txt">처음 접속이면 나만의 <b>비밀번호(PIN) 4자리</b>를 만들어요. <span class="warn">⚠️ 꼭 기억하기!</span></div></div>
+      <div class="step"><div class="num">4</div><div class="txt">질문에 답을 적어요. 쓰는 즉시 <b>자동 저장</b>되니 안심하세요.</div></div>
+      <div class="step"><div class="num">5</div><div class="txt">다 작성했으면 맨 아래 <b>[제출하기]</b> 버튼을 눌러요.</div></div>
+    </div>
+
+    <div class="notes">
+      <div class="nt">💡 꼭 알아두기</div>
+      <ul>
+        <li><span class="ic">📅</span><span><b>작성 기간:</b> <span class="period">5월 28일(목) ~ 5월 31일(토) 자정</span>까지예요. 기간 안에는 언제든 고칠 수 있어요.</span></li>
+        <li><span class="ic">💾</span><span>중간에 나갔다 다시 들어와도 <b>적은 내용은 그대로 저장</b>돼 있어요.</span></li>
+        <li><span class="ic">🔑</span><span>비밀번호(PIN)를 잊어버리면 <b>담임 선생님께</b> 말해 주세요.</span></li>
+        <li><span class="ic">✅</span><span><b>'필수'</b> 표시가 있는 질문은 모두 채워야 제출돼요.</span></li>
+        <li><span class="ic">✍️</span><span><b>솔직하고 구체적으로</b> 적을수록 좋은 생기부 자료가 됩니다!</span></li>
+      </ul>
+    </div>
+
+  </div>
+</body>
+</html>

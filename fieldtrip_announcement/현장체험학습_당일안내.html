@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 현장체험학습 안내 — 혜화여고 2학년</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans KR','Malgun Gothic',sans-serif;
+  background: #cfd9e8;
+  color: #1a1a2e;
+  min-height: 100vh;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  font-size: 14px;
+}
+
+.page {
+  width: 100%;
+  max-width: 780px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== 헤더 ===== */
+.page-header {
+  background: linear-gradient(135deg, #0d3b7a 0%, #1565c0 55%, #42a5f5 100%);
+  padding: 28px 32px 22px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.page-header::before { content:'🎓'; position:absolute; font-size:110px; right:-10px; top:-10px; opacity:.1; }
+.page-header::after  { content:'🚌'; position:absolute; font-size:64px;  right:28px; bottom:-10px; opacity:.14; }
+.ph-badge {
+  display:inline-block; background:rgba(255,255,255,.22); color:#fff;
+  font-size:10px; font-weight:700; letter-spacing:3px;
+  padding:3px 13px; border-radius:20px; margin-bottom:10px;
+}
+.page-header h1 { color:#fff; font-size:26px; font-weight:900; line-height:1.2; }
+.page-header h1 span { font-size:14px; font-weight:400; opacity:.88; display:block; margin-bottom:4px; }
+.ph-meta { margin-top:10px; color:rgba(255,255,255,.9); font-size:12px; display:flex; gap:16px; flex-wrap:wrap; }
+.ph-meta strong { font-weight:700; }
+
+/* ===== 서브 헤더 ===== */
+.sub-header {
+  padding: 16px 28px;
+  flex-shrink: 0;
+}
+.sub-header .p2b {
+  display:inline-block; font-size:10px; font-weight:700;
+  padding:2px 10px; border-radius:20px; margin-bottom:4px;
+  background:rgba(255,255,255,.22); color:#fff;
+}
+.sub-header h2 { font-size:18px; font-weight:900; color:#fff; }
+
+.sh-blue   { background: linear-gradient(135deg, #1565c0, #42a5f5); }
+.sh-red    { background: linear-gradient(135deg, #c62828, #ef5350); }
+
+/* ===== 바디 ===== */
+.page-body { padding:20px 28px 24px; flex:1; }
+
+/* ===== 섹션 제목 ===== */
+.section-title {
+  font-size:13px; font-weight:900; color:#1565c0;
+  border-left:4px solid #1565c0; background:#e3f0fd;
+  padding:7px 12px; border-radius:0 8px 8px 0; margin-bottom:14px;
+}
+.section-title.orange { color:#e65100; border-left-color:#e65100; background:#fff3e0; }
+.section-title.teal   { color:#00695c; border-left-color:#00695c; background:#e0f2f1; }
+
+/* ===== 요약 카드 ===== */
+.info-cards {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:10px; margin-bottom:20px;
+}
+.info-card {
+  background:#f4f8fd; border:1.5px solid #bbdefb;
+  border-radius:10px; padding:12px 14px;
+}
+.info-card .ic-icon  { font-size:20px; margin-bottom:5px; display:block; }
+.info-card .ic-label { font-size:9.5px; color:#1565c0; font-weight:700; letter-spacing:1px; margin-bottom:3px; }
+.info-card .ic-val   { font-size:12.5px; font-weight:700; color:#0d1b3e; line-height:1.4; }
+.info-card .ic-sub   { font-size:10px; color:#999; margin-top:2px; }
+
+/* ===== 타임라인 ===== */
+.timeline { position:relative; padding-left:26px; margin-bottom:20px; }
+.timeline::before {
+  content:''; position:absolute; left:5px; top:6px; bottom:6px;
+  width:2px; background:linear-gradient(to bottom,#1565c0,#90caf9);
+}
+.tl-item { position:relative; margin-bottom:12px; display:flex; gap:14px; align-items:flex-start; }
+.tl-item:last-child { margin-bottom:0; }
+.tl-dot {
+  position:absolute; left:-22px; top:4px;
+  width:13px; height:13px; border-radius:50%;
+  background:#1565c0; border:2.5px solid #fff; box-shadow:0 0 0 1.5px #1565c0;
+}
+.tl-time { font-size:11px; font-weight:700; color:#1565c0; min-width:110px; padding-top:3px; flex-shrink:0; }
+.tl-content {
+  flex:1; background:#f4f8fd;
+  border-left:3px solid #90caf9; border-radius:0 8px 8px 0; padding:7px 12px;
+}
+.tl-content .tl-title { font-size:12.5px; font-weight:700; color:#0d1b3e; margin-bottom:1px; }
+.tl-content .tl-desc  { font-size:11px; color:#5a6a8a; }
+.tl-icon { font-size:16px; margin-top:3px; }
+
+/* ===== 계열 카드 ===== */
+.group-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:10px; margin-bottom:4px;
+}
+.group-card {
+  background:#f4f8fd; border:1.5px solid #bbdefb;
+  border-radius:12px; padding:12px 10px;
+  cursor:pointer; transition:all .18s; text-align:center;
+}
+.group-card:hover, .group-card:active {
+  border-color:#1565c0; background:#e3f0fd;
+  transform:translateY(-1px); box-shadow:0 3px 10px rgba(21,101,192,.15);
+}
+.gc-name  { font-size:12px; font-weight:900; color:#0d1b3e; margin-bottom:6px; }
+.gc-univ  {
+  font-size:9.5px; color:#fff; background:#1565c0;
+  border-radius:20px; padding:2px 8px; display:inline-block;
+  margin-bottom:4px; font-weight:700;
+}
+.gc-count { font-size:11px; color:#5a6a8a; }
+.gc-count strong { color:#1565c0; font-size:14px; }
+
+/* ===== 대학 그룹 카드 ===== */
+.univ-group { margin-bottom:14px; }
+.univ-head {
+  display:flex; align-items:center; gap:10px;
+  color:#fff; border-radius:10px 10px 0 0; padding:10px 14px;
+}
+.univ-head .uh-icon { font-size:20px; }
+.univ-head .uh-name { font-size:14px; font-weight:900; }
+.univ-head .uh-sub  { font-size:10px; opacity:.85; margin-top:1px; }
+.univ-body {
+  background:#f9fbfe; border:1.5px solid #bbdefb;
+  border-top:none; border-radius:0 0 10px 10px; padding:10px 14px;
+}
+.univ-tags { display:flex; flex-wrap:wrap; gap:6px; }
+.univ-tag {
+  background:#e3f0fd; border:1px solid #90caf9;
+  color:#0d3b7a; font-size:11px; font-weight:700;
+  border-radius:20px; padding:3px 10px;
+}
+.univ-body .ub-note { font-size:10.5px; color:#5a6a8a; margin-top:8px; }
+
+/* ===== 장소 카드 ===== */
+.location-card { border:1.5px solid #ddd; border-radius:12px; overflow:hidden; margin-bottom:12px; }
+.lc-head {
+  background:linear-gradient(135deg,#00695c,#00897b);
+  padding:10px 14px; display:flex; align-items:center; gap:10px;
+}
+.lc-head .lh-icon { font-size:22px; }
+.lc-head .lh-name { font-size:13px; font-weight:900; color:#fff; }
+.lc-head .lh-sub  { font-size:10px; color:rgba(255,255,255,.85); margin-top:1px; }
+.lc-body { background:#f4faf8; padding:10px 14px; }
+.lc-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.lc-tag {
+  background:#e0f2f1; border:1px solid #80cbc4;
+  color:#004d40; font-size:11px; font-weight:700;
+  border-radius:20px; padding:3px 10px;
+}
+.lc-desc { font-size:11px; color:#5a6a8a; margin-bottom:8px; line-height:1.6; }
+.map-btn {
+  display:inline-flex; align-items:center; gap:5px;
+  background:#1565c0; color:#fff; font-size:11px; font-weight:700;
+  padding:6px 14px; border-radius:20px; text-decoration:none; transition:background .15s;
+}
+.map-btn:hover { background:#0d3b7a; }
+
+/* ===== 공지 박스 ===== */
+.notice-box {
+  background:#fff8e1; border:1.5px solid #ffe082;
+  border-radius:12px; padding:14px 16px; margin-bottom:14px;
+}
+.notice-box h4 {
+  font-size:13px; font-weight:900; color:#e65100;
+  margin-bottom:10px; display:flex; align-items:center; gap:6px;
+}
+.notice-box ul { list-style:none; }
+.notice-box ul li {
+  font-size:12px; color:#3e2a00; padding:4px 0 4px 16px;
+  position:relative; line-height:1.5;
+}
+.notice-box ul li::before { content:'▸'; position:absolute; left:0; color:#f57c00; font-size:11px; }
+.notice-box.danger { background:#fce4ec; border-color:#f48fb1; }
+.notice-box.danger h4 { color:#b71c1c; }
+.notice-box.danger ul li { color:#4a0000; }
+.notice-box.danger ul li::before { color:#e53935; }
+
+/* ===== 연락처 표 ===== */
+.contact-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:16px; }
+.contact-table th {
+  background:#1565c0; color:#fff;
+  padding:8px 10px; text-align:center; font-weight:700;
+}
+.contact-table td {
+  border:1px solid #dde8f4; padding:7px 10px;
+  text-align:center; vertical-align:middle;
+}
+.contact-table tr:nth-child(even) td { background:#f4f8fd; }
+.contact-table a { color:#1565c0; font-weight:700; text-decoration:none; }
+.contact-table .pending { color:#aaa; font-size:11px; }
+
+/* ===== 푸터 ===== */
+.page-footer {
+  background:linear-gradient(135deg,#0d3b7a,#1565c0);
+  padding:10px 28px; display:flex; justify-content:space-between; align-items:center;
+}
+.page-footer.red { background:linear-gradient(135deg,#c62828,#ef5350); }
+.page-footer span { color:rgba(255,255,255,.75); font-size:10px; }
+.page-footer .pn  { color:#fff; font-weight:700; font-size:12px; }
+
+/* ===== 계열 상세 모달 ===== */
+#groupModal {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.55); z-index:9999;
+  align-items:center; justify-content:center; padding:20px;
+}
+#groupModal.open { display:flex; }
+.gm-box {
+  background:#fff; border-radius:16px; width:100%; max-width:440px;
+  overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,.25);
+  animation:popIn .2s ease;
+}
+@keyframes popIn {
+  from { transform:scale(.92); opacity:0; }
+  to   { transform:scale(1);   opacity:1; }
+}
+.gm-head {
+  background:linear-gradient(135deg,#0d3b7a,#1565c0);
+  padding:18px 20px; display:flex; justify-content:space-between; align-items:flex-start;
+}
+.gm-head h3 { color:#fff; font-size:17px; font-weight:900; }
+.gm-close { color:rgba(255,255,255,.8); font-size:22px; cursor:pointer; background:none; border:none; padding:0 4px; line-height:1; }
+.gm-body { padding:16px 20px; }
+.gm-row { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #eee; font-size:12.5px; }
+.gm-row:last-child { border-bottom:none; }
+.gm-row .gr-label { width:80px; font-weight:700; color:#1565c0; flex-shrink:0; }
+.gm-row .gr-val   { color:#1a1a2e; line-height:1.5; }
+.gm-footer { padding:0 20px 16px; }
+.gm-map-btn {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  background:#1565c0; color:#fff; font-size:12px; font-weight:700;
+  padding:10px; border-radius:10px; text-decoration:none; transition:background .15s;
+}
+.gm-map-btn:hover { background:#0d3b7a; }
+
+/* ===== 반응형 ===== */
+@media (max-width:480px) {
+  body { padding:12px 8px; gap:12px; }
+  .page-body { padding:16px 16px 20px; }
+  .sub-header { padding:14px 16px; }
+  .group-grid { grid-template-columns:repeat(2,1fr); }
+  .info-cards  { grid-template-columns:repeat(3,1fr); }
+  .tl-time     { min-width:80px; font-size:10px; }
+}
+
+@media print {
+  body { background:none; padding:0; gap:0; }
+  .page { box-shadow:none; page-break-after:always; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .page:last-child { page-break-after:avoid; }
+  #groupModal { display:none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PAGE 1 — 전체 일정 + 계열 찾기
+     ============================================================ -->
+<div class="page">
+  <div class="page-header">
+    <div class="ph-badge">2026 · 혜화여고 2학년</div>
+    <h1>
+      <span>현장체험학습 안내</span>
+      2026년 5월 28일 (목)
+    </h1>
+    <div class="ph-meta">
+      <span>📅 <strong>2026. 05. 28</strong></span>
+      <span>👩‍🎓 <strong>179명</strong></span>
+      <span>🗺️ <strong>12개 계열</strong></span>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- 요약 카드 -->
+    <div class="info-cards">
+      <div class="info-card">
+        <span class="ic-icon">🏛️</span>
+        <div class="ic-label">오전 활동</div>
+        <div class="ic-val">대학 탐방</div>
+        <div class="ic-sub">5개 대학 방문</div>
+      </div>
+      <div class="info-card">
+        <span class="ic-icon">🔭</span>
+        <div class="ic-label">오후 활동</div>
+        <div class="ic-val">계열 체험</div>
+        <div class="ic-sub">10개 체험 장소</div>
+      </div>
+      <div class="info-card">
+        <span class="ic-icon">🏠</span>
+        <div class="ic-label">귀교 예정</div>
+        <div class="ic-val">17~18시</div>
+        <div class="ic-sub">계열별 상이</div>
+      </div>
+    </div>
+
+    <!-- 타임라인 -->
+    <div class="section-title">오늘의 전체 일정</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">08:30</div>
+        <div class="tl-content">
+          <div class="tl-title">등교 및 계열별 집합</div>
+          <div class="tl-desc">운동장 — 인솔 교사 확인 후 대기</div>
+        </div>
+        <div class="tl-icon">🏫</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">09:00 출발</div>
+        <div class="tl-content">
+          <div class="tl-title">계열별 이동</div>
+          <div class="tl-desc">인솔 교사 안내에 따름</div>
+        </div>
+        <div class="tl-icon">🚌</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">오전</div>
+        <div class="tl-content">
+          <div class="tl-title">대학 탐방</div>
+          <div class="tl-desc">경희대 / 덕성여대 / 동덕여대 / 이화여대 / 한국외대</div>
+        </div>
+        <div class="tl-icon">🎓</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">점심</div>
+        <div class="tl-content">
+          <div class="tl-title">점심 식사</div>
+          <div class="tl-desc">인솔 교사 안내에 따름</div>
+        </div>
+        <div class="tl-icon">🍱</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">오후</div>
+        <div class="tl-content">
+          <div class="tl-title">계열별 체험 활동</div>
+          <div class="tl-desc">아래 '내 계열 찾기' 카드에서 장소 확인</div>
+        </div>
+        <div class="tl-icon">✨</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-time">17:00~18:00</div>
+        <div class="tl-content">
+          <div class="tl-title">귀교</div>
+          <div class="tl-desc">인솔 교사 안내에 따름 (계열별 도착 시각 상이)</div>
+        </div>
+        <div class="tl-icon">🏠</div>
+      </div>
+    </div>
+
+    <!-- 계열 카드 -->
+    <div class="section-title">내 계열 찾기 &nbsp;👆 카드를 눌러보세요</div>
+    <div class="group-grid">
+      <div class="group-card" onclick="openGroup(1)">
+        <div class="gc-name">사회과학</div>
+        <div class="gc-univ">경희대</div>
+        <div class="gc-count"><strong>20</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(2)">
+        <div class="gc-name">사범대</div>
+        <div class="gc-univ">경희대</div>
+        <div class="gc-count"><strong>8</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(3)">
+        <div class="gc-name">체육·재활</div>
+        <div class="gc-univ">경희대</div>
+        <div class="gc-count"><strong>9</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(4)">
+        <div class="gc-name">미술·애니·음악</div>
+        <div class="gc-univ">경희대</div>
+        <div class="gc-count"><strong>25</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(6)">
+        <div class="gc-name">이과</div>
+        <div class="gc-univ">덕성여대</div>
+        <div class="gc-count"><strong>14</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(7)">
+        <div class="gc-name">바이오·약학</div>
+        <div class="gc-univ">덕성여대</div>
+        <div class="gc-count"><strong>11</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(8)">
+        <div class="gc-name">인문</div>
+        <div class="gc-univ">동덕여대</div>
+        <div class="gc-count"><strong>18</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(9)">
+        <div class="gc-name">미디어</div>
+        <div class="gc-univ">동덕여대</div>
+        <div class="gc-count"><strong>16</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(10)">
+        <div class="gc-name">공과</div>
+        <div class="gc-univ">이화여대</div>
+        <div class="gc-count"><strong>15</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(11)">
+        <div class="gc-name">경영</div>
+        <div class="gc-univ">한국외대</div>
+        <div class="gc-count"><strong>23</strong>명</div>
+      </div>
+      <div class="group-card" onclick="openGroup(12)">
+        <div class="gc-name">보건·간호</div>
+        <div class="gc-univ">한국외대</div>
+        <div class="gc-count"><strong>19</strong>명</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <span>2026 현장체험학습 안내</span>
+    <span class="pn">1 / 3</span>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PAGE 2 — 대학 집합 그룹 + 오후 장소
+     ============================================================ -->
+<div class="page">
+  <div class="sub-header sh-blue">
+    <div class="p2b">집합 · 체험 장소</div>
+    <h2>계열별 상세 안내</h2>
+  </div>
+
+  <div class="page-body">
+
+    <div class="section-title">오전 — 대학별 집합 그룹</div>
+
+    <!-- 경희대 -->
+    <div class="univ-group">
+      <div class="univ-head" style="background:linear-gradient(135deg,#1565c0,#1976d2)">
+        <div class="uh-icon">🏛️</div>
+        <div>
+          <div class="uh-name">경희대학교</div>
+          <div class="uh-sub">서울캠퍼스 · 인솔 교사 확인 중</div>
+        </div>
+      </div>
+      <div class="univ-body">
+        <div class="univ-tags">
+          <span class="univ-tag">사회과학 (20명)</span>
+          <span class="univ-tag">사범대 (8명)</span>
+          <span class="univ-tag">체육·재활 (9명)</span>
+          <span class="univ-tag">미술·애니·음악 (25명)</span>
+        </div>
+        <div class="ub-note">▸ 집합 위치·상세 일정은 인솔 교사 안내에 따름</div>
+      </div>
+    </div>
+
+    <!-- 덕성여대 -->
+    <div class="univ-group">
+      <div class="univ-head" style="background:linear-gradient(135deg,#6a1b9a,#8e24aa)">
+        <div class="uh-icon">🏛️</div>
+        <div>
+          <div class="uh-name">덕성여자대학교</div>
+          <div class="uh-sub">인솔 교사 확인 중</div>
+        </div>
+      </div>
+      <div class="univ-body" style="border-color:#ce93d8;">
+        <div class="univ-tags">
+          <span class="univ-tag" style="background:#f3e5f5;border-color:#ce93d8;color:#4a148c;">이과 (14명)</span>
+          <span class="univ-tag" style="background:#f3e5f5;border-color:#ce93d8;color:#4a148c;">바이오·약학 (11명)</span>
+        </div>
+        <div class="ub-note">▸ 집합 위치·상세 일정은 인솔 교사 안내에 따름</div>
+      </div>
+    </div>
+
+    <!-- 동덕여대 -->
+    <div class="univ-group">
+      <div class="univ-head" style="background:linear-gradient(135deg,#bf360c,#e64a19)">
+        <div class="uh-icon">🏛️</div>
+        <div>
+          <div class="uh-name">동덕여자대학교</div>
+          <div class="uh-sub">인솔 교사 확인 중</div>
+        </div>
+      </div>
+      <div class="univ-body" style="border-color:#ffab91;">
+        <div class="univ-tags">
+          <span class="univ-tag" style="background:#fbe9e7;border-color:#ffab91;color:#7f2700;">인문 (18명)</span>
+          <span class="univ-tag" style="background:#fbe9e7;border-color:#ffab91;color:#7f2700;">미디어 (16명)</span>
+        </div>
+        <div class="ub-note">▸ 집합 위치·상세 일정은 인솔 교사 안내에 따름</div>
+      </div>
+    </div>
+
+    <!-- 이화여대 -->
+    <div class="univ-group">
+      <div class="univ-head" style="background:linear-gradient(135deg,#00695c,#00897b)">
+        <div class="uh-icon">🏛️</div>
+        <div>
+          <div class="uh-name">이화여자대학교</div>
+          <div class="uh-sub">인솔 교사 확인 중</div>
+        </div>
+      </div>
+      <div class="univ-body" style="border-color:#80cbc4;">
+        <div class="univ-tags">
+          <span class="univ-tag" style="background:#e0f2f1;border-color:#80cbc4;color:#004d40;">공과 (15명)</span>
+        </div>
+        <div class="ub-note">▸ 집합 위치·상세 일정은 인솔 교사 안내에 따름</div>
+      </div>
+    </div>
+
+    <!-- 한국외대 -->
+    <div class="univ-group">
+      <div class="univ-head" style="background:linear-gradient(135deg,#e65100,#f57c00)">
+        <div class="uh-icon">🏛️</div>
+        <div>
+          <div class="uh-name">한국외국어대학교</div>
+          <div class="uh-sub">인솔 교사 확인 중</div>
+        </div>
+      </div>
+      <div class="univ-body" style="border-color:#ffcc80;">
+        <div class="univ-tags">
+          <span class="univ-tag" style="background:#fff3e0;border-color:#ffcc80;color:#7f3000;">경영 (23명)</span>
+          <span class="univ-tag" style="background:#fff3e0;border-color:#ffcc80;color:#7f3000;">보건·간호 (19명)</span>
+        </div>
+        <div class="ub-note">▸ 집합 위치·상세 일정은 인솔 교사 안내에 따름</div>
+      </div>
+    </div>
+
+    <!-- 오후 장소 -->
+    <div class="section-title teal">오후 — 계열별 체험 장소</div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">🏙️</div><div><div class="lh-name">서울시청 (통통 투어)</div><div class="lh-sub">서울 중구 태평로1가</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">사회과학</span></div>
+        <div class="lc-desc">해설사와 함께 시청사 내부 투어</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/서울시청" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">🚨</div><div><div class="lh-name">광나루 안전체험관</div><div class="lh-sub">서울 광진구</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">사범대</span></div>
+        <div class="lc-desc">재난안전 체험 프로그램</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/광나루안전체험관" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">🧗</div><div><div class="lh-name">블랙야크 아크돔</div><div class="lh-sub">스포츠 클라이밍 체험 시설</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">체육·재활</span></div>
+        <div class="lc-desc">스포츠 클라이밍 교육 및 아크돔 체험</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/블랙야크아크돔" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">🎨</div><div><div class="lh-name">국립현대미술관</div><div class="lh-sub">서울 종로구 소격동</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">미술·애니·음악</span></div>
+        <div class="lc-desc">전시 해설 및 자유 관람</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/국립현대미술관서울관" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">🔬</div><div><div class="lh-name">서울시립과학관</div><div class="lh-sub">서울 노원구</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">이과</span><span class="lc-tag">바이오·약학</span></div>
+        <div class="lc-desc">이과 — 토양 오염 및 환경 검사 실험<br>바이오·약학 — 음료 속 카페인을 찾아라 실험</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/서울시립과학관" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">📚</div><div><div class="lh-name">성북근현대문학관</div><div class="lh-sub">서울 성북구</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">인문</span></div>
+        <div class="lc-desc">상설 전시 해설 및 특별 전시 관람</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/성북근현대문학관" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">📺</div><div><div class="lh-name">서울시청자미디어센터</div><div class="lh-sub">서울 양천구</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">미디어</span></div>
+        <div class="lc-desc">뉴스 제작 체험</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/서울시청자미디어센터" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">⚡</div><div><div class="lh-name">서울에너지드림센터</div><div class="lh-sub">서울 마포구 상암동</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">공과</span></div>
+        <div class="lc-desc">호모클리마투스의 집짓기 체험</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/서울에너지드림센터" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">💰</div><div><div class="lh-name">한국은행 화폐박물관</div><div class="lh-sub">서울 중구 남대문로</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">경영</span></div>
+        <div class="lc-desc">화폐박물관 전시 해설 및 자유 관람</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/한국은행화폐박물관" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+    <div class="location-card">
+      <div class="lc-head"><div class="lh-icon">🏥</div><div><div class="lh-name">서울대병원 의학박물관</div><div class="lh-sub">서울 종로구 대학로</div></div></div>
+      <div class="lc-body">
+        <div class="lc-tags"><span class="lc-tag">보건·간호</span></div>
+        <div class="lc-desc">박물관 전시 해설 및 자유 관람</div>
+        <a class="map-btn" href="https://map.naver.com/v5/search/서울대학교병원의학박물관" target="_blank">🗺️ 지도 보기</a>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-footer">
+    <span>2026 현장체험학습 안내</span>
+    <span class="pn">2 / 3</span>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     PAGE 3 — 공지 사항 + 비상 연락처
+     ============================================================ -->
+<div class="page">
+  <div class="sub-header sh-red">
+    <div class="p2b">유의사항 · 연락처</div>
+    <h2>당일 공지 사항</h2>
+  </div>
+
+  <div class="page-body">
+
+    <div class="section-title orange">⚠️ 반드시 확인하세요</div>
+
+    <div class="notice-box">
+      <h4>📋 지참물</h4>
+      <ul>
+        <li>교통카드 (잔액 충전 확인)</li>
+        <li>점심값 · 간식비 (개인 지참)</li>
+        <li>스마트폰 + 보조배터리 권장</li>
+        <li>우천 대비 우산</li>
+      </ul>
+    </div>
+
+    <div class="notice-box">
+      <h4>👗 복장</h4>
+      <ul>
+        <li>교복 착용 원칙</li>
+        <li>체육·재활 계열 — 인솔 교사 개별 안내에 따름</li>
+      </ul>
+    </div>
+
+    <div class="notice-box danger">
+      <h4>🚫 금지 사항</h4>
+      <ul>
+        <li>무단 이탈 절대 금지 — 이동 시 반드시 인솔 교사에게 보고</li>
+        <li>음주 · 흡연 금지</li>
+        <li>귀교 시 인원 확인 완료 전 개인 귀가 금지</li>
+      </ul>
+    </div>
+
+    <div class="section-title">📞 비상 연락처</div>
+    <table class="contact-table">
+      <thead>
+        <tr><th>계열</th><th>인솔 교사</th><th>연락처</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>사회과학</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>사범대</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>체육·재활</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>미술·애니·음악</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>이과</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>바이오·약학</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>인문</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>미디어</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>공과</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>경영</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr><td>보건·간호</td><td class="pending">확인 중</td><td class="pending">—</td></tr>
+        <tr>
+          <td colspan="2" style="font-weight:700;">학교 대표</td>
+          <td><a href="tel:02-000-0000">02-000-0000</a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="text-align:center;font-size:11px;color:#bbb;margin-top:4px;">
+      Claude AI로 이 앱을 제작함 by 고은표
+    </div>
+  </div>
+
+  <div class="page-footer red">
+    <span>2026 현장체험학습 안내</span>
+    <span class="pn">3 / 3</span>
+  </div>
+</div>
+
+
+<!-- ===== 계열 상세 모달 ===== -->
+<div id="groupModal" onclick="if(event.target===this)closeGroup()">
+  <div class="gm-box">
+    <div class="gm-head">
+      <h3 id="gm-title"></h3>
+      <button class="gm-close" onclick="closeGroup()">✕</button>
+    </div>
+    <div class="gm-body" id="gm-body"></div>
+    <div class="gm-footer">
+      <a id="gm-map" class="gm-map-btn" href="#" target="_blank">🗺️ 오후 체험 장소 지도 보기</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const groups = {
+  1:  { name:'사회과학',    univ:'경희대학교',      count:20, pm:'서울시청 (통통 투어)',      activity:'해설사와 함께 시청사 내부 투어',                 map:'https://map.naver.com/v5/search/서울시청' },
+  2:  { name:'사범대',      univ:'경희대학교',      count:8,  pm:'광나루 안전체험관',         activity:'재난안전 체험 프로그램',                        map:'https://map.naver.com/v5/search/광나루안전체험관' },
+  3:  { name:'체육·재활',  univ:'경희대학교',      count:9,  pm:'블랙야크 아크돔',           activity:'스포츠 클라이밍 교육 및 아크돔 체험',             map:'https://map.naver.com/v5/search/블랙야크아크돔' },
+  4:  { name:'미술·애니·음악', univ:'경희대학교',  count:25, pm:'국립현대미술관',            activity:'전시 해설 및 자유 관람',                        map:'https://map.naver.com/v5/search/국립현대미술관서울관' },
+  6:  { name:'이과',        univ:'덕성여자대학교',  count:14, pm:'서울시립과학관',            activity:'토양 오염 및 환경 검사 실험',                   map:'https://map.naver.com/v5/search/서울시립과학관' },
+  7:  { name:'바이오·약학', univ:'덕성여자대학교',  count:11, pm:'서울시립과학관',            activity:'음료 속 카페인을 찾아라 실험',                  map:'https://map.naver.com/v5/search/서울시립과학관' },
+  8:  { name:'인문',        univ:'동덕여자대학교',  count:18, pm:'성북근현대문학관',          activity:'상설 전시 해설 및 특별 전시 관람',              map:'https://map.naver.com/v5/search/성북근현대문학관' },
+  9:  { name:'미디어',      univ:'동덕여자대학교',  count:16, pm:'서울시청자미디어센터',      activity:'뉴스 제작 체험',                               map:'https://map.naver.com/v5/search/서울시청자미디어센터' },
+  10: { name:'공과',        univ:'이화여자대학교',  count:15, pm:'서울에너지드림센터',        activity:'호모클리마투스의 집짓기 체험',                  map:'https://map.naver.com/v5/search/서울에너지드림센터' },
+  11: { name:'경영',        univ:'한국외국어대학교', count:23, pm:'한국은행 화폐박물관',      activity:'화폐박물관 전시 해설 및 자유 관람',             map:'https://map.naver.com/v5/search/한국은행화폐박물관' },
+  12: { name:'보건·간호',   univ:'한국외국어대학교', count:19, pm:'서울대병원 의학박물관',    activity:'박물관 전시 해설 및 자유 관람',                 map:'https://map.naver.com/v5/search/서울대학교병원의학박물관' },
+};
+
+function openGroup(id) {
+  const g = groups[id];
+  document.getElementById('gm-title').textContent = g.name + ' 계열';
+  document.getElementById('gm-body').innerHTML = `
+    <div class="gm-row"><span class="gr-label">인원</span><span class="gr-val">${g.count}명</span></div>
+    <div class="gm-row"><span class="gr-label">오전 대학</span><span class="gr-val">${g.univ}</span></div>
+    <div class="gm-row"><span class="gr-label">오후 장소</span><span class="gr-val">${g.pm}</span></div>
+    <div class="gm-row"><span class="gr-label">체험 내용</span><span class="gr-val">${g.activity}</span></div>
+    <div class="gm-row"><span class="gr-label">인솔 교사</span><span class="gr-val" style="color:#aaa;">확인 중</span></div>
+  `;
+  document.getElementById('gm-map').href = g.map;
+  document.getElementById('groupModal').classList.add('open');
+}
+function closeGroup() {
+  document.getElementById('groupModal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGroup(); });
+</script>
+</body>
+</html>

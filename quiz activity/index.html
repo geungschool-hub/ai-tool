@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>생명과학 복습 퀴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --blue-pastel:#C5E3F7;
+    --green-pastel:#C3E9CC;
+    --blue-dark:#1255A0;
+    --green-dark:#2A7A38;
+    --red-accent:#C0392B;
+    --amber:#E67E22;
+    --purple:#7B5EA7;
+    --text-main:#1A1A1A;
+    --text-light:#555;
+    --line:#BBBBBB;
+    --bg:#E1F2FC;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text-main);}
+  body{min-height:100vh;display:flex;justify-content:center;padding:16px;}
+  .container{width:100%;max-width:820px;}
+
+  .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:14px;box-shadow:0 4px 16px rgba(18,85,160,.06);}
+  .btn{display:inline-block;padding:14px 28px;min-height:48px;border:none;border-radius:99px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s ease;font-family:inherit;}
+  .btn-primary{background:var(--blue-dark);color:#fff;}
+  .btn-primary:hover{background:#0E468A;}
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-primary:disabled{background:#B9C7D6;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--text-light);border:2px solid var(--line);}
+  .btn-ghost:hover{background:#F0F3F7;}
+
+  /* ===== 공통 헤더 ===== */
+  .app-header{background:#fff;border-radius:16px;padding:22px 24px;box-shadow:0 4px 16px rgba(18,85,160,.08);border-left:6px solid var(--blue-dark);margin-bottom:16px;position:relative;}
+  .app-header h1{margin:0;font-size:22px;color:var(--blue-dark);font-weight:900;cursor:pointer;user-select:none;display:inline-block;}
+  .app-header .sub{margin-top:4px;font-size:13px;color:var(--text-light);}
+  .admin-link{background:none;border:1px solid var(--line);font-family:inherit;font-size:13px;color:var(--text-light);cursor:pointer;padding:9px 18px;min-height:40px;border-radius:99px;opacity:.75;transition:all .15s ease;}
+  .admin-link:hover{opacity:1;background:#fff;color:var(--blue-dark);border-color:var(--blue-dark);}
+  .credit{text-align:center;font-size:11px;color:#888;padding:20px 0 8px;}
+
+  /* ===== 로그인 / 계정 ===== */
+  .login-err{color:var(--red-accent);font-size:13px;min-height:18px;margin-top:6px;font-weight:500;}
+  .login-who{display:inline-block;background:var(--blue-pastel);color:var(--blue-dark);font-weight:700;font-size:14px;padding:7px 16px;border-radius:99px;margin-bottom:14px;}
+  .account-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-radius:12px;padding:10px 16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(18,85,160,.05);font-size:13px;}
+  .account-bar .acct-who{font-weight:700;color:var(--blue-dark);}
+  .account-bar .acct-who small{font-weight:500;color:var(--text-light);}
+  .logout-btn{background:none;border:1px solid var(--line);color:var(--text-light);font-family:inherit;font-size:12px;font-weight:600;padding:7px 14px;min-height:36px;border-radius:99px;cursor:pointer;flex-shrink:0;}
+  .logout-btn:hover{border-color:var(--red-accent);color:var(--red-accent);}
+  .intro-prog{display:flex;gap:10px;justify-content:center;margin:4px 0 20px;flex-wrap:wrap;}
+  .intro-prog .ip-box{background:#F5F8FC;border-radius:10px;padding:10px 16px;min-width:88px;}
+  .intro-prog .ip-num{font-size:22px;font-weight:900;color:var(--blue-dark);line-height:1.1;}
+  .intro-prog .ip-num.review{color:var(--amber);}
+  .intro-prog .ip-num.done{color:var(--green-dark);}
+  .intro-prog .ip-lbl{font-size:11.5px;color:var(--text-light);margin-top:3px;}
+
+  /* ===== 완성도 도넛 + 캐릭터 ===== */
+  .donut{position:relative;display:inline-flex;flex-shrink:0;}
+  .donut .donut-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--blue-dark);}
+  .completion{display:flex;align-items:center;justify-content:center;gap:22px;margin:6px 0 14px;flex-wrap:wrap;}
+  .char{text-align:center;min-width:96px;}
+  .char .face{font-size:50px;line-height:1;}
+  .char .msg{font-size:13px;color:var(--text-light);margin-top:6px;font-weight:700;}
+  .prog-sub{font-size:12.5px;color:var(--text-light);text-align:center;margin-bottom:2px;}
+  .qc-prog{display:flex;align-items:center;gap:7px;}
+  .qc-prog .qc-face{font-size:20px;line-height:1;}
+
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* ===== 허브 (퀴즈 목록) ===== */
+  .unit-group{margin-bottom:20px;}
+  .unit-title{font-size:14px;font-weight:700;color:var(--text-light);margin:0 0 10px 4px;display:flex;align-items:center;gap:8px;}
+  .unit-title::before{content:'';width:14px;height:14px;border-radius:4px;background:var(--blue-dark);}
+  .unit-title.green::before{background:var(--green-dark);}
+  .unit-title.amber::before{background:var(--amber);}
+  .unit-title.purple::before{background:var(--purple);}
+  .quiz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .quiz-card{background:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 4px 16px rgba(18,85,160,.06);border-top:5px solid var(--blue-dark);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;display:flex;flex-direction:column;text-align:left;border-left:none;border-right:none;border-bottom:none;font-family:inherit;width:100%;}
+  .quiz-card.green{border-top-color:var(--green-dark);}
+  .quiz-card.amber{border-top-color:var(--amber);}
+  .quiz-card.purple{border-top-color:var(--purple);}
+  .quiz-card:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(18,85,160,.14);}
+  .quiz-card:active{transform:translateY(-1px);}
+  .qc-tag{display:inline-block;align-self:flex-start;padding:4px 11px;border-radius:99px;background:var(--blue-pastel);color:var(--blue-dark);font-size:11px;font-weight:700;margin-bottom:10px;}
+  .quiz-card.green .qc-tag{background:var(--green-pastel);color:var(--green-dark);}
+  .quiz-card.amber .qc-tag{background:#FDE9C9;color:var(--amber);}
+  .quiz-card.purple .qc-tag{background:#EAE2F5;color:var(--purple);}
+  .qc-title{font-size:17px;font-weight:900;color:var(--text-main);line-height:1.35;margin-bottom:6px;}
+  .qc-sub{font-size:12.5px;color:var(--text-light);line-height:1.5;flex:1;}
+  .qc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+  .qc-count{font-size:12px;color:var(--text-light);font-weight:500;}
+  .qc-go{font-size:13px;font-weight:700;color:var(--blue-dark);}
+  .quiz-card.green .qc-go{color:var(--green-dark);}
+  .quiz-card.amber .qc-go{color:var(--amber);}
+  .quiz-card.purple .qc-go{color:var(--purple);}
+  .hub-empty{padding:40px 24px;text-align:center;color:var(--text-light);font-size:14px;}
+  .conn-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#888;margin-top:6px;}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:#ccc;}
+  .conn-dot.ok{background:#2A7A38;}
+  .conn-dot.err{background:#C0392B;}
+
+  /* ===== 뒤로가기 바 ===== */
+  .back-bar{margin-bottom:12px;}
+  .back-btn{background:none;border:none;font-family:inherit;font-size:14px;color:var(--text-light);cursor:pointer;padding:6px 4px;font-weight:500;}
+  .back-btn:hover{color:var(--blue-dark);}
+
+  /* ===== 시작화면 ===== */
+  .intro-card{padding:32px 28px;text-align:center;}
+  .intro-card .intro-tag{display:inline-block;padding:5px 13px;border-radius:99px;background:var(--blue-pastel);color:var(--blue-dark);font-size:12px;font-weight:700;margin-bottom:12px;}
+  .intro-card h2{margin:0 0 8px;font-size:22px;color:var(--blue-dark);}
+  .intro-card .desc{color:var(--text-light);font-size:14px;margin-bottom:24px;line-height:1.7;}
+  .field{margin-bottom:14px;text-align:left;}
+  .field label{display:block;font-size:13px;color:var(--text-light);margin-bottom:6px;font-weight:500;}
+  .field input{width:100%;padding:14px 16px;font-size:16px;border:2px solid #E0E5EC;border-radius:10px;font-family:inherit;background:#FAFBFD;transition:border-color .15s;}
+  .field input:focus{outline:none;border-color:var(--blue-dark);background:#fff;}
+  .intro-card .actions{margin-top:20px;}
+  .intro-card .btn{width:100%;padding:16px;}
+  .hint{margin-top:14px;font-size:12px;color:#999;}
+
+  /* ===== 진행바 ===== */
+  .progress-wrap{background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:16px;box-shadow:0 4px 16px rgba(18,85,160,.06);}
+  .progress-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;color:var(--text-light);font-weight:500;}
+  .progress-top .who{color:var(--blue-dark);font-weight:700;}
+  .progress-top .score{color:var(--green-dark);font-weight:700;}
+  .progress-bar{height:10px;background:#E5EAF0;border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--blue-dark),var(--green-dark));border-radius:99px;width:0%;transition:width .4s ease;}
+
+  /* ===== 퀴즈 ===== */
+  .chapter-tag{display:inline-block;padding:5px 12px;border-radius:99px;background:var(--blue-pastel);color:var(--blue-dark);font-size:12px;font-weight:700;margin-bottom:12px;letter-spacing:.3px;}
+  .chapter-tag.green{background:var(--green-pastel);color:var(--green-dark);}
+  .chapter-tag.amber{background:#FDE9C9;color:var(--amber);}
+  .chapter-tag.purple{background:#EAE2F5;color:var(--purple);}
+  .q-num{font-size:13px;color:var(--text-light);font-weight:500;margin-bottom:6px;}
+  .q-text{font-size:17px;font-weight:500;line-height:1.6;margin:0 0 18px;}
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .opt{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;min-height:54px;border:2px solid #E0E5EC;border-radius:12px;background:#FAFBFD;font-size:16px;line-height:1.5;cursor:pointer;transition:all .15s ease;color:var(--text-main);text-align:left;font-family:inherit;}
+  .opt:hover{border-color:var(--blue-dark);background:#F1F7FD;}
+  .opt:active{transform:scale(0.99);}
+  .opt .num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E0E5EC;color:var(--text-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+  .opt.selected{border-color:var(--blue-dark);background:#E8F1FB;}
+  .opt.selected .num{background:var(--blue-dark);color:#fff;}
+  .opt.correct{border-color:var(--green-dark);background:#E8F5EC;}
+  .opt.correct .num{background:var(--green-dark);color:#fff;}
+  .opt.wrong{border-color:var(--red-accent);background:#FCEEEC;}
+  .opt.wrong .num{background:var(--red-accent);color:#fff;}
+  .opt.locked{cursor:default;}
+  .opt.locked:hover{background:#FAFBFD;border-color:#E0E5EC;}
+  .opt.locked.selected:hover{background:#E8F1FB;border-color:var(--blue-dark);}
+  .opt.locked.correct:hover{background:#E8F5EC;border-color:var(--green-dark);}
+  .opt.locked.wrong:hover{background:#FCEEEC;border-color:var(--red-accent);}
+  .feedback{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:14px;line-height:1.6;display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:#E8F5EC;border-left:4px solid var(--green-dark);color:#1B4E26;}
+  .feedback.ng{background:#FCEEEC;border-left:4px solid var(--red-accent);color:#7A1F15;}
+  .feedback b{font-weight:700;}
+
+  /* ===== 결과 ===== */
+  .result{text-align:center;padding:40px 24px;}
+  .result .emoji{font-size:60px;margin-bottom:10px;}
+  .result h2{margin:0 0 8px;font-size:24px;color:var(--blue-dark);}
+  .result .score-big{font-size:48px;font-weight:900;color:var(--green-dark);margin:18px 0 8px;}
+  .result .score-sub{color:var(--text-light);font-size:14px;margin-bottom:24px;}
+  .result .breakdown{background:#F5F8FC;border-radius:12px;padding:16px;margin-bottom:24px;text-align:left;font-size:14px;line-height:1.9;}
+  .result .breakdown .row{display:flex;justify-content:space-between;}
+  .result .breakdown .row b{color:var(--blue-dark);}
+  .save-note{font-size:13px;color:var(--text-light);margin:-10px 0 18px;}
+
+  /* ===== 결과 상세(자세히 보기) ===== */
+  .review-wrap{margin-top:18px;text-align:left;}
+  .review-item{background:#fff;border:1px solid #E0E5EC;border-radius:12px;padding:16px 16px 14px;margin-bottom:12px;}
+  .rv-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .rv-no{font-size:13px;font-weight:700;color:var(--text-light);}
+  .rv-mark{display:inline-flex;align-items:center;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;}
+  .rv-mark.ok{background:#E8F5EC;color:var(--green-dark);}
+  .rv-mark.ng{background:#FCEEEC;color:var(--red-accent);}
+  .rv-chapter{font-size:11.5px;color:var(--text-light);margin-left:auto;}
+  .rv-q{font-size:15px;font-weight:500;line-height:1.55;margin-bottom:10px;}
+  .rv-opt{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border:1.5px solid #ECEFF3;border-radius:9px;font-size:14px;line-height:1.45;margin-bottom:6px;color:var(--text-main);}
+  .rv-opt .rv-onum{flex-shrink:0;width:21px;height:21px;border-radius:50%;background:#E5EAF0;color:var(--text-light);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;}
+  .rv-opt .rv-otxt{flex:1;}
+  .rv-opt .rv-tag{flex-shrink:0;font-size:11px;font-weight:700;padding:1px 8px;border-radius:99px;}
+  .rv-opt.correct{border-color:var(--green-dark);background:#EEF8F1;}
+  .rv-opt.correct .rv-onum{background:var(--green-dark);color:#fff;}
+  .rv-opt.correct .rv-tag{background:var(--green-dark);color:#fff;}
+  .rv-opt.mywrong{border-color:var(--red-accent);background:#FDEFED;}
+  .rv-opt.mywrong .rv-onum{background:var(--red-accent);color:#fff;}
+  .rv-opt.mywrong .rv-tag{background:var(--red-accent);color:#fff;}
+  .rv-explain{margin-top:8px;font-size:13px;line-height:1.55;color:var(--text-light);background:#F5F8FC;border-radius:8px;padding:10px 12px;}
+
+  /* ===== 전체 로딩 ===== */
+  .full-loading{position:fixed;inset:0;background:rgba(255,255,255,.8);display:none;align-items:center;justify-content:center;z-index:200;}
+  .full-loading.show{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid #E0E5EC;border-top-color:var(--blue-dark);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ===== 모바일 (작은 화면) ===== */
+  @media (max-width:480px){
+    body{padding:12px;}
+    .card{padding:18px;border-radius:14px;}
+    .app-header{padding:18px 18px;border-radius:14px;margin-bottom:14px;}
+    .app-header h1{font-size:19px;}
+    .quiz-grid{grid-template-columns:1fr;gap:12px;}
+    .quiz-card{padding:16px 16px;}
+    .qc-title{font-size:16px;}
+    .intro-card{padding:26px 18px;}
+    .intro-card h2{font-size:20px;}
+    .progress-wrap{padding:14px 16px;}
+    .q-text{font-size:16px;}
+    .opt{font-size:15.5px;padding:13px 14px;}
+    .result{padding:30px 18px;}
+    .result .emoji{font-size:46px;}
+    .result h2{font-size:21px;}
+    .result .score-big{font-size:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="app-header">
+    <h1 id="appTitle">🧬 생명과학 복습 퀴즈</h1>
+    <div class="sub" id="appSub">학번·이름·PIN으로 로그인하세요</div>
+  </div>
+
+  <!-- ===== 로그인 (2단계: 학번/이름 → PIN) ===== -->
+  <div id="screen-login" class="screen active">
+    <div class="card intro-card">
+      <span class="intro-tag">생명과학 복습 퀴즈</span>
+      <h2 id="loginTitle">로그인 / 시작하기</h2>
+      <div class="desc" id="loginDesc">학번과 이름을 입력하세요.</div>
+
+      <!-- 1단계: 학번 + 이름 -->
+      <div id="loginStep1">
+        <div class="field">
+          <label for="loginSid">학번 (4~5자리)</label>
+          <input id="loginSid" type="tel" pattern="[0-9]*" inputmode="numeric" maxlength="5" placeholder="예: 20704">
+        </div>
+        <div class="field">
+          <label for="loginName">이름</label>
+          <input id="loginName" type="text" maxlength="10" placeholder="이름">
+        </div>
+        <div class="login-err" id="loginErr1"></div>
+        <div class="actions">
+          <button class="btn btn-primary" id="btnNext" onclick="loginNext()" disabled style="width:100%;padding:16px;">연결 중...</button>
+        </div>
+      </div>
+
+      <!-- 2단계: PIN -->
+      <div id="loginStep2" style="display:none;">
+        <div class="login-who" id="loginWho"></div>
+        <div class="field">
+          <label for="loginPin" id="pinLabel">PIN (숫자 4자리)</label>
+          <input id="loginPin" type="tel" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="● ● ● ●">
+        </div>
+        <div class="field" id="pinConfirmField" style="display:none;">
+          <label for="loginPin2">PIN 확인 (한 번 더)</label>
+          <input id="loginPin2" type="tel" pattern="[0-9]*" inputmode="numeric" maxlength="4" placeholder="● ● ● ●">
+        </div>
+        <div class="login-err" id="loginErr2"></div>
+        <div class="actions">
+          <button class="btn btn-primary" id="btnPinSubmit" onclick="loginPinSubmit()" style="width:100%;padding:16px;">로그인</button>
+        </div>
+        <div style="text-align:center;margin-top:10px;">
+          <button class="back-btn" onclick="loginBack()">← 학번·이름 다시 입력</button>
+        </div>
+      </div>
+
+      <div class="hint">※ 학번·이름으로 학습 진도가 저장됩니다. PIN을 잊으면 선생님께 초기화를 요청하세요.</div>
+    </div>
+    <div class="conn-status" style="justify-content:center;width:100%;margin-top:10px;">
+      <span class="conn-dot" id="connDot"></span><span id="connText">서버 연결 중...</span>
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="admin-link" onclick="location.href='admin.html'">🔒 관리자</button>
+    </div>
+  </div>
+
+  <!-- ===== 허브 (퀴즈 목록) ===== -->
+  <div id="screen-hub" class="screen">
+    <div class="account-bar" id="accountBar">
+      <span class="acct-who" id="acctWho">—</span>
+      <button class="logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+    <div id="hubList"></div>
+    <div style="text-align:center;margin-top:18px;">
+      <button class="admin-link" onclick="location.href='admin.html'">🔒 관리자</button>
+    </div>
+  </div>
+
+  <!-- ===== 시작화면 ===== -->
+  <div id="screen-intro" class="screen">
+    <div class="back-bar"><button class="back-btn" onclick="goHub()">← 퀴즈 목록</button></div>
+    <div class="card intro-card">
+      <span class="intro-tag" id="introTag">—</span>
+      <h2 id="introTitle">퀴즈 시작</h2>
+      <div class="desc" id="introDesc"></div>
+      <div class="intro-prog" id="introProg"></div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnStart" onclick="startQuiz()" style="width:100%;padding:16px;">시작하기 (10문항)</button>
+      </div>
+      <div class="hint">※ 한 번에 10문항이 무작위로 출제됩니다. 틀린 문제는 다음에 다시 나와요.</div>
+    </div>
+  </div>
+
+  <!-- ===== 퀴즈 화면 ===== -->
+  <div id="screen-quiz" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="who" id="whoText">—</span>
+        <span><span id="progressText">0 / 0</span> · <span class="score">점수 <span id="scoreText">0</span></span></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div id="quizArea"></div>
+  </div>
+
+  <!-- ===== 결과 화면 ===== -->
+  <div id="screen-result" class="screen">
+    <div class="card result">
+      <div class="emoji" id="resultEmoji">🎉</div>
+      <h2 id="resultTitle">수고했어요!</h2>
+      <div class="score-big"><span id="finalScore">0</span> / <span id="finalTotal">0</span></div>
+      <div class="score-sub" id="resultMsg"></div>
+      <div class="save-note" id="saveNote"></div>
+      <div class="breakdown" id="breakdown"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="goHub()">퀴즈 목록</button>
+        <button class="btn btn-ghost" id="btnDetail" onclick="toggleDetail()">자세히 보기</button>
+        <button class="btn btn-primary" onclick="restart()">다시 풀기</button>
+      </div>
+      <div class="review-wrap" id="reviewWrap" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+</div>
+
+<div class="full-loading" id="fullLoading"><div class="spinner"></div></div>
+
+<script>
+/* ==========================================================
+   퀴즈 데이터
+   ----------------------------------------------------------
+   새 퀴즈 추가 = 아래 QUIZZES 배열에 객체 하나 추가.
+     id       : 고유 ID (results/quizMeta 키로 사용 — 변경 금지)
+     unit     : 허브에서 묶는 단원 이름
+     unitColor: 단원 그룹 색 (blue/green/amber/purple)
+     color    : 카드 색 (blue/green/amber/purple)
+     title    : 퀴즈 제목
+     subtitle : 부제 (단원 경로)
+     questions: [{chapter, tagClass, q, options, answer, explain}]
+                tagClass: ''(파랑)/green/amber/purple
+                answer  : 0부터 시작하는 정답 인덱스
+   ========================================================== */
+/* 아래 SEED_QUIZZES는 '기본 문항'입니다.
+   실제 출제는 Firebase의 quizzes/ 노드에서 불러옵니다(관리자 화면에서 편집 가능).
+   DB가 비어 있으면 최초 로드 시 이 기본 문항이 자동으로 DB에 등록(시드)되고,
+   DB 읽기에 실패하면 이 기본 문항으로 폴백합니다. */
+let QUIZZES = [
+  {
+    id: '2단원_복습퀴즈',
+    unit: 'II. 항상성과 몸의 조절',
+    unitColor: 'green',
+    color: 'green',
+    title: '2단원 복습 퀴즈',
+    subtitle: '우리 몸의 방어작용 · 항원항체반응 · 감염성 질환의 예방',
+    questions: [
+      // ===== 2-4 우리 몸의 방어작용 =====
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'다음 중 핵막과 막성 세포소기관이 없는 원핵생물에 해당하는 병원체는?',options:['바이러스','세균','원생생물','곰팡이'],answer:1,explain:'세균은 원핵생물로 핵막과 막성 세포소기관이 없습니다. (바이러스는 세포 구조가 없고, 원생생물·곰팡이는 진핵생물)'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'선천성 면역(비특이적 면역)의 특징으로 옳은 것은?',options:['특정 항원에만 선택적으로 작용한다','병원체 종류와 상관없이 동일한 방식으로 신속하게 작용한다','항체와 기억세포를 만들어 작용한다','림프구가 활성화된 후에야 시작된다'],answer:1,explain:'선천성 면역은 병원체 종류에 관계없이 신속하고 광범위하게 작용합니다. 항체·기억세포·림프구 활성화는 후천성 면역의 특징.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'점막에 존재하며 세균의 세포벽을 분해하여 방어 작용을 하는 효소는?',options:['펩신','트립신','라이소자임','아밀레이스'],answer:2,explain:'점막 속 라이소자임이 세균의 세포벽을 분해합니다. 다른 효소들은 소화효소.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'세포성 면역에서 병원체에 감염된 세포를 직접 제거하는 림프구는?',options:['B림프구','형질세포','보조 T림프구','세포독성 T림프구'],answer:3,explain:'세포독성 T림프구가 화학물질을 분비하여 감염된 세포를 직접 제거합니다. 보조 T림프구는 이를 활성화시키는 역할.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'체액성 면역에서 항체를 직접 분비하는 세포는?',options:['기억세포','형질세포','대식세포','세포독성 T림프구'],answer:1,explain:'B림프구가 분화하여 만들어진 형질세포가 항체를 분비합니다. 기억세포는 항원을 기억해 두었다가 2차 면역반응을 일으킴.'},
+
+      // ===== 2-5 항원항체반응 =====
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'항체에 대한 설명으로 옳지 <b>않은</b> 것은?',options:['Y자 모양의 단백질이다','항원 결합부위가 2개 있다','한 종류의 항체가 여러 종류의 항원과 자유롭게 결합한다','특정 항원과 결합하여 항원을 무력화시킨다'],answer:2,explain:'항체는 특이성이 높아 특정 항원하고만 결합합니다(항원항체반응의 특이성).'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'ABO 혈액형 판정 실험에서 항A 혈청에만 응집이 일어났다면, 이 사람의 혈액형은?',options:['A형','B형','O형','AB형'],answer:0,explain:'항A 혈청에는 응집소 α가 있으므로, 응집원 A를 가진 A형 혈액과 응집합니다.'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'AB형의 혈장에는 어떤 응집소(항체)가 들어 있을까?',options:['응집소 α만 있다','응집소 β만 있다','응집소 α와 β 모두 있다','응집소가 없다'],answer:3,explain:'AB형은 응집원 A·B를 모두 가지므로 응집소는 없습니다. 그래서 모든 혈액형에서 소량 수혈을 받을 수 있음.'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'자가진단키트에서 시료에 바이러스 항원이 있을 때 <b>검사선(T)</b>에서 일어나는 반응으로 옳은 것은?',options:['대조군 항체끼리 결합하여 색이 나타난다','항체1과 결합한 항원이 고정된 항체2와 결합하여 색이 나타난다','항원과 항원이 결합하여 색이 나타난다','항체1만 단독으로 고정되어 색이 나타난다'],answer:1,explain:'검사선에는 항체2가 고정되어 있어, [항체1-항원] 복합체가 와서 결합하면 색이 나타납니다.'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'Rh- 형 혈액에 대한 설명으로 옳은 것은?',options:['적혈구 표면에 D 항원이 존재한다','평소에 항-D 응집소를 가지고 있다','Rh+형 혈액을 처음 수혈받자마자 바로 강한 응집반응이 일어난다','D 항원이 없으며, Rh+형 혈액에 노출되면 항체와 기억세포가 생성된다'],answer:3,explain:'Rh-형은 평소엔 응집소가 없어 1차 수혈은 가능하지만, 이후 기억세포가 생겨 두 번째 수혈 시 응집반응이 일어남.'},
+
+      // ===== 2-6 감염성 질환의 예방 =====
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'다음 중 <b>호흡기</b>를 통해 감염되는 질환이 아닌 것은?',options:['독감','홍역','콜레라','코로나바이러스 감염증'],answer:2,explain:'콜레라는 오염된 물·음식을 통해 감염됩니다. 나머지는 모두 호흡기 감염.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신의 작용 원리에 대한 설명으로 옳은 것은?',options:['항생제를 투여하여 세균을 직접 죽인다','약화된 항원을 미리 주입해 1차 면역반응과 기억세포를 만들어 둔다','항체를 직접 주입하여 영구 면역력을 부여한다','병원체가 침입한 직후에만 효과를 낸다'],answer:1,explain:'백신은 미리 항원을 주입해 기억세포를 형성시켜, 실제 감염 시 강한 2차 면역반응이 일어나게 합니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'1차 면역반응과 비교했을 때 <b>2차 면역반응</b>의 특징으로 옳은 것은?',options:['항체 생성까지 시간이 더 오래 걸린다','항체의 양이 1차 반응보다 적다','항체 생성이 빠르고 양도 많으며 농도가 높게 유지된다','기억세포가 이때 처음 생성된다'],answer:2,explain:'기억세포 덕분에 2차 반응은 더 빠르고 강력하며, 많은 양의 항체가 오래 유지됩니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신으로 예방하기 어려운 경우에 해당하는 것은?',options:['항원 구조가 일정한 세균성 질환','항원 구조가 빠르게 변하는 바이러스성 질환','약화된 병원체로 만든 생백신이 개발된 질환','재조합 백신이 이미 상용화된 질환'],answer:1,explain:'독감 바이러스처럼 항원 구조가 빠르게 변하면 기존 백신의 효과가 떨어져 매년 새 백신이 필요합니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'다음 백신 종류 중 "병원체의 독성을 약화시켜 사용"하는 백신은?',options:['생백신','사백신','재조합 백신','핵산 백신'],answer:0,explain:'생백신은 독성을 약화시킨 병원체를 사용합니다(예: 천연두-우두). 사백신은 불활성화, 재조합은 항원 일부, 핵산은 DNA/RNA 이용.'},
+
+      // ===== 추가 15문항 (2026-06-01, 교과서 2-4~2-6 기반) =====
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'다음 중 병원체 감염이 아니라 유전·생활습관 등이 원인인 <b>비감염성 질환</b>은?',options:['고혈압','결핵','독감','무좀'],answer:0,explain:'고혈압·당뇨병은 병원체 감염이 아닌 비감염성 질환입니다. 결핵(세균)·독감(바이러스)·무좀(곰팡이)은 감염성 질환이에요.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'바이러스에 대한 설명으로 옳은 것은?',options:['세포 구조를 갖춘 단세포생물이다','스스로 물질대사를 하며 증식한다','핵산과 단백질 껍질로 이루어지며, 숙주세포 안에서 증식한다','항생제로 쉽게 치료된다'],answer:2,explain:'바이러스는 세포 구조가 없고 핵산과 단백질 껍질 형태이며, 숙주세포 안에서만 증식합니다. 치료에는 항생제가 아니라 항바이러스제를 씁니다.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'결핵·세균성 폐렴처럼 <b>세균</b>에 의한 질병의 치료에 사용하는 약물은?',options:['항생제','항바이러스제','항진균제','백신'],answer:0,explain:'항생제는 세균을 죽이거나 생장을 억제합니다. (바이러스→항바이러스제, 곰팡이→항진균제)'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'다음 중 선천성(비특이적) 면역에 해당하지 <b>않는</b> 것은?',options:['피부·점막의 방어벽','염증반응','식세포작용','형질세포의 항체 생성'],answer:3,explain:'항체 생성은 후천성(특이적) 면역인 체액성면역입니다. 나머지는 모두 선천성 면역이에요.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'상처 부위가 붉어지고 부어오르며 열이 나는 증상을 동반하고, 백혈구가 병원체를 제거하도록 돕는 선천성 방어작용은?',options:['염증반응','혈액응고','항원항체반응','2차 면역반응'],answer:0,explain:'염증반응은 화학 신호 물질로 모세혈관이 확장되고 백혈구가 모여 병원체를 제거하는 과정으로, 붉어짐·열·부어오름·통증이 나타납니다.'},
+      {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'골수에서 생성된 미성숙 림프구 중 일부가 이동하여 <b>T림프구</b>로 분화하는 기관은?',options:['가슴샘','콩팥','이자','쓸개'],answer:0,explain:'미성숙 림프구 중 일부는 가슴샘으로 이동해 T림프구로, 나머지는 골수에 남아 B림프구로 분화합니다.'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'ABO식 혈액형에서 응집원과 응집소에 대한 설명으로 옳은 것은?',options:['응집원은 혈장에, 응집소는 적혈구 표면에 있다','응집원은 적혈구 표면의 항원, 응집소는 혈장의 항체이다','둘 다 항체이다','둘 다 백혈구에 들어 있다'],answer:1,explain:'적혈구 표면의 응집원(항원)과 혈장의 응집소(항체)가 항원항체반응으로 결합하면 응집이 일어납니다.'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'O형인 사람의 혈장에 들어 있는 응집소(항체)는?',options:['응집소 α만 있다','응집소 β만 있다','응집소 α와 β 모두 있다','응집소가 없다'],answer:2,explain:'O형은 응집원이 없는 대신 응집소 α·β를 모두 가집니다. (반대로 AB형은 응집소가 없어요.)'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'항체의 구조에 대한 설명으로 옳은 것은?',options:['공 모양이며 결합 부위가 없다','Y자 모양이며 항원 결합 부위가 2개 있다','일자 모양이며 모든 항원과 결합한다','핵산으로 이루어져 있다'],answer:1,explain:'항체는 Y자 모양의 단백질로, 두 끝에 항원과 결합하는 부위가 2개 있습니다.'},
+      {chapter:'2-5 항원항체반응',tagClass:'green',q:'항체가 자신의 결합 부위와 구조가 맞는 특정 항원하고만 결합하는 특성을 무엇이라고 하는가?',options:['항원항체반응의 특이성','집단 면역','식세포작용','염증반응'],answer:0,explain:'항체가 특정 항원하고만 결합하는 성질을 항원항체반응의 특이성이라고 합니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'항원이 처음 침입했을 때 일어나며, 항체 농도가 높아지기까지 시간이 걸리는 면역반응은?',options:['1차 면역반응','2차 면역반응','선천성 면역','염증반응'],answer:0,explain:'1차 면역반응은 항원이 처음 침입했을 때로, 항체 생성까지 시간이 걸리며 이때 기억세포가 만들어집니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신을 맞으면 미리 만들어 두는 세포로, 같은 병원체가 침입했을 때 빠르고 강한 2차 면역반응이 일어나게 하는 것은?',options:['기억세포','적혈구','혈소판','대식세포'],answer:0,explain:'백신은 기억세포를 미리 형성시켜, 실제 감염 시 빠르고 강한 2차 면역반응으로 병원체를 제거하게 합니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'집단의 대부분이 면역을 가져, 백신을 맞지 못한 사람도 감염병에 잘 걸리지 않게 되는 상태를 무엇이라고 하는가?',options:['집단 면역','선천성 면역','자가면역','알레르기'],answer:0,explain:'집단 면역이 형성되면 면역이 없는 사람도 감염 확률이 낮아져 함께 보호받습니다.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신의 종류와 설명이 옳게 짝지어진 것은?',options:['생백신 — DNA나 RNA를 주입하는 백신','핵산 백신 — 독성을 약화한 병원체를 쓰는 백신','사백신 — 항원 특성은 유지하되 증식하지 못하게 불활성화한 병원체를 쓰는 백신','재조합 백신 — 살아 있는 강한 병원체를 그대로 쓰는 백신'],answer:2,explain:'사백신은 병원체를 불활성화(증식 불가)한 백신입니다. 생백신=독성 약화 병원체, 핵산 백신=DNA/RNA, 재조합 백신=항원 단백질.'},
+      {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신 접종과 함께 감염성 질환을 예방하는 행동으로 옳지 <b>않은</b> 것은?',options:['손 씻기','마스크 착용','물 끓여 마시기','감염자와 식기를 함께 쓰기'],answer:3,explain:'손 씻기·마스크·물 끓여 마시기는 감염 경로를 차단합니다. 감염자와 식기를 함께 쓰면 오히려 감염 위험이 커져요.'}
+    ]
+  },
+  {
+    id: '3-1_염색체의구조_퀴즈',
+    unit: 'Ⅲ. 생명의 연속성과 다양성',
+    unitColor: 'purple',
+    color: 'purple',
+    title: '3-1 염색체의 구조',
+    subtitle: '염색체·DNA·유전자 · 핵형 · 상동염색체 · 핵상',
+    questions: [
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'DNA의 기본 단위인 뉴클레오타이드를 구성하는 세 가지 요소를 바르게 묶은 것은?',options:['인산, 당, 염기','인산, 당, 히스톤 단백질','당, 염기, 히스톤 단백질','인산, 염기, 아미노산'],answer:0,explain:'뉴클레오타이드는 인산, 당, 염기가 1:1:1로 결합한 DNA의 기본 단위입니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'DNA가 히스톤 단백질을 감싼 형태로, 염색체를 이루는 기본 단위가 되는 구조는?',options:['뉴클레오타이드','뉴클레오솜','염색분체','유전체'],answer:1,explain:'뉴클레오솜은 DNA가 히스톤 단백질을 감싼 구조로, 이것이 규칙적으로 꼬여 염색체를 만듭니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'하나의 뉴클레오솜 중심을 이루는 히스톤 단백질은 몇 개가 모여 구성될까?',options:['2개','4개','8개','16개'],answer:2,explain:'히스톤 단백질 8개가 모여 뉴클레오솜의 중심을 이루고, 그 둘레를 DNA가 감습니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'한 개체가 가진 모든 유전 정보를 통틀어 이르는 말은?',options:['유전자','유전체(게놈)','대립유전자','염색분체'],answer:1,explain:'유전체(게놈)는 한 개체의 모든 DNA와 유전자를 포함하는 개념입니다. (유전자는 형질을 결정하는 DNA의 일부)'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'복제를 마친 한 염색체를 이루는 두 염색분체에 대한 설명으로 옳은 것은?',options:['서로 다른 대립유전자 구성을 가진다','한쪽은 아버지, 다른 한쪽은 어머니에게서 왔다','동일한 두 가닥으로, 대립유전자 구성이 서로 같다','중심절 없이 따로 떨어져 있다'],answer:2,explain:'한 염색체의 두 염색분체는 DNA 복제로 만들어진 동일한 가닥이므로 대립유전자 구성이 같으며, 중심절에서 서로 연결됩니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'염색체의 수, 모양, 크기 등 염색체의 겉모습 특징을 뜻하는 말은?',options:['핵상','핵형','유전체','대립유전자'],answer:1,explain:'핵형은 염색체의 외형적 특징입니다. 종에 따라 다르고, 같은 종이라도 성별이 같아야 핵형이 같습니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'중심절과 동원체에 대한 설명으로 옳은 것은?',options:['둘 다 염색체를 이루는 부위이다','중심절은 염색체의 한 부위이고, 동원체는 거기에 붙는 단백질 복합체이다','동원체는 염색체 부위이고, 중심절은 거기에 붙는 단백질이다','방추사는 중심절에 직접 붙는다'],answer:1,explain:'중심절은 염색체 부위, 동원체는 중심절에 붙는 단백질 복합체이며, 방추사는 그 동원체에 부착됩니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'사람의 체세포 1개에 들어 있는 염색체에 대한 설명으로 옳은 것은?',options:['총 46쌍이 들어 있다','총 23쌍이며, 22쌍은 상염색체이고 1쌍은 성염색체이다','상염색체와 성염색체가 각각 23개씩이다','모두 상동염색체가 없는 홑 염색체이다'],answer:1,explain:'사람의 체세포에는 23쌍(46개)의 염색체가 있고, 그중 22쌍은 상염색체, 1쌍은 성염색체입니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'자녀의 성별을 결정하는 요인으로 옳은 것은?',options:['어머니가 물려주는 성염색체가 결정한다','아버지로부터 전달되는 성염색체(X 또는 Y)가 결정한다','상염색체의 개수가 결정한다','수정 시점의 온도가 결정한다'],answer:1,explain:'어머니는 항상 X를 물려주므로, 아버지가 X를 주면 딸(XX), Y를 주면 아들(XY)이 됩니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'핵형 분석으로 알아낼 수 <b>없는</b> 것은?',options:['성별 (성염색체 구성)','다운 증후군과 같은 염색체 수의 이상','염색체의 모양·크기 이상','특정 유전자의 염기서열 오류'],answer:3,explain:'핵형 분석은 염색체의 겉모습(수·모양·크기)을 보는 것이라, 유전자 수준의 염기서열 오류는 알 수 없습니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'핵상에 대한 설명으로 옳은 것은?',options:['n은 상동염색체가 한 쌍 온전히 존재하는 상태이다','2n은 상동염색체 중 한 염색체만 존재하는 상태이다','n은 상동염색체 중 한 염색체만, 2n은 상동염색체가 한 쌍 존재하는 상태이다','핵상이 같으면 생물 종에 관계없이 염색체 수도 같다'],answer:2,explain:'2n은 상동염색체가 쌍으로, n은 한쪽만 존재합니다. 같은 핵상(예: 2n)이라도 종에 따라 수는 다릅니다(사람 2n=46, 초파리 2n=8).'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'세포가 분열하지 <b>않는</b> 시기(간기)의 염색체 상태로 옳은 것은?',options:['짧고 두꺼운 막대 모양으로 응축되어 있다','풀어진 상태(염색사)로 핵 안에 퍼져 있어 광학 현미경으로 관찰하기 어렵다','핵 밖으로 빠져나와 세포질에 흩어져 있다','항상 두 가닥의 염색분체로 갈라져 있다'],answer:1,explain:'분열하지 않는 시기에는 유전정보를 쉽게 사용하도록 풀어진 염색사 상태로 있어 광학 현미경으로 보기 어렵습니다. 분열기에는 응축되어 막대 모양으로 관찰됩니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'분열기에 염색체가 짧고 두꺼운 막대 모양으로 응축되는 까닭으로 가장 알맞은 것은?',options:['유전정보를 더 잘 읽기 위해서','이동과 분리가 쉽도록 하기 위해서','DNA 복제를 시작하기 위해서','히스톤 단백질을 분해하기 위해서'],answer:1,explain:'응축된 염색체는 세포분열 시 이동·분리가 쉽습니다. 반대로 유전정보를 사용할 때(간기)는 풀어져 있어야 편리합니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'"염색체는 분열기에만 존재한다"라는 설명에 대한 가장 옳은 평가는?',options:['옳다. 간기에는 염색체가 사라진다','옳다. 염색체는 중기에만 만들어진다','옳지 않다. 염색체는 어느 시기에나 존재하며, 간기에는 풀어진 염색사 형태로 있을 뿐이다','옳지 않다. 염색체는 분열기에도 존재하지 않는다'],answer:2,explain:'염색체와 염색사는 같은 물질의 다른 상태입니다. 간기에는 풀어진 염색사, 분열기에는 응축된 염색체로 관찰됩니다(사라지는 것이 아님).'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'유전자에 대한 설명으로 옳은 것은?',options:['모든 유전자는 반드시 단백질의 아미노산 서열 정보만 담는다','단백질 정보 외에, 기능을 가지는 RNA의 염기서열 정보를 담는 유전자도 있다','유전자는 DNA가 아니라 히스톤 단백질로 이루어져 있다','한 염색체에는 유전자가 단 하나만 들어 있다'],answer:1,explain:'유전자는 보통 단백질의 아미노산 서열 정보를 담지만, 단백질로 번역되지 않고 기능을 갖는 RNA의 정보를 담는 것도 있습니다. 한 염색체에는 수많은 유전자가 있습니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'상동염색체에 대한 설명으로 옳은 것은?',options:['모양·크기가 서로 다른 염색체 한 쌍이다','둘 다 아버지로부터 물려받은 것이다','모양·크기가 같은 한 쌍으로, 하나는 아버지·하나는 어머니에게서 물려받는다','한 염색체를 이루는 두 염색분체를 가리킨다'],answer:2,explain:'상동염색체는 모양·크기가 같은 염색체 쌍으로, 부모에게서 각각 하나씩 물려받습니다. (한 염색체의 두 가닥은 ‘염색분체’로 다른 개념)'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'한 쌍의 상동염색체에서 특정 유전자 자리의 대립유전자 구성과, 한 염색체를 이루는 두 염색분체의 대립유전자 구성을 옳게 비교한 것은?',options:['둘 다 항상 같다','둘 다 항상 다르다','상동염색체의 대립유전자는 같을 수도 다를 수도 있고, 두 염색분체의 구성은 서로 같다','상동염색체는 항상 같고, 두 염색분체는 항상 다르다'],answer:2,explain:'상동염색체는 부모에게서 따로 받아 대립유전자가 같을 수도 다를 수도 있습니다. 반면 두 염색분체는 DNA 복제로 만들어져 구성이 같습니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'세포분열 시 방추사가 염색체에 작용하는 순서·부위로 옳은 것은?',options:['방추사가 중심절에 직접 붙는다','중심절에 동원체가 붙고, 그 동원체에 방추사가 부착된다','동원체가 중심절로 변하고, 거기에 방추사가 부착된다','방추사는 히스톤 단백질에 부착된다'],answer:1,explain:'중심절(염색체 부위)에 동원체(단백질 복합체)가 형성되고, 여기에 방추사가 부착되어 염색분체가 양극으로 이동합니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'핵형 분석으로 확인할 수 있는 유전병의 예로 옳은 것은?',options:['특정 유전자 한 개의 염기서열이 바뀐 질환','다운 증후군(21번 염색체가 3개)','단백질 한 종류의 아미노산이 바뀐 질환','효소의 활성만 떨어진 질환'],answer:1,explain:'핵형 분석은 염색체의 수·모양·크기 이상을 봅니다. 다운 증후군(21번 3개)·클라인펠터 증후군(XXY) 등은 확인되지만, 유전자 한 개의 염기서열 오류는 알 수 없습니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'같은 종에 속하는 정상적으로 건강한 두 사람의 핵형이 서로 같으려면 어떤 조건이 필요한가?',options:['나이가 같아야 한다','성별이 같아야 한다','키와 몸무게가 같아야 한다','부모가 같아야 한다'],answer:1,explain:'핵형은 종에 따라 다르고, 같은 종이라도 성염색체 구성이 다르면(남 XY / 여 XX) 핵형이 달라집니다. 따라서 성별이 같아야 핵형이 같습니다. (건강 조건 중요! 핵형이 달라서 유전질환을 갖고 있을 수 있음)'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'상염색체와 성염색체에 대한 설명으로 옳은 것은?',options:['상염색체는 1쌍, 성염색체는 22쌍이다','상염색체는 남녀가 공통으로 가지는 22쌍이고, 성염색체는 성 결정에 관여하는 1쌍이다','성염색체는 남자만 가진다','상염색체는 부모 중 한쪽에게서만 물려받는다'],answer:1,explain:'사람은 22쌍의 상염색체(1~22번, 남녀 공통)와 1쌍의 성염색체(남 XY/여 XX)를 가집니다.'},
+      {chapter:'3-1 염색체의 구조',tagClass:'purple',q:'어떤 세포의 핵상이 2n=6으로 표시되었다. 이에 대한 설명으로 옳은 것은?',options:['서로 다른 모양의 염색체가 6쌍 있다','상동염색체가 쌍으로 존재하며, 전체 염색체 수는 6개이다','상동염색체가 하나씩만 있고, 전체 염색체 수는 6개이다','핵상이 2n이면 어떤 생물이든 염색체 수는 항상 6개이다'],answer:1,explain:'2n은 상동염색체가 쌍으로 존재하는 상태, =6은 전체 염색체 수가 6개임을 뜻합니다(상동염색체 3쌍). 같은 2n이라도 종마다 수는 다릅니다.'}
+    ]
+  },
+  {
+    id: '3-2_유전정보의전달_퀴즈',
+    unit: 'Ⅲ. 생명의 연속성과 다양성',
+    unitColor: 'purple',
+    color: 'purple',
+    title: '3-2 유전정보의 전달',
+    subtitle: '세포주기 · 체세포분열·감수분열 · 생식세포의 다양성',
+    questions: [
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'세포주기는 크게 어떤 두 시기로 나뉘는가?',options:['간기와 분열기','G1기와 G2기','전기와 후기','성장기와 휴지기'],answer:0,explain:'세포주기는 간기(G1–S–G2)와 분열기(M기)로 나뉩니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'세포주기 중 DNA 복제가 일어나는 시기는?',options:['G1기','S기','G2기','M기'],answer:1,explain:'S기(Synthesis)에 DNA가 복제되어 DNA 양이 2배가 됩니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'세포주기에 대한 설명으로 옳은 것은?',options:['분열기가 세포주기의 대부분을 차지한다','간기가 세포주기의 대부분을 차지하며, 이때 세포가 성장하고 DNA를 복제한다','M기에는 DNA 복제만 일어난다','간기에는 아무런 변화가 일어나지 않는다'],answer:1,explain:'간기가 세포주기의 대부분을 차지하며 성장·DNA 복제가 일어나고, M기에 핵분열과 세포질 분열이 일어납니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'체세포 분열에 대한 설명으로 옳은 것은?',options:['딸세포가 4개 만들어진다','분열 결과 염색체 수가 절반으로 줄어든다','후기에 염색분체가 분리되며, 모세포와 핵상이 같은 딸세포 2개가 만들어진다','생식기관에서만 일어난다'],answer:2,explain:'체세포 분열은 후기에 염색분체가 분리되어, 핵상이 같은(2n→2n) 딸세포 2개를 만듭니다. 생장·상처 회복에 관여합니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수 분열(생식세포 분열)의 결과로 옳은 것은?',options:['딸세포 2개, 염색체 수 변화 없음','딸세포 4개, 염색체 수가 절반으로 감소(2n→n)','딸세포 4개, 염색체 수 변화 없음','딸세포 2개, 염색체 수가 2배로 증가'],answer:1,explain:'감수 분열은 연속 2번의 분열로 딸세포 4개를 만들며, 염색체 수가 절반(2n→n)으로 줄어듭니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수 1분열 전기에 상동염색체끼리 접합하여 형성되는 구조는?',options:['뉴클레오솜','2가 염색체','방추사','동원체'],answer:1,explain:'감수 1분열 전기에 상동염색체가 접합해 2가 염색체를 만듭니다. (성염색체인 X·Y도 2가 염색체를 형성)'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수 분열에서 상동염색체와 염색분체가 각각 분리되는 시기로 옳은 것은?',options:['상동염색체 분리 — 2분열 후기 / 염색분체 분리 — 1분열 후기','상동염색체 분리 — 1분열 후기 / 염색분체 분리 — 2분열 후기','둘 다 1분열 후기에 분리된다','둘 다 2분열 후기에 분리된다'],answer:1,explain:'감수 1분열 후기에 상동염색체가, 2분열 후기에 염색분체가 분리됩니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수 분열 과정에서 DNA 복제에 대한 설명으로 옳은 것은?',options:['1분열과 2분열 사이에 DNA가 한 번 더 복제된다','DNA 복제는 분열 전 간기에 한 번만 일어나고, 1·2분열 사이에는 복제가 없다','2분열 직전에만 복제가 일어난다','감수 분열에서는 DNA 복제가 일어나지 않는다'],answer:1,explain:'DNA 복제는 분열 전 간기(S기)에 한 번만 일어납니다. 1·2분열 사이에는 복제가 없어 염색체 수가 절반으로 줄 수 있습니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'핵 1개당 DNA 상대량 변화에 대한 설명으로 옳은 것은?',options:['S기에 DNA 상대량이 2에서 4로 증가한다','S기에 DNA 상대량이 4에서 2로 감소한다','G1기에 DNA가 복제되어 상대량이 2배가 된다','분열기에 DNA 상대량이 증가한다'],answer:0,explain:'S기에 복제로 DNA 상대량이 2→4로 증가하고, 분열 말기에 분리되면서 감소합니다(감수 2분열 말기 2→1).'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수 분열이 유전적으로 다양한 생식세포를 만드는 가장 직접적인 원인은?',options:['감수 1분열 중기에 상동염색체가 무작위로 배열되기 때문','DNA가 두 번 복제되기 때문','체세포보다 분열 속도가 빠르기 때문','염색분체가 분리되지 않기 때문'],answer:0,explain:'1분열 중기에 부계·모계 상동염색체가 어느 쪽으로 이동할지 무작위로 정해져, 유전적으로 다양한 생식세포가 만들어집니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'유전자형이 AaBb인 세포가 감수 분열로 만들 수 있는 생식세포의 종류는? (A·a와 B·b는 서로 다른 염색체에 존재)',options:['AB, ab 2종류','AB, Ab, aB, ab 4종류','AABB, aabb 2종류','AaBb 1종류'],answer:1,explain:'서로 다른 염색체의 대립유전자는 독립적으로 분배되므로 AB, Ab, aB, ab의 4종류가 1:1:1:1 비율로 만들어집니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'간기를 이루는 세 시기와 각 역할을 옳게 짝지은 것은?',options:['G1기 — DNA 복제 / S기 — 성장 / G2기 — 분열','G1기 — DNA 복제 준비·성장 / S기 — DNA 복제 / G2기 — 분열 준비·성장','G1기 — 분열 / S기 — 분열 준비 / G2기 — DNA 복제','S기 — 성장만 / G1기·G2기 — DNA 복제'],answer:1,explain:'간기는 G1기(DNA 복제 준비·성장) → S기(DNA 복제) → G2기(분열 준비·성장) 순으로 진행됩니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'분열기(M기)에 일어나는 일로 옳은 것은?',options:['DNA 복제만 일어난다','핵분열과 세포질분열이 일어나 딸세포가 형성된다','세포가 성장만 하고 분열은 하지 않는다','염색체가 풀어져 염색사 상태가 된다'],answer:1,explain:'분열기에는 응축된 염색체가 관찰되며, 핵분열에 이어 세포질분열이 일어나 딸세포가 만들어집니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'체세포분열 <b>전기</b>에 나타나는 변화로 옳은 것은?',options:['핵막이 다시 형성되고 염색체가 풀어진다','염색체가 응축되고, 핵막이 소실되며 방추사가 형성된다','염색체가 세포 중앙(적도판)에 배열한다','염색분체가 분리되어 양극으로 이동한다'],answer:1,explain:'전기에는 염색체가 응축(각 염색체는 2개의 염색분체)되고 핵막이 사라지며 방추사가 형성됩니다. 적도판 배열은 중기, 분리는 후기, 핵막 재형성은 말기입니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'체세포분열에서 염색체가 세포 중앙(적도판)에 배열하는 시기는?',options:['전기','중기','후기','말기'],answer:1,explain:'중기에 방추사가 부착된 염색체가 세포 중앙(적도판)에 배열합니다. (전중후말 순서)'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'체세포분열이 일어나는 경우(역할)로 옳지 <b>않은</b> 것은?',options:['수정란의 발생과 개체의 성장','손상된 조직의 재생','단세포생물의 무성생식','정자·난자 같은 생식세포의 형성'],answer:3,explain:'생식세포(정자·난자) 형성은 감수분열의 역할입니다. 체세포분열은 발생·성장·재생·무성생식에 관여합니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수분열(생식세포 분열)이 일어나는 부위로 옳은 것은?',options:['몸 전체의 모든 세포','생식기관','피부와 점막','간과 근육'],answer:1,explain:'감수분열은 생식세포를 만들기 위한 분열로, 생식기관에서만 일어납니다. 체세포분열은 몸 전체에서 일어납니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'2가 염색체(4분 염색체)에 대한 설명으로 옳은 것은?',options:['염색분체 2개로 이루어져 있다','상동염색체가 접합하여 형성되며, 염색분체 4개로 이루어져 있다','체세포분열 중기에 만들어진다','X염색체와 Y염색체는 2가 염색체를 형성하지 못한다'],answer:1,explain:'감수 1분열 전기에 상동염색체가 접합해 2가 염색체를 만들며, 염색분체가 4개라 4분 염색체라고도 합니다. X·Y염색체도 2가 염색체를 형성합니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수 2분열에 대한 설명으로 옳은 것은?',options:['시작 전 간기에서 DNA가 한 번 더 복제된다','간기 없이 진행되어 DNA 복제가 일어나지 않는다','상동염색체가 분리된다','2가 염색체가 새로 형성된다'],answer:1,explain:'감수 1분열과 2분열 사이에는 간기가 없어 DNA 복제가 일어나지 않습니다. 2분열에서는 염색분체가 분리됩니다(상동염색체 분리는 1분열).'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'감수분열 과정에서 핵상의 변화를 옳게 나타낸 것은?',options:['1분열: 2n → 2n / 2분열: 2n → n','1분열: 2n → n / 2분열: n → n','1분열: n → 2n / 2분열: 2n → n','1분열: 2n → n / 2분열: n → 2n'],answer:1,explain:'감수 1분열에서 상동염색체가 분리되어 핵상이 절반으로 줄고(2n→n), 2분열에서는 염색분체만 분리되어 핵상이 변하지 않습니다(n→n).'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'상동염색체 쌍이 n개인 생물에서 형성될 수 있는 생식세포의 염색체 조합 가짓수는? (교차는 고려하지 않음)',options:['n가지','2n가지','2ⁿ가지','n²가지'],answer:2,explain:'각 상동염색체 쌍이 독립적으로 분리되므로 조합은 2ⁿ가지입니다. 사람은 상동염색체가 23쌍이라 2²³(약 840만)가지의 생식세포가 만들어질 수 있습니다.'},
+      {chapter:'3-2 유전정보의 전달',tagClass:'purple',q:'유성생식(감수분열)이 생물 집단에 주는 이점으로 가장 알맞은 것은?',options:['무성생식보다 더 빠르고 많은 자손을 만든다','유전적으로 다양한 자손을 만들어, 급격한 환경 변화에 대한 집단의 적응력을 높인다','자손이 부모와 완전히 똑같아 형질이 안정적으로 유지된다','세대를 거듭할수록 염색체 수가 늘어난다'],answer:1,explain:'빠르고 많은 자손은 무성생식의 장점입니다. 유성생식은 유전적으로 다양한 자손을 만들어 환경 변화에 잘 적응하게 하므로 멸종 가능성이 낮아집니다.'}
+    ]
+  }
+];
+
+/* ==========================================================
+   Firebase
+   ========================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyA1yobw0EreDxuIVRr_eaI2XN7BZRtZ9w4",
+  authDomain: "lifescience-quiz.firebaseapp.com",
+  databaseURL: "https://lifescience-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "lifescience-quiz",
+  storageBucket: "lifescience-quiz.firebasestorage.app",
+  messagingSenderId: "1058536346764",
+  appId: "1:1058536346764:web:83b6d25dfad6d9fa8b17a9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+const QUOTA = 10;                 // 한 시도당 출제 문항 수
+const PIN_SALT = 'lsq.v1.salt';   // PIN 해시용 고정 솔트 (클라이언트 사이드)
+const SESSION_KEY = 'lsq_session_v1';
+
+// Firebase는 빈 인덱스/희소 배열을 객체로 복원 → 안전 변환
+function toArray(v){
+  if(Array.isArray(v)) return v;
+  if(v && typeof v === 'object') return Object.values(v);
+  return [];
+}
+function activeCount(quiz){ return quiz.questions.filter(q => !q.hidden).length; }
+
+// 코드의 기본 문항(SEED)을 DB 객체 형태로 변환
+function quizToDbObject(quiz, order){
+  return {
+    unit: quiz.unit, unitColor: quiz.unitColor || 'blue', color: quiz.color || 'blue',
+    title: quiz.title, subtitle: quiz.subtitle || '', order: order,
+    questions: quiz.questions.map(q => {
+      const o = {chapter:q.chapter||'', tagClass:q.tagClass||'', q:q.q, options:q.options, answer:q.answer, explain:q.explain||''};
+      if(q.hidden) o.hidden = true;
+      return o;
+    }),
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  };
+}
+
+// DB의 quizzes/ → 화면용 QUIZZES 배열 형태로
+function dbToQuizzes(obj){
+  return Object.keys(obj).map(id => {
+    const z = obj[id] || {};
+    return {
+      id,
+      unit: z.unit || '', unitColor: z.unitColor || 'blue', color: z.color || 'blue',
+      title: z.title || id, subtitle: z.subtitle || '',
+      order: (typeof z.order === 'number') ? z.order : 9999,
+      questions: toArray(z.questions).map(q => ({
+        chapter:q.chapter||'', tagClass:q.tagClass||'', q:q.q||'',
+        options: toArray(q.options), answer: (typeof q.answer==='number'?q.answer:0),
+        explain: q.explain||'', hidden: !!q.hidden
+      }))
+    };
+  }).sort((a,b)=> a.order - b.order || a.id.localeCompare(b.id));
+}
+
+let isAuthed = false;
+async function initFirebase(){
+  try {
+    await auth.signInAnonymously();
+    isAuthed = true;
+    // ① DB에 없는 퀴즈는 기본 문항으로 시드(이미 있으면 건드리지 않음 — 관리자 편집 보존)
+    await Promise.all(QUIZZES.map((quiz, i) =>
+      db.ref(`quizzes/${quiz.id}`).transaction(cur => (cur === null) ? quizToDbObject(quiz, i*10) : undefined)
+    ));
+    // ② DB에서 최신 문항 로드 → 출제에 사용 (실패 시 코드 기본 문항으로 폴백)
+    try {
+      const snap = await db.ref('quizzes').once('value');
+      const obj = snap.val();
+      if(obj && Object.keys(obj).length){ QUIZZES = dbToQuizzes(obj); }
+    } catch(e){ console.error('퀴즈 로드 실패 — 기본 문항으로 진행', e); }
+    // ③ 관리자 대시보드용 메타 등록 (드롭다운/통계). questions는 원본 인덱스 정렬 유지(전체), totalQuestions는 노출 문항 수
+    await Promise.all(QUIZZES.map(quiz =>
+      db.ref(`quizMeta/${quiz.id}`).update({
+        title: quiz.title,
+        subtitle: quiz.subtitle,
+        totalQuestions: activeCount(quiz),
+        questions: quiz.questions.map(q => ({chapter:q.chapter, q:q.q, options:q.options, answer:q.answer, hidden: !!q.hidden})),
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      })
+    ));
+    setConnStatus(true, '서버 연결됨');
+    const btn = document.getElementById('btnNext');
+    btn.disabled = false; btn.textContent = '다음';
+  } catch(e) {
+    console.error('Firebase 초기화 실패:', e);
+    setConnStatus(false, '서버 연결 실패 — 새로고침해 주세요');
+  }
+  // 저장된 세션이 있으면 자동 로그인
+  const s = loadSession();
+  if(s && s.uid){ currentUser = s; enterApp(); }
+  else { goScreen('login'); }
+}
+function setConnStatus(ok, msg){
+  const dot = document.getElementById('connDot');
+  const txt = document.getElementById('connText');
+  if(!dot || !txt) return;
+  dot.classList.remove('ok','err');
+  dot.classList.add(ok ? 'ok' : 'err');
+  txt.textContent = msg;
+}
+
+/* ==========================================================
+   PIN 해시 / 세션
+   ========================================================== */
+async function sha256(text){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function pinHashFor(sid, pin){ return sha256(`${PIN_SALT}|${sid}|${pin}`); }
+
+function loadSession(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }catch(e){ return null; } }
+function saveSession(){ try{ localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser)); }catch(e){} }
+function clearSession(){ try{ localStorage.removeItem(SESSION_KEY); }catch(e){} }
+
+/* ==========================================================
+   학생 계정 — 조회 / 로그인 / 가입
+   ========================================================== */
+let currentUser = null;   // {uid, studentId, name}
+// 로그인 1단계에서 판정한 상태
+let loginAcct = null;        // 찾은 계정(또는 null=신규)
+let loginMode = null;        // 'verify'(재방문) | 'new'(신규) | 'reset'(초기화됨)
+let loginPendingSid = '';
+let loginPendingName = '';
+
+function showErr1(msg){ document.getElementById('loginErr1').textContent = msg || ''; }
+function showErr2(msg){ document.getElementById('loginErr2').textContent = msg || ''; }
+
+// 학번이 키 — 학번으로 조회(이름은 검증/등록용). 학번은 학교 내 고유.
+async function findByStudentId(sid){
+  const snap = await db.ref('students').orderByChild('studentId').equalTo(sid).once('value');
+  let found = null;
+  snap.forEach(ch => { if(!found) found = {uid: ch.key, ...ch.val()}; });
+  return found;
+}
+
+// 1단계: 학번·이름 확인 → 신규/재방문/초기화 판정 후 PIN 단계로
+async function loginNext(){
+  if(!isAuthed){ showErr1('서버 연결 중입니다. 잠시 후 다시 시도하세요.'); return; }
+  const sid = document.getElementById('loginSid').value.trim();
+  const name = document.getElementById('loginName').value.trim();
+  showErr1('');
+  if(!/^\d{4,5}$/.test(sid)){ showErr1('학번은 4~5자리 숫자여야 합니다.'); return; }
+  if(!name){ showErr1('이름을 입력해주세요.'); return; }
+
+  const btn = document.getElementById('btnNext');
+  btn.disabled = true; btn.textContent = '확인 중...';
+  try {
+    const acct = await findByStudentId(sid);
+    // 이미 등록된 학번인데 이름이 다르면 거부 (fieldnote 방식)
+    if(acct && acct.name && acct.name !== name){
+      showErr1('이 학번은 다른 이름으로 등록되어 있어요. 이름을 다시 확인하거나 선생님께 문의하세요.');
+      return;
+    }
+    loginAcct = acct;
+    loginPendingSid = sid;
+    loginPendingName = name;
+    loginMode = (acct && acct.pinHash) ? 'verify' : (acct ? 'reset' : 'new');
+    showPinStep();
+  } catch(e){
+    console.error('학번 조회 실패', e);
+    showErr1('오류가 발생했습니다. 다시 시도해주세요.');
+  } finally {
+    btn.disabled = false;
+    if(btn.textContent === '확인 중...') btn.textContent = '다음';
+  }
+}
+
+function showPinStep(){
+  document.getElementById('loginStep1').style.display = 'none';
+  document.getElementById('loginStep2').style.display = '';
+  document.getElementById('loginWho').textContent = `${loginPendingSid} · ${loginPendingName}`;
+  const confirmField = document.getElementById('pinConfirmField');
+  const desc = document.getElementById('loginDesc');
+  const label = document.getElementById('pinLabel');
+  const sub = document.getElementById('btnPinSubmit');
+  document.getElementById('loginPin').value = '';
+  document.getElementById('loginPin2').value = '';
+  showErr2('');
+  if(loginMode === 'verify'){
+    confirmField.style.display = 'none';
+    label.textContent = 'PIN (숫자 4자리)';
+    desc.textContent = 'PIN을 입력하세요.';
+    sub.textContent = '로그인';
+  } else {
+    confirmField.style.display = '';
+    label.textContent = '새 PIN (숫자 4자리)';
+    desc.innerHTML = (loginMode === 'reset')
+      ? 'PIN이 초기화된 계정입니다. 사용할 <b>새 PIN</b>을 설정하세요.'
+      : '처음이네요! 사용할 <b>PIN</b>을 설정하세요.';
+    sub.textContent = (loginMode === 'reset') ? 'PIN 설정하고 시작' : '가입하고 시작';
+  }
+  document.getElementById('loginPin').focus();
+}
+
+// 2단계: PIN 검증(재방문) 또는 설정(신규/초기화)
+async function loginPinSubmit(){
+  const pin = document.getElementById('loginPin').value.trim();
+  showErr2('');
+  if(!/^\d{4}$/.test(pin)){ showErr2('PIN은 숫자 4자리여야 합니다.'); return; }
+  const btn = document.getElementById('btnPinSubmit');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '확인 중...';
+  try {
+    if(loginMode === 'verify'){
+      const h = await pinHashFor(loginPendingSid, pin);
+      if(h === loginAcct.pinHash){ loginSuccess(loginAcct.uid, loginPendingSid, loginPendingName); return; }
+      showErr2('PIN이 올바르지 않습니다.'); return;
+    }
+    const pin2 = document.getElementById('loginPin2').value.trim();
+    if(pin !== pin2){ showErr2('PIN이 일치하지 않습니다. 다시 확인해주세요.'); return; }
+    const hash = await pinHashFor(loginPendingSid, pin);
+    let uid;
+    if(loginAcct){
+      uid = loginAcct.uid;
+      await db.ref(`students/${uid}`).update({pinHash: hash, name: loginPendingName});
+    } else {
+      const ref = db.ref('students').push(); uid = ref.key;
+      await ref.set({studentId: loginPendingSid, name: loginPendingName, pinHash: hash, createdAt: firebase.database.ServerValue.TIMESTAMP});
+    }
+    loginSuccess(uid, loginPendingSid, loginPendingName);
+  } catch(e){
+    console.error('로그인 실패', e);
+    showErr2('오류가 발생했습니다. 다시 시도해주세요.');
+  } finally {
+    btn.disabled = false;
+    if(btn.textContent === '확인 중...') btn.textContent = orig;
+  }
+}
+
+function loginBack(){
+  document.getElementById('loginStep2').style.display = 'none';
+  document.getElementById('loginStep1').style.display = '';
+  document.getElementById('loginDesc').textContent = '학번과 이름을 입력하세요.';
+  showErr2('');
+  loginMode = null; loginAcct = null;
+  document.getElementById('loginSid').focus();
+}
+
+function loginSuccess(uid, sid, name){
+  currentUser = {uid, studentId: sid, name};
+  saveSession();
+  // 로그인 폼 초기화
+  ['loginSid','loginName','loginPin','loginPin2'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('loginStep2').style.display = 'none';
+  document.getElementById('loginStep1').style.display = '';
+  document.getElementById('loginDesc').textContent = '학번과 이름을 입력하세요.';
+  loginMode = null; loginAcct = null;
+  enterApp();
+}
+
+async function enterApp(){
+  document.getElementById('acctWho').innerHTML =
+    `${escapeHtml(currentUser.name)} <small>· ${escapeHtml(currentUser.studentId)}</small>`;
+  await loadAllProgress();   // 허브 카드 완성도 표시용
+  goHub();                   // goHub가 허브를 렌더
+}
+
+function logout(){
+  if(!confirm('로그아웃 할까요? 진도는 서버에 저장되어 있어 다시 로그인하면 이어집니다.')) return;
+  clearSession();
+  currentUser = null;
+  loginBack();              // 로그인 1단계로 초기화
+  goScreen('login');
+}
+
+/* ==========================================================
+   저장소 — Firebase (퀴즈 ID별)
+   ========================================================== */
+async function saveResult(quizId, record){
+  const ref = db.ref(`results/${quizId}`).push();
+  await ref.set(record);
+  return ref.key;
+}
+async function getStudentAttemptCount(quizId, studentId){
+  const snap = await db.ref(`results/${quizId}`)
+    .orderByChild('studentId').equalTo(studentId).once('value');
+  return snap.numChildren();
+}
+
+/* ----- 학습 진도 (학생별 × 퀴즈별) ----- */
+// progress/{uid}/{quizId} = { seen:{원본인덱스:true}, wrong:{원본인덱스:true} }
+async function loadProgress(quizId){
+  const snap = await db.ref(`progress/${currentUser.uid}/${quizId}`).once('value');
+  const v = snap.val() || {};
+  return { seen: v.seen || {}, wrong: v.wrong || {} };
+}
+async function saveProgress(quizId, prog){
+  await db.ref(`progress/${currentUser.uid}/${quizId}`).set({
+    seen: prog.seen, wrong: prog.wrong,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP
+  });
+}
+
+/* ==========================================================
+   화면 전환
+   ========================================================== */
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById('screen-' + name);
+  if(target) target.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goHub(){
+  if(!currentUser){ goScreen('login'); return; }
+  document.getElementById('appSub').textContent = '풀고 싶은 퀴즈를 골라 시작하세요';
+  renderHub();   // 최신 완성도 반영
+  goScreen('hub');
+}
+
+/* ==========================================================
+   완성도(완성 진행도) — 전체 문제 풀 중 '맞춘(현재 정답 상태)' 비율
+   ========================================================== */
+let myProgressAll = {};   // {quizId: {seen, wrong}} — 로그인 직후 한 번에 로드
+
+async function loadAllProgress(){
+  myProgressAll = {};
+  try {
+    const snap = await db.ref(`progress/${currentUser.uid}`).once('value');
+    myProgressAll = snap.val() || {};
+  } catch(e){ console.error('전체 진도 로드 실패', e); myProgressAll = {}; }
+}
+
+// 완성도 = (seen 이면서 wrong 아닌 문항 수) / 전체 문항 수
+function completionOf(quiz, prog){
+  // 숨김 문항은 분모/분자에서 제외 (원본 인덱스는 유지)
+  const active = quiz.questions.map((q,i)=>i).filter(i => !quiz.questions[i].hidden);
+  const N = active.length;
+  if(!N) return 0;
+  const seen = (prog && prog.seen) || {};
+  const wrong = (prog && prog.wrong) || {};
+  let mastered = 0;
+  active.forEach(i => { if(seen[i] && !wrong[i]) mastered++; });
+  return Math.round(100 * mastered / N);
+}
+
+// 원형 도넛 그래프 SVG
+function donutSVG(pct, size, stroke){
+  pct = Math.max(0, Math.min(100, pct));
+  const r = (size - stroke) / 2, cx = size / 2, c = 2 * Math.PI * r;
+  const off = c * (1 - pct / 100);
+  const color = pct >= 100 ? 'var(--green-dark)' : pct >= 40 ? 'var(--blue-dark)' : pct > 0 ? 'var(--amber)' : '#CBD5E1';
+  return `<div class="donut" style="width:${size}px;height:${size}px;">
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+      <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#E5EAF0" stroke-width="${stroke}"/>
+      <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+        stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${cx} ${cx})"
+        style="transition:stroke-dashoffset .6s ease;"/>
+    </svg>
+    <div class="donut-pct" style="font-size:${Math.round(size*0.26)}px;">${pct}%</div>
+  </div>`;
+}
+
+// 진행도에 따른 캐릭터 표정 (0%자다 → 지루 → 웃음 → 신남 → 완성)
+function charFace(pct){
+  if(pct >= 100) return {emoji:'🥳', msg:'완성! 최고야!'};
+  if(pct >= 80)  return {emoji:'😆', msg:'거의 다 왔어!'};
+  if(pct >= 40)  return {emoji:'😊', msg:'좋아, 더 가보자!'};
+  if(pct > 0)    return {emoji:'😐', msg:'음… 조금 더?'};
+  return {emoji:'😴', msg:'쿨쿨… 깨워줘!'};
+}
+
+/* ==========================================================
+   허브 — 퀴즈 목록 렌더링 (단원별 그룹)
+   ========================================================== */
+function renderHub(){
+  const wrap = document.getElementById('hubList');
+  if(!QUIZZES.length){
+    wrap.innerHTML = '<div class="card hub-empty">아직 등록된 퀴즈가 없습니다.</div>';
+    return;
+  }
+  // 단원별 그룹화 (배열 등장 순서 유지)
+  const groups = [];
+  QUIZZES.forEach(quiz => {
+    let g = groups.find(x => x.unit === quiz.unit);
+    if(!g){ g = {unit:quiz.unit, unitColor:quiz.unitColor||'blue', items:[]}; groups.push(g); }
+    g.items.push(quiz);
+  });
+  wrap.innerHTML = groups.map(g => `
+    <div class="unit-group">
+      <p class="unit-title ${g.unitColor}">${escapeHtml(g.unit)}</p>
+      <div class="quiz-grid">
+        ${g.items.map(quiz => {
+          const pct = completionOf(quiz, myProgressAll[quiz.id]);
+          return `
+          <button class="quiz-card ${quiz.color||'blue'}" onclick="openQuiz('${quiz.id}')">
+            <span class="qc-tag">${escapeHtml(quiz.unit)}</span>
+            <div class="qc-title">${escapeHtml(quiz.title)}</div>
+            <div class="qc-sub">${escapeHtml(quiz.subtitle||'')}</div>
+            <div class="qc-foot">
+              <span class="qc-count">총 ${activeCount(quiz)}문항</span>
+              <span class="qc-prog"><span class="qc-face">${charFace(pct).emoji}</span>${donutSVG(pct,40,5)}<span class="qc-go">풀기 →</span></span>
+            </div>
+          </button>`; }).join('')}
+      </div>
+    </div>`).join('');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ==========================================================
+   퀴즈 진입 — 시작화면
+   ========================================================== */
+let currentQuiz = null;          // 선택된 퀴즈 객체
+let currentAttempt = 1;
+let progressState = {seen:{}, wrong:{}};   // 현재 퀴즈의 진도
+
+async function openQuiz(quizId){
+  if(!currentUser){ goScreen('login'); return; }
+  currentQuiz = QUIZZES.find(q => q.id === quizId);
+  if(!currentQuiz) return;
+  document.getElementById('introTag').textContent = currentQuiz.unit;
+  document.getElementById('introTitle').textContent = currentQuiz.title;
+  document.getElementById('introDesc').innerHTML = escapeHtml(currentQuiz.subtitle||'');
+  document.getElementById('appSub').textContent = currentQuiz.title;
+  document.getElementById('introProg').innerHTML = '<div class="ip-box"><div class="ip-num">…</div><div class="ip-lbl">진도 불러오는 중</div></div>';
+  goScreen('intro');
+  // 진도 불러와 요약 표시
+  try {
+    progressState = await loadProgress(currentQuiz.id);
+  } catch(e){ console.error('진도 조회 실패', e); progressState = {seen:{}, wrong:{}}; }
+  renderIntroProgress();
+}
+
+function renderIntroProgress(){
+  const activeIdxs = currentQuiz.questions.map((q,i)=>i).filter(i => !currentQuiz.questions[i].hidden);
+  const N = activeIdxs.length;
+  const seenN = activeIdxs.filter(i => progressState.seen[i]).length;
+  const wrongN = activeIdxs.filter(i => progressState.wrong[i]).length;
+  const pct = completionOf(currentQuiz, progressState);
+  const ch = charFace(pct);
+  document.getElementById('introProg').innerHTML = `
+    <div class="completion">
+      ${donutSVG(pct, 116, 12)}
+      <div class="char"><div class="face">${ch.emoji}</div><div class="msg">${ch.msg}</div></div>
+    </div>
+    <div class="prog-sub">완성도 <b>${pct}%</b> · 풀어본 ${seenN}/${N}문항 · 복습 대기 ${wrongN}</div>`;
+}
+
+function updateWhoText(){
+  const badge = currentAttempt > 1
+    ? `<span style="display:inline-block;background:#FDE9C9;color:var(--amber);padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:8px;">${currentAttempt}번째 시도</span>`
+    : `<span style="display:inline-block;background:#E8F5EC;color:var(--green-dark);padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:8px;">첫 시도</span>`;
+  document.getElementById('whoText').innerHTML = `${escapeHtml(currentUser.studentId)} · ${escapeHtml(currentUser.name)}${badge}`;
+}
+
+async function startQuiz(){
+  if(!currentQuiz) return;
+  if(!currentUser){ goScreen('login'); return; }
+  if(!isAuthed){ alert('서버에 연결되지 않았습니다. 페이지를 새로고침해 주세요.'); return; }
+
+  const btn = document.getElementById('btnStart');
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  let prevCount = 0;
+  try {
+    progressState = await loadProgress(currentQuiz.id);   // 최신 진도 다시 로드
+    prevCount = await getStudentAttemptCount(currentQuiz.id, currentUser.studentId);
+  } catch(e){ console.error('시작 준비 실패', e); }
+  btn.disabled = false;
+  btn.textContent = '시작하기 (10문항)';
+
+  currentAttempt = prevCount + 1;
+  updateWhoText();
+  resetQuizState();
+  goScreen('quiz');
+  renderQuestion();
+}
+
+// 제목 5번 빠르게 탭 → 관리자 페이지로 이동
+(function setupHiddenTrigger(){
+  let taps = 0; let timer = null;
+  document.getElementById('appTitle').addEventListener('click', ()=>{
+    taps++;
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(()=>{ taps = 0; }, 1500);
+    if(taps >= 5){ taps = 0; window.location.href = 'admin.html'; }
+  });
+})();
+
+// 로그인 입력칸 Enter 처리 (1단계 → 다음 / 2단계 → 제출)
+['loginSid','loginName'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('keydown', e=>{ if(e.key === 'Enter') loginNext(); });
+});
+['loginPin','loginPin2'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('keydown', e=>{ if(e.key === 'Enter') loginPinSubmit(); });
+});
+
+/* ==========================================================
+   퀴즈 진행
+   ========================================================== */
+let currentIdx = 0;          // 세션 내 표시 위치 (sessionQ 인덱스)
+let userAnswers = {};        // {원본인덱스: 선택지} — 이번 세션에서 푼 것만
+let sessionQ = [];           // 이번 시도에 출제되는 원본 문항 인덱스 배열 (≤10)
+let score = 0;
+let quizStartedAt = null;
+
+function questions(){ return currentQuiz.questions; }
+function origIndex(){ return sessionQ[currentIdx]; }     // 현재 화면 문제의 원본 인덱스
+function sessionLen(){ return sessionQ.length; }
+
+function shuffle(arr){
+  arr = arr.slice();
+  for(let i=arr.length-1; i>0; i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+
+// 출제 선택: ① 복습 대기열(틀린 것) → ② 아직 안 나온 것 → ③ 이미 맞힌 것 순으로 10개 채우고 섞기
+function buildSession(){
+  const N = questions().length;
+  // 숨김 문항은 출제 후보에서 제외 (원본 인덱스 기준)
+  const all = Array.from({length:N},(_,i)=>i).filter(i => !questions()[i].hidden);
+  const wrong  = all.filter(i => progressState.wrong[i]);
+  const unseen = all.filter(i => !progressState.seen[i] && !progressState.wrong[i]);
+  const seenOk = all.filter(i => progressState.seen[i] && !progressState.wrong[i]);
+  let pick = shuffle(wrong);
+  if(pick.length < QUOTA) pick = pick.concat(shuffle(unseen));
+  if(pick.length < QUOTA) pick = pick.concat(shuffle(seenOk));
+  pick = pick.slice(0, Math.min(QUOTA, all.length));
+  return shuffle(pick);
+}
+
+function resetQuizState(){
+  currentIdx = 0;
+  score = 0;
+  userAnswers = {};
+  sessionQ = buildSession();
+  document.getElementById('scoreText').textContent = '0';
+  quizStartedAt = Date.now();
+  // 결과 화면의 '자세히 보기' 초기화
+  const rw = document.getElementById('reviewWrap');
+  if(rw){ rw.style.display='none'; rw.innerHTML=''; }
+  const bd = document.getElementById('btnDetail');
+  if(bd) bd.textContent = '자세히 보기';
+}
+
+function renderQuestion(){
+  if(currentIdx >= sessionLen()){ finishQuiz(); return; }
+  const q = questions()[origIndex()];
+  document.getElementById('quizArea').innerHTML = `
+    <div class="card">
+      <span class="chapter-tag ${q.tagClass||''}">${escapeHtml(q.chapter)}</span>
+      <div class="q-num">문제 ${currentIdx+1} / ${sessionLen()}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options" id="opts">
+        ${q.options.map((opt,i)=>`
+          <button class="opt" data-idx="${i}" onclick="select(${i})">
+            <span class="num">${i+1}</span><span>${opt}</span>
+          </button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="nextBtn" onclick="nextQ()" style="display:none;">
+          ${currentIdx === sessionLen()-1 ? '결과 보기' : '다음 문제 →'}
+        </button>
+      </div>
+    </div>`;
+  updateProgress();
+}
+
+function select(i){
+  const oi = origIndex();
+  if(oi in userAnswers) return;
+  const q = questions()[oi];
+  userAnswers[oi] = i;
+  document.querySelectorAll('#opts .opt').forEach((el,idx)=>{
+    el.classList.add('locked');
+    if(idx === q.answer) el.classList.add('correct');
+    if(idx === i && i !== q.answer) el.classList.add('wrong');
+    if(idx === i && i === q.answer) el.classList.add('selected');
+  });
+  const fb = document.getElementById('feedback');
+  if(i === q.answer){
+    score++;
+    fb.className = 'feedback ok show';
+    fb.innerHTML = `<b>✓ 정답!</b> ${q.explain}`;
+  } else {
+    fb.className = 'feedback ng show';
+    fb.innerHTML = `<b>✗ 오답.</b> 정답은 ${q.answer+1}번. ${q.explain}`;
+  }
+  document.getElementById('scoreText').textContent = score;
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function nextQ(){
+  currentIdx++;
+  renderQuestion();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateProgress(){
+  const total = sessionLen();
+  const done = Math.min(currentIdx, total);
+  document.getElementById('progressText').textContent = `${done} / ${total}`;
+  document.getElementById('progressFill').style.width = `${(done/total)*100}%`;
+}
+
+/* ----- 결과 상세 리뷰 (자세히 보기) ----- */
+function buildReviewHtml(){
+  const Q = questions();
+  return sessionQ.map((oi, pos)=>{
+    const q = Q[oi];
+    const my = userAnswers[oi];
+    const isOk = my === q.answer;
+    const opts = q.options.map((opt,i)=>{
+      let cls = 'rv-opt', tag = '';
+      if(i === q.answer){ cls += ' correct'; tag = '<span class="rv-tag">정답</span>'; }
+      if(i === my && my !== q.answer){ cls += ' mywrong'; tag = '<span class="rv-tag">내 답</span>'; }
+      return `<div class="${cls}"><span class="rv-onum">${i+1}</span><span class="rv-otxt">${opt}</span>${tag}</div>`;
+    }).join('');
+    return `<div class="review-item">
+      <div class="rv-head">
+        <span class="rv-no">문제 ${pos+1}</span>
+        <span class="rv-mark ${isOk?'ok':'ng'}">${isOk ? '✓ 정답' : '✗ 오답'}</span>
+        <span class="rv-chapter">${escapeHtml(q.chapter)}</span>
+      </div>
+      <div class="rv-q">${q.q}</div>
+      ${opts}
+      <div class="rv-explain">${q.explain}</div>
+    </div>`;
+  }).join('');
+}
+function toggleDetail(){
+  const rw = document.getElementById('reviewWrap');
+  const btn = document.getElementById('btnDetail');
+  const hidden = rw.style.display === 'none' || !rw.style.display;
+  if(hidden){
+    if(!rw.innerHTML) rw.innerHTML = buildReviewHtml();
+    rw.style.display = 'block';
+    btn.textContent = '접기';
+    rw.scrollIntoView({behavior:'smooth', block:'start'});
+  } else {
+    rw.style.display = 'none';
+    btn.textContent = '자세히 보기';
+  }
+}
+
+async function finishQuiz(){
+  document.getElementById('fullLoading').classList.add('show');
+  let saveOk = true;
+  const Q = questions();
+  const N = sessionLen();
+
+  // 출제된 문항만 집계 + 진도(seen/wrong) 갱신
+  const wrongIdx = [];
+  const answersMap = {};
+  sessionQ.forEach(oi=>{
+    const a = (oi in userAnswers) ? userAnswers[oi] : null;
+    answersMap[oi] = a;
+    progressState.seen[oi] = true;
+    if(a === Q[oi].answer){ delete progressState.wrong[oi]; }
+    else { wrongIdx.push(oi); progressState.wrong[oi] = true; }
+  });
+
+  const record = {
+    studentId: currentUser.studentId,
+    name: currentUser.name,
+    accountId: currentUser.uid,
+    score: score,
+    total: N,
+    wrongIdx: wrongIdx,
+    answers: answersMap,           // {원본인덱스: 선택지} — 부분 출제 호환
+    timestamp: new Date().toISOString(),
+    elapsedSec: Math.round((Date.now() - quizStartedAt)/1000),
+    attempt: currentAttempt
+  };
+  try {
+    await saveResult(currentQuiz.id, record);
+    await saveProgress(currentQuiz.id, progressState);
+  } catch(e){ saveOk = false; console.error(e); }
+  myProgressAll[currentQuiz.id] = {seen: progressState.seen, wrong: progressState.wrong};   // 허브 완성도 갱신
+  document.getElementById('fullLoading').classList.remove('show');
+  const attempt = currentAttempt;
+
+  // 결과 화면
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalTotal').textContent = N;
+  document.getElementById('progressText').textContent = `${N} / ${N}`;
+  document.getElementById('progressFill').style.width = '100%';
+  const pct = N ? (score/N)*100 : 0;
+  let emoji, title, msg;
+  if(pct === 100){ emoji='🏆'; title='완벽해요!'; msg='모든 문제를 맞췄어요. 완벽하게 이해했네요!'; }
+  else if(pct >= 80){ emoji='🎉'; title='훌륭해요!'; msg='대부분 잘 이해하고 있어요.'; }
+  else if(pct >= 60){ emoji='💪'; title='잘 했어요!'; msg='조금만 더 복습하면 완벽해질 거예요.'; }
+  else if(pct >= 40){ emoji='📖'; title='더 복습이 필요해요'; msg='학습지를 다시 한번 살펴보세요.'; }
+  else { emoji='🔁'; title='다시 도전!'; msg='기본 개념부터 차근차근 복습해보세요.'; }
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMsg').textContent = msg;
+  const wrongLeft = Object.keys(progressState.wrong).length;
+  document.getElementById('saveNote').innerHTML = (saveOk
+    ? `결과가 저장되었습니다. (${attempt}번째 시도)`
+    : '⚠️ 결과 저장에 실패했어요. 선생님께 알려주세요.')
+    + (wrongLeft ? `<br>복습 대기 문항 <b style="color:var(--amber)">${wrongLeft}개</b> — 다음 시도에 다시 나와요.` : '');
+
+  const byChapter = {};
+  sessionQ.forEach(oi=>{
+    const q = Q[oi];
+    if(!byChapter[q.chapter]) byChapter[q.chapter] = {right:0, total:0};
+    byChapter[q.chapter].total++;
+    if(userAnswers[oi] === q.answer) byChapter[q.chapter].right++;
+  });
+  document.getElementById('breakdown').innerHTML = Object.entries(byChapter).map(([ch,v])=>`
+    <div class="row"><span>${escapeHtml(ch)}</span><b>${v.right} / ${v.total}</b></div>
+  `).join('');
+
+  goScreen('result');
+}
+
+async function restart(){
+  if(!currentQuiz) { goHub(); return; }
+  if(!currentUser){ goScreen('login'); return; }
+  document.getElementById('fullLoading').classList.add('show');
+  let prevCount = 0;
+  try {
+    progressState = await loadProgress(currentQuiz.id);   // 갱신된 진도로 다음 세션 구성
+    prevCount = await getStudentAttemptCount(currentQuiz.id, currentUser.studentId);
+  } catch(e){ console.error('다시 풀기 준비 실패', e); }
+  document.getElementById('fullLoading').classList.remove('show');
+  currentAttempt = prevCount + 1;
+  updateWhoText();
+  resetQuizState();
+  goScreen('quiz');
+  renderQuestion();
+}
+
+/* ==========================================================
+   부팅
+   ========================================================== */
+initFirebase();
+</script>
+</body>
+</html>

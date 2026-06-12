@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>생명과학 2단원 복습 퀴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+  :root{
+    --blue-pastel:#C5E3F7;
+    --green-pastel:#C3E9CC;
+    --blue-dark:#1255A0;
+    --green-dark:#2A7A38;
+    --red-accent:#C0392B;
+    --amber:#E67E22;
+    --text-main:#1A1A1A;
+    --text-light:#555;
+    --line:#BBBBBB;
+    --bg:#E1F2FC;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text-main);}
+  body{min-height:100vh;display:flex;justify-content:center;padding:16px;}
+  .container{width:100%;max-width:780px;}
+
+  .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:14px;box-shadow:0 4px 16px rgba(18,85,160,.06);}
+  .btn{display:inline-block;padding:14px 28px;min-height:48px;border:none;border-radius:99px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s ease;font-family:inherit;}
+  .btn-primary{background:var(--blue-dark);color:#fff;}
+  .btn-primary:hover{background:#0E468A;}
+  .btn-primary:active{transform:scale(0.98);}
+  .btn-primary:disabled{background:#B9C7D6;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--text-light);border:2px solid var(--line);}
+  .btn-ghost:hover{background:#F0F3F7;}
+
+  .quiz-header{background:#fff;border-radius:16px;padding:22px 24px;box-shadow:0 4px 16px rgba(18,85,160,.08);border-left:6px solid var(--blue-dark);margin-bottom:16px;position:relative;}
+  .quiz-header h1{margin:0;font-size:22px;color:var(--blue-dark);font-weight:900;cursor:pointer;user-select:none;}
+  .quiz-header .sub{margin-top:4px;font-size:13px;color:var(--text-light);}
+  .credit{text-align:center;font-size:11px;color:#888;padding:20px 0 8px;}
+
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* 시작화면 */
+  .intro-card{padding:32px 28px;text-align:center;}
+  .intro-card h2{margin:0 0 8px;font-size:22px;color:var(--blue-dark);}
+  .intro-card .desc{color:var(--text-light);font-size:14px;margin-bottom:24px;line-height:1.7;}
+  .field{margin-bottom:14px;text-align:left;}
+  .field label{display:block;font-size:13px;color:var(--text-light);margin-bottom:6px;font-weight:500;}
+  .field input{width:100%;padding:14px 16px;font-size:16px;border:2px solid #E0E5EC;border-radius:10px;font-family:inherit;background:#FAFBFD;transition:border-color .15s;}
+  .field input:focus{outline:none;border-color:var(--blue-dark);background:#fff;}
+  .intro-card .actions{margin-top:20px;}
+  .intro-card .btn{width:100%;padding:16px;}
+  .hint{margin-top:14px;font-size:12px;color:#999;}
+  .conn-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#888;margin-top:10px;}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:#ccc;}
+  .conn-dot.ok{background:#2A7A38;}
+  .conn-dot.err{background:#C0392B;}
+
+  /* 진행바 */
+  .progress-wrap{background:#fff;border-radius:16px;padding:16px 20px;margin-bottom:16px;box-shadow:0 4px 16px rgba(18,85,160,.06);}
+  .progress-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:14px;color:var(--text-light);font-weight:500;}
+  .progress-top .who{color:var(--blue-dark);font-weight:700;}
+  .progress-top .score{color:var(--green-dark);font-weight:700;}
+  .progress-bar{height:10px;background:#E5EAF0;border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--blue-dark),var(--green-dark));border-radius:99px;width:0%;transition:width .4s ease;}
+
+  /* 퀴즈 */
+  .chapter-tag{display:inline-block;padding:5px 12px;border-radius:99px;background:var(--blue-pastel);color:var(--blue-dark);font-size:12px;font-weight:700;margin-bottom:12px;letter-spacing:.3px;}
+  .chapter-tag.green{background:var(--green-pastel);color:var(--green-dark);}
+  .chapter-tag.amber{background:#FDE9C9;color:var(--amber);}
+  .q-num{font-size:13px;color:var(--text-light);font-weight:500;margin-bottom:6px;}
+  .q-text{font-size:17px;font-weight:500;line-height:1.6;margin:0 0 18px;}
+  .options{display:flex;flex-direction:column;gap:10px;}
+  .opt{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;min-height:54px;border:2px solid #E0E5EC;border-radius:12px;background:#FAFBFD;font-size:16px;line-height:1.5;cursor:pointer;transition:all .15s ease;color:var(--text-main);text-align:left;font-family:inherit;}
+  .opt:hover{border-color:var(--blue-dark);background:#F1F7FD;}
+  .opt:active{transform:scale(0.99);}
+  .opt .num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#E0E5EC;color:var(--text-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+  .opt.selected{border-color:var(--blue-dark);background:#E8F1FB;}
+  .opt.selected .num{background:var(--blue-dark);color:#fff;}
+  .opt.correct{border-color:var(--green-dark);background:#E8F5EC;}
+  .opt.correct .num{background:var(--green-dark);color:#fff;}
+  .opt.wrong{border-color:var(--red-accent);background:#FCEEEC;}
+  .opt.wrong .num{background:var(--red-accent);color:#fff;}
+  .opt.locked{cursor:default;}
+  .opt.locked:hover{background:#FAFBFD;border-color:#E0E5EC;}
+  .opt.locked.selected:hover{background:#E8F1FB;border-color:var(--blue-dark);}
+  .opt.locked.correct:hover{background:#E8F5EC;border-color:var(--green-dark);}
+  .opt.locked.wrong:hover{background:#FCEEEC;border-color:var(--red-accent);}
+  .feedback{margin-top:14px;padding:12px 16px;border-radius:10px;font-size:14px;line-height:1.6;display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:#E8F5EC;border-left:4px solid var(--green-dark);color:#1B4E26;}
+  .feedback.ng{background:#FCEEEC;border-left:4px solid var(--red-accent);color:#7A1F15;}
+  .feedback b{font-weight:700;}
+
+  /* 결과 */
+  .result{text-align:center;padding:40px 24px;}
+  .result .emoji{font-size:60px;margin-bottom:10px;}
+  .result h2{margin:0 0 8px;font-size:24px;color:var(--blue-dark);}
+  .result .score-big{font-size:48px;font-weight:900;color:var(--green-dark);margin:18px 0 8px;}
+  .result .score-sub{color:var(--text-light);font-size:14px;margin-bottom:24px;}
+  .result .breakdown{background:#F5F8FC;border-radius:12px;padding:16px;margin-bottom:24px;text-align:left;font-size:14px;line-height:1.9;}
+  .result .breakdown .row{display:flex;justify-content:space-between;}
+  .result .breakdown .row b{color:var(--blue-dark);}
+  .save-note{font-size:13px;color:var(--text-light);margin:-10px 0 18px;}
+
+  /* 전체 로딩 */
+  .full-loading{position:fixed;inset:0;background:rgba(255,255,255,.8);display:none;align-items:center;justify-content:center;z-index:200;}
+  .full-loading.show{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid #E0E5EC;border-top-color:var(--blue-dark);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ===== 모바일 (작은 화면) ===== */
+  @media (max-width:480px){
+    body{padding:12px;}
+    .card{padding:18px;border-radius:14px;}
+    .app-header{padding:18px 18px;border-radius:14px;}
+    .app-header h1{font-size:19px;}
+    .intro-card{padding:26px 18px;}
+    .intro-card h2{font-size:20px;}
+    .progress-wrap{padding:14px 16px;}
+    .q-text{font-size:16px;}
+    .opt{font-size:15.5px;padding:13px 14px;}
+    .result{padding:30px 18px;}
+    .result .emoji{font-size:46px;}
+    .result h2{font-size:21px;}
+    .result .score-big{font-size:38px;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="quiz-header">
+    <h1 id="appTitle">생명과학 2단원 복습 퀴즈</h1>
+    <div class="sub">II. 항상성과 몸의 조절 · 우리 몸의 방어작용 / 항원항체반응 / 감염성 질환의 예방 · 총 15문항</div>
+  </div>
+
+  <!-- 시작화면 -->
+  <div id="screen-intro" class="screen active">
+    <div class="card intro-card">
+      <h2>퀴즈 시작</h2>
+      <div class="desc">학번과 이름을 입력하고 시작 버튼을 눌러주세요.<br>총 15문항 · 예상 소요시간 약 7~10분</div>
+      <div class="field">
+        <label for="inputStudentId">학번 (5자리)</label>
+        <input id="inputStudentId" type="tel" pattern="[0-9]*" inputmode="numeric" maxlength="5" placeholder="예: 20704">
+      </div>
+      <div class="field">
+        <label for="inputName">이름</label>
+        <input id="inputName" type="text" maxlength="10" placeholder="이름">
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnStart" onclick="startQuiz()" disabled>연결 중...</button>
+      </div>
+      <div class="hint">※ 입력한 학번·이름으로 결과가 선생님께 전달됩니다.</div>
+      <div class="conn-status"><span class="conn-dot" id="connDot"></span><span id="connText">서버 연결 중...</span></div>
+    </div>
+  </div>
+
+  <!-- 퀴즈 화면 -->
+  <div id="screen-quiz" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="who" id="whoText">—</span>
+        <span><span id="progressText">0 / 15</span> · <span class="score">점수 <span id="scoreText">0</span></span></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div id="quizArea"></div>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="screen-result" class="screen">
+    <div class="card result">
+      <div class="emoji" id="resultEmoji">🎉</div>
+      <h2 id="resultTitle">수고했어요!</h2>
+      <div class="score-big"><span id="finalScore">0</span> / 15</div>
+      <div class="score-sub" id="resultMsg"></div>
+      <div class="save-note" id="saveNote"></div>
+      <div class="breakdown" id="breakdown"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="goScreen('intro')">처음 화면으로</button>
+        <button class="btn btn-primary" onclick="restart()">다시 풀기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+</div>
+
+<div class="full-loading" id="fullLoading"><div class="spinner"></div></div>
+
+<script>
+/* ==========================================================
+   설정
+   ========================================================== */
+const QUIZ_ID = '2단원_복습퀴즈';
+const QUIZ_TITLE = '생명과학 2단원 복습 퀴즈';
+const QUIZ_SUBTITLE = 'II. 항상성과 몸의 조절 · 우리 몸의 방어작용 / 항원항체반응 / 감염성 질환의 예방';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA1yobw0EreDxuIVRr_eaI2XN7BZRtZ9w4",
+  authDomain: "lifescience-quiz.firebaseapp.com",
+  databaseURL: "https://lifescience-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "lifescience-quiz",
+  storageBucket: "lifescience-quiz.firebasestorage.app",
+  messagingSenderId: "1058536346764",
+  appId: "1:1058536346764:web:83b6d25dfad6d9fa8b17a9"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+const QUIZ = [
+  // ===== 2-4 우리 몸의 방어작용 =====
+  {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'다음 중 핵막과 막성 세포소기관이 없는 원핵생물에 해당하는 병원체는?',options:['바이러스','세균','원생생물','곰팡이'],answer:1,explain:'세균은 원핵생물로 핵막과 막성 세포소기관이 없습니다. (바이러스는 세포 구조가 없고, 원생생물·곰팡이는 진핵생물)'},
+  {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'선천성 면역(비특이적 면역)의 특징으로 옳은 것은?',options:['특정 항원에만 선택적으로 작용한다','병원체 종류와 상관없이 동일한 방식으로 신속하게 작용한다','항체와 기억세포를 만들어 작용한다','림프구가 활성화된 후에야 시작된다'],answer:1,explain:'선천성 면역은 병원체 종류에 관계없이 신속하고 광범위하게 작용합니다. 항체·기억세포·림프구 활성화는 후천성 면역의 특징.'},
+  {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'점막에 존재하며 세균의 세포벽을 분해하여 방어 작용을 하는 효소는?',options:['펩신','트립신','라이소자임','아밀레이스'],answer:2,explain:'점막 속 라이소자임이 세균의 세포벽을 분해합니다. 다른 효소들은 소화효소.'},
+  {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'세포성 면역에서 병원체에 감염된 세포를 직접 제거하는 림프구는?',options:['B림프구','형질세포','보조 T림프구','세포독성 T림프구'],answer:3,explain:'세포독성 T림프구가 화학물질을 분비하여 감염된 세포를 직접 제거합니다. 보조 T림프구는 이를 활성화시키는 역할.'},
+  {chapter:'2-4 우리 몸의 방어작용',tagClass:'',q:'체액성 면역에서 항체를 직접 분비하는 세포는?',options:['기억세포','형질세포','대식세포','세포독성 T림프구'],answer:1,explain:'B림프구가 분화하여 만들어진 형질세포가 항체를 분비합니다. 기억세포는 항원을 기억해 두었다가 2차 면역반응을 일으킴.'},
+
+  // ===== 2-5 항원항체반응 =====
+  {chapter:'2-5 항원항체반응',tagClass:'green',q:'항체에 대한 설명으로 옳지 <b>않은</b> 것은?',options:['Y자 모양의 단백질이다','항원 결합부위가 2개 있다','한 종류의 항체가 여러 종류의 항원과 자유롭게 결합한다','특정 항원과 결합하여 항원을 무력화시킨다'],answer:2,explain:'항체는 특이성이 높아 특정 항원하고만 결합합니다(항원항체반응의 특이성).'},
+  {chapter:'2-5 항원항체반응',tagClass:'green',q:'ABO 혈액형 판정 실험에서 항A 혈청에만 응집이 일어났다면, 이 사람의 혈액형은?',options:['A형','B형','O형','AB형'],answer:0,explain:'항A 혈청에는 응집소 α가 있으므로, 응집원 A를 가진 A형 혈액과 응집합니다.'},
+  {chapter:'2-5 항원항체반응',tagClass:'green',q:'AB형의 혈장에는 어떤 응집소(항체)가 들어 있을까?',options:['응집소 α만 있다','응집소 β만 있다','응집소 α와 β 모두 있다','응집소가 없다'],answer:3,explain:'AB형은 응집원 A·B를 모두 가지므로 응집소는 없습니다. 그래서 모든 혈액형에서 소량 수혈을 받을 수 있음.'},
+  {chapter:'2-5 항원항체반응',tagClass:'green',q:'자가진단키트에서 시료에 바이러스 항원이 있을 때 <b>검사선(T)</b>에서 일어나는 반응으로 옳은 것은?',options:['대조군 항체끼리 결합하여 색이 나타난다','항체1과 결합한 항원이 고정된 항체2와 결합하여 색이 나타난다','항원과 항원이 결합하여 색이 나타난다','항체1만 단독으로 고정되어 색이 나타난다'],answer:1,explain:'검사선에는 항체2가 고정되어 있어, [항체1-항원] 복합체가 와서 결합하면 색이 나타납니다.'},
+  {chapter:'2-5 항원항체반응',tagClass:'green',q:'Rh- 형 혈액에 대한 설명으로 옳은 것은?',options:['적혈구 표면에 D 항원이 존재한다','평소에 항-D 응집소를 가지고 있다','Rh+형 혈액을 처음 수혈받자마자 바로 강한 응집반응이 일어난다','D 항원이 없으며, Rh+형 혈액에 노출되면 항체와 기억세포가 생성된다'],answer:3,explain:'Rh-형은 평소엔 응집소가 없어 1차 수혈은 가능하지만, 이후 기억세포가 생겨 두 번째 수혈 시 응집반응이 일어남.'},
+
+  // ===== 2-6 감염성 질환의 예방 =====
+  {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'다음 중 <b>호흡기</b>를 통해 감염되는 질환이 아닌 것은?',options:['독감','홍역','콜레라','코로나바이러스 감염증'],answer:2,explain:'콜레라는 오염된 물·음식을 통해 감염됩니다. 나머지는 모두 호흡기 감염.'},
+  {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신의 작용 원리에 대한 설명으로 옳은 것은?',options:['항생제를 투여하여 세균을 직접 죽인다','약화된 항원을 미리 주입해 1차 면역반응과 기억세포를 만들어 둔다','항체를 직접 주입하여 영구 면역력을 부여한다','병원체가 침입한 직후에만 효과를 낸다'],answer:1,explain:'백신은 미리 항원을 주입해 기억세포를 형성시켜, 실제 감염 시 강한 2차 면역반응이 일어나게 합니다.'},
+  {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'1차 면역반응과 비교했을 때 <b>2차 면역반응</b>의 특징으로 옳은 것은?',options:['항체 생성까지 시간이 더 오래 걸린다','항체의 양이 1차 반응보다 적다','항체 생성이 빠르고 양도 많으며 농도가 높게 유지된다','기억세포가 이때 처음 생성된다'],answer:2,explain:'기억세포 덕분에 2차 반응은 더 빠르고 강력하며, 많은 양의 항체가 오래 유지됩니다.'},
+  {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'백신으로 예방하기 어려운 경우에 해당하는 것은?',options:['항원 구조가 일정한 세균성 질환','항원 구조가 빠르게 변하는 바이러스성 질환','약화된 병원체로 만든 생백신이 개발된 질환','재조합 백신이 이미 상용화된 질환'],answer:1,explain:'독감 바이러스처럼 항원 구조가 빠르게 변하면 기존 백신의 효과가 떨어져 매년 새 백신이 필요합니다.'},
+  {chapter:'2-6 감염성 질환의 예방',tagClass:'amber',q:'다음 백신 종류 중 "병원체의 독성을 약화시켜 사용"하는 백신은?',options:['생백신','사백신','재조합 백신','핵산 백신'],answer:0,explain:'생백신은 독성을 약화시킨 병원체를 사용합니다(예: 천연두-우두). 사백신은 불활성화, 재조합은 항원 일부, 핵산은 DNA/RNA 이용.'}
+];
+
+/* ==========================================================
+   Firebase 초기화 — 익명 로그인 + 메타정보 등록
+   ========================================================== */
+let isAuthed = false;
+async function initFirebase(){
+  try {
+    await auth.signInAnonymously();
+    isAuthed = true;
+    // 퀴즈 메타정보 등록 (관리자 대시보드 드롭다운에 표시되도록)
+    const metaRef = db.ref(`quizMeta/${QUIZ_ID}`);
+    await metaRef.update({
+      title: QUIZ_TITLE,
+      subtitle: QUIZ_SUBTITLE,
+      totalQuestions: QUIZ.length,
+      questions: QUIZ.map(q => ({chapter:q.chapter, q:q.q, options:q.options, answer:q.answer})),
+      updatedAt: firebase.database.ServerValue.TIMESTAMP
+    });
+    setConnStatus(true, '서버 연결됨');
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStart').textContent = '시작하기';
+  } catch(e) {
+    console.error('Firebase 초기화 실패:', e);
+    setConnStatus(false, '서버 연결 실패 — 새로고침해 주세요');
+  }
+}
+function setConnStatus(ok, msg){
+  const dot = document.getElementById('connDot');
+  const txt = document.getElementById('connText');
+  dot.classList.remove('ok','err');
+  dot.classList.add(ok ? 'ok' : 'err');
+  txt.textContent = msg;
+}
+
+/* ==========================================================
+   저장소 — Firebase
+   ========================================================== */
+async function saveResult(record){
+  const ref = db.ref(`results/${QUIZ_ID}`).push();
+  await ref.set(record);
+  return ref.key;
+}
+async function getStudentAttemptCount(studentId){
+  const snap = await db.ref(`results/${QUIZ_ID}`)
+    .orderByChild('studentId').equalTo(studentId).once('value');
+  return snap.numChildren();
+}
+
+/* ==========================================================
+   화면 전환
+   ========================================================== */
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById('screen-' + name);
+  if(target) target.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ==========================================================
+   시작화면
+   ========================================================== */
+let currentStudent = {studentId:'', name:''};
+let currentAttempt = 1;
+
+function updateWhoText(){
+  const badge = currentAttempt > 1
+    ? `<span style="display:inline-block;background:#FDE9C9;color:var(--amber);padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:8px;">${currentAttempt}번째 시도</span>`
+    : `<span style="display:inline-block;background:#E8F5EC;color:var(--green-dark);padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin-left:8px;">첫 시도</span>`;
+  document.getElementById('whoText').innerHTML = `${currentStudent.studentId} · ${currentStudent.name}${badge}`;
+}
+
+async function startQuiz(){
+  if(!isAuthed){ alert('서버에 연결되지 않았습니다. 페이지를 새로고침해 주세요.'); return; }
+  const sid = document.getElementById('inputStudentId').value.trim();
+  const name = document.getElementById('inputName').value.trim();
+  if(!sid){ alert('학번을 입력해주세요.'); return; }
+  if(!/^\d{4,5}$/.test(sid)){ alert('학번은 4~5자리 숫자여야 합니다.'); return; }
+  if(!name){ alert('이름을 입력해주세요.'); return; }
+
+  const btn = document.getElementById('btnStart');
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  let prevCount = 0;
+  try { prevCount = await getStudentAttemptCount(sid); }
+  catch(e){ console.error('이전 시도 조회 실패', e); }
+  btn.disabled = false;
+  btn.textContent = '시작하기';
+
+  currentStudent = {studentId:sid, name:name};
+  currentAttempt = prevCount + 1;
+  updateWhoText();
+  resetQuizState();
+  goScreen('quiz');
+  renderQuestion();
+}
+
+// 제목 5번 빠르게 탭 → 관리자 페이지로 이동
+(function setupHiddenTrigger(){
+  let taps = 0; let timer = null;
+  document.getElementById('appTitle').addEventListener('click', ()=>{
+    taps++;
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(()=>{ taps = 0; }, 1500);
+    if(taps >= 5){ taps = 0; window.location.href = 'admin.html'; }
+  });
+})();
+
+/* ==========================================================
+   퀴즈 진행
+   ========================================================== */
+let currentIdx = 0;
+let userAnswers = [];
+let score = 0;
+let quizStartedAt = null;
+
+function resetQuizState(){
+  currentIdx = 0;
+  score = 0;
+  userAnswers = new Array(QUIZ.length).fill(null);
+  document.getElementById('scoreText').textContent = '0';
+  quizStartedAt = Date.now();
+}
+
+function renderQuestion(){
+  if(currentIdx >= QUIZ.length){ finishQuiz(); return; }
+  const q = QUIZ[currentIdx];
+  document.getElementById('quizArea').innerHTML = `
+    <div class="card">
+      <span class="chapter-tag ${q.tagClass}">${q.chapter}</span>
+      <div class="q-num">문제 ${currentIdx+1} / ${QUIZ.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="options" id="opts">
+        ${q.options.map((opt,i)=>`
+          <button class="opt" data-idx="${i}" onclick="select(${i})">
+            <span class="num">${i+1}</span><span>${opt}</span>
+          </button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end;">
+        <button class="btn btn-primary" id="nextBtn" onclick="nextQ()" style="display:none;">
+          ${currentIdx === QUIZ.length-1 ? '결과 보기' : '다음 문제 →'}
+        </button>
+      </div>
+    </div>`;
+  updateProgress();
+}
+
+function select(i){
+  if(userAnswers[currentIdx] !== null) return;
+  const q = QUIZ[currentIdx];
+  userAnswers[currentIdx] = i;
+  document.querySelectorAll('#opts .opt').forEach((el,idx)=>{
+    el.classList.add('locked');
+    if(idx === q.answer) el.classList.add('correct');
+    if(idx === i && i !== q.answer) el.classList.add('wrong');
+    if(idx === i && i === q.answer) el.classList.add('selected');
+  });
+  const fb = document.getElementById('feedback');
+  if(i === q.answer){
+    score++;
+    fb.className = 'feedback ok show';
+    fb.innerHTML = `<b>✓ 정답!</b> ${q.explain}`;
+  } else {
+    fb.className = 'feedback ng show';
+    fb.innerHTML = `<b>✗ 오답.</b> 정답은 ${q.answer+1}번. ${q.explain}`;
+  }
+  document.getElementById('scoreText').textContent = score;
+  document.getElementById('nextBtn').style.display = 'inline-block';
+}
+
+function nextQ(){
+  currentIdx++;
+  renderQuestion();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateProgress(){
+  const done = Math.min(currentIdx, QUIZ.length);
+  document.getElementById('progressText').textContent = `${done} / ${QUIZ.length}`;
+  document.getElementById('progressFill').style.width = `${(done/QUIZ.length)*100}%`;
+}
+
+async function finishQuiz(){
+  document.getElementById('fullLoading').classList.add('show');
+  let saveOk = true;
+
+  const wrongIdx = [];
+  userAnswers.forEach((a,i)=>{ if(a !== QUIZ[i].answer) wrongIdx.push(i); });
+
+  const record = {
+    studentId: currentStudent.studentId,
+    name: currentStudent.name,
+    score: score,
+    total: QUIZ.length,
+    wrongIdx: wrongIdx,
+    answers: userAnswers.slice(),
+    timestamp: new Date().toISOString(),
+    elapsedSec: Math.round((Date.now() - quizStartedAt)/1000),
+    attempt: currentAttempt
+  };
+  try { await saveResult(record); } catch(e){ saveOk = false; console.error(e); }
+  document.getElementById('fullLoading').classList.remove('show');
+  const attempt = currentAttempt;
+
+  // 결과 화면
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('progressText').textContent = `${QUIZ.length} / ${QUIZ.length}`;
+  document.getElementById('progressFill').style.width = '100%';
+  const pct = (score/QUIZ.length)*100;
+  let emoji, title, msg;
+  if(pct === 100){ emoji='🏆'; title='완벽해요!'; msg='모든 문제를 맞췄어요. 2단원 마스터!'; }
+  else if(pct >= 80){ emoji='🎉'; title='훌륭해요!'; msg='대부분 잘 이해하고 있어요.'; }
+  else if(pct >= 60){ emoji='💪'; title='잘 했어요!'; msg='조금만 더 복습하면 완벽해질 거예요.'; }
+  else if(pct >= 40){ emoji='📖'; title='더 복습이 필요해요'; msg='학습지를 다시 한번 살펴보세요.'; }
+  else { emoji='🔁'; title='다시 도전!'; msg='기본 개념부터 차근차근 복습해보세요.'; }
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultMsg').textContent = msg;
+  document.getElementById('saveNote').textContent = saveOk
+    ? `결과가 저장되었습니다. (${attempt}번째 시도)`
+    : '⚠️ 결과 저장에 실패했어요. 선생님께 알려주세요.';
+
+  const byChapter = {};
+  QUIZ.forEach((q,i)=>{
+    if(!byChapter[q.chapter]) byChapter[q.chapter] = {right:0, total:0};
+    byChapter[q.chapter].total++;
+    if(userAnswers[i] === q.answer) byChapter[q.chapter].right++;
+  });
+  document.getElementById('breakdown').innerHTML = Object.entries(byChapter).map(([ch,v])=>`
+    <div class="row"><span>${ch}</span><b>${v.right} / ${v.total}</b></div>
+  `).join('');
+
+  goScreen('result');
+}
+
+async function restart(){
+  document.getElementById('fullLoading').classList.add('show');
+  let prevCount = 0;
+  try { prevCount = await getStudentAttemptCount(currentStudent.studentId); }
+  catch(e){ console.error('이전 시도 조회 실패', e); }
+  document.getElementById('fullLoading').classList.remove('show');
+  currentAttempt = prevCount + 1;
+  updateWhoText();
+  resetQuizState();
+  goScreen('quiz');
+  renderQuestion();
+}
+
+/* ==========================================================
+   부팅
+   ========================================================== */
+initFirebase();
+</script>
+</body>
+</html>

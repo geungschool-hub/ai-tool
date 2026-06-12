@@ -1,0 +1,22 @@
+{
+  "database": {
+    "rules": "firebase_rules.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "firebase_rules.json",
+      "**/.*",
+      "**/.*/**",
+      ".claude/**",
+      ".firebase/**",
+      "**/node_modules/**",
+      "**/*.pdf",
+      "**/*.md",
+      "**/*.txt",
+      "**/_vision_*"
+    ]
+  }
+}

@@ -3,12 +3,49 @@ study-materials/
 
 # 개인정보 포함 파일 (학생 명단)
 homeroom-teacher/
+명렬표.pdf
+**/명렬표.pdf
+early-bird/학생명렬표.xlsx
+attendance-checklist_mobile/학급별 출결 현황.xlsx
+attendance-test/과학사 3학년 3-과학사 B.xlsx
+attendance_backup_*.json
+**/attendance_backup_*.json
+혈액형판정_수행평가/혈액형판정_운영자료_백업.json
+혈액형판정_수행평가/수행평가 시료 배정.hwp
+english-vocab/_db_backup/
+fieldtrip_worksheet/backups/
+fieldtrip_worksheet/체험학습_설문_생기부예시.xlsx
+
+# 운영 인수인계 문서 (내부 운영 정보 — 공개 저장소 제외)
+Claude_인수인계_통합메모리.md
+
+# 저작권 자료 (교과서·상용 단어장 원본/추출물)
+quiz activity/*.pdf
+english-vocab/능률VOCA어원편고등/
+english-vocab/워드마스터 고등 BASIC_문제,정답/
+english-vocab/_dump_*.txt
+english-vocab/_wm_*.txt
+english-vocab/basic_words.json
+english-vocab/plus_words.json
+
+# 독립 git 저장소 (중첩 방지)
+긍스쿨 허브/
+fieldtrip_worksheet/fieldnote/
+
+# 의도적 미추적 (배포본은 별도 저장소)
+GWASE'TEUK/
 
 # Claude 내부 설정
 .claude/
 
 # 임시 폴더
 새 폴더/
+
+# 파이썬/임시/바로가기/배포캐시 파일
+__pycache__/
+*.bak
+*.lnk
+.firebase/
 
 # OS 자동 생성 파일
 .DS_Store

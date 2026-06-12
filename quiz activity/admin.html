@@ -381,8 +381,10 @@ document.getElementById('adminPin').addEventListener('keydown', e=>{
    ========================================================== */
 let allQuizMeta = {};   // {quizId: {title, subtitle, totalQuestions, questions[]}}
 let allQuizzes = {};    // {quizId: {unit,unitColor,color,title,subtitle,order,questions[{...,explain,hidden}]}}
+const ADMIN_SID = '20700';   // 고은표(관리자) 학번 — 통계에서 제외하고 별도 표시
 let currentQuizId = '';
-let allRecords = [];    // 선택된 퀴즈의 모든 응시 기록
+let allRecords = [];    // 선택된 퀴즈의 학생 응시 기록 (관리자 제외)
+let adminRecords = [];  // 관리자(고은표) 응시 기록 — 통계 미포함, 별도 표시
 
 async function loadAll(){
   document.getElementById('fullLoading').classList.add('show');
@@ -455,10 +457,14 @@ async function onQuizChange(){
 async function loadQuizRecords(quizId){
   const snap = await db.ref(`results/${quizId}`).once('value');
   const data = snap.val() || {};
-  allRecords = Object.entries(data).map(([id, r]) => ({id, ...r}));
+  const records = Object.entries(data).map(([id, r]) => ({id, ...r}));
+  // 관리자(고은표) 기록은 통계에서 분리
+  adminRecords = records.filter(r => r.studentId === ADMIN_SID);
+  allRecords = records.filter(r => r.studentId !== ADMIN_SID);
   const meta = allQuizMeta[quizId] || {};
   document.getElementById('quizInfo').textContent =
-    `총 ${meta.totalQuestions || '?'}문항 · ${allRecords.length}건 응시`;
+    `총 ${meta.totalQuestions || '?'}문항 · ${allRecords.length}건 응시` +
+    (adminRecords.length ? ` (관리자 ${adminRecords.length}건 별도)` : '');
   renderSummary();
   renderRecords();
   renderStudents();
@@ -522,10 +528,7 @@ function renderRecords(){
     .filter(r => !q || (r.studentId||'').includes(q) || (r.name||'').toLowerCase().includes(q))
     .sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
   const wrap = document.getElementById('recordsTable');
-  if(!filtered.length){ wrap.innerHTML = '<div class="card empty">기록이 없습니다.</div>'; return; }
-  wrap.innerHTML = `<table class="data"><thead><tr>
-    <th>응시 시각</th><th>학번</th><th>이름</th><th>점수</th><th>틀린 문항</th><th>시도</th><th>소요</th>
-  </tr></thead><tbody>${filtered.map(r=>{
+  const recordRow = r => {
     const wrongIdx = toArray(r.wrongIdx);
     return `<tr>
       <td>${fmtTime(r.timestamp)}</td>
@@ -536,7 +539,17 @@ function renderRecords(){
       <td>${r.attempt||1}회차</td>
       <td>${r.elapsedSec ? Math.floor(r.elapsedSec/60)+'분 '+(r.elapsedSec%60)+'초' : '—'}</td>
     </tr>`;
-  }).join('')}</tbody></table>`;
+  };
+  const tableHead = `<thead><tr>
+    <th>응시 시각</th><th>학번</th><th>이름</th><th>점수</th><th>틀린 문항</th><th>시도</th><th>소요</th>
+  </tr></thead>`;
+  // 관리자(고은표) 기록 — 통계 미포함, 별도 섹션
+  const adminSorted = adminRecords.slice().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const adminBlock = adminSorted.length ? `
+    <div style="margin-top:18px;font-size:13px;font-weight:700;color:var(--text-light);">🔒 관리자 응시 기록 (통계 미포함) — ${adminSorted.length}건</div>
+    <table class="data" style="opacity:.8;">${tableHead}<tbody>${adminSorted.map(recordRow).join('')}</tbody></table>` : '';
+  if(!filtered.length){ wrap.innerHTML = '<div class="card empty">기록이 없습니다.</div>' + adminBlock; return; }
+  wrap.innerHTML = `<table class="data">${tableHead}<tbody>${filtered.map(recordRow).join('')}</tbody></table>` + adminBlock;
 }
 
 /* ==========================================================
@@ -717,19 +730,13 @@ function renderAccounts(){
   const q = (document.getElementById('searchAccounts')?.value || '').trim().toLowerCase();
   const wrap = document.getElementById('accountsTable');
   if(!allStudents.length){ wrap.innerHTML = '<div class="card empty">아직 등록된 학생 계정이 없습니다.</div>'; return; }
-  const list = allStudents
-    .filter(s => !q || (s.studentId||'').includes(q) || (s.name||'').toLowerCase().includes(q))
-    .sort((a,b)=> (a.studentId||'').localeCompare(b.studentId||'') || (a.name||'').localeCompare(b.name||''));
-  if(!list.length){ wrap.innerHTML = '<div class="card empty">검색 결과가 없습니다.</div>'; return; }
-  wrap.innerHTML = `<table class="data"><thead><tr>
-    <th>학번</th><th>이름</th><th>가입일</th><th>진도(풀이·복습대기)</th><th>PIN</th><th>관리</th>
-  </tr></thead><tbody>${list.map(s=>{
+  const accountRow = (s, isAdmin) => {
     const prog = allProgressByUid[s.uid] || {};
     let seen=0, wrong=0;
     Object.values(prog).forEach(p=>{ if(p && typeof p==='object'){ seen += p.seen?Object.keys(p.seen).length:0; wrong += p.wrong?Object.keys(p.wrong).length:0; } });
     const pinSet = s.pinHash ? '설정됨' : '<span style="color:var(--amber);font-weight:700;">미설정</span>';
     return `<tr>
-      <td>${escapeHtml(s.studentId||'')}</td>
+      <td>${escapeHtml(s.studentId||'')}${isAdmin ? ' <span style="font-size:11px;background:var(--blue-dark);color:#fff;border-radius:99px;padding:2px 8px;font-weight:700;">관리자</span>' : ''}</td>
       <td>${escapeHtml(s.name||'')}</td>
       <td>${s.createdAt ? fmtTime(new Date(s.createdAt).toISOString()) : '—'}</td>
       <td>풀이 ${seen} · <span style="color:var(--amber);font-weight:700;">복습 ${wrong}</span></td>
@@ -737,10 +744,24 @@ function renderAccounts(){
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-mini" onclick='resetStudentPin("${s.uid}")'>PIN초기화</button>
         <button class="btn btn-ghost btn-mini" onclick='editStudentName("${s.uid}")'>이름수정</button>
-        <button class="btn btn-danger btn-mini" onclick='deleteStudent("${s.uid}")'>삭제</button>
+        ${isAdmin ? '' : `<button class="btn btn-danger btn-mini" onclick='deleteStudent("${s.uid}")'>삭제</button>`}
       </td>
     </tr>`;
-  }).join('')}</tbody></table>`;
+  };
+  const tableHead = `<thead><tr>
+    <th>학번</th><th>이름</th><th>가입일</th><th>진도(풀이·복습대기)</th><th>PIN</th><th>관리</th>
+  </tr></thead>`;
+  // 관리자(고은표) 계정은 학생 목록과 분리해 별도 표시
+  const adminAccts = allStudents.filter(s => s.studentId === ADMIN_SID);
+  const list = allStudents
+    .filter(s => s.studentId !== ADMIN_SID)
+    .filter(s => !q || (s.studentId||'').includes(q) || (s.name||'').toLowerCase().includes(q))
+    .sort((a,b)=> (a.studentId||'').localeCompare(b.studentId||'') || (a.name||'').localeCompare(b.name||''));
+  const adminBlock = adminAccts.length ? `
+    <div style="margin-top:18px;font-size:13px;font-weight:700;color:var(--text-light);">🔒 관리자 계정 (학생 통계 미포함)</div>
+    <table class="data" style="opacity:.85;">${tableHead}<tbody>${adminAccts.map(s=>accountRow(s,true)).join('')}</tbody></table>` : '';
+  if(!list.length){ wrap.innerHTML = '<div class="card empty">검색 결과가 없습니다.</div>' + adminBlock; return; }
+  wrap.innerHTML = `<table class="data">${tableHead}<tbody>${list.map(s=>accountRow(s,false)).join('')}</tbody></table>` + adminBlock;
 }
 
 async function resetStudentPin(uid){

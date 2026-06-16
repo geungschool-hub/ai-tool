@@ -203,6 +203,13 @@
   .modal-card input:disabled{background:#f4f5fb; color:#bbb;}
   .modal-err{color:var(--bad); font-size:13px; text-align:center; min-height:18px; margin-top:10px; font-weight:600;}
   .modal-row{display:flex; gap:10px; margin-top:6px;}
+  .dt3-list{margin:8px 0 14px;}
+  .dt3-row{display:flex; align-items:center; gap:10px; padding:11px 13px; border-radius:13px; background:var(--tint,#ffe6f1); margin-bottom:9px;}
+  .dt3-row:nth-child(1){background:#fff6da; border:1.5px solid #f4d774;}
+  .dt3-medal{font-size:22px; width:30px; text-align:center;}
+  .dt3-nick{flex:1; font-weight:800; font-size:16px; color:var(--ink,#c03a73);}
+  .dt3-pts{font-weight:800; font-size:14px; color:#b45309;}
+  .dt3-cheer{text-align:center; font-size:13px; color:var(--sub); margin-top:4px; font-weight:600;}
   .modal-row .btn{flex:1; width:auto; margin-bottom:0;}
 </style>
 </head>
@@ -431,6 +438,14 @@
       </div>
     </div>
   </div>
+  <!-- 어제의 1~3등 칭찬 팝업 -->
+  <div class="modal-back" id="dailyTop3Modal" onclick="if(event.target===this)closeDailyTop3()">
+    <div class="modal-card">
+      <h3 id="dt3Title"></h3>
+      <div class="dt3-list" id="dt3Body"></div>
+      <div class="modal-row"><button class="btn primary small" onclick="closeDailyTop3()">확인 👏</button></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -553,6 +568,10 @@ function seasonKeyOf(d){
 function currentSeason(){ return seasonKeyOf(new Date()); }
 function prevSeason(){ const x=new Date(); x.setDate(x.getDate()-7); return seasonKeyOf(x); }
 
+/* ===== 일별 칭찬(어제의 1~3등) — 달력 날짜 기준 ===== */
+function dayKeyOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayKey(){ return dayKeyOf(new Date()); }
+
 /* ===== 레벨별 설정(per-level): CFG.levelCfg[myLevel]가 있으면 우선, 없으면 전역 CFG, 없으면 기본값 ===== */
 function LC(){ return (CFG.levelCfg && typeof CFG.levelCfg==='object' && CFG.levelCfg[myLevel]) || {}; }
 function cfgVal(k,d){ const o=LC(); if(o[k]!==undefined && o[k]!==null) return o[k]; if(CFG[k]!==undefined && CFG[k]!==null) return CFG[k]; return d; }
@@ -601,7 +620,10 @@ function unlockedIds(){
 function buildToday(){
   const D=todayIndex();
   const unlocked=unlockedIds();
-  const newIds=unlocked.filter(id=>!state.prog[id]).slice(0, cfgVal('newPerDay',20));
+  // 오늘(달력 일차 D) 이미 새로 시작한 단어 수 → 하루 newPerDay까지만 추가 개방
+  const introToday=Object.keys(state.prog).filter(id=>state.prog[id].intro===D).length;
+  const remainNew=Math.max(0, cfgVal('newPerDay',20)-introToday);
+  const newIds=unlocked.filter(id=>!state.prog[id]).slice(0, remainNew);
   const due=Object.keys(state.prog).map(Number)
     .filter(id=>wordById(id) && !wordById(id).hidden && state.prog[id].due<=D)
     .sort((a,b)=>state.prog[a].due-state.prog[b].due);
@@ -653,6 +675,7 @@ async function loadAccount(id, s){
             scores:{c:s.c||0, g:s.g||0, k:s.k||0, cb:s.cb||0, sp:s.sp||0},
             ansTotal:s.ansTotal||0, ansCorrect:s.ansCorrect||0,
             wkSeason:s.wkSeason||'', wkC:s.wkC||0, wkG:s.wkG||0, wkK:s.wkK||0, wkCb:s.wkCb||0, wkSp:s.wkSp||0,
+            daySeason:s.daySeason||'', dPts:s.dPts||0,
             prog: ps.val() || {} };
   await loadLevelWords(myLevel);
   localStorage.setItem(SESSION_KEY, JSON.stringify({accountId:id, studentId:state.studentId}));
@@ -769,7 +792,34 @@ function enterApp(){ $('screen-nick').style.display='none'; $('main').style.disp
     : hasDays()
       ? '<b>'+perTxt+'</b>마다 교재 <b>'+daysPerPeriod()+'개 DAY</b>가 <b>저절로 열려요</b>.'
       : '<b>'+perTxt+'</b>마다 새 단어 <b>'+cfgVal('weekSize',140)+'</b>개 묶음이 <b>저절로 열려요</b>.';
-  $('adminBtn').style.display = isAdmin?'flex':'none'; renderHome(); maybeRollOnLoad(); bindClassGoal(); }
+  $('adminBtn').style.display = isAdmin?'flex':'none'; renderHome(); maybeRollOnLoad(); bindClassGoal(); maybeShowDailyTop3(); }
+
+/* ===== 어제의 1~3등 칭찬 팝업 (하루 1회, 첫 접속 시) ===== */
+async function maybeShowDailyTop3(){
+  if(isAdmin || !accountId) return;
+  const seenKey='vocab_dailyTop3Seen_'+accountId, today=todayKey();
+  if(localStorage.getItem(seenKey)===today) return;   // 오늘 이미 봤으면 패스(기기·계정별)
+  let all;
+  try { all=(await db.ref('vocab/daily').once('value')).val()||{}; }
+  catch(e){ console.error('일별 기록 조회 실패', e); return; }
+  localStorage.setItem(seenKey, today);   // 데이터 없어도 재조회 방지(하루 1회)
+  // 오늘 이전 + 내 레벨 데이터가 있는 가장 최근 날짜
+  const days=Object.keys(all).filter(d=>d<today && all[d] && all[d][myLevel] && Object.keys(all[d][myLevel]).length).sort().reverse();
+  if(!days.length) return;
+  const dkey=days[0];
+  const top=Object.values(all[dkey][myLevel]).filter(x=>x && (x.pts||0)>0).sort((a,b)=>(b.pts||0)-(a.pts||0)).slice(0,3);
+  if(!top.length) return;
+  const p=dkey.split('-').map(Number), dd=new Date(p[0],p[1]-1,p[2]);
+  const td=new Date(); td.setHours(0,0,0,0);
+  const diffDays=Math.round((td-dd)/86400000), WD=['일','월','화','수','목','금','토'];
+  const label = diffDays===1 ? '어제' : (p[1]+'월 '+p[2]+'일('+WD[dd.getDay()]+')');
+  const medals=['👑','🥈','🥉'];
+  $('dt3Title').textContent='🏅 '+label+'의 단어 왕 TOP 3';
+  $('dt3Body').innerHTML = top.map((e,i)=>'<div class="dt3-row"><span class="dt3-medal">'+medals[i]+'</span><span class="dt3-nick">'+escHtml(e.nick||'(이름없음)')+'</span><span class="dt3-pts">'+(e.pts||0).toLocaleString()+'점</span></div>').join('')
+    + '<div class="dt3-cheer">짝짝짝 👏 모두 잘했어요! 오늘도 함께 도전해요, 공주님!</div>';
+  $('dailyTop3Modal').classList.add('on');
+}
+function closeDailyTop3(){ $('dailyTop3Modal').classList.remove('on'); }
 
 /* ===== 반 공동 목표(통합, 모든 레벨 합산) ===== */
 function bindClassGoal(){
@@ -883,6 +933,7 @@ function save(){
   db.ref('vocab/students/'+accountId).update({ nickname:state.nickname, studentId:state.studentId||'', name:state.name||'', level:state.level||myLevel, c:state.scores.c, g:state.scores.g, k:state.scores.k, cb:state.scores.cb||0, sp:state.scores.sp||0,
     ansTotal:state.ansTotal||0, ansCorrect:state.ansCorrect||0,
     wkSeason:state.wkSeason||'', wkC:state.wkC||0, wkG:state.wkG||0, wkK:state.wkK||0, wkCb:state.wkCb||0, wkSp:state.wkSp||0,
+    daySeason:state.daySeason||'', dPts:state.dPts||0,
     streak:state.streak, lastStudyDay:state.lastStudyDay, week:state.week, updatedAt:firebase.database.ServerValue.TIMESTAMP });
   db.ref('vocab/progress/'+accountId).set(state.prog);
 }
@@ -1082,7 +1133,9 @@ function nextQuestion(){
 
 /* ===== SRS ===== */
 function schedule(id, correct, D){
+  const isNew = !state.prog[id];
   let p = state.prog[id] || {box:0, due:D, seen:false};
+  if(isNew) p.intro = D;   // 처음 등장한 학습 일차(하루 새 단어 상한 계산용)
   if(correct) p.box = p.box>=1 ? Math.min(p.box+1, MAXBOX) : 2;
   else p.box = 1;
   p.due = D + INTERVALS[p.box];
@@ -1110,7 +1163,15 @@ async function finishSession(){
   state.ansTotal=(state.ansTotal||0)+session.results.length; state.ansCorrect=(state.ansCorrect||0)+correctN;
   await rollSeason();   // 주가 바뀌었으면 지난 시즌 박제 후 0으로 리셋
   state.wkC+=gainC; state.wkG+=gainG; state.wkK+=gainK; state.wkCb=(state.wkCb||0)+gainCb; state.wkSp=(state.wkSp||0)+gainSp;
+  // 일별 점수 누적(어제의 1~3등 칭찬 팝업용) — 날짜가 바뀌면 0부터
+  const dkToday=todayKey();
+  if(state.daySeason!==dkToday){ state.daySeason=dkToday; state.dPts=0; }
+  state.dPts += (gainC+gainG+gainK+gainCb+gainSp);
   save();
+  if(!isAdmin && !HIDDEN_SIDS.includes(String(state.studentId))){
+    try { db.ref('vocab/daily/'+dkToday+'/'+myLevel+'/'+accountId).set({ nick:state.nickname, pts:state.dPts }); }
+    catch(e){ console.error('일별 점수 기록 실패', e); }
+  }
   if(correctN>0){ try { db.ref('vocab/classGoal/count').transaction(c=>(c||0)+correctN); } catch(e){ console.error('공동목표 적립 실패', e); } }
   $('gainCorrect').textContent='+'+gainC; $('gainGrowth').textContent='+'+gainG; $('gainConsist').textContent='+'+gainK;
   $('gainCombo').textContent='+'+gainCb; $('gainSpeed').textContent='+'+gainSp;

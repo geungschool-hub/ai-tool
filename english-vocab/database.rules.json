@@ -25,6 +25,10 @@
         ".read": "auth != null",
         ".write": "auth != null"
       },
+      "daily": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
       "levelLog": {
         ".read": "auth != null",
         ".write": "auth != null"

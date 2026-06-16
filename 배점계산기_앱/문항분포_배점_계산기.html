@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>문항 정답 분포 · 배점 계산기</title>
+<style>
+  :root{ --blue:#1F4E79; --red:#C00000; --gray:#808080; --line:#d6d6d6; --ok:#0a7d28; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"맑은 고딕","Malgun Gothic",sans-serif; margin:0; color:#1a1a1a;
+        background:#f4f5f7; line-height:1.5; padding-bottom:165px; }
+  header{ background:var(--blue); color:#fff; padding:12px 22px; position:sticky; top:0; z-index:50;
+          box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  header h1{ font-size:18px; margin:0; }
+  header h1[contenteditable]{ outline:none; }
+  header h1[contenteditable]:focus{ background:rgba(255,255,255,.15); border-radius:4px; }
+
+  /* 시험(버전) 관리 바 */
+  .exambar{ margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .exambar select{ font-family:inherit; font-size:13px; border:0; border-radius:6px; padding:7px 10px;
+        background:#fff; color:var(--blue); font-weight:bold; max-width:340px; }
+  .exambar button{ font-family:inherit; font-size:12.5px; border:0; border-radius:6px; padding:7px 11px;
+        cursor:pointer; background:rgba(255,255,255,.16); color:#fff; font-weight:bold; }
+  .exambar button:hover{ background:rgba(255,255,255,.28); }
+  .exambar .saved{ font-size:11.5px; color:#cfe0f0; margin-left:2px; }
+
+  .toolbar{ margin-top:9px; display:flex; gap:8px; flex-wrap:wrap; }
+  .toolbar button{ font-family:inherit; font-size:12.5px; border:0; border-radius:6px; padding:7px 12px;
+        cursor:pointer; background:#fff; color:var(--blue); font-weight:bold; }
+  .toolbar button.warn{ background:#ffd9d9; color:#a00; }
+  .toolbar button:hover{ opacity:.85; }
+
+  .wrap{ max-width:880px; margin:18px auto; padding:0 16px; }
+  .sec{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:14px 0;
+        box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .sec h2{ color:var(--blue); font-size:16px; margin:0 0 10px; display:flex; align-items:center; gap:10px;
+        flex-wrap:wrap; }
+  .sec h2 .mini{ font-size:12px; color:#666; font-weight:normal; }
+  .tablescroll{ overflow-x:auto; }
+  table.io{ border-collapse:collapse; width:100%; font-size:13.5px; }
+  table.io th, table.io td{ border:1px solid var(--line); padding:5px 6px; text-align:center; }
+  table.io th{ background:#eef1f5; color:#333; font-size:12.5px; }
+  table.io td.no{ width:52px; font-weight:bold; color:var(--blue); background:#fafbfc; }
+  .picks{ display:flex; gap:4px; justify-content:center; }
+  .pick{ width:30px; height:30px; border-radius:50%; border:2px solid #ccc; background:#fff; cursor:pointer;
+        font-size:14px; font-weight:bold; color:#999; display:flex; align-items:center; justify-content:center; }
+  .pick.sel{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .pts{ width:64px; font-family:inherit; font-size:13.5px; text-align:center; border:1px solid var(--line);
+        border-radius:4px; padding:3px 2px; }
+  .diffs{ display:flex; gap:4px; justify-content:center; }
+  .dchip{ width:28px; height:28px; border-radius:6px; border:2px solid #ccc; background:#fff; cursor:pointer;
+        font-size:13px; font-weight:bold; color:#999; display:flex; align-items:center; justify-content:center; }
+  .dchip.sel.d1{ background:#0a7d28; border-color:#0a7d28; color:#fff; }   /* 하 */
+  .dchip.sel.d2{ background:#d98300; border-color:#d98300; color:#fff; }   /* 중 */
+  .dchip.sel.d3{ background:#C00000; border-color:#C00000; color:#fff; }   /* 상 */
+  tr.row-d1 td.no{ box-shadow:inset 3px 0 0 #0a7d28; }
+  tr.row-d2 td.no{ box-shadow:inset 3px 0 0 #d98300; }
+  tr.row-d3 td.no{ box-shadow:inset 3px 0 0 #C00000; }
+  table.io td.no{ cursor:pointer; }
+  tr.cursor td{ background:#eaf2fd; }
+  tr.cursor td.no{ background:#cfe2fb; outline:2px solid var(--blue); outline-offset:-2px; }
+  td.pts-bad input{ border-color:var(--red); background:#fff1f1; color:var(--red); font-weight:bold; }
+  .rowdel{ width:30px; }
+  .rowdel button{ border:0; background:none; color:#c00; cursor:pointer; font-size:15px; }
+  .rowadd{ margin-top:8px; display:flex; gap:8px; align-items:center; }
+  .rowadd button{ font-family:inherit; font-size:12.5px; border:1px solid var(--blue); color:var(--blue);
+        background:#fff; border-radius:6px; padding:5px 12px; cursor:pointer; }
+  .cfg{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; font-size:13px; color:#444; }
+  .cfg label{ display:flex; align-items:center; gap:6px; }
+  .cfg input{ font-family:inherit; font-size:13px; width:64px; text-align:center; border:1px solid var(--line);
+        border-radius:4px; padding:3px; }
+  .af-btn{ font-family:inherit; font-size:13px; font-weight:bold; border:0; border-radius:6px; padding:7px 14px;
+        cursor:pointer; background:var(--blue); color:#fff; }
+  .af-btn:hover{ opacity:.88; }
+
+  /* 하단 고정 결과 패널 */
+  .dock{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:2px solid var(--blue);
+         box-shadow:0 -2px 8px rgba(0,0,0,.12); z-index:60; padding:7px 16px; max-height:40vh; overflow-y:auto; }
+  .dock .inner{ max-width:880px; margin:0 auto; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  .dock .ttl{ font-weight:bold; color:var(--blue); font-size:11.5px; margin-bottom:3px; }
+  .dist{ display:flex; gap:8px; }
+  .bar{ display:flex; flex-direction:column; align-items:center; width:34px; }
+  .bar .cnt{ font-size:12px; font-weight:bold; line-height:1.2; }
+  .bar .track{ width:20px; height:40px; background:#eef0f3; border-radius:4px; display:flex; align-items:flex-end;
+        overflow:hidden; }
+  .bar .fill{ width:100%; background:var(--blue); transition:height .2s; }
+  .bar .cap{ font-size:12px; margin-top:1px; line-height:1.2; }
+  .summary{ font-size:12.5px; line-height:1.5; }
+  .summary .ok{ color:var(--ok); font-weight:bold; }
+  .summary .bad{ color:var(--red); font-weight:bold; }
+  .summary .total{ color:#444; }
+  .diffband{ display:flex; gap:7px; flex-wrap:wrap; margin-top:2px; }
+  .diffband .db{ font-size:11.5px; padding:1px 7px; border-radius:5px; color:#fff; white-space:nowrap; }
+  .diffband .db.d1{ background:#0a7d28; } .diffband .db.d2{ background:#d98300; } .diffband .db.d3{ background:#C00000; }
+  .diffband .db.empty{ background:#bbb; }
+  .invade{ font-size:11.5px; margin-top:3px; }
+  .invade .bad{ color:var(--red); font-weight:bold; }
+  .invade .ok{ color:var(--ok); font-weight:bold; }
+  .hint{ font-size:11.5px; color:#888; margin-top:6px; }
+
+  @media (max-width:760px){
+    .dock .inner{ gap:12px; }
+    .dock{ max-height:48vh; }
+    body{ padding-bottom:250px; }
+  }
+
+  @media print{
+    header,.dock,.toolbar,.exambar,.rowdel,.rowadd,.cfg input{ display:none !important; }
+    body{ padding:0; background:#fff; }
+    .sec{ box-shadow:none; border-color:#bbb; page-break-inside:avoid; }
+    .tablescroll{ overflow:visible; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title" contenteditable="true">문항 정답 분포 · 배점 계산기</h1>
+  <div class="exambar">
+    <select id="examSel" onchange="switchExam(this.value)" title="시험 전환"></select>
+    <button onclick="newExam()" title="빈 시험 새로 만들기">＋ 새 시험</button>
+    <button onclick="dupExam()" title="현재 시험을 복제">⧉ 복제</button>
+    <button onclick="deleteExam()" title="현재 시험 삭제">🗑 삭제</button>
+    <span class="saved" id="savedTag">자동 저장됨</span>
+  </div>
+  <div class="toolbar">
+    <button onclick="exportJSON()">⬇ 이 시험 JSON 내보내기</button>
+    <button onclick="document.getElementById('imp').click()">⬆ JSON 불러오기(새 시험)</button>
+    <button onclick="window.print()">🖨 인쇄 / PDF</button>
+    <button class="warn" onclick="resetCurrent()">⟲ 현재 시험 비우기</button>
+    <input type="file" id="imp" accept=".json" style="display:none" onchange="importJSON(event)">
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="sec">
+    <h2>설정</h2>
+    <div class="cfg">
+      <label>객관식 목표 배점 합 <input type="number" id="targetMC" step="0.1" value="80" oninput="touch();update()">점</label>
+      <label>서답형 목표 배점 합 <input type="number" id="targetSA" step="0.1" value="20" oninput="touch();update()">점</label>
+      <label>정답 편차 허용폭(최대−최소) <input type="number" id="devLimit" step="1" value="4" oninput="touch();update()"></label>
+    </div>
+    <div class="hint">※ 서울시교육청 지침 예시: 20문항 기준 각 번호 ±2 → 편차 허용폭 4. 문항 수에 맞게 직접 조정하세요.</div>
+  </div>
+
+  <div class="sec">
+    <h2>⚙ 자동 배점 <span class="mini">상·중·하 문항 수와 총점을 입력하면 배점을 계산해 객관식 표에 채웁니다</span></h2>
+    <div class="cfg">
+      <label>상 <input type="number" id="af_high" min="0" step="1" value="0">문항</label>
+      <label>중 <input type="number" id="af_mid" min="0" step="1" value="0">문항</label>
+      <label>하 <input type="number" id="af_low" min="0" step="1" value="0">문항</label>
+      <label>객관식 총점 <input type="number" id="af_total" step="0.1" value="80">점</label>
+      <label>난이도 간격 <input type="number" id="af_gap" step="0.1" min="0" value="0.5">점</label>
+      <label title="이미 입력한 난이도·배점·정답을 그대로 두고, 비어 있는 배점만 계산해 채웁니다"><input type="checkbox" id="af_keep" checked style="width:auto"> 입력값 유지(빈 배점만 채움)</label>
+      <button class="af-btn" onclick="autoFill()">자동 배점 채우기</button>
+    </div>
+    <div class="hint">※ <b>입력값 유지 ☑</b>: 이미 적은 난이도·배점·정답은 그대로 두고, <b>빈 난이도</b>는 위 상·중·하 문항 수 목표의 부족분을 채우고(목표 0이면 중), <b>빈 배점</b>은 계산해 합계를 총점에 맞춥니다. 일부만 채워둬도 나머지를 자동 완성합니다.<br>
+      ※ <b>입력값 유지 ☐</b>: 위 상·중·하 문항 수와 총점으로 표를 처음부터 새로 구성합니다. (예: 상 3·중 7·하 8, 80점, 간격 0.5)</div>
+  </div>
+
+  <div class="sec">
+    <h2>객관식 <span class="mini">난이도(상·중·하) → 배점 → 정답 입력 · <b>행을 클릭하고 키패드 1~5</b>로 정답 빠른 입력(자동 다음 행, ↑↓ 이동, 0/⌫ 지우기)</span></h2>
+    <div class="tablescroll">
+    <table class="io">
+      <thead><tr><th class="no">번호</th><th>난이도</th><th>배점</th><th>정답</th><th class="rowdel"></th></tr></thead>
+      <tbody id="mcBody"></tbody>
+    </table>
+    </div>
+    <div class="rowadd">
+      <button onclick="addMC()">＋ 객관식 행 추가</button>
+      <button onclick="addMC(5)">＋5행</button>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>서답형 <span class="mini">난이도 → 배점 입력 (정답 분포 계산 제외)</span></h2>
+    <div class="tablescroll">
+    <table class="io">
+      <thead><tr><th class="no">번호</th><th>난이도</th><th>배점</th><th class="rowdel"></th></tr></thead>
+      <tbody id="saBody"></tbody>
+    </table>
+    </div>
+    <div class="rowadd">
+      <button onclick="addSA()">＋ 서답형 행 추가</button>
+    </div>
+  </div>
+</div>
+
+<div class="dock">
+  <div class="inner">
+    <div>
+      <div class="ttl">정답 분포 (객관식)</div>
+      <div class="dist" id="dist"></div>
+    </div>
+    <div class="summary" id="summary"></div>
+    <div>
+      <div class="ttl">난이도별 배점 범위</div>
+      <div class="diffband" id="diffband"></div>
+      <div class="invade" id="invade"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CIRCLED = {1:"①",2:"②",3:"③",4:"④",5:"⑤"};
+const DIFF = {1:"하", 2:"중", 3:"상"};          // 값: 1=하(쉬움) < 2=중 < 3=상(어려움)
+const DIFF_ORDER = [3,2,1];                       // 버튼 표시 순서: 상 → 중 → 하
+const STORE_KEY = "munhang_calc_store_v2";        // 다중 시험 보관소
+const LEGACY_KEY = "munhang_dist_calc";           // 구버전 단일 저장본
+const EPS = 0.049;                                 // 배점 합 비교 허용오차(부동소수점)
+let mcCursor = 0;                                   // 키패드 정답 입력 커서(객관식 행 인덱스)
+
+// 한 시험의 데이터: 객관식 {ans,diff,pts}, 서답형 {diff,pts}  (diff/ans 0 = 미지정)
+function defaultData(title){
+  const mc = []; for(let i=0;i<18;i++) mc.push({ans:0, diff:0, pts:0});
+  const sa = []; for(let i=0;i<3;i++)  sa.push({diff:0, pts:0});
+  return { title: title || "새 시험", mc, sa, targetMC:80, targetSA:20, devLimit:4 };
+}
+
+// 누락 필드 보강(구 JSON/저장본 호환)
+function normalizeData(d){
+  if(!d || typeof d!=="object") d = defaultData();
+  if(typeof d.title!=="string") d.title = "제목 없는 시험";
+  if(!Array.isArray(d.mc)) d.mc = [];
+  if(!Array.isArray(d.sa)) d.sa = [];
+  d.mc.forEach(q=>{ if(q.ans===undefined)q.ans=0; if(q.diff===undefined)q.diff=0; if(q.pts===undefined)q.pts=0; });
+  d.sa.forEach(q=>{ if(q.diff===undefined)q.diff=0; if(q.pts===undefined)q.pts=0; });
+  if(typeof d.targetMC!=="number") d.targetMC = 80;
+  if(typeof d.targetSA!=="number") d.targetSA = 20;
+  if(typeof d.devLimit!=="number") d.devLimit = 4;
+  return d;
+}
+
+function uid(){ return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function round1(x){ return Math.round(x*10)/10; }
+function val(id){ const el=document.getElementById(id); return el?el.value:""; }
+
+// ── 보관소 로드/마이그레이션 ──
+let store, D;
+function loadStore(){
+  let s = null;
+  try{ s = JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){ s = null; }
+  if(s && Array.isArray(s.exams) && s.exams.length){
+    s.exams.forEach(ex=>{ ex.data = normalizeData(ex.data); if(!ex.id) ex.id = uid();
+                          if(!ex.updatedAt) ex.updatedAt = Date.now(); });
+    if(!s.exams.find(ex=>ex.id===s.currentId)) s.currentId = s.exams[0].id;
+    return s;
+  }
+  // 신규 보관소 — 구버전 단일 저장본이 있으면 첫 시험으로 흡수
+  const exams = [];
+  try{
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_KEY));
+    if(legacy){ exams.push({ id:uid(), data:normalizeData(legacy), updatedAt:Date.now() }); }
+  }catch(e){}
+  if(!exams.length) exams.push({ id:uid(), data:defaultData("2026 1학기 기말"), updatedAt:Date.now() });
+  return { exams, currentId: exams[0].id };
+}
+
+function currentExam(){ return store.exams.find(ex=>ex.id===store.currentId) || store.exams[0]; }
+
+// 날짜 표시 (예: 6/16 14:30)
+function fmtDate(ts){ if(!ts) return ""; const d=new Date(ts); const p=n=>String(n).padStart(2,"0");
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+// 실제 편집 시에만 현재 시험의 수정 시각 갱신 + 드롭다운 날짜 동기화
+function touch(){ const ex=currentExam(); if(ex){ ex.updatedAt=Date.now(); renderExamBar(); } }
+
+let saveTimer=null;
+function persist(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(store)); }catch(e){}
+  const tag=document.getElementById("savedTag");
+  if(tag){ const dt=fmtDate(currentExam() && currentExam().updatedAt);
+    tag.textContent="저장됨 ✓"; clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>{ tag.textContent=dt?("수정 "+dt):"자동 저장됨"; },1200); }
+}
+
+function renderExamBar(){
+  const sel=document.getElementById("examSel");
+  sel.innerHTML = store.exams.map(ex=>{
+    const dt=fmtDate(ex.updatedAt);
+    return `<option value="${ex.id}" ${ex.id===store.currentId?"selected":""}>${escapeHtml(ex.data.title||"제목 없음")}${dt?"  ·  "+dt:""}</option>`;
+  }).join("");
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function switchExam(id){ store.currentId=id; D=normalizeData(currentExam().data); currentExam().data=D; applyData(); persist(); }
+function newExam(){ const ex={id:uid(), data:defaultData("새 시험 "+(store.exams.length+1)), updatedAt:Date.now()};
+  store.exams.push(ex); store.currentId=ex.id; D=ex.data; applyData(); persist(); }
+function dupExam(){ const src=currentExam();
+  const copy={ id:uid(), data:JSON.parse(JSON.stringify(src.data)), updatedAt:Date.now() };
+  copy.data.title=(src.data.title||"시험")+" (복사본)";
+  store.exams.push(copy); store.currentId=copy.id; D=copy.data; applyData(); persist(); }
+function deleteExam(){
+  if(store.exams.length<=1){ alert("마지막 시험은 삭제할 수 없습니다. '현재 시험 비우기'를 사용하세요."); return; }
+  if(!confirm(`'${currentExam().data.title}' 시험을 삭제할까요?`)) return;
+  store.exams = store.exams.filter(ex=>ex.id!==store.currentId);
+  store.currentId = store.exams[0].id; D=currentExam().data; applyData(); persist();
+}
+function resetCurrent(){ if(confirm("현재 시험의 내용을 모두 비울까요? (다른 시험은 유지됩니다)")){
+  const keepTitle=D.title; const fresh=defaultData(keepTitle);
+  currentExam().data=fresh; D=fresh; touch(); applyData(); persist(); } }
+
+// ── 행 렌더링 ──
+function renderRows(){
+  const diffCell = (t,i,q)=>`<td><div class="diffs">${DIFF_ORDER.map(d=>
+      `<div class="dchip ${q.diff===d?"sel d"+d:""}" title="${DIFF[d]}" onclick="setDiff('${t}',${i},${d})">${DIFF[d]}</div>`).join("")}</div></td>`;
+  // 객관식: 번호 → 난이도 → 배점 → 정답
+  if(mcCursor>=D.mc.length) mcCursor=Math.max(0, D.mc.length-1);
+  document.getElementById("mcBody").innerHTML = D.mc.map((q,i)=>`
+    <tr class="${q.diff?"row-d"+q.diff:""}${i===mcCursor?" cursor":""}">
+      <td class="no" onclick="setCursor(${i})" title="이 행을 정답 입력 위치로">${i+1}</td>
+      ${diffCell('mc',i,q)}
+      <td id="ptscell-mc-${i}"><input class="pts" type="number" step="0.1" value="${q.pts||""}" placeholder="0"
+            oninput="setPts('mc',${i},this.value)"></td>
+      <td><div class="picks">${[1,2,3,4,5].map(n=>
+          `<div class="pick ${q.ans===n?"sel":""}" onclick="setAns(${i},${n})">${CIRCLED[n]}</div>`).join("")}</div></td>
+      <td class="rowdel"><button title="행 삭제" onclick="delRow('mc',${i})">✕</button></td>
+    </tr>`).join("");
+  // 서답형: 번호 → 난이도 → 배점
+  document.getElementById("saBody").innerHTML = D.sa.map((q,i)=>`
+    <tr class="${q.diff?"row-d"+q.diff:""}">
+      <td class="no">서${i+1}</td>
+      ${diffCell('sa',i,q)}
+      <td id="ptscell-sa-${i}"><input class="pts" type="number" step="0.1" value="${q.pts||""}" placeholder="0"
+            oninput="setPts('sa',${i},this.value)"></td>
+      <td class="rowdel"><button title="행 삭제" onclick="delRow('sa',${i})">✕</button></td>
+    </tr>`).join("");
+}
+
+function setAns(i,n){ mcCursor=i; D.mc[i].ans = (D.mc[i].ans===n ? 0 : n); touch(); renderRows(); update(); }
+function setCursor(i){ mcCursor = Math.max(0, Math.min(i, D.mc.length-1)); renderRows(); }
+function setDiff(t,i,d){ D[t][i].diff = (D[t][i].diff===d ? 0 : d); touch(); renderRows(); update(); }
+function setPts(t,i,v){ D[t][i].pts = parseFloat(v)||0; touch(); update(); }
+function addMC(k){ for(let j=0;j<(k||1);j++) D.mc.push({ans:0,diff:0,pts:0}); touch(); renderRows(); update(); }
+function addSA(){ D.sa.push({diff:0,pts:0}); touch(); renderRows(); update(); }
+function delRow(t,i){ D[t].splice(i,1); touch(); renderRows(); update(); }
+
+// ── 자동 배점 계산 ──
+// bands: 문항별 난이도(1=하,2=중,3=상) 배열(행 순서). total 총점, gap 인접 난이도 간 배점 차.
+// 0.1점(데시점) 단위로 계산하고, 반올림 잔여를 하≤중≤상 순서가 깨지지 않게 분배해 합계를 total에 정확히 맞춘다.
+function computeAutoPoints(bands, total, gap){
+  const N=bands.length;
+  const a=bands.filter(d=>d===3).length;   // 상
+  const b=bands.filter(d=>d===2).length;   // 중
+  const c=bands.filter(d=>d===1).length;   // 하
+  const Tdp=Math.round(total*10);
+  const gdp=Math.max(0,Math.round(gap*10));
+  const y=(Tdp - gdp*(a-c))/N;                       // 중 기준 배점(데시점)
+  const lowdp=Math.round(y-gdp), middp=Math.round(y), highdp=Math.round(y+gdp);
+  const minExisting = c>0?lowdp : (b>0?middp:highdp);
+  if(minExisting < 1) return {ok:false, msg:"총점이 너무 작거나 간격이 너무 큽니다. 간격을 줄이거나 총점을 높이세요."};
+  const base={1:lowdp,2:middp,3:highdp};
+  const dp=bands.map(d=>base[d]);
+  let R=Tdp - dp.reduce((s,x)=>s+x,0);              // 반올림 잔여(데시점)
+  const order = R>=0 ? [3,2,1] : [1,2,3];          // +는 상부터, −는 하부터
+  const step = R>=0 ? 1 : -1;
+  let need=Math.abs(R), guard=0;
+  while(need>0 && guard++<100000){
+    let moved=false;
+    for(const band of order){
+      for(let i=0;i<N && need>0;i++){
+        if(bands[i]===band){
+          if(step<0 && dp[i]+step<1) continue;      // 0.1점 미만으로 내려가지 않게
+          dp[i]+=step; need--; moved=true;
+        }
+      }
+    }
+    if(!moved) break;
+  }
+  const pts=dp.map(x=>x/10);
+  const sum=Math.round(dp.reduce((s,x)=>s+x,0))/10;
+  return {ok:true, pts, low:lowdp/10, mid:middp/10, high:highdp/10, sum, exact:need===0};
+}
+
+// 빈 난이도(diff 0) 행을 상·중·하 목표 수(a/b/c)의 결손을 메우도록 채움. 이미 적힌 난이도는 보존.
+// 목표가 없거나 결손이 소진되면 남은 빈칸은 중(2)으로 채운다. 반환: 행별 난이도 배열(빈칸 없음).
+function completeDifficulties(rows, a, b, c){
+  const diffs = rows.map(r=>r.diff||0);
+  const cnt={1:0,2:0,3:0}; diffs.forEach(d=>{ if(cnt[d]!==undefined) cnt[d]++; });
+  const deficit={ 3:Math.max(0,a-cnt[3]), 2:Math.max(0,b-cnt[2]), 1:Math.max(0,c-cnt[1]) };
+  const pick=()=>{ let best=0,bestv=0; for(const d of [2,1,3]){ if(deficit[d]>bestv){ bestv=deficit[d]; best=d; } } return best; };
+  for(let i=0;i<diffs.length;i++){
+    if(diffs[i]) continue;
+    let band=pick();          // 결손이 가장 큰 밴드(동률은 중>하>상)
+    if(!band) band=2;         // 목표 없음/소진 → 중 기본
+    diffs[i]=band;
+    if(deficit[band]>0) deficit[band]--;
+  }
+  return diffs;
+}
+
+// 입력값 유지 모드: 이미 적은 배점은 고정, 빈 배점만 채워 합계를 total에 맞춤.
+// 난이도·정답은 그대로. 채운 값이 기존 값과 순서(하≤중≤상)를 깨지 않게 동적 상·하한으로 분배.
+function autoPointsKeep(rows, total, gap){
+  const Tdp=Math.round(total*10);
+  const gdp=Math.max(0,Math.round(gap*10));
+  const INF=1e9;
+  const dp=rows.map(r=>Math.round((r.pts||0)*10));
+  const blankIdx=[], fixedIdx=[];
+  rows.forEach((r,i)=>{ (dp[i]>0?fixedIdx:blankIdx).push(i); });
+
+  if(blankIdx.length===0){
+    const s=dp.reduce((x,y)=>x+y,0);
+    return {ok:true, pts:dp.map(x=>x/10), filled:0, sum:s/10, exact:s===Tdp,
+            note: s===Tdp? "" : `빈 배점이 없어 현재 합계 ${s/10}점 (목표 ${total}점)`};
+  }
+  const noDiff=blankIdx.filter(i=>!rows[i].diff);
+  if(noDiff.length) return {ok:false, msg:`배점이 비어있고 난이도도 없는 문항이 ${noDiff.length}개 있습니다.\n난이도를 먼저 지정하거나 '입력값 유지'를 끄세요.`};
+
+  const fixedSum=fixedIdx.reduce((s,i)=>s+dp[i],0);
+  const budget=Tdp-fixedSum;
+  const Bn=blankIdx.length;
+  if(budget < Bn) return {ok:false, msg:`이미 입력한 배점 합 ${fixedSum/10}점이 커서 남은 ${Bn}문항을 채울 점수가 모자랍니다.\n총점을 높이거나 입력한 배점을 줄이세요.`};
+
+  const fv={1:[],2:[],3:[]}; fixedIdx.forEach(i=>{ const d=rows[i].diff; if(fv[d]) fv[d].push(dp[i]); });
+  const minOr=(arr,def)=>arr.length?Math.min(...arr):def;
+  const maxOr=(arr,def)=>arr.length?Math.max(...arr):def;
+  const capFix={ 1:Math.min(minOr(fv[2],INF),minOr(fv[3],INF)), 2:minOr(fv[3],INF), 3:INF };
+  const floorFix={ 1:1, 2:Math.max(1,maxOr(fv[1],-INF)), 3:Math.max(1,maxOr(fv[1],-INF),maxOr(fv[2],-INF)) };
+
+  const bc={1:0,2:0,3:0}; blankIdx.forEach(i=>bc[rows[i].diff]++);
+  const a=bc[3], b=bc[2], c=bc[1];
+  const y=(budget - gdp*(a-c))/Bn;
+  const baseB={1:Math.round(y-gdp),2:Math.round(y),3:Math.round(y+gdp)};
+
+  const bandMinAbove=d=>{ let m=INF; rows.forEach((r,j)=>{ if(r.diff>d) m=Math.min(m,dp[j]); }); return m; };
+  const bandMaxBelow=d=>{ let m=-INF; rows.forEach((r,j)=>{ if(r.diff<d) m=Math.max(m,dp[j]); }); return m; };
+
+  // 상→중→하 순으로 초기 배정(상위 밴드를 먼저 정해 하위가 참조)
+  blankIdx.filter(i=>rows[i].diff===3).forEach(i=>{ dp[i]=Math.max(floorFix[3], baseB[3]); });
+  blankIdx.filter(i=>rows[i].diff===2).forEach(i=>{ const ceil=Math.min(capFix[2], bandMinAbove(2)); dp[i]=Math.min(ceil, Math.max(floorFix[2], baseB[2])); });
+  blankIdx.filter(i=>rows[i].diff===1).forEach(i=>{ const ceil=Math.min(capFix[1], bandMinAbove(1)); dp[i]=Math.min(ceil, Math.max(floorFix[1], baseB[1])); });
+
+  // 잔여를 동적 상·하한 안에서 분배(순서 불변)
+  let residual=Tdp - dp.reduce((s,x)=>s+x,0);
+  let guard=0;
+  while(residual!==0 && guard++<1000000){
+    const step=residual>0?1:-1;
+    const order=residual>0?[3,2,1]:[1,2,3];
+    let moved=false;
+    for(const band of order){
+      for(const i of blankIdx){
+        if(residual===0) break;
+        if(rows[i].diff!==band) continue;
+        const ceil=Math.min(capFix[band], bandMinAbove(band));
+        const floor=Math.max(floorFix[band], bandMaxBelow(band), 1);
+        const nv=dp[i]+step;
+        if(nv<floor || nv>ceil) continue;
+        dp[i]=nv; residual-=step; moved=true;
+      }
+    }
+    if(!moved) break;
+  }
+  const sum=dp.reduce((s,x)=>s+x,0);
+  return {ok:true, pts:dp.map(x=>x/10), filled:Bn, sum:sum/10, exact:residual===0,
+          note: residual===0? "" : `순서 제약 때문에 합계 ${sum/10}점까지만 맞췄습니다 (목표 ${total}점) — 일부 배점을 직접 조정하세요`};
+}
+
+function autoFill(){
+  const total=parseFloat(val("af_total"))||0;
+  const gap=parseFloat(val("af_gap"))||0;
+  if(total<=0){ alert("객관식 총점을 0보다 크게 입력하세요."); return; }
+  if(gap<0){ alert("난이도 간격은 0 이상이어야 합니다."); return; }
+
+  const keep = document.getElementById("af_keep").checked;
+  const hasData = D.mc.some(q=>q.ans||q.diff||q.pts);
+
+  // ── 입력값 유지: 빈 난이도·빈 배점을 채워 표를 완성(이미 적은 난이도·배점·정답은 보존) ──
+  if(keep && hasData){
+    const ta=parseInt(val("af_high"))||0, tb=parseInt(val("af_mid"))||0, tc=parseInt(val("af_low"))||0;
+    const blankDiff = D.mc.filter(q=>!q.diff).length;        // 채워질 빈 난이도 수
+    const diffs = completeDifficulties(D.mc, ta, tb, tc);     // 빈 난이도 자동 배정
+    const work = D.mc.map((q,i)=>({ diff:diffs[i], pts:q.pts }));
+    const res=autoPointsKeep(work, total, gap);
+    if(!res.ok){ alert(res.msg); return; }
+    D.mc = D.mc.map((q,i)=>({ ans:q.ans, diff:diffs[i], pts:res.pts[i] }));
+    D.targetMC = round1(total);
+    document.getElementById("targetMC").value = D.targetMC;
+    touch(); renderRows(); update();
+    const bits=[];
+    if(blankDiff) bits.push(`난이도 ${blankDiff}문항`);
+    if(res.filled) bits.push(`배점 ${res.filled}문항`);
+    flash((bits.length? bits.join(" · ")+" 채움 · " : "") + `합계 ${res.sum}점` + (res.exact?"":` · ${res.note}`));
+    return;
+  }
+
+  // ── 새로 구성: 상·중·하 문항 수 + 총점으로 표 생성 ──
+  const a=parseInt(val("af_high"))||0;   // 상
+  const b=parseInt(val("af_mid"))||0;    // 중
+  const c=parseInt(val("af_low"))||0;    // 하
+  const N=a+b+c;
+  if(N<1){ alert("상·중·하 문항 수를 입력하세요. (입력값을 유지하려면 위 '입력값 유지'를 켜세요)"); return; }
+
+  const cur={1:0,2:0,3:0}; D.mc.forEach(q=>{ if(cur[q.diff]!==undefined) cur[q.diff]++; });
+  const sameLayout = (D.mc.length===N && cur[3]===a && cur[2]===b && cur[1]===c);
+
+  let bands, ansKeep;
+  if(sameLayout){
+    bands = D.mc.map(q=>q.diff);
+    ansKeep = D.mc.map(q=>q.ans);
+  } else {
+    if(hasData &&
+       !confirm(`객관식 표를 ${N}문항(하 ${c}·중 ${b}·상 ${a})으로 다시 구성합니다.\n정답은 가능한 한 유지되고 배점·난이도는 새로 채워집니다. 계속할까요?`)) return;
+    bands=[];
+    for(let i=0;i<c;i++) bands.push(1);   // 하 먼저
+    for(let i=0;i<b;i++) bands.push(2);   // 중
+    for(let i=0;i<a;i++) bands.push(3);   // 상
+    ansKeep = bands.map((_,i)=> (D.mc[i] ? D.mc[i].ans : 0));
+  }
+
+  const res=computeAutoPoints(bands, total, gap);
+  if(!res.ok){ alert(res.msg); return; }
+
+  D.mc = bands.map((d,i)=>({ ans:ansKeep[i]||0, diff:d, pts:res.pts[i] }));
+  D.targetMC = round1(total);
+  document.getElementById("targetMC").value = D.targetMC;
+  touch(); renderRows(); update();
+
+  const parts=[];
+  if(c>0) parts.push("하 "+res.low); if(b>0) parts.push("중 "+res.mid); if(a>0) parts.push("상 "+res.high);
+  flash(`자동 배점 완료 · ${parts.join(" / ")} 기준 · 합계 ${res.sum}점` + (res.exact?"":" (근사)"));
+}
+
+// 난이도-배점 침범 검사: 낮은 난이도(하<중<상) 문항 배점이 높은 난이도 배점을 넘으면 위반.
+// 허용: max(하) ≤ min(중) ≤ max(중) ≤ min(상). (경계에서 같은 값은 허용)
+function checkInvade(list){
+  const items = list.filter(x=>x.diff>0 && x.pts>0);
+  const bands = {};
+  items.forEach(x=>{
+    const b = bands[x.diff] || (bands[x.diff]={min:x.pts,max:x.pts,cnt:0});
+    b.min=Math.min(b.min,x.pts); b.max=Math.max(b.max,x.pts); b.cnt++;
+  });
+  const bad = new Set();
+  for(let a=0;a<items.length;a++) for(let b=0;b<items.length;b++){
+    if(items[a].diff < items[b].diff && items[a].pts > items[b].pts){ bad.add(items[a].idx); bad.add(items[b].idx); }
+  }
+  return { bands, bad, ok: bad.size===0, has: items.length>0 };
+}
+
+function update(){
+  // 설정값 동기화
+  D.targetMC = parseFloat(document.getElementById("targetMC").value)||0;
+  D.targetSA = parseFloat(document.getElementById("targetSA").value)||0;
+  D.devLimit = parseFloat(document.getElementById("devLimit").value)||0;
+
+  // 분포
+  const c={1:0,2:0,3:0,4:0,5:0};
+  let answered=0;
+  D.mc.forEach(q=>{ if(c[q.ans]!==undefined){ c[q.ans]++; answered++; } });
+  const counts=[1,2,3,4,5].map(n=>c[n]);
+  const maxC=Math.max(...counts), minC=Math.min(...counts), dev=maxC-minC;
+  const maxBar=Math.max(maxC,1);
+
+  document.getElementById("dist").innerHTML=[1,2,3,4,5].map(n=>{
+    const h=Math.round(c[n]/maxBar*40);
+    return `<div class="bar"><div class="cnt">${c[n]}</div>
+      <div class="track"><div class="fill" style="height:${h}px"></div></div>
+      <div class="cap">${CIRCLED[n]}</div></div>`;
+  }).join("");
+
+  // 배점
+  const sumMC = round1(D.mc.reduce((a,q)=>a+(q.pts||0),0));
+  const sumSA = round1(D.sa.reduce((a,q)=>a+(q.pts||0),0));
+  const sumAll = round1(sumMC+sumSA);
+  const near = (a,b)=>Math.abs(a-b)<EPS;
+
+  const devTxt = dev<=D.devLimit
+    ? `<span class="ok">✔ 편차 ${dev} (허용 ${D.devLimit} 이내)</span>`
+    : `<span class="bad">✘ 편차 ${dev} (허용 ${D.devLimit} 초과 — 조정 필요)</span>`;
+  const mcTxt = near(sumMC,D.targetMC)
+    ? `<span class="ok">✔ ${sumMC}점</span>`
+    : `<span class="bad">${sumMC}점 (목표 ${round1(D.targetMC)})</span>`;
+  const saTxt = near(sumSA,D.targetSA)
+    ? `<span class="ok">✔ ${sumSA}점</span>`
+    : `<span class="bad">${sumSA}점 (목표 ${round1(D.targetSA)})</span>`;
+  const targetAll = round1(D.targetMC+D.targetSA);
+  const allTxt = near(sumAll,targetAll)
+    ? `<span class="ok">${sumAll}점</span>` : `<span class="bad">${sumAll}점</span>`;
+  const unanswered = D.mc.length - answered;
+
+  // 난이도 개수 (상·중·하 / 미지정)
+  const dc=(arr)=>{const o={1:0,2:0,3:0,0:0}; arr.forEach(q=>o[q.diff||0]++); return o;};
+  const md=dc(D.mc), sd=dc(D.sa);
+  const diffCntTxt = `객관식 상 ${md[3]}·중 ${md[2]}·하 ${md[1]}${md[0]?` <span class="bad">미지정 ${md[0]}</span>`:""}`;
+
+  document.getElementById("summary").innerHTML=`
+    <div class="total">객관식 ${D.mc.length}문항 · 응답 ${answered}${unanswered?` · <span class="bad">미입력 ${unanswered}</span>`:""}</div>
+    <div>분포 ${[1,2,3,4,5].map(n=>CIRCLED[n]+" "+c[n]).join(" · ")} &nbsp; ${devTxt}</div>
+    <div class="total">난이도 ${diffCntTxt}</div>
+    <div>객관식 배점 합 ${mcTxt} &nbsp;·&nbsp; 서답형 ${saTxt}</div>
+    <div class="total">총점 합계 <b>${allTxt}</b> (목표 ${targetAll}점)</div>`;
+
+  // ── 난이도-배점 침범 검사 ──
+  const mcChk = checkInvade(D.mc.map((q,i)=>({idx:i, diff:q.diff, pts:q.pts})));
+  const saChk = checkInvade(D.sa.map((q,i)=>({idx:i, diff:q.diff, pts:q.pts})));
+
+  D.mc.forEach((q,i)=>{ const el=document.getElementById("ptscell-mc-"+i); if(el) el.classList.toggle("pts-bad", mcChk.bad.has(i)); });
+  D.sa.forEach((q,i)=>{ const el=document.getElementById("ptscell-sa-"+i); if(el) el.classList.toggle("pts-bad", saChk.bad.has(i)); });
+
+  const bandHTML = (label, chk)=>{
+    if(!chk.has) return `<span class="db empty">${label}: 난이도·배점 미입력</span>`;
+    return DIFF_ORDER.map(d=>{
+      const b=chk.bands[d]; if(!b) return "";
+      const rng = b.min===b.max ? `${round1(b.min)}점` : `${round1(b.min)}~${round1(b.max)}점`;
+      return `<span class="db d${d}">${label} ${DIFF[d]} ${b.cnt}문항 · ${rng}</span>`;
+    }).join("");
+  };
+  document.getElementById("diffband").innerHTML = bandHTML("객관식", mcChk) + bandHTML("서답형", saChk);
+
+  const invadeMsg = (label, chk)=>{
+    if(!chk.has) return "";
+    return chk.ok
+      ? `<span class="ok">✔ ${label}: 난이도-배점 순서 정상 (하 ≤ 중 ≤ 상)</span>`
+      : `<span class="bad">✘ ${label}: 낮은 난이도 문항의 배점이 높은 난이도 배점을 침범함 — 빨간 배점 칸 조정 필요</span>`;
+  };
+  document.getElementById("invade").innerHTML =
+    [invadeMsg("객관식", mcChk), invadeMsg("서답형", saChk)].filter(Boolean).join("<br>")
+    || `<span style="color:#888">난이도(상·중·하)를 배정하면 배점 침범 여부를 검사합니다.</span>`;
+
+  persist();   // 변경 시 자동 저장
+}
+
+// 키패드 정답 빠른 입력: 1~5 입력 + 자동 다음 행, ↑↓·Enter 이동, 0/⌫ 지우기.
+// 입력칸(배점·설정·제목·드롭다운)에 포커스가 있으면 간섭하지 않음.
+document.addEventListener("keydown", e=>{
+  const t=e.target;
+  if(t && (t.tagName==="INPUT" || t.tagName==="TEXTAREA" || t.tagName==="SELECT" || t.isContentEditable)) return;
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
+  if(!D.mc.length) return;
+  const k=e.key;
+  if(k>="1" && k<="5"){
+    e.preventDefault();
+    D.mc[mcCursor].ans = parseInt(k,10);
+    if(mcCursor < D.mc.length-1) mcCursor++;
+    touch(); renderRows(); update();
+  } else if(k==="0" || k==="Backspace" || k==="Delete"){
+    e.preventDefault();
+    D.mc[mcCursor].ans = 0;
+    if(k==="Backspace" && mcCursor>0) mcCursor--;
+    touch(); renderRows(); update();
+  } else if(k==="ArrowDown" || k==="Enter"){
+    e.preventDefault(); setCursor(mcCursor+1);
+  } else if(k==="ArrowUp"){
+    e.preventDefault(); setCursor(mcCursor-1);
+  }
+});
+
+// 제목 편집 → 시험 이름과 동기화
+document.getElementById("title").addEventListener("input", e=>{
+  D.title = e.target.innerText.trim() || "제목 없는 시험";
+  touch(); persist();
+});
+
+function applyData(){
+  D = normalizeData(D);
+  document.getElementById("title").innerText = D.title;
+  document.getElementById("targetMC").value = D.targetMC;
+  document.getElementById("targetSA").value = D.targetSA;
+  document.getElementById("devLimit").value = D.devLimit;
+  // 자동 배점 입력칸을 현재 시험 구성으로 채움
+  const cc={1:0,2:0,3:0}; D.mc.forEach(q=>{ if(cc[q.diff]!==undefined) cc[q.diff]++; });
+  document.getElementById("af_high").value = cc[3];
+  document.getElementById("af_mid").value  = cc[2];
+  document.getElementById("af_low").value  = cc[1];
+  document.getElementById("af_total").value = D.targetMC;
+  renderExamBar();
+  renderRows(); update();
+}
+
+// ── JSON 내보내기/불러오기 ──
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  const safe=(D.title||"문항분포_배점").replace(/[\\/:*?"<>|]/g,"_");
+  a.download=safe+".json"; a.click();
+}
+function importJSON(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+      const data=normalizeData(JSON.parse(r.result));
+      const ex={id:uid(), data, updatedAt:Date.now()}; store.exams.push(ex); store.currentId=ex.id; D=data;
+      applyData(); persist(); flash("새 시험으로 불러왔습니다");
+    }catch(e){ alert("불러오기 실패: "+e); } };
+  r.readAsText(f); ev.target.value="";
+}
+function flash(msg){ const d=document.createElement("div"); d.textContent=msg;
+  d.style.cssText="position:fixed;top:120px;left:50%;transform:translateX(-50%);background:#0a7d28;color:#fff;padding:8px 16px;border-radius:6px;z-index:999;font-size:13px";
+  document.body.appendChild(d); setTimeout(()=>d.remove(),1600); }
+
+// 초기화
+store = loadStore();
+D = currentExam().data;
+applyData();
+persist();
+</script>
+</body>
+</html>

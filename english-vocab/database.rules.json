@@ -33,6 +33,10 @@
         ".read": "auth != null",
         ".write": "auth != null"
       },
+      "scoreLog": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
       "students": {
         ".read": "auth != null",
         ".indexOn": ["studentId"],

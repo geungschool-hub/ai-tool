@@ -287,6 +287,43 @@
   </div>
   <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
 </div>
+
+<!-- 점수 보정 모달 -->
+<div id="scModal" class="sc-overlay" style="display:none;">
+  <div class="sc-box">
+    <div class="sc-head">점수 보정 — <span id="scName"></span></div>
+    <div class="sc-note">아래 값으로 <b>덮어씁니다</b>. 바뀐 만큼 <b>이번 주 시즌 점수</b>와 <b>그날 일별 기록</b>에도 똑같이 반영돼요. (부정 적립·과다 시행 보정용)</div>
+    <div class="sc-grid">
+      <label>정답<input id="scC" type="number" min="0" inputmode="numeric" oninput="scRecalc()"></label>
+      <label>성장<input id="scG" type="number" min="0" inputmode="numeric" oninput="scRecalc()"></label>
+      <label>꾸준<input id="scK" type="number" min="0" inputmode="numeric" oninput="scRecalc()"></label>
+      <label>콤보<input id="scCb" type="number" min="0" inputmode="numeric" oninput="scRecalc()"></label>
+      <label>속도<input id="scSp" type="number" min="0" inputmode="numeric" oninput="scRecalc()"></label>
+      <label class="sc-sep">맞힌수<input id="scAc" type="number" min="0" inputmode="numeric"></label>
+      <label class="sc-sep">푼수<input id="scAt" type="number" min="0" inputmode="numeric"></label>
+    </div>
+    <div class="sc-total">새 종합 <b id="scTotal">0</b> <span id="scDelta"></span></div>
+    <div class="sc-actions">
+      <button class="btn ghost" onclick="closeCorrect()">취소</button>
+      <button class="btn green" onclick="saveCorrect()">💾 보정 저장</button>
+    </div>
+  </div>
+</div>
+<style>
+  .sc-overlay{position:fixed;inset:0;background:rgba(30,20,55,.45);display:flex;align-items:center;justify-content:center;z-index:120;padding:16px;}
+  .sc-box{background:#fff;border-radius:18px;max-width:380px;width:100%;padding:20px 20px 18px;box-shadow:0 18px 50px rgba(40,20,80,.3);max-height:92vh;overflow:auto;}
+  .sc-head{font-size:17px;font-weight:900;color:var(--primary);margin-bottom:8px;}
+  .sc-note{font-size:12.5px;color:var(--sub);line-height:1.6;margin-bottom:14px;}
+  .sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;}
+  .sc-grid label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;font-weight:700;color:var(--text,#222);}
+  .sc-grid label input{width:96px;font-family:inherit;font-size:15px;text-align:right;padding:7px 9px;border:1.5px solid var(--line);border-radius:9px;min-height:40px;}
+  .sc-grid .sc-sep{margin-top:7px;padding-top:11px;border-top:1px dashed var(--line);}
+  .sc-total{margin:15px 0 4px;text-align:center;font-size:15px;font-weight:700;}
+  .sc-total b{font-size:21px;color:var(--primary);}
+  .sc-actions{display:flex;gap:10px;margin-top:14px;}
+  .sc-actions .btn{flex:1;min-height:46px;}
+</style>
+
 <div class="full-load" id="fullLoad"><div class="spin"></div></div>
 
 <script>
@@ -656,6 +693,7 @@ function stuRowHtml(s,i){
       <td data-l="PIN">${s.pinSet?'설정':'<span style="color:var(--amber);font-weight:700;">미설정</span>'}</td>
       <td class="c-act" data-l="관리" style="white-space:nowrap;">
         ${admin?'':`<button class="btn ghost mini" onclick="changeLevel('${s.uid}')">레벨변경</button>`}
+        ${admin?'':`<button class="btn ghost mini" onclick="openCorrect('${s.uid}')">점수보정</button>`}
         <button class="btn ghost mini" onclick="resetPin('${s.uid}','${esc(s.nick)}')">PIN초기화</button>
         ${admin?'':`<button class="btn danger mini" onclick="delStudent('${s.uid}','${esc(s.nick)}')">삭제</button>`}
       </td>
@@ -714,6 +752,73 @@ async function changeLevel(uid){
     alert('레벨을 변경했습니다. ('+nl.name+')');
     await loadStudents(); await loadLevelLog();
   } catch(e){ console.error(e); alert('실패: '+e.message); }
+  finally { loading(false); }
+}
+
+/* ===== 점수 보정 (부정 적립·과다 시행 되돌리기) ===== */
+let scUid=null, scOld=null;
+function scNum(id){ return Math.max(0, Math.round(Number($(id).value)||0)); }
+function scOldTotal(){ const o=scOld||{}; return (o.c||0)+(o.g||0)+(o.k||0)+(o.cb||0)+(o.sp||0); }
+function scRecalc(){
+  const t=scNum('scC')+scNum('scG')+scNum('scK')+scNum('scCb')+scNum('scSp');
+  $('scTotal').textContent=t;
+  const d=t-scOldTotal();
+  const el=$('scDelta');
+  el.textContent = d===0?'(변화 없음)' : (d>0?('(+'+d+')'):('('+d+')'));
+  el.style.color = d<0?'var(--bad)' : d>0?'var(--good)' : 'var(--sub)';
+}
+async function openCorrect(uid){
+  const s=students.find(x=>x.uid===uid); if(!s) return;
+  loading(true);
+  try { scOld=(await db.ref('vocab/students/'+uid).once('value')).val()||{}; }
+  catch(e){ loading(false); alert('학생 정보를 불러오지 못했어요: '+e.message); return; }
+  loading(false);
+  scUid=uid;
+  $('scName').textContent=s.nick+' · '+s.sid;
+  $('scC').value=scOld.c||0; $('scG').value=scOld.g||0; $('scK').value=scOld.k||0;
+  $('scCb').value=scOld.cb||0; $('scSp').value=scOld.sp||0;
+  $('scAc').value=scOld.ansCorrect||0; $('scAt').value=scOld.ansTotal||0;
+  scRecalc();
+  $('scModal').style.display='flex';
+}
+function closeCorrect(){ $('scModal').style.display='none'; scUid=null; scOld=null; }
+async function saveCorrect(){
+  if(!scUid){ return; }
+  const o=scOld||{};
+  const nc=scNum('scC'), ng=scNum('scG'), nk=scNum('scK'), ncb=scNum('scCb'), nsp=scNum('scSp');
+  const nac=scNum('scAc'), nat=scNum('scAt');
+  if(nac>nat){ alert('맞힌수가 푼수보다 클 수 없어요.'); return; }
+  const dC=nc-(o.c||0), dG=ng-(o.g||0), dK=nk-(o.k||0), dCb=ncb-(o.cb||0), dSp=nsp-(o.sp||0);
+  const totalDelta=dC+dG+dK+dCb+dSp;
+  const newTotal=nc+ng+nk+ncb+nsp, oldTotal=scOldTotal();
+  if(totalDelta===0 && nac===(o.ansCorrect||0) && nat===(o.ansTotal||0)){ alert('바뀐 값이 없어요.'); return; }
+  if(!confirm('"'+($('scName').textContent)+'" 점수 보정\n\n종합 '+oldTotal+' → '+newTotal+'\n이번 주 시즌 점수와 그날 일별 기록도 같은 만큼 조정됩니다.\n진행할까요?')) return;
+  loading(true);
+  try {
+    const upd={
+      c:nc, g:ng, k:nk, cb:ncb, sp:nsp, ansCorrect:nac, ansTotal:nat,
+      wkC:Math.max(0,(o.wkC||0)+dC), wkG:Math.max(0,(o.wkG||0)+dG), wkK:Math.max(0,(o.wkK||0)+dK),
+      wkCb:Math.max(0,(o.wkCb||0)+dCb), wkSp:Math.max(0,(o.wkSp||0)+dSp),
+      dPts:Math.max(0,(o.dPts||0)+totalDelta),
+      updatedAt:firebase.database.ServerValue.TIMESTAMP
+    };
+    await db.ref('vocab/students/'+scUid).update(upd);
+    // 그날 일별 랭킹/어제의 TOP3 기록 동기화 (해당 기록이 있을 때만)
+    if(o.daySeason){
+      const dref=db.ref('vocab/daily/'+o.daySeason+'/'+validLevel(o.level)+'/'+scUid);
+      if((await dref.once('value')).exists()) await dref.update({ pts:upd.dPts });
+    }
+    // 보정 이력 (규칙 미반영 시 실패해도 보정 자체는 유지)
+    try {
+      await db.ref('vocab/scoreLog').push({
+        ts:firebase.database.ServerValue.TIMESTAMP, uid:scUid, sid:String(o.studentId||''),
+        name:o.name||'', nick:o.nickname||'', fromTotal:oldTotal, toTotal:newTotal, by:ADMIN_SID
+      });
+    } catch(_){}
+    closeCorrect();
+    alert('점수를 보정했어요. (종합 '+oldTotal+' → '+newTotal+')');
+    await loadStudents();
+  } catch(e){ console.error(e); alert('보정 실패: '+e.message); }
   finally { loading(false); }
 }
 

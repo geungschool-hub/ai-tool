@@ -696,6 +696,7 @@ async function loadAccount(id, s){
             ansTotal:s.ansTotal||0, ansCorrect:s.ansCorrect||0,
             wkSeason:s.wkSeason||'', wkC:s.wkC||0, wkG:s.wkG||0, wkK:s.wkK||0, wkCb:s.wkCb||0, wkSp:s.wkSp||0,
             daySeason:s.daySeason||'', dPts:s.dPts||0,
+            todayBase:s.todayBase||null,
             prog: ps.val() || {} };
   await loadLevelWords(myLevel);
   localStorage.setItem(SESSION_KEY, JSON.stringify({accountId:id, studentId:state.studentId}));
@@ -954,6 +955,7 @@ function save(){
     ansTotal:state.ansTotal||0, ansCorrect:state.ansCorrect||0,
     wkSeason:state.wkSeason||'', wkC:state.wkC||0, wkG:state.wkG||0, wkK:state.wkK||0, wkCb:state.wkCb||0, wkSp:state.wkSp||0,
     daySeason:state.daySeason||'', dPts:state.dPts||0,
+    todayBase:state.todayBase||null,
     streak:state.streak, lastStudyDay:state.lastStudyDay, week:state.week, updatedAt:firebase.database.ServerValue.TIMESTAMP });
   db.ref('vocab/progress/'+accountId).set(state.prog);
 }
@@ -1191,6 +1193,10 @@ async function finishSession(){
   const n=session.results.length;
 
   if(graded){
+    // 오늘 첫 graded 세션 직전 상태를 1회 박제 → 관리자 '오늘 리셋'이 정확히 되돌릴 수 있게
+    // (graded는 lastStudyDay!==오늘일 때만 true이므로 이 블록은 하루 첫 시도에만 실행됨)
+    state.todayBase = { date:todayKey(), c:state.scores.c, g:state.scores.g, k:state.scores.k, cb:state.scores.cb||0, sp:state.scores.sp||0,
+                        ansTotal:state.ansTotal||0, ansCorrect:state.ansCorrect||0, streak:state.streak, lastStudyDay:state.lastStudyDay, week:state.week };
     session.results.forEach(r=> schedule(r.wordId, r.correct, D));   // 학습(SRS) 진행은 첫 시도에서만
     gainK+=10;
     if(state.lastStudyDay>0 && D===state.lastStudyDay+1) state.streak++; else state.streak=1;

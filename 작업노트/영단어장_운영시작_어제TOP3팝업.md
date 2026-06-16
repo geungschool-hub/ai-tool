@@ -44,6 +44,14 @@
 ## 2026-06-16 관리자 점수보정 기능(admin.html)
 학생 행 [점수보정] 버튼→모달(5점수+정답수/푼수 편집). 변경분을 wk*·daily에도 동일 반영. 이력 `vocab/scoreLog`(규칙 추가). **이 작업 PC는 학교망이 RTDB '쓰기'를 막음**(읽기·호스팅·규칙배포는 됨) → 데이터 직접수정 불가, 보정은 **교사 기기에서 admin.html로**. 양수빈(20711·basic·닉'와') 어제 6회시행 1418점 → 1세션값 248점(c190/k10/cb18/sp30, 정답률19/20)으로 보정 예정(미적용).
 
+## 2026-06-16 관리자 '오늘 학습 리셋' 기능(학생별) + 수동 리셋 사례
+사용자 요청: 오늘 푼 학생을 학생별로 "오늘 거 리셋"해 오늘 다시 풀게. **진도(SRS) 유지** 방식 선택(여러 날 학습한 학생도 안전).
+- **선행 수동 처리**: 20714 유진(닉 '건이', plus) — 오늘만 학습(114점·정답8/20·progress 20개). CLI로 점수/wk/ans/streak/dPts 0화 + `lastStudyDay=0` + progress 삭제 + classGoal 282→274(−8). (이 학생은 오늘만 했어서 전부 0화가 곧 오늘리셋).
+- **정확 되돌리기 위한 스냅샷**: `index.html` finishSession graded 블록 진입 시(=하루 첫 시도) `state.todayBase={date,c,g,k,cb,sp,ansTotal,ansCorrect,streak,lastStudyDay,week}` 1회 박제(save/state init/save()에 todayBase 추가). graded는 lastStudyDay!==오늘일 때만 true라 하루 1회만 찍힘. admin 리셋 후 다시 풀면 갱신.
+- **admin.html `resetToday(uid)`**(학생 행 [오늘리셋] 버튼): todayBase(date===오늘) 있으면 **정확 복원**(누적·ansTotal/Correct를 base로, wk*는 오늘분 차감, streak/lastStudyDay/week 복원, dPts/daySeason/todayBase 비움, daily 제거, classGoal에서 오늘 맞힌수 회수). todayBase 없고 daySeason===오늘이면 **근사**(dPts만큼 k→sp→cb→g→c 우선 차감+wk*동일, lastStudyDay=0·streak−1, 정답수·classGoal 미변경) + 확인창에 ⚠️안내. 진도(progress)는 어떤 경우도 **유지**.
+- 이력 `vocab/resetLog`(규칙 추가). 변경: index.html·admin.html·database.rules.json. node --check 통과·`deploy hosting,database` 완료. **git 미커밋**(요청 시).
+- 이 PC에서 RTDB **쓰기 정상 작동**(아침 노트의 '학교망 쓰기 차단'은 현재 풀림) → 양수빈 점수보정도 이 PC 가능.
+
 ## 운영 메모
 - 학교망 TLS로 이 PC 실테스트 불가 → 선생님 기기 확인. iOS는 캐시 공격적 → PWA 완전 종료 후 재실행 안내.
 - 단어 시드/규칙 등 DB 변경 명령·함정은 메모리 `feedback_firebase_deploy_npx`·`project_english_vocab.md` 참조.

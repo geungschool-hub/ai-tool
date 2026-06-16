@@ -37,6 +37,10 @@
         ".read": "auth != null",
         ".write": "auth != null"
       },
+      "resetLog": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
       "students": {
         ".read": "auth != null",
         ".indexOn": ["studentId"],

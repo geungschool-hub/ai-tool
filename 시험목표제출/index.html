@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>기말고사 목표 점수 적기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2fb; --card:#ffffff; --ink:#1d2433; --sub:#6b7384;
+  --primary:#4f6ef2; --primary-ink:#2c45c9; --primary-soft:#e7ecfe;
+  --accent:#ff7a59; --good:#16a34a; --line:#e4e8f1;
+  --shadow:0 8px 28px rgba(40,55,100,.10);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+html{overflow:hidden;}
+body{
+  margin:0; font-family:'Noto Sans KR',system-ui,sans-serif; color:var(--ink);
+  background:var(--bg); overflow:hidden;
+  height:100vh;            /* 폴백: 구형 iOS Safari */
+  height:100dvh;           /* 지원 시 동적 뷰포트 높이 */
+  -webkit-text-size-adjust:100%;
+}
+#app{
+  height:100vh; height:100dvh;
+  min-height:-webkit-fill-available; /* iOS 추가 폴백 */
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.scroller{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;}
+.wrap{max-width:560px; margin:0 auto; padding:18px 16px; padding-bottom:calc(40px + env(safe-area-inset-bottom));}
+#screen-login .wrap{padding-top:calc(18px + env(safe-area-inset-top));}
+button{font-family:inherit; cursor:pointer; border:none;}
+input,select{font-family:inherit;}
+.hidden{display:none !important;}
+
+/* ===== 헤더 ===== */
+.topbar{
+  flex:0 0 auto; background:linear-gradient(135deg,#4f6ef2,#6b8cff);
+  color:#fff; padding:16px 18px; padding-top:calc(16px + env(safe-area-inset-top));
+  box-shadow:0 4px 16px rgba(60,80,170,.25);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.topbar .ttl{font-size:16px; font-weight:900; letter-spacing:-.3px; line-height:1.3;}
+.topbar .ttl small{display:block; font-weight:500; font-size:11.5px; opacity:.9; margin-top:2px;}
+.topbar .who{font-size:12px; font-weight:700; text-align:right; white-space:nowrap;}
+.topbar .who button{margin-top:5px; background:rgba(255,255,255,.2); color:#fff; font-size:11px; font-weight:700; padding:4px 9px; border-radius:999px;}
+
+/* ===== 로그인 ===== */
+.login-hero{
+  background:linear-gradient(135deg,#4f6ef2,#6b8cff); color:#fff;
+  border-radius:20px; padding:26px 22px; box-shadow:var(--shadow); margin-bottom:18px;
+}
+.login-hero h1{margin:0 0 8px; font-size:23px; font-weight:900; letter-spacing:-.5px;}
+.login-hero p{margin:0; font-size:13.5px; line-height:1.6; opacity:.95;}
+.card{background:var(--card); border-radius:18px; box-shadow:var(--shadow); padding:20px; margin-bottom:16px;}
+.label{font-size:12.5px; font-weight:700; color:var(--sub); margin:0 0 6px;}
+input[type=text],input[type=tel],input[type=number],select,textarea{
+  width:100%; padding:13px 14px; font-size:16px; border:1.6px solid var(--line);
+  border-radius:12px; background:#fbfcff; color:var(--ink); outline:none; transition:border .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);}
+.pin-in{letter-spacing:8px; -webkit-text-security:disc; text-security:disc; text-align:center; font-weight:800;}
+.btn{
+  width:100%; padding:14px; font-size:16px; font-weight:800; border-radius:13px;
+  background:var(--primary); color:#fff; transition:transform .08s, opacity .15s; margin-top:4px;
+}
+.btn:active{transform:scale(.985);}
+.btn:disabled{opacity:.5;}
+.btn.ghost{background:var(--primary-soft); color:var(--primary-ink); margin-top:8px;}
+.btn.accent{background:var(--accent);}
+.hint{font-size:12px; color:var(--sub); line-height:1.55; margin:10px 2px 0;}
+.err{color:#d83a3a; font-size:13px; font-weight:600; min-height:18px; margin:8px 2px 0; line-height:1.5;}
+.who-chip{font-size:13.5px; font-weight:800; color:var(--primary-ink); background:var(--primary-soft); padding:9px 12px; border-radius:11px; text-align:center; margin-bottom:14px;}
+
+/* ===== D-day ===== */
+.dday{
+  display:flex; align-items:center; gap:14px; background:#fff; border-radius:18px;
+  box-shadow:var(--shadow); padding:16px 18px; margin-bottom:16px; border-left:6px solid var(--accent);
+}
+.dday .num{font-size:30px; font-weight:900; color:var(--accent); line-height:1;}
+.dday .txt{font-size:13px; color:var(--sub); line-height:1.5;}
+.dday .txt b{color:var(--ink); font-size:14.5px;}
+
+/* ===== 과목 입력 ===== */
+.sec-title{font-size:15px; font-weight:900; margin:4px 2px 12px; display:flex; align-items:center; gap:7px;}
+.sec-title .badge{background:var(--primary-soft); color:var(--primary-ink); font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px;}
+.subj{border:1.5px solid var(--line); border-radius:14px; margin-bottom:10px; background:#fff; overflow:hidden; transition:border .15s, box-shadow .15s;}
+.subj.on{border-color:var(--primary); box-shadow:0 4px 14px rgba(79,110,242,.12);}
+.subj-head{display:flex; align-items:center; gap:11px; padding:14px 15px; cursor:pointer; user-select:none;}
+.subj.on .subj-head{background:var(--primary-soft);}
+.subj-chk{width:23px; height:23px; flex:0 0 auto; accent-color:var(--primary); cursor:pointer;}
+.subj-head .code{font-size:11px; font-weight:800; color:#fff; background:#aab2c6; border-radius:6px; padding:2px 7px; flex:0 0 auto;}
+.subj.on .subj-head .code{background:var(--primary);}
+.subj-head .sname{font-size:15px; font-weight:800;}
+.subj-body{padding:0 15px 14px; }
+.subj-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+.fld .label{margin-bottom:4px; font-size:11.5px;}
+.fld input,.fld select{padding:11px 11px; font-size:15px;}
+.fld.target input{border-color:#ffd9cd; background:#fff8f5; font-weight:700;}
+.unit{position:relative;}
+.unit .u{position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:12px; color:var(--sub); pointer-events:none;}
+.unit input{padding-right:30px;}
+
+/* ===== 요약 카드 ===== */
+.summary{background:linear-gradient(135deg,#fff,#f4f7ff); border:1.5px solid var(--primary-soft);}
+.sum-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px dashed var(--line); font-size:14px;}
+.sum-row:last-child{border-bottom:none;}
+.sum-row .s-name{font-weight:700;}
+.sum-row .s-val{font-weight:800; color:var(--primary-ink);}
+.sum-row .s-val .up{color:var(--good); font-size:12px; margin-left:5px; font-weight:800;}
+.saved-banner{background:#eafaf0; border:1.5px solid #b8e8c8; color:#157a3a; border-radius:13px; padding:13px 15px; font-size:13.5px; font-weight:700; text-align:center; margin-bottom:16px; line-height:1.5;}
+.health-note{background:#fff7ed; border:1.5px solid #fed7aa; color:#9a3412; border-radius:14px; padding:14px 16px; font-size:14px; line-height:1.6; text-align:center; margin-bottom:16px;}
+.autosave-tag{text-align:center; font-size:12px; color:var(--sub); min-height:16px; margin-bottom:6px; font-weight:600;}
+
+/* ===== 토스트 ===== */
+#toast{position:fixed; left:50%; bottom:32px; transform:translateX(-50%) translateY(20px); background:#1d2433; color:#fff; padding:12px 20px; border-radius:999px; font-size:13.5px; font-weight:700; opacity:0; transition:.25s; pointer-events:none; z-index:99; box-shadow:0 8px 24px rgba(0,0,0,.25); max-width:90vw; text-align:center;}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.credit{text-align:center; font-size:11px; color:#9aa1b2; margin-top:26px; line-height:1.6;}
+/* 시간표 모달 */
+.sched-modal{position:fixed; inset:0; background:rgba(20,28,50,.55); z-index:95; display:flex; flex-direction:column; padding:env(safe-area-inset-top) 0 0;}
+.sched-sheet{background:var(--bg); margin-top:auto; border-radius:20px 20px 0 0; max-height:92%; display:flex; flex-direction:column; box-shadow:0 -8px 30px rgba(0,0,0,.25);}
+.sched-head{flex:0 0 auto; padding:16px 18px 12px; border-bottom:1px solid var(--line); background:#fff; border-radius:20px 20px 0 0;}
+.sched-head h3{margin:0 0 4px; font-size:18px; font-weight:900;}
+.sched-legend{font-size:12px; color:var(--sub); line-height:1.5;}
+.sched-close{position:absolute; right:14px; top:calc(14px + env(safe-area-inset-top)); background:#fff; color:var(--ink); width:36px; height:36px; border-radius:50%; font-size:18px; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,.15); z-index:1;}
+.sched-body{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:14px 16px calc(28px + env(safe-area-inset-bottom));}
+.sched-day{background:#fff; border-radius:14px; box-shadow:var(--shadow); margin-bottom:13px; overflow:hidden;}
+.sched-date{background:var(--primary-soft); color:var(--primary-ink); font-weight:900; font-size:14px; padding:9px 14px;}
+.sched-date span{font-weight:700; opacity:.8;}
+.sched-row{display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--line);}
+.sched-p{flex:0 0 auto; font-size:12px; font-weight:800; color:#fff; background:var(--primary); border-radius:8px; padding:4px 8px; min-width:42px; text-align:center;}
+.sched-mid{flex:1 1 auto; min-width:0;}
+.sched-name{font-size:14.5px; font-weight:800; line-height:1.3;}
+.sched-code{font-size:11px; font-weight:700; color:var(--sub);}
+.sched-time{font-size:12px; color:var(--sub); margin-top:2px;}
+.sched-time.warn{color:var(--red-accent,#c0392b); font-weight:800;}
+.tag-written{flex:0 0 auto; font-size:11px; font-weight:800; color:#1d6fb8; background:#e2eefb; border-radius:999px; padding:4px 9px; white-space:nowrap;}
+.teacher-link{display:inline-block; font-size:13px; font-weight:700; color:var(--sub); text-decoration:none; padding:8px 16px; border:1.5px solid var(--line); border-radius:999px; background:#fff;}
+.teacher-link:active{background:#f3f6fc;}
+.spin{width:34px;height:34px;border:4px solid var(--primary-soft);border-top-color:var(--primary);border-radius:50%;animation:rot .8s linear infinite;margin:40px auto;}
+@keyframes rot{to{transform:rotate(360deg)}}
+.full-load{position:fixed; inset:0; background:rgba(238,242,251,.85); display:flex; align-items:center; justify-content:center; z-index:80;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ====== 로그인 화면 ====== -->
+  <div id="screen-login" class="scroller">
+    <div class="wrap">
+      <div class="login-hero">
+        <h1>🎯 기말고사 목표 적기</h1>
+        <p id="loginIntro">나의 목표 점수를 정하고 선생님께 제출해요.<br>목표를 적은 사람과 안 적은 사람, 시험 결과는 다릅니다!</p>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="card" id="loginStep1">
+        <p class="label">학번</p>
+        <input id="sidInput" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="5" placeholder="예: 20701" autocomplete="off" disabled>
+        <p class="label" style="margin-top:13px;">이름</p>
+        <input id="nameInput" type="text" maxlength="10" placeholder="홍길동" autocomplete="off" disabled>
+        <div class="err" id="loginErr"></div>
+        <button class="btn" id="nextBtn1" onclick="loginNext()" disabled>잠시만요…</button>
+        <p class="hint">처음이면 다음 화면에서 나만의 PIN 4자리를 정해요. 다시 올 땐 학번·이름·PIN으로 로그인해요. 학번·이름은 선생님만 봅니다.</p>
+      </div>
+
+      <!-- STEP 2 (PIN) -->
+      <div class="card hidden" id="loginStep2">
+        <div class="who-chip" id="loginWho"></div>
+        <p class="label" id="pinLabel">PIN 4자리</p>
+        <input id="pinInput" class="pin-in" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off">
+        <div id="pinConfirmField" class="hidden" style="margin-top:11px;">
+          <p class="label">PIN 다시 입력</p>
+          <input id="pinInput2" class="pin-in" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off">
+        </div>
+        <div class="err" id="pinErr"></div>
+        <div class="hint" id="pinHint"></div>
+        <button class="btn" id="pinSubmit" onclick="loginPinSubmit()">로그인</button>
+        <button class="btn ghost" onclick="loginBack()">← 학번 다시 입력</button>
+      </div>
+      <div style="text-align:center; margin-top:18px;">
+        <a href="admin.html" class="teacher-link">👩‍🏫 교사용으로 들어가기</a>
+      </div>
+      <p class="credit">Claude AI로 이 앱을 제작함 by 고은표</p>
+    </div>
+  </div>
+
+  <!-- ====== 메인(목표 작성) 화면 ====== -->
+  <div id="screen-main" class="hidden" style="display:flex; flex-direction:column; min-height:0; flex:1;">
+    <div class="topbar">
+      <div class="ttl" id="examTitleTop">기말고사 목표 점수<small id="examSubTop"></small></div>
+      <div class="who"><span id="whoName"></span><br><button onclick="logout()">로그아웃</button></div>
+    </div>
+    <div class="scroller">
+      <div class="wrap">
+        <div id="savedBanner" class="saved-banner hidden"></div>
+
+        <div class="dday" id="ddayBox">
+          <div class="num" id="ddayNum">D-?</div>
+          <div class="txt" id="ddayTxt"></div>
+        </div>
+
+        <button class="btn ghost" onclick="openSchedule()" style="margin-bottom:18px;">📅 기말고사 시간표 보기</button>
+
+        <div class="sec-title">📚 내가 보는 과목 체크 <span class="badge" id="selCount">0과목 선택</span></div>
+        <p class="hint" style="margin:-6px 2px 12px;">기말고사에서 <b>내가 응시하는 과목</b>을 체크하면, 그 과목의 목표를 적을 수 있어요.</p>
+        <div id="subjList"></div>
+
+        <div class="health-note">💪 남은 기간 열심히 하되, <b>건강과 체력에 꼭 유의할 것!</b></div>
+
+        <div id="autoSaveTag" class="autosave-tag"></div>
+        <button class="btn accent" id="saveBtn" onclick="saveGoals()">✅ 제출 완료하기</button>
+        <p class="hint" style="text-align:center;">입력한 내용은 <b>자동으로 저장</b>돼요. 다 정했으면 <b>제출 완료</b>를 눌러 주세요.</p>
+
+        <!-- 요약 -->
+        <div id="summaryWrap" class="hidden">
+          <div class="sec-title" style="margin-top:24px;">🌟 내가 정한 목표</div>
+          <div class="card summary" id="summaryCard"></div>
+          <p class="hint" style="text-align:center;">목표는 마감 전까지 언제든 수정할 수 있어요. 화이팅! 💪</p>
+        </div>
+
+        <p class="credit">Claude AI로 이 앱을 제작함 by 고은표</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 시험 시간표 모달 -->
+<div id="schedModal" class="sched-modal hidden" onclick="if(event.target===this)closeSchedule()">
+  <button class="sched-close" onclick="closeSchedule()" aria-label="닫기">✕</button>
+  <div class="sched-sheet">
+    <div class="sched-head">
+      <h3>📅 2026 1학기 기말고사 시간표</h3>
+      <div class="sched-legend">2학년 기준 · <b style="color:#1d6fb8">✏️ 서답형 포함</b> · <b style="color:var(--red-accent,#c0392b)">⏰ 시작 시간 유의</b></div>
+    </div>
+    <div class="sched-body" id="schedBody"></div>
+  </div>
+</div>
+
+<div class="full-load" id="fullLoad"><div class="spin"></div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+/* ════════ Firebase (gongju7-vocab 프로젝트 — 익명인증 검증됨, examGoals/ 경로로 분리) ════════ */
+const firebaseConfig = {
+  apiKey: "AIzaSyDbEgNhJr24GjWPYBx63zQ4MyW2dZA6XSs",
+  authDomain: "gongju7-vocab.firebaseapp.com",
+  databaseURL: "https://gongju7-vocab-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gongju7-vocab",
+  storageBucket: "gongju7-vocab.firebasestorage.app",
+  messagingSenderId: "249343659059",
+  appId: "1:249343659059:web:532b7d74d0a38286c2a746"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const auth = firebase.auth();
+
+const ROOT = 'examGoals';
+const PIN_SALT = 'examgoal.v1.salt';
+const SESSION_KEY = 'examgoal.session';
+
+/* ===== 기본 설정(폴백) — 교사 화면에서 바꾸면 그게 우선 ===== */
+const SEED_CFG = {
+  examTitle: '1학기 기말고사',
+  examDate: '',          // yyyy-mm-dd (시험 시작일)
+  dueDate: '',           // 제출 마감(선택)
+  showGrade: true,       // 목표 등급 입력칸 표시
+  // 2학년 기말고사 시간표 (코드=과목코드). 학생이 자기가 보는 과목만 체크해서 목표를 적음
+  subjects: [
+    {id:'23', name:'영어1'},
+    {id:'27', name:'동아시아 역사 기행'},
+    {id:'39', name:'물질과 에너지'},
+    {id:'19', name:'대수'},
+    {id:'29', name:'세계시민과 지리'},
+    {id:'37', name:'역학과 에너지'},
+    {id:'15', name:'문학'},
+    {id:'75', name:'중국어Ⅰ'},
+    {id:'77', name:'일본어Ⅰ'},
+    {id:'41', name:'생명과학'},
+    {id:'21', name:'인공지능 수학'},
+    {id:'33', name:'법과 사회'},
+    {id:'43', name:'지구과학'},
+    {id:'17', name:'언어생활 탐구'},
+    {id:'35', name:'윤리와 사상'}
+  ]
+};
+
+/* ===== 2학년 기말고사 시간표 (교사가 examGoals/config/schedule 넣으면 그게 우선) ===== */
+const SEED_SCHEDULE = { days: [
+  { date:'6/30', dow:'화', periods:[
+    {p:1, time:'08:20~09:10', code:'23', name:'영어1', written:true},
+    {p:2, time:'09:30~10:10', code:'27', name:'동아시아 역사 기행', written:true},
+    {p:3, time:'10:30~11:20', code:'39', name:'물질과 에너지', written:true}
+  ]},
+  { date:'7/1', dow:'수', periods:[
+    {p:1, time:'08:20~09:10', code:'19', name:'대수', written:true},
+    {p:2, time:'09:30~10:10', code:'29', name:'세계시민과 지리'},
+    {p:3, time:'10:30~11:20', code:'37', name:'역학과 에너지', written:true}
+  ]},
+  { date:'7/2', dow:'목', periods:[
+    {p:1, time:'08:20~09:10', code:'15', name:'문학'},
+    {p:2, time:'09:30~10:10', code:'75/77', name:'중국어Ⅰ / 일본어Ⅰ'},
+    {p:3, time:'10:30~11:20', code:'41', name:'생명과학', written:true}
+  ]},
+  { date:'7/3', dow:'금', periods:[
+    {p:1, time:'08:20~09:00', code:'21', name:'인공지능 수학', written:true},
+    {p:2, time:'09:20~10:00', code:'33', name:'법과 사회', startWarn:true},
+    {p:3, time:'10:30~11:10', code:'43', name:'지구과학'}
+  ]},
+  { date:'7/6', dow:'월', periods:[
+    {p:1, time:'08:20~09:00', code:'17', name:'언어생활 탐구'},
+    {p:2, time:'09:20~10:00', code:'35', name:'윤리와 사상', startWarn:true}
+  ]}
+]};
+
+/* ===== 상태 ===== */
+let uid=null, CFG={...SEED_CFG};
+let sid=null, myName=null, mySub=null, mySubmittedAt=null, saveTimer=null, autoSaveAttached=false;
+let loginAcct=null, loginSid=null, loginName=null, loginMode=null;
+
+/* ===== 유틸 ===== */
+const $ = id => document.getElementById(id);
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function pinHashFor(s,pin){ return sha256(PIN_SALT+'|'+s+'|'+pin); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let toastT=null;
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ════════ 부팅 ════════ */
+(async function init(){
+  // 인증 불필요(examGoals 공개 규칙). 일부 학교망에서 익명로그인이 거부되며 남는 '만료/무효 토큰'이
+  // RTDB 연결을 PERMISSION_DENIED로 막는 사례가 있어, 토큰을 깨끗이 비운 뒤 인증 없이 접속한다.
+  try { await auth.signOut(); } catch(e){ /* 세션 없음 */ }
+  uid='noauth';
+  try { const cs=await db.ref(ROOT+'/config').once('value'); if(cs.val()) CFG={...SEED_CFG, ...cs.val()}; if(!Array.isArray(CFG.subjects)||!CFG.subjects.length) CFG.subjects=SEED_CFG.subjects; }
+  catch(e){ console.error('설정 로드 실패', e); }
+  if(CFG.intro) $('loginIntro').innerHTML = esc(CFG.intro).replace(/\n/g,'<br>');
+
+  // 자동 로그인
+  try {
+    const sess=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    if(sess&&sess.sid){
+      const as=await db.ref(ROOT+'/accounts/'+sess.sid).once('value');
+      const a=as.val();
+      if(a&&a.pinHash){ await enterApp(sess.sid, a.name); $('fullLoad').classList.add('hidden'); return; }
+    }
+  } catch(e){ console.error(e); }
+
+  ['sidInput','nameInput'].forEach(id=>$(id).disabled=false);
+  const b=$('nextBtn1'); b.disabled=false; b.textContent='다음';
+  $('sidInput').focus();
+  $('fullLoad').classList.add('hidden');
+})();
+
+/* ════════ 로그인 ════════ */
+async function loginNext(){
+  const s=$('sidInput').value.trim(), nm=$('nameInput').value.trim();
+  $('loginErr').textContent='';
+  if(!/^\d{4,5}$/.test(s)){ $('loginErr').textContent='학번을 숫자 4~5자리로 입력해 주세요'; return; }
+  if(!nm){ $('loginErr').textContent='이름을 입력해 주세요'; return; }
+  if(!uid){ $('loginErr').textContent='서버 연결을 기다려 주세요'; return; }
+  const b=$('nextBtn1'); b.disabled=true; b.textContent='확인 중…';
+  try{
+    const a=(await db.ref(ROOT+'/accounts/'+s).once('value')).val();
+    if(a&&a.name&&a.name!==nm){ $('loginErr').textContent='이 학번은 다른 이름으로 등록돼 있어요. 선생님께 문의하세요.'; return; }
+    loginAcct=a; loginSid=s; loginName=nm;
+    loginMode = (a&&a.pinHash) ? 'verify' : 'new';
+    showPinStep();
+  } catch(e){ console.error(e); $('loginErr').textContent='오류가 발생했어요. 다시 시도해 주세요.'; }
+  finally{ b.disabled=false; if(b.textContent==='확인 중…') b.textContent='다음'; }
+}
+
+function showPinStep(){
+  $('loginStep1').classList.add('hidden');
+  $('loginStep2').classList.remove('hidden');
+  $('pinErr').textContent=''; $('pinInput').value=''; $('pinInput2').value='';
+  $('loginWho').textContent = loginSid+' · '+loginName;
+  const isNew = loginMode==='new';
+  $('pinConfirmField').classList.toggle('hidden', !isNew);
+  if(isNew){
+    $('pinLabel').textContent='새 PIN 4자리 (나만의 비밀번호)';
+    $('pinSubmit').textContent='가입하고 시작';
+    $('pinHint').innerHTML='🔒 PIN은 나만 아는 4자리 비밀번호예요.<br>다음에 로그인할 땐 학번·이름과 함께 이 PIN을 입력해요 — 꼭 기억하세요!';
+    $('pinInput2').setAttribute('placeholder','••••');
+  } else {
+    $('pinLabel').textContent='PIN 4자리';
+    $('pinSubmit').textContent='로그인';
+    $('pinHint').innerHTML='🔒 가입할 때 정한 나만의 PIN 4자리를 입력하세요.';
+  }
+  $('pinInput').focus();
+}
+function loginBack(){
+  $('loginStep2').classList.add('hidden');
+  $('loginStep1').classList.remove('hidden');
+  $('loginErr').textContent=''; loginMode=null; loginAcct=null;
+  $('sidInput').focus();
+}
+async function loginPinSubmit(){
+  const pin=$('pinInput').value.trim();
+  $('pinErr').textContent='';
+  if(!/^\d{4}$/.test(pin)){ $('pinErr').textContent='PIN은 숫자 4자리예요'; return; }
+  const b=$('pinSubmit'); const orig=b.textContent; b.disabled=true; b.textContent='확인 중…';
+  try{
+    if(loginMode==='verify'){
+      const h=await pinHashFor(loginSid,pin);
+      if(h!==loginAcct.pinHash){ $('pinErr').textContent='PIN이 올바르지 않아요.'; return; }
+      await enterApp(loginSid, loginAcct.name||loginName); return;
+    }
+    // new
+    const pin2=$('pinInput2').value.trim();
+    if(pin!==pin2){ $('pinErr').textContent='PIN이 일치하지 않아요. 다시 확인해 주세요.'; return; }
+    const hash=await pinHashFor(loginSid,pin);
+    const rec={ studentId:loginSid, name:loginName, pinHash:hash,
+      createdAt:firebase.database.ServerValue.TIMESTAMP, updatedAt:firebase.database.ServerValue.TIMESTAMP };
+    await db.ref(ROOT+'/accounts/'+loginSid).set(rec);
+    await enterApp(loginSid, loginName); return;
+  } catch(e){ console.error(e); $('pinErr').textContent='오류가 발생했어요. 다시 시도해 주세요.'; }
+  finally{ b.disabled=false; if(b.textContent==='확인 중…') b.textContent=orig; }
+}
+
+function logout(){ localStorage.removeItem(SESSION_KEY); location.reload(); }
+
+/* ════════ 메인 ════════ */
+async function enterApp(s, name){
+  sid=s; myName=name;
+  localStorage.setItem(SESSION_KEY, JSON.stringify({sid:s}));
+  // 제출 내역 로드
+  try{ mySub=(await db.ref(ROOT+'/submissions/'+s).once('value')).val(); }catch(e){ mySub=null; }
+
+  $('screen-login').classList.add('hidden');
+  $('screen-main').classList.remove('hidden');
+  $('whoName').textContent = s+' '+name;
+  $('examTitleTop').childNodes[0].nodeValue = (CFG.examTitle||'기말고사')+' 목표 점수';
+  $('examSubTop').textContent = '나의 목표를 정하고 제출해요';
+
+  renderDday();
+  renderSubjects();
+  attachAutoSave();
+  mySubmittedAt = (mySub&&mySub.submittedAt) || null;
+
+  if(mySubmittedAt){
+    showSavedBanner();
+    renderSummary();
+  }
+}
+
+/* ── 자동 저장: 제출 버튼을 안 눌러도 입력 즉시 저장(교사가 실시간 확인) ── */
+function attachAutoSave(){
+  if(autoSaveAttached) return; autoSaveAttached=true;
+  $('subjList').addEventListener('input', scheduleAutoSave);
+  $('subjList').addEventListener('change', scheduleAutoSave);
+}
+function setAutoTag(t){ const el=$('autoSaveTag'); if(el) el.textContent=t; }
+function buildRec(){
+  const rec={ studentId:sid, name:myName, selected:selectedIds(), subjects:collectSubjects(),
+    updatedAt:firebase.database.ServerValue.TIMESTAMP };
+  if(mySubmittedAt) rec.submittedAt=mySubmittedAt;
+  return rec;
+}
+function scheduleAutoSave(){
+  if(selectedIds().length===0) return;
+  setAutoTag('저장 중…');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(doAutoSave, 800);
+}
+async function doAutoSave(){
+  if(selectedIds().length===0) return;
+  try{
+    const rec=buildRec();
+    await db.ref(ROOT+'/submissions/'+sid).set(rec);
+    mySub=rec; mySub.updatedAt=Date.now();
+    setAutoTag('✅ 자동 저장됨');
+  }catch(e){ console.error(e); setAutoTag('⚠️ 저장 실패 — 잠시 후 자동 재시도'); }
+}
+
+function renderDday(){
+  const box=$('ddayBox');
+  if(!CFG.examDate){ box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const ex=new Date(CFG.examDate+'T00:00:00');
+  const diff=Math.round((ex-today)/86400000);
+  const num=$('ddayNum'), txt=$('ddayTxt');
+  if(diff>0){ num.textContent='D-'+diff; txt.innerHTML='<b>'+fmtDate(CFG.examDate)+'</b> 시험 시작까지<br>'+diff+'일 남았어요. 지금이 골든타임!'; }
+  else if(diff===0){ num.textContent='D-DAY'; txt.innerHTML='<b>오늘이 시험날!</b><br>그동안 준비한 만큼 다 보여주고 와요 💪'; }
+  else { num.textContent='D+'+(-diff); txt.innerHTML='시험이 시작됐어요.<br>끝까지 최선을!'; }
+}
+function fmtDate(d){ const p=d.split('-'); return p.length===3 ? (+p[1])+'월 '+(+p[2])+'일' : d; }
+
+/* ===== 시험 시간표 ===== */
+function openSchedule(){ renderSchedule(); $('schedModal').classList.remove('hidden'); }
+function closeSchedule(){ $('schedModal').classList.add('hidden'); }
+function renderSchedule(){
+  const sc = (CFG.schedule && Array.isArray(CFG.schedule.days) && CFG.schedule.days.length) ? CFG.schedule : SEED_SCHEDULE;
+  $('schedBody').innerHTML = sc.days.map(d=>`
+    <div class="sched-day">
+      <div class="sched-date">${esc(d.date)} <span>(${esc(d.dow)})</span></div>
+      ${(d.periods||[]).map(p=>`
+        <div class="sched-row">
+          <div class="sched-p">${esc(p.p)}교시</div>
+          <div class="sched-mid">
+            <div class="sched-name">${esc(p.name)} <span class="sched-code">[${esc(p.code)}]</span></div>
+            <div class="sched-time${p.startWarn?' warn':''}">${p.startWarn?'⏰ ':''}${esc(p.time)}</div>
+          </div>
+          <div>${p.written?'<span class="tag-written">✏️ 서답형</span>':''}</div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function renderSubjects(){
+  const list=$('subjList');
+  const saved=(mySub&&mySub.subjects)||{};
+  const sel=new Set((mySub&&Array.isArray(mySub.selected))?mySub.selected:Object.keys(saved));
+  list.innerHTML = CFG.subjects.map(su=>{
+    const v=saved[su.id]||{};
+    const on=sel.has(su.id);
+    const gradeSel = CFG.showGrade ? `
+      <div class="fld">
+        <p class="label">목표 등급</p>
+        <select data-sid="${su.id}" data-f="grade">
+          <option value="">-</option>
+          ${[1,2,3,4,5,6,7,8,9].map(g=>`<option value="${g}" ${String(v.grade)===String(g)?'selected':''}>${g}등급</option>`).join('')}
+        </select>
+      </div>` : '';
+    return `<div class="subj ${on?'on':''}" id="subj-${su.id}">
+      <label class="subj-head" for="chk-${su.id}">
+        <input type="checkbox" class="subj-chk" id="chk-${su.id}" data-sid="${su.id}" ${on?'checked':''} onchange="toggleSubj('${su.id}')">
+        <span class="code">${esc(su.id)}</span><span class="sname">${esc(su.name)}</span>
+      </label>
+      <div class="subj-body ${on?'':'hidden'}" id="body-${su.id}">
+        <div class="subj-grid">
+          <div class="fld">
+            <p class="label">이전 점수(중간)</p>
+            <div class="unit"><input type="number" inputmode="numeric" min="0" max="100" data-sid="${su.id}" data-f="prev" value="${v.prev!=null?esc(v.prev):''}" placeholder="-"><span class="u">점</span></div>
+          </div>
+          <div class="fld target">
+            <p class="label">목표 점수</p>
+            <div class="unit"><input type="number" inputmode="numeric" min="0" max="100" data-sid="${su.id}" data-f="target" value="${v.target!=null?esc(v.target):''}" placeholder="-"><span class="u">점</span></div>
+          </div>
+          ${gradeSel}
+        </div>
+        <div class="fld" style="margin-top:9px;">
+          <p class="label">✏️ 이 과목에서 노력할 부분 (선택)</p>
+          <input type="text" maxlength="60" data-sid="${su.id}" data-f="note" value="${v.note!=null?esc(v.note):''}" placeholder="예: 오답노트 복습, 유전 개념 다시 정리">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateSelCount();
+}
+function toggleSubj(id){
+  const chk=document.getElementById('chk-'+id);
+  const on=chk.checked;
+  document.getElementById('subj-'+id).classList.toggle('on',on);
+  document.getElementById('body-'+id).classList.toggle('hidden',!on);
+  updateSelCount();
+}
+function selectedIds(){ return Array.from(document.querySelectorAll('.subj-chk:checked')).map(c=>c.dataset.sid); }
+function updateSelCount(){ $('selCount').textContent = selectedIds().length+'과목 선택'; }
+
+function collectSubjects(){
+  const out={};
+  selectedIds().forEach(id=>{
+    const rec={};
+    const prev=document.querySelector(`[data-sid="${id}"][data-f="prev"]`);
+    const tgt=document.querySelector(`[data-sid="${id}"][data-f="target"]`);
+    const gr=document.querySelector(`[data-sid="${id}"][data-f="grade"]`);
+    const note=document.querySelector(`[data-sid="${id}"][data-f="note"]`);
+    if(prev&&prev.value!=='') rec.prev=clampScore(prev.value);
+    if(tgt&&tgt.value!=='') rec.target=clampScore(tgt.value);
+    if(gr&&gr.value!=='') rec.grade=+gr.value;
+    if(note&&note.value.trim()) rec.note=note.value.trim().slice(0,60);
+    if(Object.keys(rec).length) out[id]=rec;
+  });
+  return out;
+}
+function clampScore(v){ let n=Math.round(+v); if(isNaN(n)) return null; return Math.max(0,Math.min(100,n)); }
+
+async function saveGoals(){
+  const selected=selectedIds();
+  if(selected.length===0){ toast('내가 보는 과목을 먼저 체크해 주세요'); return; }
+  clearTimeout(saveTimer);
+  if(!mySubmittedAt) mySubmittedAt=Date.now();
+  const rec=buildRec();
+  const b=$('saveBtn'); const orig=b.textContent; b.disabled=true; b.textContent='제출 중…';
+  try{
+    await db.ref(ROOT+'/submissions/'+sid).set(rec);
+    mySub=rec; mySub.updatedAt=Date.now();
+    setAutoTag('✅ 자동 저장됨');
+    toast('목표가 제출되었어요! 🎯');
+    showSavedBanner(); renderSummary();
+    $('summaryWrap').scrollIntoView({behavior:'smooth', block:'start'});
+  } catch(e){
+    console.error(e); mySubmittedAt=null; toast('⚠️ 제출 실패 — 잠시 후 다시 시도해 주세요');
+  } finally{ b.disabled=false; b.textContent=orig; }
+}
+
+function showSavedBanner(){
+  const b=$('savedBanner'); b.classList.remove('hidden');
+  b.innerHTML='✅ 제출 완료! 마감 전까지 수정하면 자동 저장돼요.';
+  $('saveBtn').textContent='💾 수정해서 다시 제출';
+}
+
+function renderSummary(){
+  if(!mySub){ return; }
+  const subjects=mySub.subjects||{};
+  const sel=Array.isArray(mySub.selected)?mySub.selected:Object.keys(subjects);
+  const selSet=new Set(sel);
+  const rows=CFG.subjects.filter(su=>selSet.has(su.id)).map(su=>{
+    const v=subjects[su.id]||{};
+    let val='';
+    if(v.target!=null) val+=v.target+'점';
+    if(v.grade) val+=(val?' · ':'')+v.grade+'등급';
+    if(!val) val='-';
+    let up='';
+    if(v.prev!=null && v.target!=null){ const d=v.target-v.prev; if(d>0) up=`<span class="up">▲${d}</span>`; else if(d<0) up=`<span class="up" style="color:#d83a3a">▼${-d}</span>`; }
+    const prevTxt = v.prev!=null ? `<span style="color:var(--sub); font-size:12px; font-weight:600;">${v.prev}점 → </span>` : '';
+    const noteTxt = v.note ? `<div style="font-size:12px; color:var(--sub); margin-top:3px; line-height:1.5;">✏️ ${esc(v.note)}</div>` : '';
+    return `<div class="sum-row" style="flex-direction:column; align-items:stretch;"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="s-name">${esc(su.name)}</span><span class="s-val">${prevTxt}${val}${up}</span></div>${noteTxt}</div>`;
+  }).join('');
+  $('summaryCard').innerHTML = rows;
+  $('summaryWrap').classList.remove('hidden');
+}
+
+/* Enter 키 편의 */
+$('sidInput').addEventListener('keydown',e=>{ if(e.key==='Enter') $('nameInput').focus(); });
+$('nameInput').addEventListener('keydown',e=>{ if(e.key==='Enter') loginNext(); });
+$('pinInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ if($('pinConfirmField').classList.contains('hidden')) loginPinSubmit(); else $('pinInput2').focus(); }});
+$('pinInput2').addEventListener('keydown',e=>{ if(e.key==='Enter') loginPinSubmit(); });
+</script>
+</body>
+</html>

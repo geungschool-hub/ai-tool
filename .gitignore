@@ -19,6 +19,9 @@ fieldtrip_worksheet/체험학습_설문_생기부예시.xlsx
 # 운영 인수인계 문서 (내부 운영 정보 — 공개 저장소 제외)
 Claude_인수인계_통합메모리.md
 
+# 생기부 통합 도우미 — 학생 개인정보(세특)·학교 내부 기재요령 문서 (공개 저장소 제외)
+생기부_통합/
+
 # 수강신청점검 — 학교 내부 문서·OCR 임시추출물 (코드만 추적)
 수강신청점검/*.pdf
 수강신청점검/_*
@@ -34,6 +37,7 @@ english-vocab/plus_words.json
 # 독립 git 저장소 (중첩 방지)
 긍스쿨 허브/
 fieldtrip_worksheet/fieldnote/
+발표체크/
 
 # 의도적 미추적 (배포본은 별도 저장소)
 GWASE'TEUK/

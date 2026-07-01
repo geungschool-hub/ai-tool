@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>목표 점수 — 교사용</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f1f4f9; --card:#fff; --ink:#1d2433; --sub:#6b7384;
+  --primary:#4f6ef2; --primary-ink:#2c45c9; --primary-soft:#e7ecfe;
+  --good:#16a34a; --danger:#e23b3b; --line:#e4e8f1; --accent:#ff7a59;
+  --shadow:0 6px 22px rgba(40,55,100,.09);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{margin:0; font-family:'Noto Sans KR',system-ui,sans-serif; color:var(--ink); background:var(--bg); -webkit-text-size-adjust:100%;}
+button{font-family:inherit; cursor:pointer; border:none;}
+input,select,textarea{font-family:inherit;}
+.hidden{display:none !important;}
+.wrap{max-width:1080px; margin:0 auto; padding:18px 16px 60px;}
+
+/* 게이트 */
+.gate{min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:20px; padding-top:calc(20px + env(safe-area-inset-top)); padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+.gate-card{background:#fff; border-radius:20px; box-shadow:var(--shadow); padding:30px 26px; width:100%; max-width:380px;}
+.gate-card h1{margin:0 0 4px; font-size:21px; font-weight:900;}
+.gate-card p{margin:0 0 18px; font-size:13px; color:var(--sub); line-height:1.5;}
+
+/* 공통 */
+.label{font-size:12.5px; font-weight:700; color:var(--sub); margin:0 0 6px;}
+input[type=text],input[type=tel],input[type=number],input[type=date],input[type=password],select,textarea{
+  width:100%; padding:11px 12px; font-size:15px; border:1.6px solid var(--line); border-radius:10px; background:#fbfcff; color:var(--ink); outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);}
+.btn{padding:11px 18px; font-size:15px; font-weight:800; border-radius:11px; background:var(--primary); color:#fff;}
+.btn:active{transform:scale(.98);}
+.btn:disabled{opacity:.5;}
+.btn.ghost{background:var(--primary-soft); color:var(--primary-ink);}
+.btn.sm{padding:7px 12px; font-size:13px; border-radius:9px;}
+.btn.danger{background:#fde8e8; color:var(--danger);}
+.btn.good{background:#e7f7ec; color:var(--good);}
+.btn.block{width:100%;}
+.err{color:var(--danger); font-size:13px; min-height:18px; margin-top:8px; font-weight:600;}
+
+/* 헤더 */
+.topbar{background:linear-gradient(135deg,#3a52d6,#5a78f5); color:#fff; padding:14px 18px; display:flex; align-items:center; justify-content:space-between;}
+.topbar .ttl{font-size:17px; font-weight:900;}
+.topbar button{background:rgba(255,255,255,.2); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:999px;}
+.tabs{display:flex; gap:8px; background:#fff; padding:10px 16px; box-shadow:0 2px 8px rgba(0,0,0,.04); overflow-x:auto;}
+.tab{padding:9px 16px; font-size:14px; font-weight:800; border-radius:999px; background:#f0f2f8; color:var(--sub); white-space:nowrap;}
+.tab.active{background:var(--primary); color:#fff;}
+
+.card{background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:20px; margin-bottom:16px;}
+.card h2{margin:0 0 14px; font-size:16px; font-weight:900; display:flex; align-items:center; gap:8px;}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.field{margin-bottom:13px;}
+
+/* 통계 */
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:16px;}
+.stat{background:#fff; border-radius:14px; box-shadow:var(--shadow); padding:15px 16px;}
+.stat .n{font-size:26px; font-weight:900; color:var(--primary-ink); line-height:1;}
+.stat .l{font-size:12px; color:var(--sub); margin-top:6px; font-weight:600;}
+
+/* 표 */
+.table-scroll{overflow-x:auto; border-radius:12px; border:1px solid var(--line); background:#fff;}
+table{border-collapse:collapse; width:100%; font-size:13px; white-space:nowrap;}
+th,td{padding:9px 11px; text-align:center; border-bottom:1px solid var(--line);}
+th{background:#f3f6fc; font-weight:800; color:var(--ink); position:sticky; top:0;}
+tbody tr:hover{background:#f8faff;}
+td.name{font-weight:700; text-align:left;}
+.cellv{font-weight:800; color:var(--primary-ink);}
+.cellv .p{color:var(--sub); font-weight:500; font-size:11px;}
+.up{color:var(--good); font-size:11px; font-weight:800;}
+.dn{color:var(--danger); font-size:11px; font-weight:800;}
+.muted{color:#b9c0cf;}
+.miss-list{display:flex; flex-wrap:wrap; gap:7px; margin-top:10px;}
+.miss-chip{background:#fdeceC; background:#fdecec; color:var(--danger); font-size:13px; font-weight:700; padding:6px 11px; border-radius:999px;}
+.done-chip{background:#e7f7ec; color:var(--good);}
+
+/* 과목 편집 */
+.subj-edit{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+.subj-edit input{flex:1;}
+.subj-edit .ord{display:flex; flex-direction:column; gap:2px;}
+.subj-edit .ord button{padding:2px 8px; font-size:11px; background:#eef1f8; border-radius:6px; color:var(--sub);}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px;}
+.toolbar input{max-width:220px;}
+
+#toast{position:fixed; left:50%; bottom:30px; transform:translateX(-50%) translateY(20px); background:#1d2433; color:#fff; padding:12px 20px; border-radius:999px; font-size:14px; font-weight:700; opacity:0; transition:.25s; pointer-events:none; z-index:99;}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.credit{text-align:center; font-size:11px; color:#9aa1b2; margin-top:24px;}
+.hint{font-size:12px; color:var(--sub); line-height:1.55;}
+
+/* 모달 */
+.modal-bg{position:fixed; inset:0; background:rgba(20,28,50,.5); display:flex; align-items:center; justify-content:center; z-index:90; padding:20px;}
+.modal{background:#fff; border-radius:18px; padding:24px; max-width:380px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,.3);}
+.modal h3{margin:0 0 12px; font-size:17px; font-weight:900;}
+.modal .mbtns{display:flex; gap:10px; margin-top:18px;}
+.modal .mbtns .btn{flex:1;}
+</style>
+</head>
+<body>
+
+<!-- ===== 게이트 ===== -->
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <h1>🎯 목표 점수 — 교사용</h1>
+    <p id="gateDesc">교사 비밀번호를 입력하세요.</p>
+    <div class="field"><input id="gatePw" type="password" inputmode="numeric" placeholder="비밀번호" autocomplete="off"></div>
+    <div id="gatePw2Field" class="field hidden"><input id="gatePw2" type="password" placeholder="비밀번호 다시 입력" autocomplete="off"></div>
+    <button class="btn block" id="gateBtn" onclick="gateSubmit()">잠시만요…</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- ===== 메인 ===== -->
+<div id="main" class="hidden">
+  <div class="topbar">
+    <div class="ttl">🎯 목표 점수 관리 <span id="examName" style="font-weight:500; font-size:13px; opacity:.9;"></span></div>
+    <button onclick="location.reload()">새로고침</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" data-tab="status" onclick="switchTab('status')">📊 제출 현황</div>
+    <div class="tab" data-tab="setup" onclick="switchTab('setup')">⚙️ 시험 설정</div>
+    <div class="tab" data-tab="roster" onclick="switchTab('roster')">📋 명단·미제출</div>
+  </div>
+
+  <div class="wrap">
+    <!-- 제출 현황 -->
+    <div id="tab-status">
+      <div class="stats" id="statsBox"></div>
+      <div class="toolbar">
+        <button class="btn ghost sm" onclick="exportCsv()">⬇️ CSV 내보내기</button>
+        <span class="hint" id="statusUpdated"></span>
+      </div>
+      <div class="table-scroll"><table id="subTable"><thead></thead><tbody></tbody></table></div>
+      <p class="hint" style="margin-top:10px;">셀: <b>목표점수</b>(작게 이전점수) · ▲상승폭 · <span class="up">✓</span>=신청만(점수 미입력) · ·=미신청. 행 끝 버튼으로 PIN 초기화/삭제.</p>
+      <div class="card" style="margin-top:16px;"><h2>📚 과목별 신청자 수</h2><div id="subjCountBox" class="miss-list"></div></div>
+    </div>
+
+    <!-- 시험 설정 -->
+    <div id="tab-setup" class="hidden">
+      <div class="card">
+        <h2>⚙️ 시험 정보</h2>
+        <div class="row2">
+          <div class="field"><p class="label">시험 이름</p><input id="cfgTitle" type="text" placeholder="예: 1학기 기말고사"></div>
+          <div class="field"><p class="label">시험 시작일 (D-day 기준)</p><input id="cfgExamDate" type="date"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><p class="label">제출 마감일 (선택)</p><input id="cfgDueDate" type="date"></div>
+          <div class="field"><p class="label">목표 등급 입력칸</p>
+            <select id="cfgShowGrade"><option value="1">표시함 (점수+등급)</option><option value="0">숨김 (점수만)</option></select>
+          </div>
+        </div>
+        <div class="field"><p class="label">학생 화면 안내 문구 (선택)</p><textarea id="cfgIntro" rows="2" placeholder="나의 목표 점수를 정하고 선생님께 제출해요."></textarea></div>
+      </div>
+
+      <div class="card">
+        <h2>📚 과목 목록 (시험 시간표)</h2>
+        <p class="hint" style="margin-bottom:12px;">학생 화면에 보일 과목들이에요. 학생은 <b>자기가 응시하는 과목만 체크</b>해서 목표를 적습니다. 왼쪽 칸은 <b>과목 코드</b>(시간표의 [ ] 번호).</p>
+        <div id="subjEditList"></div>
+        <button class="btn ghost sm" onclick="addSubject()" style="margin-top:6px;">+ 과목 추가</button>
+      </div>
+
+      <button class="btn block good" onclick="saveConfig()">💾 설정 저장</button>
+      <p class="hint" style="text-align:center; margin-top:10px;">저장하면 학생 화면에 바로 반영됩니다.</p>
+
+      <div class="card" style="margin-top:24px;">
+        <h2>🔑 교사 비밀번호</h2>
+        <div class="field"><p class="label">새 비밀번호</p><input id="newPw" type="password" placeholder="새 비밀번호" autocomplete="off"></div>
+        <button class="btn ghost sm" onclick="changePw()">비밀번호 변경</button>
+      </div>
+    </div>
+
+    <!-- 명단·미제출 -->
+    <div id="tab-roster" class="hidden">
+      <div class="card">
+        <h2>📋 학급 명단 등록</h2>
+        <p class="hint" style="margin-bottom:10px;">한 줄에 한 명씩, <b>학번 이름</b> 형식으로 붙여넣기 (쉼표·탭·공백 구분 모두 가능).</p>
+        <textarea id="rosterText" rows="8" placeholder="20701 김가나&#10;20702 이다라&#10;20703,박마바"></textarea>
+        <div class="toolbar" style="margin-top:10px;">
+          <button class="btn sm" onclick="saveRoster()">명단 저장</button>
+          <span class="hint" id="rosterCount"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>🚨 미제출 학생</h2>
+        <div id="missBox"><p class="hint">명단을 저장하면 미제출 학생이 표시됩니다.</p></div>
+      </div>
+    </div>
+
+    <p class="credit">Claude AI로 이 앱을 제작함 by 고은표</p>
+  </div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDbEgNhJr24GjWPYBx63zQ4MyW2dZA6XSs",
+  authDomain: "gongju7-vocab.firebaseapp.com",
+  databaseURL: "https://gongju7-vocab-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gongju7-vocab",
+  storageBucket: "gongju7-vocab.firebasestorage.app",
+  messagingSenderId: "249343659059",
+  appId: "1:249343659059:web:532b7d74d0a38286c2a746"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database(), auth=firebase.auth();
+const ROOT='examGoals';
+const TPW_SALT='examgoal.teacher.v1';
+const TADMIN_KEY='examgoal.teacher.session';
+
+const $=id=>document.getElementById(id);
+async function sha256(s){ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+const tpwHash=pw=>sha256(TPW_SALT+'|'+pw);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let toastT=null; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+let CFG={}, SUBMISSIONS={}, ACCOUNTS={}, ROSTER=[], THASH=null;
+let subjDraft=[];
+
+/* ===== 부팅 ===== */
+(async function(){
+  // 인증 불필요(examGoals 공개 규칙). 익명로그인 실패가 남긴 무효 토큰이 RTDB를 PERMISSION_DENIED로 막는 것 방지 → 토큰 비우고 인증 없이 접속.
+  try{ await auth.signOut(); }catch(e){ /* 세션 없음 */ }
+  try{ CFG=(await db.ref(ROOT+'/config').once('value')).val()||{}; }catch(e){ CFG={}; }
+  try{ THASH=(await db.ref(ROOT+'/teacherHash').once('value')).val()||null; }catch(e){ THASH=null; }
+  const hasPw=!!THASH;
+  if(!hasPw){
+    $('gateDesc').textContent='최초 접속이에요. 사용할 교사 비밀번호를 정하세요.';
+    $('gatePw2Field').classList.remove('hidden');
+    $('gatePw').placeholder='새 비밀번호';
+  }
+  $('gateBtn').textContent = hasPw?'로그인':'비밀번호 설정';
+  // 세션 자동
+  const sess=localStorage.getItem(TADMIN_KEY);
+  if(hasPw && sess && sess===THASH){ enterAdmin(); }
+})();
+
+async function gateSubmit(){
+  const pw=$('gatePw').value.trim(); $('gateErr').textContent='';
+  if(pw.length<4){ $('gateErr').textContent='비밀번호는 4자 이상으로 정해 주세요'; return; }
+  const hasPw=!!THASH;
+  const b=$('gateBtn'); b.disabled=true;
+  try{
+    if(!hasPw){
+      const pw2=$('gatePw2').value.trim();
+      if(pw!==pw2){ $('gateErr').textContent='비밀번호가 일치하지 않아요'; return; }
+      const h=await tpwHash(pw);
+      await db.ref(ROOT+'/teacherHash').set(h);
+      THASH=h; localStorage.setItem(TADMIN_KEY,h);
+      enterAdmin();
+    } else {
+      const h=await tpwHash(pw);
+      if(h!==THASH){ $('gateErr').textContent='비밀번호가 올바르지 않아요'; return; }
+      localStorage.setItem(TADMIN_KEY,h); enterAdmin();
+    }
+  } catch(e){ console.error(e); $('gateErr').innerHTML='⚠️ 저장 중 오류가 발생했어요. 다시 시도해 주세요.<br><small style="color:#9aa1b2">('+((e&&(e.code||e.message))||'unknown')+')</small>'; }
+  finally{ b.disabled=false; }
+}
+$('gatePw').addEventListener('keydown',e=>{ if(e.key==='Enter'){ if($('gatePw2Field').classList.contains('hidden')) gateSubmit(); else $('gatePw2').focus(); }});
+$('gatePw2').addEventListener('keydown',e=>{ if(e.key==='Enter') gateSubmit(); });
+
+function enterAdmin(){
+  $('gate').classList.add('hidden'); $('main').classList.remove('hidden');
+  $('examName').textContent = CFG.examTitle?('· '+CFG.examTitle):'';
+  loadConfigForm();
+  // 실시간 구독
+  db.ref(ROOT+'/submissions').on('value',s=>{ SUBMISSIONS=s.val()||{}; renderStatus(); renderMiss(); });
+  db.ref(ROOT+'/accounts').on('value',s=>{ ACCOUNTS=s.val()||{}; });
+  ROSTER = Array.isArray(CFG.roster)?CFG.roster:[];
+  if(ROSTER.length){ $('rosterText').value=ROSTER.map(r=>r.sid+' '+r.name).join('\n'); $('rosterCount').textContent=ROSTER.length+'명 등록됨'; }
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===t));
+  ['status','setup','roster'].forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
+}
+
+/* ===== 설정 ===== */
+function loadConfigForm(){
+  $('cfgTitle').value=CFG.examTitle||'';
+  $('cfgExamDate').value=CFG.examDate||'';
+  $('cfgDueDate').value=CFG.dueDate||'';
+  $('cfgShowGrade').value=(CFG.showGrade===false)?'0':'1';
+  $('cfgIntro').value=CFG.intro||'';
+  subjDraft = Array.isArray(CFG.subjects)&&CFG.subjects.length ? CFG.subjects.map(s=>({...s})) : SEED_SUBJECTS.map(s=>({...s}));
+  renderSubjEdit();
+}
+function renderSubjEdit(){
+  $('subjEditList').innerHTML = subjDraft.map((s,i)=>`
+    <div class="subj-edit">
+      <input type="text" value="${esc(s.id)}" oninput="subjDraft[${i}].id=this.value.trim()" placeholder="코드" style="max-width:64px; text-align:center; font-weight:700;">
+      <input type="text" value="${esc(s.name)}" oninput="subjDraft[${i}].name=this.value" placeholder="과목명">
+      <div class="ord">
+        <button onclick="moveSubj(${i},-1)" ${i===0?'disabled style=opacity:.3':''}>▲</button>
+        <button onclick="moveSubj(${i},1)" ${i===subjDraft.length-1?'disabled style=opacity:.3':''}>▼</button>
+      </div>
+      <button class="btn danger sm" onclick="delSubject(${i})">삭제</button>
+    </div>`).join('');
+}
+function addSubject(){ const ids=subjDraft.map(s=>s.id); let n=1; while(ids.includes('s'+n)) n++; subjDraft.push({id:'s'+n,name:''}); renderSubjEdit(); }
+function delSubject(i){ subjDraft.splice(i,1); renderSubjEdit(); }
+function moveSubj(i,d){ const j=i+d; if(j<0||j>=subjDraft.length) return; [subjDraft[i],subjDraft[j]]=[subjDraft[j],subjDraft[i]]; renderSubjEdit(); }
+
+async function saveConfig(){
+  const subjects=subjDraft.map(s=>({id:(s.id||'').trim(),name:(s.name||'').trim()})).filter(s=>s.name&&s.id);
+  if(!subjects.length){ toast('과목을 하나 이상 입력해 주세요 (코드·과목명 모두 필요)'); return; }
+  const ids=subjects.map(s=>s.id);
+  if(new Set(ids).size!==ids.length){ toast('과목 코드가 중복돼요. 코드는 과목마다 달라야 해요.'); return; }
+  const patch={
+    examTitle:$('cfgTitle').value.trim()||'기말고사',
+    examDate:$('cfgExamDate').value||'',
+    dueDate:$('cfgDueDate').value||'',
+    showGrade:$('cfgShowGrade').value==='1',
+    intro:$('cfgIntro').value.trim()||'',
+    subjects
+  };
+  try{
+    await db.ref(ROOT+'/config').update(patch);
+    Object.assign(CFG,patch);
+    $('examName').textContent='· '+CFG.examTitle;
+    toast('설정이 저장되었어요 ✅'); renderStatus();
+  }catch(e){ console.error(e); toast('⚠️ 저장 실패'); }
+}
+async function changePw(){
+  const pw=$('newPw').value.trim();
+  if(pw.length<4){ toast('비밀번호는 4자 이상'); return; }
+  const h=await tpwHash(pw);
+  await db.ref(ROOT+'/teacherHash').set(h);
+  THASH=h; localStorage.setItem(TADMIN_KEY,h); $('newPw').value='';
+  toast('비밀번호가 변경되었어요 🔑');
+}
+
+/* ===== 제출 현황 ===== */
+// 설정 저장 전에도 보이도록 기본 시간표 과목으로 폴백 + 제출 데이터에 있는 과목 코드 누락 없이 포함
+const SEED_SUBJECTS=[{id:'23',name:'영어1'},{id:'27',name:'동아시아 역사 기행'},{id:'39',name:'물질과 에너지'},{id:'19',name:'대수'},{id:'29',name:'세계시민과 지리'},{id:'37',name:'역학과 에너지'},{id:'15',name:'문학'},{id:'75',name:'중국어Ⅰ'},{id:'77',name:'일본어Ⅰ'},{id:'41',name:'생명과학'},{id:'21',name:'인공지능 수학'},{id:'33',name:'법과 사회'},{id:'43',name:'지구과학'},{id:'17',name:'언어생활 탐구'},{id:'35',name:'윤리와 사상'}];
+function subjList(){
+  const base = (Array.isArray(CFG.subjects)&&CFG.subjects.length) ? CFG.subjects.slice() : SEED_SUBJECTS.slice();
+  const have=new Set(base.map(s=>s.id));
+  Object.values(SUBMISSIONS||{}).forEach(s=>{
+    const ids=Array.isArray(s.selected)?s.selected:Object.keys(s.subjects||{});
+    ids.forEach(id=>{ if(id&&!have.has(id)){ have.add(id); base.push({id, name:'['+id+']'}); } });
+  });
+  return base;
+}
+function subsArray(){
+  return Object.keys(SUBMISSIONS).map(k=>({sid:k,...SUBMISSIONS[k]}))
+    .sort((a,b)=>String(a.sid).localeCompare(String(b.sid)));
+}
+function renderStatus(){
+  const subs=subsArray(), subj=subjList();
+  // 통계
+  const n=subs.length;
+  let ups=0, upCnt=0, doneCnt=0;
+  subs.forEach(s=>{
+    if(s.subjects) Object.values(s.subjects).forEach(v=>{ if(v.prev!=null&&v.target!=null){ ups+=(v.target-v.prev); upCnt++; }});
+    if(s.submittedAt) doneCnt++;
+  });
+  const draftCnt = n - doneCnt;
+  const rosterN = ROSTER.length;
+  $('statsBox').innerHTML = [
+    ['✅ 제출 완료', doneCnt+(rosterN?(' / '+rosterN):'')+'명'],
+    ['✍️ 작성 중', draftCnt+'명'],
+    ['📈 평균 목표 상승', upCnt?('+'+(ups/upCnt).toFixed(1)+'점'):'-'],
+    ['🚨 미제출', rosterN?Math.max(0,rosterN-doneCnt)+'명':'-']
+  ].map(([l,v])=>`<div class="stat"><div class="n">${v}</div><div class="l">${l}</div></div>`).join('');
+
+  // 표
+  const th=`<tr><th>학번</th><th>이름</th><th>상태</th>${subj.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>수정시각</th><th></th></tr>`;
+  $('subTable').querySelector('thead').innerHTML=th;
+  const tb=subs.map(s=>{
+    const selSet=new Set(Array.isArray(s.selected)?s.selected:Object.keys(s.subjects||{}));
+    const cells=subj.map(su=>{
+      const v=(s.subjects||{})[su.id];
+      const picked=selSet.has(su.id);
+      if(!v||(v.target==null&&v.grade==null&&v.prev==null)) return picked?`<td><span class="up">✓</span></td>`:`<td class="muted">·</td>`;
+      let main=''; if(v.target!=null) main=v.target+'점'; if(v.grade) main+=(main?' ':'')+v.grade+'등급';
+      let prev=v.prev!=null?`<span class="p">${v.prev}→</span> `:'';
+      let arrow=''; if(v.prev!=null&&v.target!=null){ const d=v.target-v.prev; if(d>0)arrow=` <span class="up">▲${d}</span>`; else if(d<0)arrow=` <span class="dn">▼${-d}</span>`; }
+      const noteMark = v.note?` <span style="cursor:help">📝</span>`:'';
+      return `<td${v.note?` title="${esc(v.note)}"`:''}><span class="cellv">${prev}${main||'-'}${arrow}</span>${noteMark}</td>`;
+    }).join('');
+    const status=s.submittedAt
+      ? '<span style="background:#e7f7ec;color:var(--good);font-weight:800;font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;">제출완료</span>'
+      : '<span style="background:#fdf2e2;color:#b9770f;font-weight:800;font-size:11px;padding:3px 8px;border-radius:999px;white-space:nowrap;">작성중</span>';
+    const when=s.updatedAt?fmtTime(s.updatedAt):'-';
+    return `<tr>
+      <td>${esc(s.sid)}</td><td class="name">${esc(s.name)}</td><td>${status}</td>${cells}
+      <td style="font-size:11.5px; color:var(--sub)">${when}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn sm" onclick="openDetail('${esc(s.sid)}')">📄 보기</button>
+        <button class="btn ghost sm" onclick="resetPin('${esc(s.sid)}','${esc(s.name)}')">PIN초기화</button>
+        <button class="btn danger sm" onclick="delSub('${esc(s.sid)}','${esc(s.name)}')">삭제</button>
+      </td></tr>`;
+  }).join('');
+  $('subTable').querySelector('tbody').innerHTML = tb || `<tr><td colspan="${subj.length+5}" style="padding:30px; color:var(--sub)">아직 작성한 학생이 없어요.</td></tr>`;
+  $('statusUpdated').textContent='실시간 갱신 중 · 제출완료 '+doneCnt+' · 작성중 '+draftCnt;
+
+  // 과목별 신청자 수
+  const cnt={}; subj.forEach(su=>cnt[su.id]=0);
+  subs.forEach(s=>{ const set=new Set(Array.isArray(s.selected)?s.selected:Object.keys(s.subjects||{})); set.forEach(id=>{ if(cnt[id]!=null) cnt[id]++; }); });
+  $('subjCountBox').innerHTML = subj.map(su=>`<span class="miss-chip ${cnt[su.id]?'done-chip':''}">[${esc(su.id)}] ${esc(su.name)} <b>${cnt[su.id]}명</b></span>`).join('') || '<span class="hint">제출 데이터가 쌓이면 표시됩니다.</span>';
+}
+function fmtTime(ts){ const d=new Date(ts); const p=x=>String(x).padStart(2,'0'); return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+
+function openDetail(sid){
+  const s=SUBMISSIONS[sid]; if(!s){ toast('데이터가 없어요'); return; }
+  const subj=subjList();
+  const sel=new Set(Array.isArray(s.selected)?s.selected:Object.keys(s.subjects||{}));
+  const list=subj.filter(su=>sel.has(su.id)).map(su=>{
+    const v=(s.subjects||{})[su.id]||{};
+    let score = v.prev!=null ? `<span style="color:var(--sub)">${v.prev}점 →</span> ` : '';
+    score += v.target!=null ? `<b style="color:var(--primary-ink)">${v.target}점</b>` : '<span style="color:#b9c0cf">목표 미입력</span>';
+    if(v.grade) score += ` · 목표 ${v.grade}등급`;
+    if(v.prev!=null&&v.target!=null){ const d=v.target-v.prev; if(d>0) score+=` <span style="color:var(--good);font-weight:800">▲${d}</span>`; else if(d<0) score+=` <span style="color:var(--danger);font-weight:800">▼${-d}</span>`; }
+    const note = v.note ? `<div style="margin-top:5px; font-size:13.5px; color:#1d6fb8; line-height:1.5;">✏️ ${esc(v.note)}</div>` : '';
+    return `<div style="padding:11px 0; border-bottom:1px solid var(--line);">
+      <div style="font-weight:800; font-size:14.5px;">${esc(su.name)} <span style="font-size:11px;color:var(--sub);font-weight:600">[${esc(su.id)}]</span></div>
+      <div style="font-size:14px; margin-top:3px;">${score}</div>${note}</div>`;
+  }).join('') || '<p class="hint" style="padding:14px 0;">아직 과목을 선택하지 않았어요.</p>';
+  const status = s.submittedAt
+    ? '<span style="color:var(--good);font-weight:800">🟢 제출완료</span>'
+    : '<span style="color:#b9770f;font-weight:800">🟠 작성중</span>';
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal" style="max-width:440px; max-height:88vh; display:flex; flex-direction:column;">
+      <h3 style="margin-bottom:2px;">${esc(s.name)} <span style="font-size:13px;color:var(--sub);font-weight:600">${esc(sid)}</span></h3>
+      <div style="font-size:13px; margin-bottom:10px;">${status} · 마지막 수정 ${s.updatedAt?fmtTime(s.updatedAt):'-'}</div>
+      <div style="flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;">${list}</div>
+      <div class="mbtns"><button class="btn ghost" onclick="closeModal()" style="flex:1;">닫기</button></div>
+    </div></div>`;
+}
+
+function resetPin(sid,name){
+  confirmModal('PIN 초기화', `<b>${esc(name)}</b>(${esc(sid)}) 학생의 PIN을 초기화할까요?<br>학생이 학번·이름으로 다시 들어와 새 PIN을 정하게 됩니다.`, 'good', async()=>{
+    await db.ref(ROOT+'/accounts/'+sid+'/pinHash').remove();
+    toast('PIN이 초기화되었어요');
+  });
+}
+function delSub(sid,name){
+  confirmModal('제출 삭제', `<b>${esc(name)}</b>(${esc(sid)}) 학생의 <b>제출 내용</b>을 삭제할까요?<br>계정(PIN)은 유지됩니다.`, 'danger', async()=>{
+    await db.ref(ROOT+'/submissions/'+sid).remove();
+    toast('제출 내용을 삭제했어요');
+  });
+}
+
+function exportCsv(){
+  const subj=subjList(), subs=subsArray();
+  const head=['학번','이름','상태',...subj.flatMap(s=>[s.name+' 이전',s.name+' 목표',s.name+' 등급',s.name+' 노력할부분']),'수정시각'];
+  const rows=subs.map(s=>{
+    const base=[s.sid,s.name,s.submittedAt?'제출완료':'작성중'];
+    subj.forEach(su=>{ const v=(s.subjects||{})[su.id]||{}; base.push(v.prev??'',v.target??'',v.grade??'',v.note??''); });
+    base.push(s.updatedAt?fmtTime(s.updatedAt):'');
+    return base;
+  });
+  const csv=[head,...rows].map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(CFG.examTitle||'목표점수')+'_제출현황.csv'; a.click();
+}
+
+/* ===== 명단 / 미제출 ===== */
+function parseRoster(txt){
+  return txt.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.split(/[\s,\t]+/).filter(Boolean);
+    const sid=(m[0]||'').replace(/[^0-9]/g,'');
+    const name=m.slice(1).join(' ').trim();
+    return sid?{sid,name}:null;
+  }).filter(Boolean);
+}
+async function saveRoster(){
+  ROSTER=parseRoster($('rosterText').value);
+  if(!ROSTER.length){ toast('명단을 입력해 주세요'); return; }
+  await db.ref(ROOT+'/config/roster').set(ROSTER);
+  CFG.roster=ROSTER;
+  $('rosterCount').textContent=ROSTER.length+'명 등록됨';
+  toast('명단을 저장했어요 ('+ROSTER.length+'명)');
+  renderMiss(); renderStatus();
+}
+function renderMiss(){
+  const box=$('missBox');
+  if(!ROSTER.length){ box.innerHTML='<p class="hint">명단을 저장하면 미제출 학생이 표시됩니다.</p>'; return; }
+  // 제출완료(submittedAt 있음)만 '완료'로 간주. 작성중(✍️)은 미제출에 포함하되 표시 구분.
+  const submitted=new Set(Object.keys(SUBMISSIONS).filter(k=>SUBMISSIONS[k]&&SUBMISSIONS[k].submittedAt));
+  const drafting=new Set(Object.keys(SUBMISSIONS).filter(k=>SUBMISSIONS[k]&&!SUBMISSIONS[k].submittedAt));
+  const miss=ROSTER.filter(r=>!submitted.has(r.sid));
+  if(!miss.length){ box.innerHTML='<p style="color:var(--good); font-weight:800;">🎉 전원 제출 완료!</p>'; return; }
+  box.innerHTML = `<p class="hint" style="margin-bottom:8px;">미제출 <b style="color:var(--danger)">${miss.length}명</b> / 전체 ${ROSTER.length}명 <span style="color:var(--sub)">(✍️=작성 중)</span></p>`+
+    `<div class="miss-list">${miss.map(r=>`<span class="miss-chip${drafting.has(r.sid)?' done-chip':''}">${drafting.has(r.sid)?'✍️ ':''}${esc(r.sid)} ${esc(r.name)}</span>`).join('')}</div>`;
+}
+
+/* ===== 모달 ===== */
+function confirmModal(title,html,kind,onYes){
+  $('modalRoot').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><h3>${esc(title)}</h3><div style="font-size:14px; line-height:1.6;">${html}</div>
+    <div class="mbtns"><button class="btn ghost" onclick="closeModal()">취소</button>
+    <button class="btn ${kind==='danger'?'danger':'good'}" id="modalYes">확인</button></div></div></div>`;
+  $('modalYes').onclick=async()=>{ closeModal(); try{ await onYes(); }catch(e){ console.error(e); toast('⚠️ 처리 실패'); } };
+}
+function closeModal(){ $('modalRoot').innerHTML=''; }
+</script>
+</body>
+</html>

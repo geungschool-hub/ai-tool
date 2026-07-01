@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "vocab": {
+      "config":   { ".read": "auth != null", ".write": "auth != null" },
+      "words":    { ".read": "auth != null", ".write": "auth != null" },
+      "levels":   { ".read": "auth != null", ".write": "auth != null" },
+      "seasons":  { ".read": "auth != null", ".write": "auth != null" },
+      "classGoal":{ ".read": "auth != null", ".write": "auth != null" },
+      "cheers":   { ".read": "auth != null", ".write": "auth != null" },
+      "daily":    { ".read": "auth != null", ".write": "auth != null" },
+      "levelLog": { ".read": "auth != null", ".write": "auth != null" },
+      "scoreLog": { ".read": "auth != null", ".write": "auth != null" },
+      "resetLog": { ".read": "auth != null", ".write": "auth != null" },
+      "students": {
+        ".read": "auth != null",
+        ".indexOn": ["studentId"],
+        "$uid": { ".write": "auth != null" }
+      },
+      "progress": {
+        ".read": "auth != null",
+        "$uid": { ".write": "auth != null" }
+      }
+    },
+    "examGoals": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

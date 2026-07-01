@@ -1,0 +1,21 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "hosting": {
+    "site": "exam-goal",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "database.rules.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/*.md",
+      "**/*.json"
+    ],
+    "headers": [
+      { "source": "**/*.html", "headers": [ { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" } ] }
+    ]
+  }
+}

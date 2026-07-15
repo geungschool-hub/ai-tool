@@ -166,7 +166,7 @@ main{width:100%; max-width:1060px; flex:1; display:flex; flex-direction:column; 
 /* modal */
 .modal-bg{position:fixed; inset:0; background:rgba(5,8,16,.72); display:none; align-items:center; justify-content:center; z-index:60; padding:20px;}
 .modal-bg.on{display:flex;}
-.modal{background:var(--panel); border:1px solid var(--line); border-radius:6px; max-width:380px; width:100%; padding:30px 24px 22px; text-align:center;}
+.modal{background:var(--panel); border:1px solid var(--line); border-radius:6px; max-width:440px; width:100%; padding:30px 24px 22px; text-align:center;}
 .modal .m-t{font-family:'Noto Serif KR',serif; font-size:18px; font-weight:700; letter-spacing:3px; margin-bottom:12px;}
 .modal .m-s{font-size:13.5px; color:var(--dim); line-height:1.9; letter-spacing:1px; margin-bottom:24px; white-space:pre-line;}
 .modal .m-b{display:flex; gap:10px;}
@@ -485,7 +485,32 @@ function loadPast(){
 }
 
 $('wipeBtn').addEventListener('click', async function(){
-  const ok=await modal('전체 삭제','모든 선거 기록과 표를 삭제합니다.\n되돌릴 수 없습니다.','삭제',true);
+  let lines=[];
+  try{
+    const snap=await FB.db.ref(ROOT+'/elections').once('value');
+    const v=snap.val()||{};
+    Object.keys(v).sort().forEach(function(k){
+      const e=v[k]; if(!e) return;
+      if(e.status==='done' && e.result){
+        const r=e.result;
+        if(e.mode==='yesno'){
+          const c=toArr(e.candidates)[0]||{name:''};
+          lines.push('『'+e.title+'』 '+c.name+' — 찬성 '+(r.yes||0)+' · 반대 '+(r.no||0)+' → '+(r.label||''));
+        }else{
+          const cc=r.counts||{};
+          lines.push('『'+e.title+'』 '+toArr(e.candidates).map(function(c){
+            return '기호'+c.n+' '+c.name+' '+(cc[c.n]||0)+'표';
+          }).join(' · '));
+        }
+      }else{
+        lines.push('『'+(e.title||'')+'』 — 미개표');
+      }
+    });
+  }catch(e){}
+  const msg = lines.length
+    ? '삭제 전에 아래 결과를 기록해 두세요.\n\n'+lines.join('\n')+'\n\n모든 기록과 표를 삭제합니다. 되돌릴 수 없습니다.'
+    : '모든 선거 기록과 표를 삭제합니다.\n되돌릴 수 없습니다.';
+  const ok=await modal('전체 삭제', msg, '삭제', true);
   if(!ok) return;
   await FB.db.ref(ROOT+'/current').remove();
   await FB.db.ref(ROOT+'/elections').remove();

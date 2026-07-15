@@ -299,6 +299,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
     <div class="ctrlbar">
       <button class="btn line" id="pauseBtn">일시 정지</button>
       <button class="btn line" id="skipBtn">바로 결과</button>
+      <button class="btn line" id="muteBtn">🔊 소리</button>
     </div>
   </section>
 
@@ -699,6 +700,121 @@ $('reopenBtn').addEventListener('click', async function(){
 });
 $('countBtn').addEventListener('click', startCount);
 
+/* ---------- sound (Web Audio 합성 BGM — 파일 없음) ---------- */
+const AU={ctx:null, master:null, muted:false, beatTimer:null, beat:0, drone:[], droneGain:null, noise:null};
+function auCtx(){
+  try{
+    if(!AU.ctx){
+      const C=window.AudioContext||window.webkitAudioContext; if(!C) return null;
+      AU.ctx=new C();
+      AU.master=AU.ctx.createGain();
+      AU.master.gain.value=AU.muted?0:0.55;
+      AU.master.connect(AU.ctx.destination);
+    }
+    if(AU.ctx.state==='suspended') AU.ctx.resume();
+    return AU.ctx;
+  }catch(e){ return null; }
+}
+function noiseBuf(){
+  if(AU.noise) return AU.noise;
+  const c=AU.ctx, b=c.createBuffer(1, c.sampleRate*0.4, c.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  AU.noise=b; return b;
+}
+function timp(t, f0, vol){
+  const c=AU.ctx;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type='sine';
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(f0*0.55, t+0.25);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+0.55);
+  o.connect(g); g.connect(AU.master); o.start(t); o.stop(t+0.6);
+  const nb=c.createBufferSource(); nb.buffer=noiseBuf();
+  const nf=c.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=220;
+  const ng=c.createGain();
+  ng.gain.setValueAtTime(0.0001, t);
+  ng.gain.exponentialRampToValueAtTime(vol*0.6, t+0.005);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t+0.16);
+  nb.connect(nf); nf.connect(ng); ng.connect(AU.master); nb.start(t); nb.stop(t+0.2);
+}
+function chord(t, fs, dur, vol, type){
+  const c=AU.ctx;
+  fs.forEach(function(f, i){
+    const o=c.createOscillator(), g=c.createGain(), fl=c.createBiquadFilter();
+    o.type=type||'sawtooth'; o.frequency.value=f; o.detune.value=(i%2?4:-4);
+    fl.type='lowpass'; fl.frequency.value=type==='sawtooth'?1000:1600;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t+dur*0.3);
+    g.gain.linearRampToValueAtTime(0.0001, t+dur);
+    o.connect(fl); fl.connect(g); g.connect(AU.master); o.start(t); o.stop(t+dur+0.05);
+  });
+}
+const PROG=[
+  [146.83,174.61,220.00],   /* Dm  */
+  [116.54,146.83,174.61],   /* B♭  */
+  [130.81,164.81,196.00],   /* C   */
+  [110.00,138.59,164.81]    /* A   */
+];
+function bgmStart(){
+  try{
+    if(!auCtx()) return;
+    bgmStop(0);
+    const c=AU.ctx;
+    const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=300;
+    const dg=c.createGain(); dg.gain.setValueAtTime(0.0001, c.currentTime);
+    dg.gain.linearRampToValueAtTime(0.05, c.currentTime+2.0);
+    fl.connect(dg); dg.connect(AU.master);
+    [73.42, 73.79, 110.00].forEach(function(f){
+      const o=c.createOscillator(); o.type='sawtooth'; o.frequency.value=f;
+      o.connect(fl); o.start(); AU.drone.push(o);
+    });
+    AU.droneGain=dg;
+    AU.beat=0;
+    AU.beatTimer=setInterval(function(){
+      try{
+        if(counting.paused) return;
+        const t=AU.ctx.currentTime;
+        timp(t, 82, AU.beat%2===0?0.5:0.26);
+        if(AU.beat%8===0) chord(t, PROG[(AU.beat/8)%4], 5.4, 0.05, 'sawtooth');
+        AU.beat++;
+      }catch(e){}
+    }, 650);
+  }catch(e){}
+}
+function bgmStop(fade){
+  try{
+    if(AU.beatTimer){ clearInterval(AU.beatTimer); AU.beatTimer=null; }
+    if(AU.droneGain){
+      const t=AU.ctx.currentTime;
+      AU.droneGain.gain.cancelScheduledValues(t);
+      AU.droneGain.gain.setValueAtTime(AU.droneGain.gain.value, t);
+      AU.droneGain.gain.linearRampToValueAtTime(0.0001, t+(fade||0.05));
+    }
+    const os=AU.drone; AU.drone=[]; AU.droneGain=null;
+    os.forEach(function(o){ try{ o.stop(AU.ctx.currentTime+(fade||0.05)+0.05); }catch(e){} });
+  }catch(e){}
+}
+function fanfare(){
+  try{
+    if(!auCtx()) return;
+    bgmStop(1.2);
+    const t=AU.ctx.currentTime+0.1;
+    for(let i=0;i<10;i++) timp(t+i*0.07, 88, 0.16+i*0.03);   /* 팀파니 롤 */
+    timp(t+0.8, 73, 0.62);
+    chord(t+0.8, [220.00,277.18,329.63], 0.7, 0.10, 'square');            /* A장조 */
+    chord(t+1.4, [293.66,369.99,440.00,587.33], 3.2, 0.12, 'square');     /* D장조 팡파르 */
+    chord(t+1.4, [146.83,185.00,220.00], 3.2, 0.06, 'sawtooth');
+    timp(t+1.4, 65, 0.7);
+  }catch(e){}
+}
+$('muteBtn').addEventListener('click', function(){
+  AU.muted=!AU.muted;
+  if(AU.master) AU.master.gain.value=AU.muted?0:0.55;
+  $('muteBtn').textContent=AU.muted?'🔇 소리':'🔊 소리';
+});
+
 /* ---------- counting ---------- */
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
@@ -719,6 +835,7 @@ async function startCount(){
   buildTally();
   updPrg();
   show('scrCount');
+  bgmStart();
   counting.timer=setInterval(step, 1300);
 }
 function step(){
@@ -729,6 +846,7 @@ function step(){
   counting.counts[c]=(counting.counts[c]||0)+1;
   const card=$('readCard');
   card.classList.remove('flip'); void card.offsetWidth; card.classList.add('flip');
+  try{ if(auCtx()) timp(AU.ctx.currentTime, 112, 0.42); }catch(e){}
   if(E.mode==='yesno'){
     $('rcNo').textContent='';
     $('rcName').textContent=(c==='yes')?'찬 성':'반 대';
@@ -784,6 +902,7 @@ function finishCount(){
   if(counting.timer){ clearInterval(counting.timer); counting.timer=null; }
   if(!counting.active) return;
   counting.active=false;
+  fanfare();
   let result;
   if(E.mode==='yesno'){
     const y=counting.counts.yes||0, n=counting.counts.no||0;

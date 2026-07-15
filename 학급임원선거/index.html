@@ -254,14 +254,20 @@ const $=function(id){return document.getElementById(id);};
 const ROOT='vote';
 let eid, E=null, elRef=null;
 let sid=null, sidOK=false, choice=null, renderKey='__init';
-let castBusy=false;
+let castBusy=false, doneShownFor=null, notice='';
 
 function toArr(v){ if(!v) return []; return Array.isArray(v)?v.filter(Boolean):Object.values(v); }
 function show(id){
   document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
   $(id).classList.add('on');
 }
-function votedLocal(){ return eid && localStorage.getItem('cv.voted.'+eid)==='1'; }
+function votedLocal(){ return eid ? localStorage.getItem('cv.voted.'+eid) : null; }
+function calcKey(){
+  const st=E?E.status:'none';
+  let ex='';
+  if(E && st==='open'){ const vs=votedLocal(); ex=vs?((E.voters&&E.voters[vs])?'v1':'v0'):'v-'; }
+  return String(eid)+'|'+st+'|'+ex;
+}
 
 let gotData=false;
 setTimeout(function(){ if(!gotData) show('scrErr'); }, 12000);
@@ -282,15 +288,24 @@ else{
 
 function render(force){
   const st=E?E.status:'none';
-  const key=String(eid)+'|'+st;
+  const key=calcKey();
   if(!force && key===renderKey) return;
   renderKey=key;
   $('hdTitle').textContent=(E&&E.title)?E.title:'투표소';
 
   if(!eid || !E){ show('scrIdle'); return; }
   if(st==='open'){
-    if(votedLocal()){ showDone(false); return; }
-    if(!sidOK){ $('loginMsg').textContent=''; show('scrLogin'); return; }
+    const vs=votedLocal();
+    if(vs){
+      if(E.voters && E.voters[vs]){
+        if(doneShownFor!==eid) showDone(false);
+        return;
+      }
+      localStorage.removeItem('cv.voted.'+eid);
+      doneShownFor=null; sidOK=false; sid=null;
+      notice='명부에서 삭제되었습니다 — 다시 투표해 주세요';
+    }
+    if(!sidOK){ $('loginMsg').textContent=notice; show('scrLogin'); return; }
     buildBallot(); show('scrBallot'); return;
   }
   if(st==='closed'){ $('waitTxt').textContent='투표가 마감되었습니다'; show('scrWait'); return; }
@@ -309,7 +324,7 @@ function doLogin(){
   FB.db.ref(ROOT+'/elections/'+eid+'/voters/'+v).once('value').then(function(s){
     $('loginBtn').disabled=false;
     if(s.exists()){ $('loginMsg').textContent='이미 투표한 학번입니다'; return; }
-    sid=v; sidOK=true; render(true);
+    sid=v; sidOK=true; notice=''; render(true);
   }).catch(function(){ $('loginBtn').disabled=false; $('loginMsg').textContent='확인 실패 — 다시 시도하세요'; });
 }
 
@@ -374,8 +389,9 @@ function cast(){
   if(castBusy||!choice||!sid) return;
   if(!E||E.status!=='open'){ $('cfmBg').classList.remove('on'); render(true); return; }
   castBusy=true; $('cfmYes').disabled=true;
+  const bref=FB.db.ref(ROOT+'/elections/'+eid+'/ballots').push();
   const vref=FB.db.ref(ROOT+'/elections/'+eid+'/voters/'+sid);
-  vref.transaction(function(cur){ return cur===null?true:undefined; }, function(err,committed){
+  vref.transaction(function(cur){ return cur===null?{t:Date.now(), b:bref.key}:undefined; }, function(err,committed){
     if(err){ fail('오류가 발생했습니다 — 다시 시도하세요'); return; }
     if(!committed){
       castBusy=false; $('cfmYes').disabled=false; $('cfmBg').classList.remove('on');
@@ -383,9 +399,9 @@ function cast(){
       $('loginMsg').textContent='이미 투표한 학번입니다';
       return;
     }
-    FB.db.ref(ROOT+'/elections/'+eid+'/ballots').push({c:(E.mode==='yesno')?choice:Number(choice)})
+    bref.set({c:(E.mode==='yesno')?choice:Number(choice)})
       .then(function(){
-        localStorage.setItem('cv.voted.'+eid,'1');
+        localStorage.setItem('cv.voted.'+eid, sid);
         castBusy=false; $('cfmYes').disabled=false; $('cfmBg').classList.remove('on');
         showDone(true);
       })
@@ -401,7 +417,7 @@ function cast(){
 }
 
 function showDone(animate){
-  renderKey=String(eid)+'|open';
+  doneShownFor=eid; renderKey=calcKey();
   $('doneSlip').style.display=animate?'block':'none';
   if(!animate) $('doneSeal').classList.add('now');
   show('scrDone');

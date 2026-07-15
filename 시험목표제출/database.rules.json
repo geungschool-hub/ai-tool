@@ -24,6 +24,14 @@
     "examGoals": {
       ".read": true,
       ".write": true
+    },
+    "reportPlans": {
+      ".read": true,
+      ".write": true
+    },
+    "vote": {
+      ".read": true,
+      ".write": true
     }
   }
 }

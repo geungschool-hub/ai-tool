@@ -182,6 +182,19 @@ main{width:100%; max-width:1060px; flex:1; display:flex; flex-direction:column; 
 .modal .m-t{font-family:'Noto Serif KR',serif; font-size:18px; font-weight:700; letter-spacing:3px; margin-bottom:12px;}
 .modal .m-s{font-size:13.5px; color:var(--dim); line-height:1.9; letter-spacing:1px; margin-bottom:24px; white-space:pre-line;}
 .modal .m-b{display:flex; gap:10px;}
+.gsteps{margin-top:6px;}
+.gstep{
+  position:relative; padding:9px 2px 9px 38px; font-size:14.5px; color:var(--ivory);
+  letter-spacing:.5px; border-bottom:1px solid var(--line); line-height:1.6;
+}
+.gstep:last-child{border-bottom:none;}
+.gstep b{
+  position:absolute; left:2px; top:11px; width:24px; height:24px; border-radius:50%;
+  border:1px solid var(--gold); color:var(--gold); font-family:'Noto Serif KR',serif;
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+}
+.gstep span{display:block; font-size:12px; color:var(--dim); margin-top:2px;}
+.gfoot{margin-top:14px; font-size:12px; color:var(--dim); letter-spacing:1px; text-align:center;}
 .modal .btn{flex:1; padding:0;}
 .modal .btn.redfill{background:var(--red); color:#fff;}
 
@@ -240,7 +253,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
     <div style="margin-top:26px;">
       <button class="btn danger" id="wipeBtn" style="min-height:42px; font-size:13px; letter-spacing:2px;">선거 데이터 전체 삭제</button>
     </div>
-    <div class="roominfo">방 코드 <b id="roomCodeTxt"></b><button id="leaveRoom">방 변경</button></div>
+    <div class="roominfo">방 코드 <b id="roomCodeTxt"></b><button id="leaveRoom">방 변경</button><button id="guideBtn">안내</button></div>
   </section>
 
   <!-- live board (open / closed) -->
@@ -299,6 +312,20 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
     </div>
   </section>
 </main>
+
+<div class="modal-bg" id="guideBg">
+  <div class="modal" style="max-width:400px; text-align:left;">
+    <div class="m-t" style="text-align:center;">진 행 안 내</div>
+    <div class="gsteps">
+      <div class="gstep"><b>1</b>선거 개설 — 후보 이름 입력<span>후보가 1명이면 자동으로 찬반 투표</span></div>
+      <div class="gstep"><b>2</b>학생 투표 — 화면의 QR로 접속<span>학번 오기입은 명부 확인에서 ✕ 삭제(재투표 가능)</span></div>
+      <div class="gstep"><b>3</b>투표 마감 → 개표 시작<span>무작위 순서로 한 표씩 공개</span></div>
+      <div class="gstep"><b>4</b>결과 기록 → 전체 삭제<span>삭제 팝업에 결과 요약이 표시됩니다</span></div>
+    </div>
+    <div class="gfoot">방 코드는 다른 기기에서 입장할 때 필요합니다.</div>
+    <button class="btn gold wide" id="guideOk" style="margin-top:18px;">확 인</button>
+  </div>
+</div>
 
 <div class="modal-bg" id="mBg">
   <div class="modal">
@@ -391,7 +418,13 @@ function enterRoom(rid, hash){
   localStorage.setItem(SESS, JSON.stringify({rid:rid, hash:hash}));
   $('roomCodeTxt').textContent=rid;
   unlock();
+  if(!localStorage.getItem('cv.guide.v1')){
+    localStorage.setItem('cv.guide.v1','1');
+    $('guideBg').classList.add('on');
+  }
 }
+$('guideOk').addEventListener('click', function(){ $('guideBg').classList.remove('on'); });
+$('guideBtn').addEventListener('click', function(){ $('guideBg').classList.add('on'); });
 if(!FB.ready){
   show('scrRoom'); $('roomMsg').textContent='연결 실패 — 네트워크를 확인하세요';
   $('newRoomBtn').disabled=true; $('inRoomBtn').disabled=true;

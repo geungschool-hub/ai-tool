@@ -170,6 +170,10 @@ footer{padding:14px 0 18px; font-size:11px; color:#a49c8a; letter-spacing:.5px;}
     <p class="note">연결에 실패했습니다.<br>네트워크 확인 후 새로고침해 주세요.</p>
   </section>
 
+  <section class="scr" id="scrNoRoom">
+    <p class="note serif" style="font-size:17px;">선생님이 안내한 QR(링크)로<br>접속해 주세요.</p>
+  </section>
+
   <section class="scr" id="scrIdle">
     <p class="note serif" style="font-size:18px;">현재 진행 중인 투표가 없습니다.</p>
   </section>
@@ -252,6 +256,9 @@ try{
 
 const $=function(id){return document.getElementById(id);};
 const ROOT='vote';
+const RID=(new URLSearchParams(location.search).get('r')||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const RBASE=ROOT+'/rooms/'+RID;
+function B(p){ return FB.db.ref(RBASE+p); }
 let eid, E=null, elRef=null;
 let sid=null, sidOK=false, choice=null, renderKey='__init';
 let castBusy=false, doneShownFor=null, notice='';
@@ -261,7 +268,8 @@ function show(id){
   document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');});
   $(id).classList.add('on');
 }
-function votedLocal(){ return eid ? localStorage.getItem('cv.voted.'+eid) : null; }
+function lsKey(){ return 'cv.voted.'+RID+':'+eid; }
+function votedLocal(){ return eid ? localStorage.getItem(lsKey()) : null; }
 function calcKey(){
   const st=E?E.status:'none';
   let ex='';
@@ -272,8 +280,9 @@ function calcKey(){
 let gotData=false;
 setTimeout(function(){ if(!gotData) show('scrErr'); }, 12000);
 if(!FB.ready){ show('scrErr'); }
+else if(!RID){ gotData=true; show('scrNoRoom'); }
 else{
-  FB.db.ref(ROOT+'/current').on('value', function(s){
+  B('/current').on('value', function(s){
     gotData=true;
     const v=s.val()||null;
     if(v===eid) return;
@@ -281,7 +290,7 @@ else{
     if(elRef){ elRef.off(); elRef=null; }
     E=null;
     if(!eid){ renderKey='__x'; render(true); return; }
-    elRef=FB.db.ref(ROOT+'/elections/'+eid);
+    elRef=B('/elections/'+eid);
     elRef.on('value', function(ss){ E=ss.val(); render(false); });
   }, function(){ show('scrErr'); });
 }
@@ -301,7 +310,7 @@ function render(force){
         if(doneShownFor!==eid) showDone(false);
         return;
       }
-      localStorage.removeItem('cv.voted.'+eid);
+      localStorage.removeItem(lsKey());
       doneShownFor=null; sidOK=false; sid=null;
       notice='명부에서 삭제되었습니다 — 다시 투표해 주세요';
     }
@@ -321,7 +330,7 @@ function doLogin(){
   const v=$('sidInp').value.trim();
   if(!/^\d{3,6}$/.test(v)){ $('loginMsg').textContent='학번을 정확히 입력하세요'; return; }
   $('loginBtn').disabled=true;
-  FB.db.ref(ROOT+'/elections/'+eid+'/voters/'+v).once('value').then(function(s){
+  B('/elections/'+eid+'/voters/'+v).once('value').then(function(s){
     $('loginBtn').disabled=false;
     if(s.exists()){ $('loginMsg').textContent='이미 투표한 학번입니다'; return; }
     sid=v; sidOK=true; notice=''; render(true);
@@ -389,8 +398,8 @@ function cast(){
   if(castBusy||!choice||!sid) return;
   if(!E||E.status!=='open'){ $('cfmBg').classList.remove('on'); render(true); return; }
   castBusy=true; $('cfmYes').disabled=true;
-  const bref=FB.db.ref(ROOT+'/elections/'+eid+'/ballots').push();
-  const vref=FB.db.ref(ROOT+'/elections/'+eid+'/voters/'+sid);
+  const bref=B('/elections/'+eid+'/ballots').push();
+  const vref=B('/elections/'+eid+'/voters/'+sid);
   vref.transaction(function(cur){ return cur===null?{t:Date.now(), b:bref.key}:undefined; }, function(err,committed){
     if(err){ fail('오류가 발생했습니다 — 다시 시도하세요'); return; }
     if(!committed){
@@ -401,7 +410,7 @@ function cast(){
     }
     bref.set({c:(E.mode==='yesno')?choice:Number(choice)})
       .then(function(){
-        localStorage.setItem('cv.voted.'+eid, sid);
+        localStorage.setItem(lsKey(), sid);
         castBusy=false; $('cfmYes').disabled=false; $('cfmBg').classList.remove('on');
         showDone(true);
       })

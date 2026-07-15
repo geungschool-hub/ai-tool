@@ -64,6 +64,18 @@ main{width:100%; max-width:1060px; flex:1; display:flex; flex-direction:column; 
 .btn.wide{width:100%;}
 .btn:disabled{opacity:.45; cursor:default;}
 .gmsg{min-height:20px; font-size:13.5px; color:#e08074; letter-spacing:1px; margin-top:10px; text-align:center;}
+.rtabs{display:flex; gap:8px; margin-bottom:20px;}
+.rtab{
+  flex:1; min-height:42px; background:transparent; color:var(--dim); border:1px solid var(--line);
+  border-radius:4px; font-size:14px; letter-spacing:2px; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
+}
+.rtab.on{color:var(--gold); border-color:var(--gold);}
+.roominfo{margin-top:20px; font-size:13px; color:var(--dim); letter-spacing:2px;}
+.roominfo b{color:var(--gold); font-family:'Noto Serif KR',serif; letter-spacing:3px; margin-left:4px;}
+.roominfo button{
+  margin-left:14px; background:none; border:none; color:var(--dim); font-size:12px; letter-spacing:1px;
+  cursor:pointer; text-decoration:underline; text-underline-offset:3px;
+}
 
 .cand-line{display:flex; gap:9px; align-items:center; margin-bottom:9px;}
 .cand-line .no{
@@ -185,14 +197,26 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
 </header>
 
 <main>
-  <!-- gate -->
-  <section class="scr" id="scrGate">
+  <!-- room gate -->
+  <section class="scr" id="scrRoom">
     <div class="card">
-      <h2 id="gateTitle">선거관리자 확인</h2>
-      <div class="fld"><label>비밀번호</label><input id="gpw" type="password" autocomplete="off"></div>
-      <div class="fld" id="gpw2Wrap" style="display:none;"><label>비밀번호 확인</label><input id="gpw2" type="password" autocomplete="off"></div>
-      <button class="btn gold wide" id="gateBtn">입 장</button>
-      <div class="gmsg" id="gateMsg"></div>
+      <h2>선거방 입장</h2>
+      <div class="rtabs">
+        <button class="rtab on" id="tabNew">새 방 만들기</button>
+        <button class="rtab" id="tabIn">기존 방 입장</button>
+      </div>
+      <div id="fmNew">
+        <div class="fld"><label>관리자 비밀번호</label><input id="npw" type="password" autocomplete="off"></div>
+        <div class="fld"><label>비밀번호 확인</label><input id="npw2" type="password" autocomplete="off"></div>
+        <button class="btn gold wide" id="newRoomBtn">방 만들기</button>
+      </div>
+      <div id="fmIn" style="display:none;">
+        <div class="fld"><label>방 코드</label><input id="rcode" type="text" autocomplete="off" maxlength="8" placeholder="예: k3xw7p" style="text-transform:lowercase;"></div>
+        <div class="fld"><label>관리자 비밀번호</label><input id="ipw" type="password" autocomplete="off"></div>
+        <button class="btn gold wide" id="inRoomBtn">입 장</button>
+      </div>
+      <div class="gmsg" id="roomMsg"></div>
+      <div class="hint" style="margin:14px 0 0; text-align:center;">반(선생님)마다 방 하나 — 방끼리 선거가 완전히 분리됩니다.<br>방 코드+비밀번호만 있으면 다른 기기에서도 입장할 수 있습니다.</div>
     </div>
   </section>
 
@@ -216,6 +240,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
     <div style="margin-top:26px;">
       <button class="btn danger" id="wipeBtn" style="min-height:42px; font-size:13px; letter-spacing:2px;">선거 데이터 전체 삭제</button>
     </div>
+    <div class="roominfo">방 코드 <b id="roomCodeTxt"></b><button id="leaveRoom">방 변경</button></div>
   </section>
 
   <!-- live board (open / closed) -->
@@ -308,7 +333,7 @@ try{
 const $=function(id){return document.getElementById(id);};
 const ROOT='vote';
 const SALT='classvote.teacher.v1';
-const SESS='cv.t.session';
+const SESS='cv.room.v1';
 let eid=null, E=null, elRef=null, renderKey='__init';
 let lastBallots=null;
 const counting={active:false, seq:[], idx:0, paused:false, timer:null, counts:{}};
@@ -335,55 +360,103 @@ function modal(t,s,yesLabel,danger){
   });
 }
 
-/* ================= gate ================= */
-let dbHash=null, needSet=false, gotGate=false;
-if(!FB.ready){
-  show('scrGate'); $('gateMsg').textContent='연결 실패 — 네트워크를 확인하세요'; $('gateBtn').disabled=true;
-}else{
-  show('scrGate'); $('gateBtn').disabled=true; $('gateMsg').textContent='연결 확인 중…';
-  setTimeout(function(){ if(!gotGate) $('gateMsg').textContent='연결 실패 — 네트워크를 확인하세요'; }, 12000);
-  FB.db.ref(ROOT+'/teacherHash').once('value').then(function(s){
-    gotGate=true; $('gateBtn').disabled=false; $('gateMsg').textContent='';
-    dbHash=s.val()||null;
-    needSet=!dbHash;
-    if(dbHash && localStorage.getItem(SESS)===dbHash){ unlock(); return; }
-    if(needSet){
-      $('gateTitle').textContent='관리자 비밀번호 설정';
-      $('gpw2Wrap').style.display='block';
-      $('gateBtn').textContent='설정 후 입장';
-    }
-    show('scrGate');
-  }).catch(function(){ show('scrGate'); $('gateMsg').textContent='연결 실패 — 새로고침해 주세요'; });
+/* ================= room gate ================= */
+let RID=null, BASE=null;
+function B(p){ return FB.db.ref(BASE+p); }
+const urlRoom=(new URLSearchParams(location.search).get('r')||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function genCode(){
+  const cs='abcdefghjkmnpqrstuvwxyz23456789'; let s='';
+  const a=new Uint32Array(6); crypto.getRandomValues(a);
+  for(let i=0;i<6;i++) s+=cs[a[i]%cs.length];
+  return s;
 }
-$('gateBtn').addEventListener('click', gateGo);
-$('gpw').addEventListener('keydown', function(e){ if(e.key==='Enter') gateGo(); });
-$('gpw2').addEventListener('keydown', function(e){ if(e.key==='Enter') gateGo(); });
-async function gateGo(){
-  const pw=$('gpw').value;
-  if(pw.length<4){ $('gateMsg').textContent='4자 이상 입력하세요'; return; }
-  if(needSet){
-    if(pw!==$('gpw2').value){ $('gateMsg').textContent='비밀번호가 일치하지 않습니다'; return; }
-    const h=await sha256(SALT+'|'+pw);
-    await FB.db.ref(ROOT+'/teacherHash').set(h);
-    dbHash=h; localStorage.setItem(SESS,h); unlock();
+function roomHashRef(rid){ return FB.db.ref(ROOT+'/rooms/'+rid+'/teacherHash'); }
+function openRoomGate(msg){
+  show('scrRoom');
+  $('roomMsg').textContent=msg||'';
+  if(urlRoom && !$('rcode').value){ setTab(false); $('rcode').value=urlRoom; }
+}
+function setTab(isNew){
+  $('tabNew').classList.toggle('on', isNew);
+  $('tabIn').classList.toggle('on', !isNew);
+  $('fmNew').style.display=isNew?'':'none';
+  $('fmIn').style.display=isNew?'none':'';
+  $('roomMsg').textContent='';
+}
+$('tabNew').addEventListener('click', function(){ setTab(true); });
+$('tabIn').addEventListener('click', function(){ setTab(false); });
+
+function enterRoom(rid, hash){
+  RID=rid; BASE=ROOT+'/rooms/'+rid;
+  localStorage.setItem(SESS, JSON.stringify({rid:rid, hash:hash}));
+  $('roomCodeTxt').textContent=rid;
+  unlock();
+}
+if(!FB.ready){
+  show('scrRoom'); $('roomMsg').textContent='연결 실패 — 네트워크를 확인하세요';
+  $('newRoomBtn').disabled=true; $('inRoomBtn').disabled=true;
+}else{
+  let saved=null;
+  try{ saved=JSON.parse(localStorage.getItem(SESS)||'null'); }catch(e){}
+  if(saved && saved.rid && saved.hash){
+    openRoomGate('저장된 방 확인 중…');
+    roomHashRef(saved.rid).once('value').then(function(s){
+      if(s.val() && s.val()===saved.hash){ enterRoom(saved.rid, saved.hash); }
+      else{ localStorage.removeItem(SESS); openRoomGate(); }
+    }).catch(function(){ $('roomMsg').textContent='연결 실패 — 새로고침해 주세요'; });
   }else{
-    const h=await sha256(SALT+'|'+pw);
-    if(h!==dbHash){ $('gateMsg').textContent='비밀번호가 올바르지 않습니다'; return; }
-    localStorage.setItem(SESS,h); unlock();
+    openRoomGate();
   }
 }
+$('newRoomBtn').addEventListener('click', async function(){
+  const pw=$('npw').value;
+  if(pw.length<4){ $('roomMsg').textContent='비밀번호는 4자 이상'; return; }
+  if(pw!==$('npw2').value){ $('roomMsg').textContent='비밀번호가 일치하지 않습니다'; return; }
+  $('newRoomBtn').disabled=true; $('roomMsg').textContent='';
+  try{
+    const h=await sha256(SALT+'|'+pw);
+    let rid=null;
+    for(let i=0;i<5;i++){
+      const c=genCode();
+      const s=await roomHashRef(c).once('value');
+      if(!s.exists()){ rid=c; break; }
+    }
+    if(!rid) throw 0;
+    await roomHashRef(rid).set(h);
+    enterRoom(rid, h);
+  }catch(e){ $('roomMsg').textContent='방 생성 실패 — 다시 시도하세요'; }
+  $('newRoomBtn').disabled=false;
+});
+$('inRoomBtn').addEventListener('click', roomIn);
+$('ipw').addEventListener('keydown', function(e){ if(e.key==='Enter') roomIn(); });
+async function roomIn(){
+  const code=$('rcode').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  const pw=$('ipw').value;
+  if(!code || pw.length<4){ $('roomMsg').textContent='방 코드와 비밀번호를 입력하세요'; return; }
+  $('inRoomBtn').disabled=true;
+  try{
+    const s=await roomHashRef(code).once('value');
+    const h=await sha256(SALT+'|'+pw);
+    if(s.val() && s.val()===h){ enterRoom(code, h); }
+    else{ $('roomMsg').textContent='방 코드 또는 비밀번호가 올바르지 않습니다'; }
+  }catch(e){ $('roomMsg').textContent='연결 실패 — 다시 시도하세요'; }
+  $('inRoomBtn').disabled=false;
+}
+$('leaveRoom').addEventListener('click', function(){
+  localStorage.removeItem(SESS); location.href=location.pathname;
+});
 
 /* ================= main ================= */
 function unlock(){
   eid=undefined;
-  FB.db.ref(ROOT+'/current').on('value', function(s){
+  B('/current').on('value', function(s){
     const v=s.val()||null;
     if(v===eid){ return; }
     eid=v; lastBallots=null;
     if(elRef){ elRef.off(); elRef=null; }
     E=null;
     if(!eid){ renderKey='__x'; render(true); return; }
-    elRef=FB.db.ref(ROOT+'/elections/'+eid);
+    elRef=B('/elections/'+eid);
     elRef.on('value', function(ss){ E=ss.val(); render(false); updateLive(); });
   });
 }
@@ -453,15 +526,15 @@ $('startBtn').addEventListener('click', async function(){
   if(total>0) obj.total=total;
   $('startBtn').disabled=true;
   try{
-    await FB.db.ref(ROOT+'/elections/'+id).set(obj);
-    await FB.db.ref(ROOT+'/current').set(id);
+    await B('/elections/'+id).set(obj);
+    await B('/current').set(id);
     document.querySelectorAll('#candBox .cand-line').forEach(function(el){el.remove();});
   }catch(e){ $('setupMsg').textContent='개설 실패 — 다시 시도하세요'; }
   $('startBtn').disabled=false;
 });
 
 function loadPast(){
-  FB.db.ref(ROOT+'/elections').once('value').then(function(s){
+  B('/elections').once('value').then(function(s){
     const v=s.val()||{}; const rows=[];
     Object.keys(v).sort().reverse().forEach(function(k){
       const e=v[k];
@@ -487,7 +560,7 @@ function loadPast(){
 $('wipeBtn').addEventListener('click', async function(){
   let lines=[];
   try{
-    const snap=await FB.db.ref(ROOT+'/elections').once('value');
+    const snap=await B('/elections').once('value');
     const v=snap.val()||{};
     Object.keys(v).sort().forEach(function(k){
       const e=v[k]; if(!e) return;
@@ -512,8 +585,8 @@ $('wipeBtn').addEventListener('click', async function(){
     : '모든 선거 기록과 표를 삭제합니다.\n되돌릴 수 없습니다.';
   const ok=await modal('전체 삭제', msg, '삭제', true);
   if(!ok) return;
-  await FB.db.ref(ROOT+'/current').remove();
-  await FB.db.ref(ROOT+'/elections').remove();
+  await B('/current').remove();
+  await B('/elections').remove();
   $('pastBox').style.display='none';
   renderKey='__w'; render(true);
 });
@@ -550,7 +623,7 @@ $('votersPanel').addEventListener('click', async function(ev){
   const v=E.voters[k]||{};
   const upd={}; upd['voters/'+k]=null;
   if(v.b) upd['ballots/'+v.b]=null;
-  FB.db.ref(ROOT+'/elections/'+eid).update(upd);
+  B('/elections/'+eid).update(upd);
 });
 function dropSlip(){
   const s=$('slipFly');
@@ -558,7 +631,7 @@ function dropSlip(){
 }
 $('votersTgl').addEventListener('click', function(){ $('votersPanel').classList.toggle('on'); });
 
-function studentURL(){ return location.origin + location.pathname.replace(/admin\.html.*$/,''); }
+function studentURL(){ return location.origin + location.pathname.replace(/admin\.html.*$/,'') + '?r=' + RID; }
 let qrBuilt='';
 function buildQR(){
   const u=studentURL();
@@ -575,12 +648,12 @@ function buildQR(){
 $('closeBtn').addEventListener('click', async function(){
   const ok=await modal('투표 마감','마감 후에는 투표할 수 없습니다.','마감',true);
   if(!ok) return;
-  FB.db.ref(ROOT+'/elections/'+eid+'/status').set('closed');
+  B('/elections/'+eid+'/status').set('closed');
 });
 $('reopenBtn').addEventListener('click', async function(){
   const ok=await modal('투표 재개','투표를 다시 받습니다.','재개',false);
   if(!ok) return;
-  FB.db.ref(ROOT+'/elections/'+eid+'/status').set('open');
+  B('/elections/'+eid+'/status').set('open');
 });
 $('countBtn').addEventListener('click', startCount);
 
@@ -590,13 +663,13 @@ function shuffle(a){
   return a;
 }
 async function startCount(){
-  const snap=await FB.db.ref(ROOT+'/elections/'+eid+'/ballots').once('value');
+  const snap=await B('/elections/'+eid+'/ballots').once('value');
   const seq=[]; snap.forEach(function(ch){ const v=ch.val(); if(v&&v.c!=null) seq.push(v.c); });
   shuffle(seq);
   counting.active=true; counting.seq=seq; counting.idx=0; counting.paused=false; counting.counts={};
   if(E.mode==='yesno'){ counting.counts={yes:0,no:0}; }
   else{ toArr(E.candidates).forEach(function(c){ counting.counts[c.n]=0; }); }
-  FB.db.ref(ROOT+'/elections/'+eid+'/status').set('counting');
+  B('/elections/'+eid+'/status').set('counting');
   setChip('개표 중', true);
   $('rcNo').textContent='';
   $('rcName').textContent='개표를 시작합니다';
@@ -684,7 +757,7 @@ function finishCount(){
     if(winners.length===1) result={counts:cc, win:Number(winners[0]), label:'당선'};
     else result={counts:cc, win:null, label:'동점 · 재투표'};
   }
-  FB.db.ref(ROOT+'/elections/'+eid).update({status:'done', result:result});
+  B('/elections/'+eid).update({status:'done', result:result});
 }
 
 /* ---------- done ---------- */

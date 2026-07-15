@@ -203,7 +203,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
 </head>
 <body>
 <header>
-  <div class="small">학 급 임 원 선 거</div>
+  <div class="small" id="hdSmall">학 급 임 원 선 거</div>
   <h1 id="hdTitle" class="serif">개표 현황판</h1>
   <div class="hrule"></div>
   <div class="chip" id="chip" style="display:none;"></div>
@@ -219,6 +219,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
         <button class="rtab" id="tabIn">기존 투표소 입장</button>
       </div>
       <div id="fmNew">
+        <div class="fld"><label>투표소 이름</label><input id="nname" type="text" maxlength="20" value="혜화여고 투표소" autocomplete="off"></div>
         <div class="fld"><label>관리자 비밀번호</label><input id="npw" type="password" autocomplete="off"></div>
         <div class="fld"><label>비밀번호 확인</label><input id="npw2" type="password" autocomplete="off"></div>
         <button class="btn gold wide" id="newRoomBtn">투표소 만들기</button>
@@ -417,6 +418,9 @@ function enterRoom(rid, hash){
   RID=rid; BASE=ROOT+'/rooms/'+rid;
   localStorage.setItem(SESS, JSON.stringify({rid:rid, hash:hash}));
   $('roomCodeTxt').textContent=rid;
+  B('/name').once('value').then(function(s){
+    if(s.val()) $('hdSmall').textContent=s.val();
+  }).catch(function(){});
   unlock();
   if(!localStorage.getItem('cv.guide.v1')){
     localStorage.setItem('cv.guide.v1','1');
@@ -459,7 +463,8 @@ $('newRoomBtn').addEventListener('click', async function(){
       if(!s.exists()){ rid=c; break; }
     }
     if(!rid) throw 0;
-    await roomHashRef(rid).set(h);
+    const nm=$('nname').value.trim()||'혜화여고 투표소';
+    await FB.db.ref(ROOT+'/rooms/'+rid).set({teacherHash:h, name:nm});
     enterRoom(rid, h);
   }catch(e){ $('roomMsg').textContent='투표소 생성 실패 — 다시 시도하세요'; }
   $('newRoomBtn').disabled=false;

@@ -156,7 +156,7 @@ footer{padding:14px 0 18px; font-size:11px; color:#a49c8a; letter-spacing:.5px;}
 </head>
 <body>
 <div class="top-band">
-  <div class="small">학 급 임 원 선 거</div>
+  <div class="small" id="hdSmall">학 급 임 원 선 거</div>
   <div class="title" id="hdTitle">투표소</div>
 </div>
 <div class="top-rule"></div>
@@ -282,6 +282,9 @@ setTimeout(function(){ if(!gotData) show('scrErr'); }, 12000);
 if(!FB.ready){ show('scrErr'); }
 else if(!RID){ gotData=true; show('scrNoRoom'); }
 else{
+  B('/name').once('value').then(function(s){
+    if(s.val()) $('hdSmall').textContent=s.val();
+  }).catch(function(){});
   B('/current').on('value', function(s){
     gotData=true;
     const v=s.val()||null;

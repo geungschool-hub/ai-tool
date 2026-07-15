@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>개표 현황판</title>
+<title>선거관리본부</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -204,7 +204,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
 <body>
 <header>
   <div class="small" id="hdSmall">학 급 임 원 선 거</div>
-  <h1 id="hdTitle" class="serif">개표 현황판</h1>
+  <h1 id="hdTitle" class="serif">선거관리본부</h1>
   <div class="hrule"></div>
   <div class="chip" id="chip" style="display:none;"></div>
 </header>
@@ -509,7 +509,7 @@ function render(force){
   const key=String(eid)+'|'+st;
   if(!force && key===renderKey) return;
   renderKey=key;
-  $('hdTitle').textContent=(E&&E.title)?E.title:'개표 현황판';
+  $('hdTitle').textContent=(E&&E.title)?E.title:'선거관리본부';
 
   if(!eid || !E){ setChip(''); buildSetup(); show('scrSetup'); return; }
   if(st==='open'){
@@ -529,7 +529,7 @@ function render(force){
 /* ---------- setup ---------- */
 let candCount=0;
 function buildSetup(){
-  $('hdTitle').textContent='개표 현황판';
+  $('hdTitle').textContent='선거관리본부';
   if(!$('candBox').children.length){ addCandRow(); addCandRow(); }
   $('setupMsg').textContent='';
   loadPast();

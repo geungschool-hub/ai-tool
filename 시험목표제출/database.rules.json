@@ -31,7 +31,31 @@
     },
     "vote": {
       ".read": true,
-      ".write": true
+      "rooms": {
+        "$rid": {
+          ".write": "!data.exists()",
+          "teacherHash": { ".write": "!data.exists()" },
+          "name":        { ".write": "!data.exists()" },
+          "current":     { ".write": true },
+          "elections": {
+            ".write": "!newData.exists()",
+            "$eid": {
+              ".write": "!data.exists() || !newData.exists()",
+              "status": {
+                ".write": true,
+                ".validate": "newData.isString() && (newData.val() == 'open' || newData.val() == 'closed' || newData.val() == 'counting' || newData.val() == 'done')"
+              },
+              "result": { ".write": true },
+              "ballots": {
+                "$bid": { ".write": "!data.exists() || !newData.exists()" }
+              },
+              "voters": {
+                "$sid": { ".write": "!data.exists() || !newData.exists()" }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

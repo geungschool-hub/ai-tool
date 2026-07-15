@@ -86,11 +86,11 @@ main{width:100%; max-width:440px; flex:1; display:flex; flex-direction:column; a
   width:84px; border-left:1px dashed #999; display:flex; align-items:center; justify-content:center;
 }
 .stampmark{
-  width:46px; height:46px; border-radius:50%; border:3px solid var(--stamp);
-  color:var(--stamp); display:flex; align-items:center; justify-content:center;
-  font-family:'Noto Serif KR',serif; font-size:26px; font-weight:900;
+  width:48px; height:48px; color:var(--stamp);
+  display:flex; align-items:center; justify-content:center;
   transform:rotate(-8deg); opacity:0; transition:opacity .12s;
 }
+.stampmark svg{width:100%; height:100%;}
 .cand-row.sel .stampmark{opacity:1;}
 .cand-row.sel{background:#fbf7ea;}
 .yn-cand{
@@ -323,11 +323,11 @@ function buildBallot(){
   if(yesno){
     const c=cands[0]||{n:1,name:''};
     html+='<div class="yn-cand">후보자<b>'+esc(c.name)+'</b></div>';
-    html+=candRow('yes','찬성','可');
-    html+=candRow('no','반대','否');
+    html+=candRow('yes','찬성');
+    html+=candRow('no','반대');
     $('paperGuide').textContent='찬성 또는 반대 한 곳에 기표하세요';
   }else{
-    cands.forEach(function(c){ html+=candRow(String(c.n), c.name, '卜', c.n); });
+    cands.forEach(function(c){ html+=candRow(String(c.n), c.name, c.n); });
     $('paperGuide').textContent='한 곳에만 기표하세요';
   }
   $('candList').innerHTML=html;
@@ -340,14 +340,19 @@ function buildBallot(){
     });
   });
 }
-function candRow(c, label, mark, num){
+const STAMP_SVG='<svg viewBox="0 0 48 48" aria-hidden="true">'
+  +'<circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="3.5"/>'
+  +'<line x1="24" y1="11" x2="24" y2="37" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>'
+  +'<line x1="24" y1="21" x2="34" y2="32" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/>'
+  +'</svg>';
+function candRow(c, label, num){
   const numCell = num
     ? '<div class="cnum"><span class="lab">기호</span><span class="num">'+num+'</span></div>'
     : '';
   return '<div class="cand-row" data-c="'+c+'">'
     + numCell
     + '<div class="cname">'+esc(label)+'</div>'
-    + '<div class="cstamp"><div class="stampmark">'+mark+'</div></div></div>';
+    + '<div class="cstamp"><div class="stampmark">'+STAMP_SVG+'</div></div></div>';
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];}); }
 

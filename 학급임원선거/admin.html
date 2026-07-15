@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개표 현황판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" onerror="window.__qrFail=1"></script>
+<style>
+:root{
+  --bg:#0d1626; --panel:#152238; --panel2:#1b2a45; --line:#2c3d5e;
+  --ivory:#f0ead8; --dim:#8b96ad; --gold:#c9a557; --goldD:#a8874a;
+  --red:#c04b3c; --paper:#fffdf7; --ink:#1d1d1d;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--ivory);
+  min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+}
+.serif{font-family:'Noto Serif KR',serif;}
+header{width:100%; text-align:center; padding:26px 12px 14px;}
+header .small{font-size:12px; letter-spacing:9px; color:var(--gold); text-indent:9px; margin-bottom:8px;}
+header h1{font-family:'Noto Serif KR',serif; font-size:clamp(26px,4vw,44px); font-weight:900; letter-spacing:8px; text-indent:8px;}
+.hrule{width:min(680px,86vw); height:2px; margin:14px auto 0;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.chip{
+  display:inline-block; margin-top:16px; padding:7px 24px; font-size:14px; letter-spacing:5px; text-indent:5px;
+  border:1px solid var(--gold); color:var(--gold); border-radius:2px;
+}
+.chip.red{border-color:var(--red); color:#e08074;}
+main{width:100%; max-width:1060px; flex:1; display:flex; flex-direction:column; align-items:center; padding:10px 18px 20px;}
+.scr{display:none; width:100%; flex-direction:column; align-items:center;}
+.scr.on{display:flex;}
+
+/* ---------- gate & setup ---------- */
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:6px;
+  padding:34px 30px; width:100%; max-width:460px; margin-top:26px;
+}
+.card h2{font-family:'Noto Serif KR',serif; font-size:19px; font-weight:700; letter-spacing:4px; margin-bottom:22px; text-align:center; color:var(--ivory);}
+.fld{margin-bottom:16px;}
+.fld label{display:block; font-size:12.5px; color:var(--dim); letter-spacing:2px; margin-bottom:7px;}
+.fld input{
+  width:100%; background:var(--bg); color:var(--ivory); border:1px solid var(--line); border-radius:4px;
+  padding:12px 13px; font-size:17px; outline:none; font-family:'Noto Sans KR',sans-serif;
+}
+.fld input:focus{border-color:var(--gold);}
+.btn{
+  min-height:50px; padding:0 26px; font-size:16px; font-weight:700; letter-spacing:3px;
+  border:none; border-radius:4px; cursor:pointer; font-family:'Noto Sans KR',sans-serif;
+}
+.btn.gold{background:var(--goldD); color:#101826;}
+.btn.gold:hover{background:var(--gold);}
+.btn.line{background:transparent; color:var(--ivory); border:1px solid var(--line);}
+.btn.line:hover{border-color:var(--gold); color:var(--gold);}
+.btn.danger{background:transparent; color:#e08074; border:1px solid #6e3830;}
+.btn.danger:hover{background:#59261f; color:#ffd9d3;}
+.btn.wide{width:100%;}
+.btn:disabled{opacity:.45; cursor:default;}
+.gmsg{min-height:20px; font-size:13.5px; color:#e08074; letter-spacing:1px; margin-top:10px; text-align:center;}
+
+.cand-line{display:flex; gap:9px; align-items:center; margin-bottom:9px;}
+.cand-line .no{
+  width:58px; text-align:center; font-family:'Noto Serif KR',serif; color:var(--gold);
+  font-size:15px; letter-spacing:1px; flex:none;
+}
+.cand-line input{flex:1; background:var(--bg); color:var(--ivory); border:1px solid var(--line); border-radius:4px; padding:11px 12px; font-size:16px; outline:none;}
+.cand-line input:focus{border-color:var(--gold);}
+.cand-line .rm{
+  flex:none; width:38px; height:38px; border-radius:4px; background:transparent; color:var(--dim);
+  border:1px solid var(--line); cursor:pointer; font-size:15px;
+}
+.cand-line .rm:hover{color:#e08074; border-color:#6e3830;}
+.hint{font-size:12.5px; color:var(--dim); letter-spacing:1px; line-height:1.8; margin:6px 0 18px;}
+.past{width:100%; max-width:460px; margin-top:22px;}
+.past h3{font-size:13px; color:var(--dim); letter-spacing:3px; margin-bottom:10px;}
+.past .row{
+  background:var(--panel); border:1px solid var(--line); border-radius:5px;
+  padding:12px 15px; font-size:14px; margin-bottom:8px; color:var(--ivory); letter-spacing:.5px; line-height:1.7;
+}
+.past .row b{color:var(--gold);}
+
+/* ---------- live board ---------- */
+.live-wrap{display:flex; align-items:center; justify-content:center; gap:clamp(30px,6vw,90px); flex-wrap:wrap; margin-top:14px;}
+.boxarea{position:relative; width:300px; height:270px;}
+.boxarea svg{position:absolute; bottom:0; left:0;}
+.slipfly{
+  position:absolute; left:118px; top:0; width:64px; height:42px; background:var(--paper);
+  border:1.5px solid #333; z-index:2; opacity:0;
+}
+.slipfly.go{animation:slipdrop 1s ease-in forwards;}
+@keyframes slipdrop{
+  0%{transform:translateY(-8px) rotate(-2deg); opacity:1;}
+  60%{transform:translateY(70px) rotate(3deg); opacity:1;}
+  100%{transform:translateY(120px) rotate(3deg); opacity:0;}
+}
+.cnt-num{font-family:'Noto Serif KR',serif; font-size:clamp(64px,10vw,110px); font-weight:900; color:var(--gold); line-height:1; text-align:center;}
+.cnt-sub{font-size:16px; color:var(--dim); letter-spacing:5px; text-align:center; margin-top:10px;}
+.qr-card{
+  background:var(--paper); color:var(--ink); border-radius:6px; padding:16px 16px 12px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.qr-card .u{font-size:13px; letter-spacing:.5px; color:#444; word-break:break-all; max-width:220px; text-align:center;}
+.qr-card svg{display:block;}
+.ctrlbar{display:flex; gap:12px; margin-top:34px; flex-wrap:wrap; justify-content:center;}
+.voters-tgl{margin-top:18px; background:none; border:none; color:var(--dim); font-size:13px; letter-spacing:2px; cursor:pointer; text-decoration:underline; text-underline-offset:4px;}
+.voters-panel{
+  display:none; margin-top:12px; background:var(--panel); border:1px solid var(--line); border-radius:5px;
+  padding:14px 18px; max-width:640px; font-size:14px; letter-spacing:1px; color:var(--dim); line-height:2; text-align:center;
+}
+.voters-panel.on{display:block;}
+
+/* ---------- counting ---------- */
+.readcard-wrap{height:170px; display:flex; align-items:center; justify-content:center; margin-top:6px;}
+.readcard{
+  background:var(--paper); color:var(--ink); min-width:min(420px,86vw); padding:26px 34px;
+  text-align:center; border-radius:4px; box-shadow:0 8px 30px rgba(0,0,0,.5);
+  font-family:'Noto Serif KR',serif; transform-origin:center top;
+}
+.readcard.flip{animation:flipin .5s ease-out;}
+@keyframes flipin{0%{transform:rotateX(85deg); opacity:0;} 100%{transform:rotateX(0); opacity:1;}}
+.readcard .rc-no{font-size:17px; letter-spacing:6px; color:#8a6b25; margin-bottom:6px;}
+.readcard .rc-name{font-size:clamp(30px,5vw,46px); font-weight:900; letter-spacing:8px;}
+.prg{font-size:15px; color:var(--dim); letter-spacing:4px; margin-top:14px;}
+.tally-wrap{width:100%; max-width:900px; margin-top:26px;}
+.tally-row{
+  display:flex; align-items:center; gap:18px; border-bottom:1px solid var(--line); padding:14px 8px;
+}
+.tally-row .tno{
+  flex:none; width:104px; font-family:'Noto Serif KR',serif; color:var(--gold);
+  font-size:16px; letter-spacing:2px; text-align:center;
+}
+.tally-row .tname{flex:none; width:150px; font-family:'Noto Serif KR',serif; font-size:clamp(19px,2.6vw,26px); font-weight:700; letter-spacing:4px;}
+.tally-row .tmarks{flex:1; display:flex; flex-wrap:wrap; gap:7px; align-items:center; min-height:34px;}
+.jeong{width:30px; height:30px;}
+.jeong path{stroke:var(--ivory); stroke-width:9; stroke-linecap:round; fill:none;}
+.tally-row .tcnt{flex:none; width:86px; text-align:right; font-family:'Noto Serif KR',serif; font-size:28px; font-weight:700; color:var(--gold);}
+.tally-row.lead .tname{color:var(--gold);}
+
+/* ---------- done ---------- */
+.win-badge{
+  margin-top:30px; font-family:'Noto Serif KR',serif; font-size:16px; letter-spacing:10px; text-indent:10px;
+  color:var(--gold); border:1px solid var(--gold); padding:8px 26px;
+}
+.win-name{font-family:'Noto Serif KR',serif; font-size:clamp(40px,7vw,72px); font-weight:900; letter-spacing:12px; margin-top:26px; text-align:center; line-height:1.4;}
+.win-label{
+  font-family:'Noto Serif KR',serif; font-size:clamp(24px,3.6vw,36px); color:#e0b25e; font-weight:700;
+  letter-spacing:16px; text-indent:16px; margin-top:20px;
+}
+.win-counts{margin-top:30px; font-size:16px; color:var(--dim); letter-spacing:2px; line-height:2.3; text-align:center;}
+
+/* modal */
+.modal-bg{position:fixed; inset:0; background:rgba(5,8,16,.72); display:none; align-items:center; justify-content:center; z-index:60; padding:20px;}
+.modal-bg.on{display:flex;}
+.modal{background:var(--panel); border:1px solid var(--line); border-radius:6px; max-width:380px; width:100%; padding:30px 24px 22px; text-align:center;}
+.modal .m-t{font-family:'Noto Serif KR',serif; font-size:18px; font-weight:700; letter-spacing:3px; margin-bottom:12px;}
+.modal .m-s{font-size:13.5px; color:var(--dim); line-height:1.9; letter-spacing:1px; margin-bottom:24px; white-space:pre-line;}
+.modal .m-b{display:flex; gap:10px;}
+.modal .btn{flex:1; padding:0;}
+.modal .btn.redfill{background:var(--red); color:#fff;}
+
+footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="small">학 급 임 원 선 거</div>
+  <h1 id="hdTitle" class="serif">개표 현황판</h1>
+  <div class="hrule"></div>
+  <div class="chip" id="chip" style="display:none;"></div>
+</header>
+
+<main>
+  <!-- gate -->
+  <section class="scr" id="scrGate">
+    <div class="card">
+      <h2 id="gateTitle">선거관리자 확인</h2>
+      <div class="fld"><label>비밀번호</label><input id="gpw" type="password" autocomplete="off"></div>
+      <div class="fld" id="gpw2Wrap" style="display:none;"><label>비밀번호 확인</label><input id="gpw2" type="password" autocomplete="off"></div>
+      <button class="btn gold wide" id="gateBtn">입 장</button>
+      <div class="gmsg" id="gateMsg"></div>
+    </div>
+  </section>
+
+  <!-- setup -->
+  <section class="scr" id="scrSetup">
+    <div class="card">
+      <h2>선거 개설</h2>
+      <div class="fld"><label>선거명</label><input id="stTitle" type="text" value="학급회장 선거"></div>
+      <div class="fld"><label>재적 인원 (선택)</label><input id="stTotal" type="number" inputmode="numeric" placeholder="예: 26"></div>
+      <div class="fld"><label>후보자</label><div id="candBox"></div>
+        <button class="btn line" id="addCand" style="min-height:42px; width:100%; letter-spacing:2px; font-size:14px;">＋ 후보 추가</button>
+      </div>
+      <div class="hint">후보가 1명이면 자동으로 찬반 투표로 진행됩니다.</div>
+      <button class="btn gold wide" id="startBtn">투 표 개 시</button>
+      <div class="gmsg" id="setupMsg"></div>
+    </div>
+    <div class="past" id="pastBox" style="display:none;">
+      <h3>지난 선거</h3>
+      <div id="pastList"></div>
+    </div>
+    <div style="margin-top:26px;">
+      <button class="btn danger" id="wipeBtn" style="min-height:42px; font-size:13px; letter-spacing:2px;">선거 데이터 전체 삭제</button>
+    </div>
+  </section>
+
+  <!-- live board (open / closed) -->
+  <section class="scr" id="scrBoard">
+    <div class="live-wrap">
+      <div class="boxarea">
+        <div class="slipfly" id="slipFly"></div>
+        <svg viewBox="0 0 300 240" width="300" height="240">
+          <rect x="40" y="74" width="220" height="150" fill="#16233c" stroke="#c9a557" stroke-width="2.5"/>
+          <rect x="28" y="56" width="244" height="20" fill="#101a2e" stroke="#c9a557" stroke-width="2.5"/>
+          <rect x="106" y="62" width="88" height="7" rx="3" fill="#05080f"/>
+          <text x="150" y="160" text-anchor="middle" fill="#c9b98a" font-size="24" letter-spacing="10" font-family="'Noto Serif KR',serif">투표함</text>
+          <line x1="40" y1="200" x2="260" y2="200" stroke="#2c3d5e" stroke-width="1"/>
+        </svg>
+      </div>
+      <div>
+        <div class="cnt-num" id="liveCnt">0</div>
+        <div class="cnt-sub" id="liveSub">투표수</div>
+      </div>
+      <div class="qr-card" id="qrCard">
+        <div id="qrBox"></div>
+        <div class="u" id="qrUrl"></div>
+      </div>
+    </div>
+    <button class="voters-tgl" id="votersTgl">명부 확인</button>
+    <div class="voters-panel" id="votersPanel"></div>
+    <div class="ctrlbar">
+      <button class="btn danger" id="closeBtn">투표 마감</button>
+      <button class="btn line" id="reopenBtn" style="display:none;">투표 재개</button>
+      <button class="btn gold" id="countBtn" style="display:none;">개 표 시 작</button>
+    </div>
+  </section>
+
+  <!-- counting -->
+  <section class="scr" id="scrCount">
+    <div class="readcard-wrap"><div class="readcard" id="readCard">
+      <div class="rc-no" id="rcNo"></div>
+      <div class="rc-name" id="rcName">개표를 시작합니다</div>
+    </div></div>
+    <div class="prg" id="prg"></div>
+    <div class="tally-wrap" id="tallyWrap"></div>
+    <div class="ctrlbar">
+      <button class="btn line" id="pauseBtn">일시 정지</button>
+      <button class="btn line" id="skipBtn">바로 결과</button>
+    </div>
+  </section>
+
+  <!-- done -->
+  <section class="scr" id="scrDone">
+    <div class="win-badge">선 거 결 과</div>
+    <div class="win-name" id="winName"></div>
+    <div class="win-label" id="winLabel"></div>
+    <div class="win-counts" id="winCounts"></div>
+    <div class="ctrlbar" style="margin-top:44px;">
+      <button class="btn gold" id="newBtn">새 선거</button>
+    </div>
+  </section>
+</main>
+
+<div class="modal-bg" id="mBg">
+  <div class="modal">
+    <div class="m-t" id="mT"></div>
+    <div class="m-s" id="mS"></div>
+    <div class="m-b">
+      <button class="btn line" id="mNo">취소</button>
+      <button class="btn gold" id="mYes">확인</button>
+    </div>
+  </div>
+</div>
+
+<footer>Claude AI로 이 앱을 제작함 by 고은표</footer>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDbEgNhJr24GjWPYBx63zQ4MyW2dZA6XSs",
+  authDomain: "gongju7-vocab.firebaseapp.com",
+  databaseURL: "https://gongju7-vocab-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gongju7-vocab",
+  storageBucket: "gongju7-vocab.firebasestorage.app",
+  messagingSenderId: "249343659059",
+  appId: "1:249343659059:web:532b7d74d0a38286c2a746"
+};
+const FB={ready:false, db:null};
+try{
+  firebase.initializeApp(firebaseConfig);
+  firebase.auth().signOut().catch(function(){});
+  FB.db=firebase.database(); FB.ready=true;
+}catch(e){}
+
+const $=function(id){return document.getElementById(id);};
+const ROOT='vote';
+const SALT='classvote.teacher.v1';
+const SESS='cv.t.session';
+let eid=null, E=null, elRef=null, renderKey='__init';
+let lastBallots=null;
+const counting={active:false, seq:[], idx:0, paused:false, timer:null, counts:{}};
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(m){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];}); }
+function toArr(v){ if(!v) return []; return Array.isArray(v)?v.filter(Boolean):Object.values(v); }
+function show(id){ document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('on');}); $(id).classList.add('on'); }
+async function sha256(s){ const b=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join(''); }
+function setChip(txt, red){
+  const c=$('chip');
+  if(!txt){ c.style.display='none'; return; }
+  c.style.display='inline-block'; c.textContent=txt;
+  c.classList.toggle('red', !!red);
+}
+function modal(t,s,yesLabel,danger){
+  return new Promise(function(res){
+    $('mT').textContent=t; $('mS').textContent=s;
+    $('mYes').textContent=yesLabel||'확인';
+    $('mYes').className='btn '+(danger?'redfill':'gold');
+    $('mBg').classList.add('on');
+    function done(v){ $('mBg').classList.remove('on'); $('mYes').onclick=null; $('mNo').onclick=null; res(v); }
+    $('mYes').onclick=function(){done(true);};
+    $('mNo').onclick=function(){done(false);};
+  });
+}
+
+/* ================= gate ================= */
+let dbHash=null, needSet=false, gotGate=false;
+if(!FB.ready){
+  show('scrGate'); $('gateMsg').textContent='연결 실패 — 네트워크를 확인하세요'; $('gateBtn').disabled=true;
+}else{
+  show('scrGate'); $('gateBtn').disabled=true; $('gateMsg').textContent='연결 확인 중…';
+  setTimeout(function(){ if(!gotGate) $('gateMsg').textContent='연결 실패 — 네트워크를 확인하세요'; }, 12000);
+  FB.db.ref(ROOT+'/teacherHash').once('value').then(function(s){
+    gotGate=true; $('gateBtn').disabled=false; $('gateMsg').textContent='';
+    dbHash=s.val()||null;
+    needSet=!dbHash;
+    if(dbHash && localStorage.getItem(SESS)===dbHash){ unlock(); return; }
+    if(needSet){
+      $('gateTitle').textContent='관리자 비밀번호 설정';
+      $('gpw2Wrap').style.display='block';
+      $('gateBtn').textContent='설정 후 입장';
+    }
+    show('scrGate');
+  }).catch(function(){ show('scrGate'); $('gateMsg').textContent='연결 실패 — 새로고침해 주세요'; });
+}
+$('gateBtn').addEventListener('click', gateGo);
+$('gpw').addEventListener('keydown', function(e){ if(e.key==='Enter') gateGo(); });
+$('gpw2').addEventListener('keydown', function(e){ if(e.key==='Enter') gateGo(); });
+async function gateGo(){
+  const pw=$('gpw').value;
+  if(pw.length<4){ $('gateMsg').textContent='4자 이상 입력하세요'; return; }
+  if(needSet){
+    if(pw!==$('gpw2').value){ $('gateMsg').textContent='비밀번호가 일치하지 않습니다'; return; }
+    const h=await sha256(SALT+'|'+pw);
+    await FB.db.ref(ROOT+'/teacherHash').set(h);
+    dbHash=h; localStorage.setItem(SESS,h); unlock();
+  }else{
+    const h=await sha256(SALT+'|'+pw);
+    if(h!==dbHash){ $('gateMsg').textContent='비밀번호가 올바르지 않습니다'; return; }
+    localStorage.setItem(SESS,h); unlock();
+  }
+}
+
+/* ================= main ================= */
+function unlock(){
+  eid=undefined;
+  FB.db.ref(ROOT+'/current').on('value', function(s){
+    const v=s.val()||null;
+    if(v===eid){ return; }
+    eid=v; lastBallots=null;
+    if(elRef){ elRef.off(); elRef=null; }
+    E=null;
+    if(!eid){ renderKey='__x'; render(true); return; }
+    elRef=FB.db.ref(ROOT+'/elections/'+eid);
+    elRef.on('value', function(ss){ E=ss.val(); render(false); updateLive(); });
+  });
+}
+
+function render(force){
+  if(counting.active) return;
+  const st=E?E.status:'none';
+  const key=String(eid)+'|'+st;
+  if(!force && key===renderKey) return;
+  renderKey=key;
+  $('hdTitle').textContent=(E&&E.title)?E.title:'개표 현황판';
+
+  if(!eid || !E){ setChip(''); buildSetup(); show('scrSetup'); return; }
+  if(st==='open'){
+    setChip('투표 진행 중');
+    $('closeBtn').style.display=''; $('reopenBtn').style.display='none'; $('countBtn').style.display='none';
+    buildQR(); show('scrBoard'); updateLive(); return;
+  }
+  if(st==='closed' || st==='counting'){
+    setChip('투표 마감', true);
+    $('closeBtn').style.display='none'; $('reopenBtn').style.display=''; $('countBtn').style.display='';
+    buildQR(); show('scrBoard'); updateLive(); return;
+  }
+  if(st==='done'){ setChip('개표 완료'); buildDone(); show('scrDone'); return; }
+  buildSetup(); show('scrSetup');
+}
+
+/* ---------- setup ---------- */
+let candCount=0;
+function buildSetup(){
+  $('hdTitle').textContent='개표 현황판';
+  if(!$('candBox').children.length){ addCandRow(); addCandRow(); }
+  $('setupMsg').textContent='';
+  loadPast();
+}
+function addCandRow(){
+  candCount++;
+  const d=document.createElement('div');
+  d.className='cand-line';
+  d.innerHTML='<div class="no">기호 <b class="ord"></b></div><input type="text" maxlength="12" placeholder="이름"><button class="rm" title="삭제">✕</button>';
+  d.querySelector('.rm').addEventListener('click', function(){ d.remove(); renum(); });
+  $('candBox').appendChild(d);
+  renum();
+}
+function renum(){
+  document.querySelectorAll('#candBox .cand-line').forEach(function(el,i){
+    el.querySelector('.ord').textContent=(i+1);
+  });
+}
+$('addCand').addEventListener('click', addCandRow);
+
+$('startBtn').addEventListener('click', async function(){
+  const names=Array.from(document.querySelectorAll('#candBox input'))
+    .map(function(i){return i.value.trim();}).filter(function(v){return v;});
+  if(!names.length){ $('setupMsg').textContent='후보자를 1명 이상 입력하세요'; return; }
+  const title=$('stTitle').value.trim()||'학급회장 선거';
+  const total=parseInt($('stTotal').value,10);
+  const mode=(names.length===1)?'yesno':'choice';
+  const ok=await modal('투표 개시', title+' · 후보 '+names.length+'명'+(mode==='yesno'?' (찬반 투표)':''), '개시', false);
+  if(!ok) return;
+  const id='e'+Date.now();
+  const obj={
+    title:title, mode:mode,
+    candidates:names.map(function(nm,i){return {n:i+1, name:nm};}),
+    status:'open', createdAt:firebase.database.ServerValue.TIMESTAMP
+  };
+  if(total>0) obj.total=total;
+  $('startBtn').disabled=true;
+  try{
+    await FB.db.ref(ROOT+'/elections/'+id).set(obj);
+    await FB.db.ref(ROOT+'/current').set(id);
+    document.querySelectorAll('#candBox .cand-line').forEach(function(el){el.remove();});
+  }catch(e){ $('setupMsg').textContent='개설 실패 — 다시 시도하세요'; }
+  $('startBtn').disabled=false;
+});
+
+function loadPast(){
+  FB.db.ref(ROOT+'/elections').once('value').then(function(s){
+    const v=s.val()||{}; const rows=[];
+    Object.keys(v).sort().reverse().forEach(function(k){
+      const e=v[k];
+      if(!e || e.status!=='done' || !e.result) return;
+      const r=e.result; let line;
+      if(e.mode==='yesno'){
+        const c=toArr(e.candidates)[0]||{name:''};
+        line='<b>'+esc(e.title)+'</b> — '+esc(c.name)+' · 찬성 '+(r.yes||0)+' : 반대 '+(r.no||0)+' · '+esc(r.label||'');
+      }else{
+        const cands=toArr(e.candidates); const cc=r.counts||{};
+        const w=(r.win!=null)?cands.find(function(x){return x.n===r.win;}):null;
+        line='<b>'+esc(e.title)+'</b> — '+(w?('기호 '+r.win+'번 '+esc(w.name)+' 당선'):esc(r.label||'동점'))
+          +'<br><span style="color:var(--dim);font-size:12.5px;">'
+          +cands.map(function(c){return esc(c.name)+' '+(cc[c.n]||0);}).join(' · ')+'</span>';
+      }
+      rows.push('<div class="row">'+line+'</div>');
+    });
+    $('pastBox').style.display=rows.length?'block':'none';
+    $('pastList').innerHTML=rows.join('');
+  }).catch(function(){});
+}
+
+$('wipeBtn').addEventListener('click', async function(){
+  const ok=await modal('전체 삭제','모든 선거 기록과 표를 삭제합니다.\n되돌릴 수 없습니다.','삭제',true);
+  if(!ok) return;
+  await FB.db.ref(ROOT+'/current').remove();
+  await FB.db.ref(ROOT+'/elections').remove();
+  $('pastBox').style.display='none';
+  renderKey='__w'; render(true);
+});
+
+/* ---------- live board ---------- */
+function ballotCount(){ return (E&&E.ballots)?Object.keys(E.ballots).length:0; }
+function updateLive(){
+  if(!E || (E.status!=='open' && E.status!=='closed' && E.status!=='counting')) return;
+  const n=ballotCount();
+  $('liveCnt').textContent=n;
+  $('liveSub').textContent=E.total?('투표수 / 재적 '+E.total):'투표수';
+  if(lastBallots!==null && n>lastBallots && E.status==='open') dropSlip();
+  lastBallots=n;
+  const vs=E.voters?Object.keys(E.voters).sort():[];
+  $('votersTgl').textContent='명부 확인 ('+vs.length+')';
+  $('votersPanel').textContent=vs.length?vs.join('  ·  '):'아직 없음';
+}
+function dropSlip(){
+  const s=$('slipFly');
+  s.classList.remove('go'); void s.offsetWidth; s.classList.add('go');
+}
+$('votersTgl').addEventListener('click', function(){ $('votersPanel').classList.toggle('on'); });
+
+function studentURL(){ return location.origin + location.pathname.replace(/admin\.html.*$/,''); }
+let qrBuilt='';
+function buildQR(){
+  const u=studentURL();
+  $('qrUrl').textContent=u.replace(/^https?:\/\//,'');
+  if(qrBuilt===u) return;
+  qrBuilt=u;
+  try{
+    if(window.__qrFail || typeof qrcode==='undefined') throw 0;
+    const q=qrcode(0,'M'); q.addData(u); q.make();
+    $('qrBox').innerHTML=q.createSvgTag({cellSize:5, margin:0});
+  }catch(e){ $('qrBox').innerHTML=''; }
+}
+
+$('closeBtn').addEventListener('click', async function(){
+  const ok=await modal('투표 마감','마감 후에는 투표할 수 없습니다.','마감',true);
+  if(!ok) return;
+  FB.db.ref(ROOT+'/elections/'+eid+'/status').set('closed');
+});
+$('reopenBtn').addEventListener('click', async function(){
+  const ok=await modal('투표 재개','투표를 다시 받습니다.','재개',false);
+  if(!ok) return;
+  FB.db.ref(ROOT+'/elections/'+eid+'/status').set('open');
+});
+$('countBtn').addEventListener('click', startCount);
+
+/* ---------- counting ---------- */
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+async function startCount(){
+  const snap=await FB.db.ref(ROOT+'/elections/'+eid+'/ballots').once('value');
+  const seq=[]; snap.forEach(function(ch){ const v=ch.val(); if(v&&v.c!=null) seq.push(v.c); });
+  shuffle(seq);
+  counting.active=true; counting.seq=seq; counting.idx=0; counting.paused=false; counting.counts={};
+  if(E.mode==='yesno'){ counting.counts={yes:0,no:0}; }
+  else{ toArr(E.candidates).forEach(function(c){ counting.counts[c.n]=0; }); }
+  FB.db.ref(ROOT+'/elections/'+eid+'/status').set('counting');
+  setChip('개표 중', true);
+  $('rcNo').textContent='';
+  $('rcName').textContent='개표를 시작합니다';
+  $('pauseBtn').textContent='일시 정지';
+  buildTally();
+  updPrg();
+  show('scrCount');
+  counting.timer=setInterval(step, 1300);
+}
+function step(){
+  if(counting.paused) return;
+  if(counting.idx>=counting.seq.length){ finishCount(); return; }
+  const c=counting.seq[counting.idx];
+  counting.idx++;
+  counting.counts[c]=(counting.counts[c]||0)+1;
+  const card=$('readCard');
+  card.classList.remove('flip'); void card.offsetWidth; card.classList.add('flip');
+  if(E.mode==='yesno'){
+    $('rcNo').textContent='';
+    $('rcName').textContent=(c==='yes')?'찬 성':'반 대';
+  }else{
+    const cd=toArr(E.candidates).find(function(x){return x.n===Number(c);});
+    $('rcNo').textContent='기호 '+c+'번';
+    $('rcName').textContent=cd?cd.name:'';
+  }
+  buildTally(); updPrg();
+}
+function updPrg(){ $('prg').textContent=counting.idx+' / '+counting.seq.length; }
+
+function jeongSVG(k){
+  const strokes=['M12 16H88','M50 16V84','M50 50H84','M24 46V84','M10 84H90'];
+  let p='';
+  for(let i=0;i<k;i++) p+='<path d="'+strokes[i]+'"/>';
+  return '<svg class="jeong" viewBox="0 0 100 100">'+p+'</svg>';
+}
+function tallyMarks(cnt){
+  let h=''; const full=Math.floor(cnt/5), rem=cnt%5;
+  for(let i=0;i<full;i++) h+=jeongSVG(5);
+  if(rem) h+=jeongSVG(rem);
+  return h;
+}
+function buildTally(){
+  let rows=[];
+  if(E.mode==='yesno'){
+    rows=[{no:'', name:'찬성', cnt:counting.counts.yes||0},{no:'', name:'반대', cnt:counting.counts.no||0}];
+  }else{
+    rows=toArr(E.candidates).map(function(c){ return {no:'기호 '+c.n+'번', name:c.name, cnt:counting.counts[c.n]||0}; });
+  }
+  const max=Math.max.apply(null, rows.map(function(r){return r.cnt;}));
+  $('tallyWrap').innerHTML=rows.map(function(r){
+    const lead=(r.cnt>0 && r.cnt===max)?' lead':'';
+    return '<div class="tally-row'+lead+'"><div class="tno">'+esc(r.no)+'</div><div class="tname">'+esc(r.name)
+      +'</div><div class="tmarks">'+tallyMarks(r.cnt)+'</div><div class="tcnt">'+r.cnt+'</div></div>';
+  }).join('');
+}
+$('pauseBtn').addEventListener('click', function(){
+  counting.paused=!counting.paused;
+  $('pauseBtn').textContent=counting.paused?'재 개':'일시 정지';
+});
+$('skipBtn').addEventListener('click', function(){
+  while(counting.idx<counting.seq.length){
+    const c=counting.seq[counting.idx]; counting.idx++;
+    counting.counts[c]=(counting.counts[c]||0)+1;
+  }
+  buildTally(); updPrg();
+  finishCount();
+});
+
+function finishCount(){
+  if(counting.timer){ clearInterval(counting.timer); counting.timer=null; }
+  if(!counting.active) return;
+  counting.active=false;
+  let result;
+  if(E.mode==='yesno'){
+    const y=counting.counts.yes||0, n=counting.counts.no||0;
+    let label;
+    if(y>n) label='당선';
+    else if(y<n) label='부결';
+    else label='부결 · 가부동수';
+    result={yes:y, no:n, label:label};
+  }else{
+    const cc={}; toArr(E.candidates).forEach(function(c){ cc[c.n]=counting.counts[c.n]||0; });
+    let max=-1; Object.keys(cc).forEach(function(k){ if(cc[k]>max) max=cc[k]; });
+    const winners=Object.keys(cc).filter(function(k){ return cc[k]===max; });
+    if(winners.length===1) result={counts:cc, win:Number(winners[0]), label:'당선'};
+    else result={counts:cc, win:null, label:'동점 · 재투표'};
+  }
+  FB.db.ref(ROOT+'/elections/'+eid).update({status:'done', result:result});
+}
+
+/* ---------- done ---------- */
+function buildDone(){
+  const r=E.result||{};
+  const cands=toArr(E.candidates);
+  let name='', label=r.label||'', counts='';
+  if(E.mode==='yesno'){
+    const c=cands[0]||{name:''};
+    name=esc(c.name);
+    counts='찬성 '+(r.yes||0)+'표 · 반대 '+(r.no||0)+'표';
+  }else{
+    if(r.win!=null){
+      const w=cands.find(function(x){return x.n===r.win;});
+      name='기호 '+r.win+'번 · '+esc(w?w.name:'');
+    }else{ name='—'; }
+    const cc=r.counts||{};
+    counts=cands.map(function(c){ return '기호 '+c.n+'번 '+esc(c.name)+' — '+(cc[c.n]||0)+'표'; }).join('<br>');
+  }
+  const tv=ballotCount();
+  counts+='<br><span style="font-size:13.5px;">총 투표수 '+tv+(E.total?(' / 재적 '+E.total):'')+'</span>';
+  $('winName').innerHTML=name;
+  $('winLabel').textContent=label;
+  $('winCounts').innerHTML=counts;
+}
+$('newBtn').addEventListener('click', function(){
+  setChip(''); buildSetup(); show('scrSetup'); renderKey='__setup';
+});
+</script>
+</body>
+</html>

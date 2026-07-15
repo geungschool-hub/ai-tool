@@ -215,21 +215,21 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
     <div class="card">
       <h2>투표소 입장</h2>
       <div class="rtabs">
-        <button class="rtab on" id="tabNew">새 방 만들기</button>
-        <button class="rtab" id="tabIn">기존 방 입장</button>
+        <button class="rtab on" id="tabNew">새 투표소 만들기</button>
+        <button class="rtab" id="tabIn">기존 투표소 입장</button>
       </div>
       <div id="fmNew">
         <div class="fld"><label>관리자 비밀번호</label><input id="npw" type="password" autocomplete="off"></div>
         <div class="fld"><label>비밀번호 확인</label><input id="npw2" type="password" autocomplete="off"></div>
-        <button class="btn gold wide" id="newRoomBtn">방 만들기</button>
+        <button class="btn gold wide" id="newRoomBtn">투표소 만들기</button>
       </div>
       <div id="fmIn" style="display:none;">
-        <div class="fld"><label>방 코드</label><input id="rcode" type="text" autocomplete="off" maxlength="8" placeholder="예: k3xw7p" style="text-transform:lowercase;"></div>
+        <div class="fld"><label>투표소 코드</label><input id="rcode" type="text" autocomplete="off" maxlength="8" placeholder="예: k3xw7p" style="text-transform:lowercase;"></div>
         <div class="fld"><label>관리자 비밀번호</label><input id="ipw" type="password" autocomplete="off"></div>
         <button class="btn gold wide" id="inRoomBtn">입 장</button>
       </div>
       <div class="gmsg" id="roomMsg"></div>
-      <div class="hint" style="margin:14px 0 0; text-align:center;">반(선생님)마다 방 하나 — 방끼리 선거가 완전히 분리됩니다.<br>방 코드+비밀번호만 있으면 다른 기기에서도 입장할 수 있습니다.</div>
+      <div class="hint" style="margin:14px 0 0; text-align:center;">선생님(반)마다 투표소 하나 — 투표소끼리 완전히 분리됩니다.<br><b style="color:var(--gold); font-weight:500;">다른 기기에서 이 투표소로 들어오려면<br>투표소 코드와 비밀번호가 필요합니다.</b></div>
     </div>
   </section>
 
@@ -253,7 +253,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
     <div style="margin-top:26px;">
       <button class="btn danger" id="wipeBtn" style="min-height:42px; font-size:13px; letter-spacing:2px;">선거 데이터 전체 삭제</button>
     </div>
-    <div class="roominfo">방 코드 <b id="roomCodeTxt"></b><button id="leaveRoom">방 변경</button><button id="guideBtn">안내</button></div>
+    <div class="roominfo">투표소 코드 <b id="roomCodeTxt"></b><button id="leaveRoom">투표소 변경</button><button id="guideBtn">안내</button></div>
   </section>
 
   <!-- live board (open / closed) -->
@@ -322,7 +322,7 @@ footer{padding:12px 0 16px; font-size:11px; color:#57627a; letter-spacing:.5px;}
       <div class="gstep"><b>3</b>투표 마감 → 개표 시작<span>무작위 순서로 한 표씩 공개</span></div>
       <div class="gstep"><b>4</b>결과 기록 → 전체 삭제<span>삭제 팝업에 결과 요약이 표시됩니다</span></div>
     </div>
-    <div class="gfoot">방 코드는 다른 기기에서 입장할 때 필요합니다.</div>
+    <div class="gfoot" id="gfootTxt"></div>
     <button class="btn gold wide" id="guideOk" style="margin-top:18px;">확 인</button>
   </div>
 </div>
@@ -420,11 +420,15 @@ function enterRoom(rid, hash){
   unlock();
   if(!localStorage.getItem('cv.guide.v1')){
     localStorage.setItem('cv.guide.v1','1');
-    $('guideBg').classList.add('on');
+    openGuide();
   }
 }
+function openGuide(){
+  $('gfootTxt').innerHTML='이 투표소의 코드: <b style="color:var(--gold); font-family:\'Noto Serif KR\',serif; letter-spacing:2px;">'+esc(RID||'')+'</b><br>다른 기기에서 이 투표소로 들어오려면 코드와 비밀번호가 필요합니다.';
+  $('guideBg').classList.add('on');
+}
 $('guideOk').addEventListener('click', function(){ $('guideBg').classList.remove('on'); });
-$('guideBtn').addEventListener('click', function(){ $('guideBg').classList.add('on'); });
+$('guideBtn').addEventListener('click', openGuide);
 if(!FB.ready){
   show('scrRoom'); $('roomMsg').textContent='연결 실패 — 네트워크를 확인하세요';
   $('newRoomBtn').disabled=true; $('inRoomBtn').disabled=true;
@@ -432,7 +436,7 @@ if(!FB.ready){
   let saved=null;
   try{ saved=JSON.parse(localStorage.getItem(SESS)||'null'); }catch(e){}
   if(saved && saved.rid && saved.hash){
-    openRoomGate('저장된 방 확인 중…');
+    openRoomGate('저장된 투표소 확인 중…');
     roomHashRef(saved.rid).once('value').then(function(s){
       if(s.val() && s.val()===saved.hash){ enterRoom(saved.rid, saved.hash); }
       else{ localStorage.removeItem(SESS); openRoomGate(); }
@@ -457,7 +461,7 @@ $('newRoomBtn').addEventListener('click', async function(){
     if(!rid) throw 0;
     await roomHashRef(rid).set(h);
     enterRoom(rid, h);
-  }catch(e){ $('roomMsg').textContent='방 생성 실패 — 다시 시도하세요'; }
+  }catch(e){ $('roomMsg').textContent='투표소 생성 실패 — 다시 시도하세요'; }
   $('newRoomBtn').disabled=false;
 });
 $('inRoomBtn').addEventListener('click', roomIn);
@@ -465,13 +469,13 @@ $('ipw').addEventListener('keydown', function(e){ if(e.key==='Enter') roomIn(); 
 async function roomIn(){
   const code=$('rcode').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
   const pw=$('ipw').value;
-  if(!code || pw.length<4){ $('roomMsg').textContent='방 코드와 비밀번호를 입력하세요'; return; }
+  if(!code || pw.length<4){ $('roomMsg').textContent='투표소 코드와 비밀번호를 입력하세요'; return; }
   $('inRoomBtn').disabled=true;
   try{
     const s=await roomHashRef(code).once('value');
     const h=await sha256(SALT+'|'+pw);
     if(s.val() && s.val()===h){ enterRoom(code, h); }
-    else{ $('roomMsg').textContent='방 코드 또는 비밀번호가 올바르지 않습니다'; }
+    else{ $('roomMsg').textContent='투표소 코드 또는 비밀번호가 올바르지 않습니다'; }
   }catch(e){ $('roomMsg').textContent='연결 실패 — 다시 시도하세요'; }
   $('inRoomBtn').disabled=false;
 }

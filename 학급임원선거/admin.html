@@ -508,7 +508,7 @@ $('wipeBtn').addEventListener('click', async function(){
     });
   }catch(e){}
   const msg = lines.length
-    ? '삭제 전에 아래 결과를 기록해 두세요.\n\n'+lines.join('\n')+'\n\n모든 기록과 표를 삭제합니다. 되돌릴 수 없습니다.'
+    ? '삭제 전에 담임선생님은 아래 결과를 기록해 두세요.\n\n'+lines.join('\n')+'\n\n모든 기록과 표를 삭제합니다. 되돌릴 수 없습니다.'
     : '모든 선거 기록과 표를 삭제합니다.\n되돌릴 수 없습니다.';
   const ok=await modal('전체 삭제', msg, '삭제', true);
   if(!ok) return;

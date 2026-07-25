@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "students": {
+      ".read": "auth != null && auth.token.email === 'teacher@c27.local'",
+      ".write": "auth != null && auth.token.email === 'teacher@c27.local'",
+      "$studentId": {
+        ".read": "auth != null && (root.child('studentMeta').child($studentId).child('uid').val() === auth.uid || auth.token.email === 'teacher@c27.local')"
+      }
+    },
+
+    "roles": {
+      ".read": "auth != null && auth.token.email === 'teacher@c27.local'",
+      "$studentId": {
+        ".read": "auth != null && root.child('studentMeta').child($studentId).child('uid').val() === auth.uid",
+        ".write": "auth != null && (root.child('studentMeta').child($studentId).child('uid').val() === auth.uid || auth.token.email === 'teacher@c27.local')"
+      }
+    },
+
+    "studentMeta": {
+      ".read": "auth != null && auth.token.email === 'teacher@c27.local'",
+      "$studentId": {
+        "uid": {
+          ".read": true,
+          ".write": "auth != null && (!data.exists() || auth.token.email === 'teacher@c27.local')"
+        },
+        "resetCount": {
+          ".read": true,
+          ".write": "auth != null && auth.token.email === 'teacher@c27.local'"
+        }
+      }
+    },
+
+    "logs": {
+      ".read": "auth != null && auth.token.email === 'teacher@c27.local'",
+      ".write": "auth != null"
+    }
+  }
+}

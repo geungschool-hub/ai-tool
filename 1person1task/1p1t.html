@@ -1243,34 +1243,35 @@ html, body {
 // ══════════════════════════════════════
 //  데이터: 학생 & 역할
 // ══════════════════════════════════════
-const STUDENTS = [
-  { id:'20701', num:'01', name:'권윤서',  role:'향기 공주',      dept:'환경부', desc:'• 교실 공기가 탁해지지 않도록 커튼과 창문을 관리\n• 조례·이동시간 활용하여 환기\n• 공기 탈취제 관리' },
-  { id:'20702', num:'02', name:'김민경',  role:'급식 공주',      dept:'소통부', desc:'• 학급 친구들에게 매일의 급식 식단 안내' },
-  { id:'20703', num:'03', name:'김민정',  role:'출석부 공주',    dept:'학습부', desc:'• 공통과목 수업 시 우리 반 출석부 관리, 사인 부탁드리기\n• 출석부의 교과 선생님 서명이 없을 시 받아오기' },
-  { id:'20704', num:'04', name:'김시은',  role:'게시판 공주',    dept:'환경부', desc:'• 학급 앞·뒤 게시판을 예쁘고 깔끔하게 관리\n• 계절·테마·일정에 맞게 교실 꾸밈\n• 학급의 의견을 반영하며 꾸며나가기' },
-  { id:'20705', num:'05', name:'김채원',  role:'출석부 공주',    dept:'학습부', desc:'• 공통과목 수업 시 우리 반 출석부 관리, 사인 부탁드리기\n• 출석부의 교과 선생님 서명이 없을 시 받아오기' },
-  { id:'20706', num:'06', name:'박나은',  role:'스터디 공주',    dept:'학습부', desc:'• 시간표 변동 확인 후 학급에 안내\n• 시험기간 디데이 체크\n• 시험 범위 정리 및 공지, 수행평가 안내' },
-  { id:'20707', num:'07', name:'박세은',  role:'학급 회장 공주', dept:'',       desc:'• 학급 총괄, 학급회의 진행, 1인 1역 관리 및 감독\n• 솔선수범하여 행복하고 안전한 학급 분위기 조성' },
-  { id:'20708', num:'08', name:'박효빈',  role:'파티 공주',      dept:'소통부', desc:'• 친구들 생일 조사, 학급 게시판에 월별 생일자 안내 게시물 부착\n• 생일·학교 일정 등에 맞는 소소한 행사 계획\n• 많은 인원이 즐길 수 있도록 의견 수용' },
-  { id:'20709', num:'09', name:'손예원',  role:'파티 공주',      dept:'소통부', desc:'• 친구들 생일 조사, 학급 게시판에 월별 생일자 안내 게시물 부착\n• 생일·학교 일정 등에 맞는 소소한 행사 계획\n• 많은 인원이 즐길 수 있도록 의견 수용' },
-  { id:'20710', num:'10', name:'신지민',  role:'학급함 공주',    dept:'문화부', desc:'• 유인물 배부 & 유인물 수합 (개인정보 제외)' },
-  { id:'20711', num:'11', name:'양수빈',  role:'파티 공주',      dept:'소통부', desc:'• 친구들 생일 조사, 학급 게시판에 월별 생일자 안내 게시물 부착\n• 생일·학교 일정 등에 맞는 소소한 행사 계획\n• 많은 인원이 즐길 수 있도록 의견 수용' },
-  { id:'20712', num:'12', name:'엄예주',  role:'피카츄 공주',    dept:'학습부', desc:'• 선택과목 수업 시 형광등·전자칠판·냉난방기 등 절전\n• 냉난방 온도 조절\n• 환기 시 난방 끄기' },
-  { id:'20713', num:'13', name:'엄지율',  role:'급식 공주',      dept:'소통부', desc:'• 학급 친구들에게 매일의 급식 식단 안내' },
-  { id:'20714', num:'14', name:'유진',    role:'게시판 공주',    dept:'환경부', desc:'• 학급 앞·뒤 게시판을 예쁘고 깔끔하게 관리\n• 계절·테마·일정에 맞게 교실 꾸밈\n• 학급의 의견을 반영하며 꾸며나가기' },
-  { id:'20715', num:'15', name:'윤채원',  role:'소통 공주',      dept:'문화부', desc:'• 학급 또는 사회의 크고 작은 이슈를 학급에 소개\n• 학급 소식지 작성하여 학급에 공유' },
-  { id:'20716', num:'16', name:'이가을',  role:'학급 부회장 공주',dept:'',      desc:'• 학급 회장과 함께 학급회의 진행 및 1인 1역 관리 감독\n• 솔선수범하여 행복하고 안전한 학급 분위기 조성' },
-  { id:'20717', num:'17', name:'이가현',  role:'깔끔 공주',      dept:'환경부', desc:'• 교탁 주변 및 학급에 구비되어 있는 생활용품 관리 및 정리\n• 필요한 물품은 선생님에게 문의하여 구비' },
-  { id:'20718', num:'18', name:'이서현',  role:'긍정 공주',      dept:'문화부', desc:'• 학급 게시판에 친구들을 응원하는 긍정의 메시지·명언 적기 (주 2회)\n• 학급 내에서 칭찬할 일을 찾아서 공유하기' },
-  { id:'20719', num:'19', name:'이수경',  role:'깔끔 공주',      dept:'환경부', desc:'• 교탁 주변 및 학급에 구비되어 있는 생활용품 관리 및 정리\n• 필요한 물품은 선생님에게 문의하여 구비' },
-  { id:'20720', num:'20', name:'이채린',  role:'소통 공주',      dept:'문화부', desc:'• 학급 또는 사회의 크고 작은 이슈를 학급에 소개\n• 학급 소식지 작성하여 학급에 공유' },
-  { id:'20721', num:'21', name:'임혜림',  role:'게시판 공주',    dept:'환경부', desc:'• 학급 앞·뒤 게시판을 예쁘고 깔끔하게 관리\n• 계절·테마·일정에 맞게 교실 꾸밈\n• 학급의 의견을 반영하며 꾸며나가기' },
-  { id:'20722', num:'22', name:'정예은',  role:'별자리 공주',    dept:'소통부', desc:'• 오늘의 운세를 확인하고 1·2·3위의 별자리와 행운 아이템을 기록' },
-  { id:'20723', num:'23', name:'차효주',  role:'소통 공주',      dept:'문화부', desc:'• 학급 또는 사회의 크고 작은 이슈를 학급에 소개\n• 학급 소식지 작성하여 학급에 공유' },
-  { id:'20724', num:'24', name:'최유리',  role:'학급함 공주',    dept:'문화부', desc:'• 유인물 배부 & 유인물 수합 (개인정보 제외)' },
-  { id:'20725', num:'25', name:'한서현',  role:'포토그래퍼 공주',dept:'환경부', desc:'• 학급의 일상·기념 사진을 촬영 및 공유 (공유 동의 필수!)' },
-  { id:'20726', num:'26', name:'한예소',  role:'피카츄 공주',    dept:'학습부', desc:'• 선택과목 수업 시 형광등·전자칠판·냉난방기 등 절전\n• 냉난방 온도 조절\n• 환기 시 난방 끄기' },
-];
+// 학생 실명·역할은 소스코드에 두지 않는다 (저장소·배포본이 모두 공개됨).
+// 명단은 RTDB `students/{학번}` 에 두고, 인증(로그인)한 뒤에만 읽는다.
+//   · 학생 → 본인 것만 읽기 허용   · 담임 → 전체 읽기 허용
+// 입장 화면은 인증 전이라 번호만 표시한다.
+const CLASS_SIZE = 26;
+const ID_PREFIX  = '207';   // 학번 = ID_PREFIX + 두 자리 번호
+
+const ROSTER = Array.from({ length: CLASS_SIZE }, (_, i) => {
+  const num = String(i + 1).padStart(2, '0');
+  return { id: ID_PREFIX + num, num };
+});
+
+let STUDENTS = [];   // 담임 로그인 후 RTDB에서 채워진다 (담임 화면 전용)
+
+// students/{학번} → { num, name, role, dept, desc }
+async function loadStudentProfile(id) {
+  const snap = await db.ref(`students/${id}`).once('value');
+  return snap.val();
+}
+
+// 담임 전용: 전체 명단을 번호순으로 STUDENTS에 채운다
+async function loadAllStudents() {
+  const snap = await db.ref('students').once('value');
+  const all  = snap.val() || {};
+  STUDENTS = ROSTER
+    .filter(r => all[r.id])
+    .map(r => ({ id: r.id, num: r.num, ...all[r.id] }));
+  return STUDENTS;
+}
 
 const DAYS_KO      = ['월','화','수','목','금'];
 const DAYS_KEY     = ['mon','tue','wed','thu','fri'];
@@ -1534,11 +1535,12 @@ function isDirty() { return Object.values(drafts).some(d => d.val !== d.base); }
 function renderEntryScreen() {
   const grid = document.getElementById('number-grid');
   grid.innerHTML = '';
-  STUDENTS.forEach(s => {
+  // 인증 전 화면 → 이름은 표시하지 않는다 (번호만)
+  ROSTER.forEach(s => {
     const btn = document.createElement('button');
     btn.className = 'num-btn';
-    btn.innerHTML = `${s.num}<span class="num-btn-name">${s.name}</span>`;
-    btn.addEventListener('click', () => enterAsStudent(s));
+    btn.textContent = s.num;
+    btn.addEventListener('click', () => enterAsStudent({ ...s }));
     grid.appendChild(btn);
   });
 }
@@ -1548,10 +1550,10 @@ function renderEntryScreen() {
 // ══════════════════════════════════════
 async function openRecordScreen() {
   const s = currentStudent;
-  document.getElementById('record-name').textContent = `${s.num} ${s.name}`;
+  document.getElementById('record-name').textContent = `${s.num} ${s.name || ''}`.trim();
   document.getElementById('record-role').textContent =
-    '👑 ' + (s.dept ? `${s.role} · ${s.dept}` : s.role);
-  document.getElementById('role-guide-body').textContent = s.desc;
+    s.role ? '👑 ' + (s.dept ? `${s.role} · ${s.dept}` : s.role) : '';
+  document.getElementById('role-guide-body').textContent = s.desc || '';
 
   showScreen('screen-record');
   await renderWeekView();
@@ -1756,6 +1758,7 @@ async function pwConfirm() {
   showLoading(true, '확인 중...');
   try {
     await auth.signInWithEmailAndPassword(TEACHER_EMAIL, pwBuffer);
+    await loadAllStudents();   // 명단(이름·역할)은 인증 후 RTDB에서
     pwBuffer = '';
     document.getElementById('pw-display').textContent = '　';
     document.getElementById('pw-modal').classList.remove('show');
@@ -2037,8 +2040,8 @@ function openStudentPwModal(mode, student) {
 
 function updateSpwUI() {
   document.getElementById('spw-display').textContent = '　';
-  document.getElementById('spw-student-name').textContent =
-    `${spwStudent.num}번 ${spwStudent.name}`;
+  // 인증 전이므로 이름 없이 번호만 (이름은 로그인 후 기록 화면에서 확인)
+  document.getElementById('spw-student-name').textContent = `${spwStudent.num}번`;
   const subtitle = document.getElementById('spw-subtitle');
   const title = document.getElementById('spw-title');
   if (spwMode === 'enter') {
@@ -2500,16 +2503,14 @@ function renderRecentButtons() {
   wrap.style.display = '';
   const btnsEl = document.getElementById('recent-btns');
   btnsEl.innerHTML = recent.map(id => {
-    const s = STUDENTS.find(x => x.id === id);
+    const s = ROSTER.find(x => x.id === id);
     if (!s) return '';
-    return `<button class="recent-btn" onclick="quickEnter('${s.id}')">
-      ${s.num}<span>${s.name}</span>
-    </button>`;
+    return `<button class="recent-btn" onclick="quickEnter('${s.id}')">${s.num}</button>`;
   }).join('');
 }
 function quickEnter(studentId) {
-  const s = STUDENTS.find(x => x.id === studentId);
-  if (s) enterAsStudent(s);
+  const s = ROSTER.find(x => x.id === studentId);
+  if (s) enterAsStudent({ ...s });
 }
 
 // 학생 Firebase Auth 이메일 생성
@@ -2544,8 +2545,24 @@ async function enterAsStudent(student) {
   }
 }
 
-function proceedAsStudent(student) {
+async function proceedAsStudent(student) {
   addRecentEntry(student.id);
+
+  // 이름·역할은 인증 후에야 읽을 수 있다 (보안 규칙: 본인 것만 허용)
+  showLoading(true, '불러오는 중...');
+  try {
+    const p = await loadStudentProfile(student.id);
+    if (p) Object.assign(student, p);
+  } catch (e) {
+    console.error('명단 로드 실패', e);
+  } finally {
+    showLoading(false);
+  }
+
+  if (!student.name) {
+    showToast('명단 정보를 불러오지 못했어요. 선생님께 알려주세요 🙏');
+  }
+
   currentStudent = student;
   weekOffset = 0;
   document.getElementById('entry-error').textContent = '';

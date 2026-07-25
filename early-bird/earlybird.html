@@ -72,6 +72,16 @@
     align-content: center;
   }
 
+  .roster-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b8c86;
+  }
+  .roster-empty-icon { font-size: 44px; margin-bottom: 10px; }
+  .roster-empty-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #33615a; }
+  .roster-empty-desc { font-size: 14px; line-height: 1.7; }
+
   .student-card {
     background: white;
     border: 2px solid #c8e6e0;
@@ -728,38 +738,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── 학생 데이터 ──
-const DEFAULT_STUDENTS = [
-  { id: '20701', name: '권윤서' },
-  { id: '20702', name: '김민경' },
-  { id: '20703', name: '김민정' },
-  { id: '20704', name: '김시은' },
-  { id: '20705', name: '김채원' },
-  { id: '20706', name: '박나은' },
-  { id: '20707', name: '박세은' },
-  { id: '20708', name: '박효빈' },
-  { id: '20709', name: '손예원' },
-  { id: '20710', name: '신지민' },
-  { id: '20711', name: '양수빈' },
-  { id: '20712', name: '엄예주' },
-  { id: '20713', name: '엄지율' },
-  { id: '20714', name: '유진' },
-  { id: '20715', name: '윤채원' },
-  { id: '20716', name: '이가을' },
-  { id: '20717', name: '이가현' },
-  { id: '20718', name: '이서현' },
-  { id: '20719', name: '이수경' },
-  { id: '20720', name: '이채린' },
-  { id: '20721', name: '임혜림' },
-  { id: '20722', name: '정예은' },
-  { id: '20723', name: '차효주' },
-  { id: '20724', name: '최유리' },
-  { id: '20725', name: '한서현' },
-  { id: '20726', name: '한예소' },
-];
-
+// 학생 명단은 소스코드에 두지 않는다(개인정보·공개 저장소).
+// [📋 명렬표 업로드]로 이 기기(localStorage)에만 저장한다.
 function loadStudents() {
   const raw = localStorage.getItem('earlybird_students');
-  return raw ? JSON.parse(raw) : DEFAULT_STUDENTS;
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) {
+    console.error('명단 파싱 실패', e);
+    return [];
+  }
 }
 
 function loadClassInfo() {
@@ -879,6 +869,17 @@ function getWeeklyCount(studentId) {
 function renderCards() {
   const area = document.getElementById('card-area');
   area.innerHTML = '';
+  if (!STUDENTS.length) {
+    const empty = document.createElement('div');
+    empty.className = 'roster-empty';
+    empty.innerHTML = `
+      <div class="roster-empty-icon">📋</div>
+      <div class="roster-empty-title">명단이 아직 없어요</div>
+      <div class="roster-empty-desc">위의 <b>[📋 명렬표 업로드 (.xlsx)]</b> 버튼으로<br>명렬표를 한 번만 올리면 이 기기에 저장됩니다.</div>
+    `;
+    area.appendChild(empty);
+    return;
+  }
   STUDENTS.forEach((s, idx) => {
     const card = document.createElement('div');
     card.className = 'student-card';

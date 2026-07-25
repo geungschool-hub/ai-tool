@@ -22,12 +22,12 @@
       }
     },
     "examGoals": {
-      ".read": true,
-      ".write": true
+      ".read": false,
+      ".write": false
     },
     "reportPlans": {
-      ".read": true,
-      ".write": true
+      ".read": false,
+      ".write": false
     },
     "vote": {
       ".read": true,

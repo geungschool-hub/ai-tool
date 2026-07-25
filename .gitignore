@@ -1,24 +1,24 @@
 # 용량 큰 참고자료 (교과서 PDF 228MB 포함)
-study-materials/
+수업자료/study-materials/
 
 # 개인정보 포함 파일 (학생 명단)
-homeroom-teacher/
+교사업무/homeroom-teacher/
 명렬표.pdf
 **/명렬표.pdf
-early-bird/학생명렬표.xlsx
-attendance-checklist_mobile/학급별 출결 현황.xlsx
-attendance-test/과학사 3학년 3-과학사 B.xlsx
+학생앱/early-bird/학생명렬표.xlsx
+교사업무/attendance-checklist_mobile/학급별 출결 현황.xlsx
+교사업무/attendance-test/과학사 3학년 3-과학사 B.xlsx
 attendance_backup_*.json
 **/attendance_backup_*.json
 혈액형판정_수행평가/혈액형판정_운영자료_백업.json
 혈액형판정_수행평가/수행평가 시료 배정.hwp
-english-vocab/_db_backup/
-1person1task/_db_backup/
-1person1task/_seed_students.json
-fieldtrip_worksheet/backups/
-fieldtrip_worksheet/체험학습_설문_생기부예시.xlsx
+학생앱/english-vocab/_db_backup/
+학생앱/1person1task/_db_backup/
+학생앱/1person1task/_seed_students.json
+수업자료/fieldtrip_worksheet/backups/
+수업자료/fieldtrip_worksheet/체험학습_설문_생기부예시.xlsx
 학기말 주제 발표/
-설문/1학기마무리_설문_응답*
+교사업무/설문/1학기마무리_설문_응답*
 
 # 운영 인수인계 문서 (내부 운영 정보 — 공개 저장소 제외)
 Claude_인수인계_통합메모리.md
@@ -37,24 +37,24 @@ Claude_인수인계_통합메모리.md
 보고서작성법_가이드/_제출데이터/
 
 # 수강신청점검 — 학교 내부 문서·OCR 임시추출물 (코드만 추적)
-수강신청점검/*.pdf
-수강신청점검/_*
+교사업무/수강신청점검/*.pdf
+교사업무/수강신청점검/_*
 
 # 저작권 자료 (교과서·상용 단어장 원본/추출물)
-english-vocab/능률VOCA어원편고등/
-english-vocab/워드마스터 고등 BASIC_문제,정답/
-english-vocab/_dump_*.txt
-english-vocab/_wm_*.txt
-english-vocab/basic_words.json
-english-vocab/plus_words.json
+학생앱/english-vocab/능률VOCA어원편고등/
+학생앱/english-vocab/워드마스터 고등 BASIC_문제,정답/
+학생앱/english-vocab/_dump_*.txt
+학생앱/english-vocab/_wm_*.txt
+학생앱/english-vocab/basic_words.json
+학생앱/english-vocab/plus_words.json
 
 # 독립 git 저장소 (중첩 방지)
 긍스쿨 허브/
-fieldtrip_worksheet/fieldnote/
-발표체크/
+수업자료/fieldtrip_worksheet/fieldnote/
+교사업무/발표체크/
 
 # 의도적 미추적 (배포본은 별도 저장소)
-GWASE'TEUK/
+_보관/GWASE'TEUK/
 
 # Claude 내부 설정
 .claude/
@@ -74,7 +74,7 @@ Thumbs.db
 desktop.ini
 
 # 외부 저작물 (이상민T 배포 프로그램 — 재배포 금지, 커밋 차단)
-이상민T 생기부 프로그램/
+_보관/이상민T 생기부 프로그램/
 
 # ─────────────────────────────────────────────────────────────
 # ★작업노트 실명 금지 정책 (2026-07-25)

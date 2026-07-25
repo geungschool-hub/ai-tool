@@ -4,7 +4,7 @@ on:
   push:
     branches: [master]
     paths:
-      - 'attendance-test/**'
+      - '교사업무/attendance-test/**'
       - '.github/workflows/deploy-attendance-test.yml'
   workflow_dispatch:
 
@@ -20,14 +20,14 @@ jobs:
       - name: Prepare deploy files
         run: |
           mkdir -p deploy-tmp
-          cp attendance-test/index.html    deploy-tmp/
-          cp attendance-test/manifest.json deploy-tmp/
-          cp attendance-test/sw.js         deploy-tmp/
-          cp attendance-test/icon.svg      deploy-tmp/
-          [ -f "attendance-test/xlsx.full.min.js"   ] && cp attendance-test/xlsx.full.min.js   deploy-tmp/
-          [ -f "attendance-test/pdf.min.js"          ] && cp attendance-test/pdf.min.js          deploy-tmp/
-          [ -f "attendance-test/pdf.worker.min.js"   ] && cp attendance-test/pdf.worker.min.js   deploy-tmp/
-          [ -d "attendance-test/cmaps"               ] && cp -r attendance-test/cmaps            deploy-tmp/
+          cp 교사업무/attendance-test/index.html    deploy-tmp/
+          cp 교사업무/attendance-test/manifest.json deploy-tmp/
+          cp 교사업무/attendance-test/sw.js         deploy-tmp/
+          cp 교사업무/attendance-test/icon.svg      deploy-tmp/
+          [ -f "교사업무/attendance-test/xlsx.full.min.js"   ] && cp 교사업무/attendance-test/xlsx.full.min.js   deploy-tmp/
+          [ -f "교사업무/attendance-test/pdf.min.js"          ] && cp 교사업무/attendance-test/pdf.min.js          deploy-tmp/
+          [ -f "교사업무/attendance-test/pdf.worker.min.js"   ] && cp 교사업무/attendance-test/pdf.worker.min.js   deploy-tmp/
+          [ -d "교사업무/attendance-test/cmaps"               ] && cp -r 교사업무/attendance-test/cmaps            deploy-tmp/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

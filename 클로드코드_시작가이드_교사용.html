@@ -622,6 +622,7 @@ footer a{color:var(--ink-faint)}
         <thead><tr><th style="width:46%">언제 필요해지나</th><th>필요한 것</th><th style="width:16%">돈</th></tr></thead>
         <tbody>
           <tr><td class="l">클로드 코드 자체</td><td><strong>클로드 계정 (Pro 이상)</strong></td><td>유료</td></tr>
+          <tr><td class="l">만든 파일 열어보기 · 직접 조금 고치기</td><td>VS Code</td><td>무료</td></tr>
           <tr><td class="l">PDF 그림 뽑기 · hwp 변환 · 엑셀 정리</td><td>파이썬</td><td>무료</td></tr>
           <tr><td class="l">실수 되돌리기 · 자료 백업</td><td>Git</td><td>무료</td></tr>
           <tr><td class="l">만든 앱을 학생 폰에서 열게 하기</td><td>GitHub 계정</td><td>무료</td></tr>
@@ -633,7 +634,39 @@ footer a{color:var(--ink-faint)}
       </table>
     </div>
 
+    <div class="note">
+      <span class="h">이미 갖고 계신 걸로 되는 것</span>
+      <strong>브라우저(크롬·엣지)</strong> 하나면 만든 학습지·앱을 열어보고, <span class="kbd">Ctrl</span>+<span class="kbd">P</span> 로
+      인쇄하거나 PDF로 저장할 수 있습니다. <strong>PDF 리더도 따로 깔 필요 없습니다</strong> — 브라우저가 엽니다.
+    </div>
+
     <h3>항목별 안내</h3>
+
+    <details>
+      <summary>💻 VS Code — 만든 파일을 눈으로 보기 <span class="badge free">무료 · 로그인 없음</span></summary>
+      <div class="dbody">
+        <p>클로드 코드는 터미널에서 결과를 글로 알려줄 뿐, <strong>파일 자체를 보여주진 않습니다.</strong>
+           VS Code를 같이 켜 두면 만들어지는 파일이 눈앞에서 바뀌는 게 보여서 훨씬 안심이 됩니다.</p>
+        <p><strong>이럴 때 편합니다</strong></p>
+        <ul class="plain">
+          <li>클로드가 만든 파일을 열어 <strong>내용 확인</strong> — 학습지 문구, 표 내용이 제대로 들어갔는지</li>
+          <li>글자 하나, 숫자 하나 정도는 <strong>직접 고치기</strong> (매번 시키는 것보다 빠릅니다)</li>
+          <li>왼쪽에 <strong>폴더 구조가 한눈에</strong> — 뭐가 어디 있는지 파악됩니다</li>
+        </ul>
+        <p><strong>설치:</strong> <a href="https://code.visualstudio.com" target="_blank" rel="noopener">code.visualstudio.com</a>
+           에서 받아 설치. 계정도, 설정도 필요 없습니다.</p>
+
+        <h3 style="margin-top:22px">터미널 창을 아예 안 띄우는 방법</h3>
+        <p>VS Code 확장 마켓플레이스(왼쪽 네모 아이콘)에서 <strong>Claude Code</strong>를 검색해 설치하면,
+           <strong>VS Code 안에서 바로 클로드에게 시킬 수 있습니다.</strong>
+           파일이 바뀌는 모습과 대화창이 한 화면에 있어서 처음 배울 때 특히 편합니다.</p>
+
+        <div class="note tip">
+          <span class="h">화면이 영어라 부담스러우면</span>
+          같은 확장 마켓플레이스에서 <strong>Korean Language Pack</strong>을 설치하면 메뉴가 한국어로 바뀝니다.
+        </div>
+      </div>
+    </details>
 
     <details>
       <summary>🐍 파이썬 <span class="badge free">로그인 없음</span></summary>
@@ -890,12 +923,13 @@ footer a{color:var(--ink-faint)}
       <li><label><input type="checkbox" data-k="a5"><span>“이 폴더에 뭐가 있는지 알려줘”에 답을 받아 봤다</span></label></li>
       <li><label><input type="checkbox" data-k="a6"><span>첫 실습(랜덤 뽑기 페이지)을 끝까지 만들어 봤다</span></label></li>
       <li><label><input type="checkbox" data-k="a7"><span><span class="kbd">Esc</span> · <code>/clear</code> 두 가지를 써 봤다</span></label></li>
+      <li><label><input type="checkbox" data-k="a10"><span>VS Code 설치 — 만든 파일을 눈으로 확인 <span class="opt">권장</span></span></label></li>
       <li><label><input type="checkbox" data-k="a8"><span>파이썬 설치 <span class="opt">필요해지면</span></span></label></li>
       <li><label><input type="checkbox" data-k="a9"><span>Git 설치 + GitHub 가입 <span class="opt">필요해지면</span></span></label></li>
     </ul>
 
     <div class="checkbar">
-      <span class="n" id="cnt">0 / 9</span>
+      <span class="n" id="cnt">0 / 10</span>
       <span class="track"><span class="fill" id="fill"></span></span>
       <button class="reset" id="rst" type="button">초기화</button>
     </div>

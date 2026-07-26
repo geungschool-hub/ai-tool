@@ -626,6 +626,7 @@ footer a{color:var(--ink-faint)}
           <tr><td class="l">PDF 그림 뽑기 · hwp 변환 · 엑셀 정리</td><td>파이썬</td><td>무료</td></tr>
           <tr><td class="l">실수 되돌리기 · 자료 백업</td><td>Git</td><td>무료</td></tr>
           <tr><td class="l">만든 앱을 학생 폰에서 열게 하기</td><td>GitHub 계정</td><td>무료</td></tr>
+          <tr><td class="l">깃허브에 올리는 일까지 클로드에게 맡기기</td><td>GitHub CLI</td><td>무료</td></tr>
           <tr><td class="l">학생이 제출한 걸 서버에 모으기</td><td>Supabase <span style="color:var(--ink-faint)">(또는 Firebase)</span></td><td>무료 구간</td></tr>
           <tr><td class="l">hwp 자동 변환</td><td>PC에 한글 설치</td><td>기존 보유</td></tr>
           <tr><td class="l">내가 만든 앱에 AI 기능 넣기</td><td>클로드 API 키</td><td>별도 유료</td></tr>
@@ -701,6 +702,54 @@ footer a{color:var(--ink-faint)}
         <div class="prompt">이 폴더 git으로 관리 시작해줘. 학생 개인정보가 든 파일은 .gitignore로 제외하고.</div>
         <p><strong>저장소를 만들 때는 PRIVATE(나만 보기)을 고르세요.</strong> 나중에 학생이 접속할 페이지를 만들 때
            그 부분만 따로 공개하면 됩니다. 자세한 건 <a href="#privacy">08. 학생 정보 다루기</a>에 정리해 뒀습니다.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>⌨️ GitHub CLI — 깃허브 일까지 클로드에게 맡기기 <span class="badge free">무료</span></summary>
+      <div class="dbody">
+        <p class="sub" style="margin:0 0 14px">
+          <strong>CLI</strong>는 프로그램 이름이 아니라 방식을 가리키는 말입니다.
+          마우스로 클릭하는 대신 <strong>명령어를 쳐서 쓰는 프로그램</strong>이라는 뜻이에요. 클로드 코드 자체도 CLI입니다.
+        </p>
+        <p><strong>GitHub CLI</strong>는 깃허브 웹사이트에서 클릭으로 하던 일 — 저장소 만들기, 공개 설정, 배포 켜기 —
+           을 명령어로 하는 도구입니다.</p>
+
+        <p><strong>이걸 깔면 뭐가 달라지나</strong></p>
+        <div class="grid2">
+          <div class="vs bad">
+            <div class="vt"><span class="dot"></span>없을 때</div>
+            <p style="margin:0">깃허브 사이트에 들어가 저장소를 만들고, 파일을 올리고, 설정에서 배포를 켜는 걸
+              <strong>선생님이 직접</strong> 하셔야 합니다.</p>
+          </div>
+          <div class="vs good">
+            <div class="vt"><span class="dot"></span>있을 때</div>
+            <p style="margin:0">한 줄만 시키면 <strong>클로드가 저장소 생성부터 주소 발급까지</strong> 알아서 합니다.</p>
+          </div>
+        </div>
+        <div class="prompt" style="margin-top:16px">이 앱 깃허브에 올리고 학생들이 접속할 주소까지 만들어줘.</div>
+
+        <h3 style="margin-top:24px">설치</h3>
+        <div class="codeblock">
+          <span class="label">Windows PowerShell</span>
+          <pre>winget install --id GitHub.cli</pre>
+        </div>
+        <p>맥은 <code>brew install gh</code>, 또는 <a href="https://cli.github.com" target="_blank" rel="noopener">cli.github.com</a> 에서 직접 받아도 됩니다.</p>
+
+        <h3>로그인 — 이건 직접 하셔야 합니다</h3>
+        <p>설치 후 터미널에 아래를 치면 브라우저가 열리며 깃허브 로그인을 묻습니다. <strong>한 번만 하면 됩니다.</strong></p>
+        <div class="codeblock">
+          <pre>gh auth login</pre>
+        </div>
+        <p>물어보는 것들은 기본값(GitHub.com → HTTPS → 브라우저로 로그인)으로 넘기시면 됩니다.</p>
+        <div class="codeblock">
+          <span class="label">로그인 확인</span>
+          <pre>gh auth status</pre>
+        </div>
+        <div class="note ok">
+          <span class="h">여기까지 하면</span>
+          이후로는 배포가 필요할 때마다 <strong>말로만 시키면 됩니다.</strong> 깃허브 사이트에 들어갈 일이 거의 없어집니다.
+        </div>
       </div>
     </details>
 

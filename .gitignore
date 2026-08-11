@@ -6,7 +6,7 @@
 명렬표.pdf
 **/명렬표.pdf
 학생앱/early-bird/학생명렬표.xlsx
-교사업무/attendance-checklist_mobile/학급별 출결 현황.xlsx
+attendance-checklist_mobile/학급별 출결 현황.xlsx
 교사업무/attendance-test/과학사 3학년 3-과학사 B.xlsx
 attendance_backup_*.json
 **/attendance_backup_*.json
@@ -37,8 +37,8 @@ Claude_인수인계_통합메모리.md
 보고서작성법_가이드/_제출데이터/
 
 # 수강신청점검 — 학교 내부 문서·OCR 임시추출물 (코드만 추적)
-교사업무/수강신청점검/*.pdf
-교사업무/수강신청점검/_*
+수강신청점검/*.pdf
+수강신청점검/_*
 
 # 저작권 자료 (교과서·상용 단어장 원본/추출물)
 학생앱/english-vocab/능률VOCA어원편고등/
@@ -99,3 +99,7 @@ _보관_종료앱_데이터/
 
 # 규칙 대조용 임시 붙여넣기 파일
 _firebase/*/live.json
+
+# 생물의 유전 — 출석부·명단 대조 파일(학생 실명) (공개 저장소 제외)
+생물의 유전/*출석부.xlsx
+생물의 유전/명단대조_*.md

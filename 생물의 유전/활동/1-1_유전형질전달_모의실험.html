@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유전형질 전달 모의실험</title>
+<style>
+  :root {
+    --red:    #C0392B;  --red-bg:    #FDECEA;
+    --blue:   #1255A0;  --blue-bg:   #E3F0FB;
+    --yellow: #B7791F;  --yellow-bg: #FDF3D7;
+    --green:  #2A7A38;  --green-bg:  #E6F4E9;
+    --ink: #1A1A1A; --sub: #555; --line: #CCC;
+    --mom: #C2185B; --dad: #1255A0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    font-size:17px; color:var(--ink); background:#F0F2F5;
+    padding:12px; line-height:1.6;
+  }
+  .wrap { max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+
+  header.top {
+    background:#fff; border-radius:14px; padding:16px 20px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  header.top h1 { font-size:22px; color:var(--blue); }
+  header.top .sub { font-size:15px; color:var(--sub); }
+  #progress {
+    background:var(--blue); color:#fff; font-weight:700; font-size:16px;
+    padding:8px 16px; border-radius:20px; white-space:nowrap;
+  }
+
+  .card {
+    background:#fff; border-radius:14px; padding:16px 18px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .card h2 {
+    font-size:19px; margin-bottom:10px; padding:6px 12px; border-radius:6px;
+    border-left:5px solid var(--blue); background:var(--blue-bg);
+  }
+  .card h2.green { border-left-color:var(--green); background:var(--green-bg); }
+  .card h2.amber { border-left-color:#E67E22; background:#FDE9C9; }
+
+  table.rules { width:100%; border-collapse:collapse; font-size:16px; }
+  table.rules th, table.rules td { border:1px solid var(--line); padding:7px 6px; text-align:center; vertical-align:middle; }
+  table.rules th { background:#EEF3F8; }
+  .chip-red    { color:var(--red);    font-weight:700; }
+  .chip-blue   { color:var(--blue);   font-weight:700; }
+  .chip-yellow { color:var(--yellow); font-weight:700; }
+  sup { font-size:.72em; }
+
+  /* ── 실험 규칙 + 유전자형 변경 2단 ── */
+  .rule-grid { display:grid; grid-template-columns:1.5fr 1fr; gap:14px; align-items:start; }
+  @media (max-width:760px) { .rule-grid { grid-template-columns:1fr; } }
+  .geno-panel {
+    border:2px solid var(--blue); border-radius:12px; background:#F5F9FD;
+    padding:12px 14px;
+  }
+  .geno-panel .gp-title { font-size:17px; font-weight:700; color:var(--blue); margin-bottom:8px; }
+  .gp-parent { margin-bottom:10px; }
+  .gp-parent .gp-who { font-size:16px; font-weight:700; display:block; margin-bottom:4px; }
+  .gp-parent.mom .gp-who { color:var(--mom); }
+  .gp-parent.dad .gp-who { color:var(--dad); }
+  .gp-row { display:flex; gap:8px; flex-wrap:wrap; }
+  .gp-row label { font-size:15px; display:flex; align-items:center; gap:4px; }
+  .gp-row select {
+    font-family:inherit; font-size:16px; font-weight:700; min-height:44px;
+    padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff;
+  }
+  .gp-note { font-size:14px; color:var(--sub); margin-top:6px; line-height:1.5; }
+
+  /* ── 뽑기판 ── */
+  .parents { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:640px) { .parents { grid-template-columns:1fr; } }
+  .parent {
+    border:2px solid var(--line); border-radius:12px; padding:12px; text-align:center;
+  }
+  .parent.mom { border-color:var(--mom); }
+  .parent.dad { border-color:var(--dad); }
+  .parent .pname { font-size:18px; font-weight:700; margin-bottom:2px; }
+  .parent.mom .pname { color:var(--mom); }
+  .parent.dad .pname { color:var(--dad); }
+  .parent .pgeno { font-size:15px; color:var(--sub); margin-bottom:10px; }
+  .slots { display:flex; justify-content:center; gap:10px; }
+  .slot-col { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .slot-cap { font-size:14px; font-weight:700; line-height:1.2; }
+  .slot-cap.red    { color:var(--red); }
+  .slot-cap.blue   { color:var(--blue); }
+  .slot-cap.yellow { color:var(--yellow); }
+  .slot {
+    width:76px; height:96px; border-radius:10px; border:2px solid;
+    font-size:22px; font-weight:700; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    transition:transform .15s;
+  }
+  .slot:active { transform:scale(.94); }
+  .slot .lab { font-size:13px; font-weight:400; }
+  .slot.red    { border-color:var(--red);    background:var(--red-bg);    color:var(--red); }
+  .slot.blue   { border-color:var(--blue);   background:var(--blue-bg);   color:var(--blue); }
+  .slot.yellow { border-color:var(--yellow); background:var(--yellow-bg); color:var(--yellow); }
+  .slot.drawn { cursor:default; background:#fff; }
+  .slot:disabled { opacity:1; }
+
+  #childResult {
+    margin-top:14px; border:2.5px dashed var(--green); border-radius:14px;
+    background:var(--green-bg); padding:16px 16px 18px; display:none;
+    text-align:center; position:relative;
+  }
+  #childResult.show { animation:pop .5s cubic-bezier(.34,1.56,.64,1); }
+  .birth-emoji { font-size:54px; line-height:1.15; display:inline-block; animation:bounce .9s ease .35s 2; }
+  .birth-title { font-size:24px; font-weight:800; color:var(--green); margin-top:2px; }
+  .birth-geno  { font-size:19px; margin-top:6px; }
+  .birth-geno b { color:var(--blue); }
+  @keyframes pop    { from { transform:scale(.55); opacity:0; } to { transform:scale(1); opacity:1; } }
+  @keyframes bounce { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-12px); } }
+  .confetti { position:absolute; bottom:20%; pointer-events:none; animation:rise 1.4s ease-out forwards; }
+  @keyframes rise { 0% { transform:translateY(0) rotate(0deg); opacity:1; } 100% { transform:translateY(-110px) rotate(45deg); opacity:0; } }
+
+  /* ── 버튼 ── */
+  .btn {
+    display:inline-block; border:none; border-radius:10px; cursor:pointer;
+    font-family:inherit; font-size:17px; font-weight:700;
+    padding:12px 22px; min-height:48px; min-width:48px;
+    background:var(--blue); color:#fff;
+  }
+  .btn:active { filter:brightness(.9); }
+  .btn.green { background:var(--green); }
+  .btn.gray  { background:#666; }
+  .btn.ghost { background:#fff; color:var(--blue); border:2px solid var(--blue); }
+  .btn:disabled { background:#BBB; cursor:default; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; justify-content:center; }
+
+  /* ── 기록 표 ── */
+  table.rec { width:100%; border-collapse:collapse; font-size:16px; }
+  table.rec th, table.rec td { border:1px solid var(--line); padding:8px 6px; text-align:center; vertical-align:middle; }
+  table.rec th { background:#EEF3F8; }
+  table.rec tr.parentRow td { background:#EAF0F7; }
+  table.rec tr.parentRow + tr.parentRow td { border-bottom:2.5px solid #9DB4CC; }
+  table.rec td.on  { color:var(--green); font-weight:700; }
+  table.rec td.off { color:#999; }
+
+  /* ── 우성/열성 토글 ── */
+  .modes { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:12px; }
+  .mode { display:flex; align-items:center; gap:6px; font-size:16px; }
+  .mode .seg { display:flex; border:2px solid var(--blue); border-radius:10px; overflow:hidden; }
+  .mode button {
+    border:none; background:#fff; color:var(--blue); font-family:inherit;
+    font-size:16px; font-weight:700; padding:9px 16px; min-height:44px; cursor:pointer;
+  }
+  .mode button.on { background:var(--blue); color:#fff; }
+
+  /* ── 정리하기 ── */
+  .q { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:#FAFAFA; }
+  .q .qt { font-weight:700; margin-bottom:6px; }
+  .q textarea {
+    width:100%; min-height:64px; font-family:inherit; font-size:16px;
+    border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical; background:#fff;
+  }
+  .q .ans { display:none; margin-top:8px; border-left:4px solid var(--green); background:var(--green-bg); padding:8px 12px; border-radius:6px; font-size:16px; }
+  .q .btn { margin-top:8px; font-size:16px; padding:9px 16px; }
+
+  #simOut { display:none; margin-top:12px; }
+  #simOut table.rec { max-width:560px; margin:0 auto; }
+  #simOut .note { font-size:15px; color:var(--sub); text-align:center; margin-top:8px; }
+
+  footer { text-align:center; padding:6px 0 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>🧬 유전형질 전달 모의실험</h1>
+      <div class="sub">부모의 대립유전자를 뽑아 자녀에게 형질이 전달되는 원리를 알아보자</div>
+    </div>
+    <div id="progress">기록한 아이 0 / 3</div>
+  </header>
+
+  <!-- ── 규칙 ── -->
+  <section class="card">
+    <h2>① 실험 규칙</h2>
+    <div class="rule-grid">
+      <div>
+        <p style="margin-bottom:8px;">유전형질 <b>(가)·(나)·(다)</b>는 각각 한 쌍의 대립유전자에 의해 결정된다
+        (A는 a에 대해, B는 b에 대해, D는 d에 대해 <b>완전 우성</b>).
+        부모의 컵에서 색깔별로 막대를 하나씩 뽑으면 아이 한 명의 유전자형이 정해진다.
+        뽑은 막대는 <b>다시 컵에 넣고</b> 다음 아이를 뽑는다.</p>
+        <table class="rules">
+          <thead>
+            <tr><th>막대 색</th><th>유전형질</th><th>대립유전자</th><th>염색체</th><th>어머니</th><th>아버지</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="chip-red">● 빨간색</td><td><b>(가)</b></td><td>A, a</td><td>상염색체</td>
+              <td id="rule_m_ga">A a</td><td id="rule_d_ga">A a</td>
+            </tr>
+            <tr>
+              <td class="chip-blue">● 파란색</td><td><b>(나)</b></td><td>B, b</td><td>상염색체</td>
+              <td id="rule_m_na">B b</td><td id="rule_d_na">B b</td>
+            </tr>
+            <tr>
+              <td class="chip-yellow">● 노란색</td><td><b>(다)</b></td><td>D, d</td><td><b>성염색체(X)</b></td>
+              <td id="rule_m_da">X<sup>D</sup> X<sup>d</sup></td><td id="rule_d_da">X<sup>d</sup> Y</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px; font-size:15px; color:var(--sub);">
+          ★ 아버지의 노란색 막대는 X 막대와 Y 막대 두 종류 — 여기서 무엇이 뽑히느냐에 따라 아이의 <b>성별</b>이 정해진다!</p>
+      </div>
+      <div class="geno-panel">
+        <div class="gp-title">⚙️ 부모 유전자형 바꾸기</div>
+        <div class="gp-parent mom">
+          <span class="gp-who">👩 어머니</span>
+          <div class="gp-row">
+            <label>(가) <select id="geno_m_ga" onchange="applyGeno()">
+              <option>AA</option><option selected>Aa</option><option>aa</option></select></label>
+            <label>(나) <select id="geno_m_na" onchange="applyGeno()">
+              <option>BB</option><option selected>Bb</option><option>bb</option></select></label>
+            <label>(다) <select id="geno_m_da" onchange="applyGeno()">
+              <option value="DD">XᴰXᴰ</option><option value="Dd" selected>XᴰXᵈ</option><option value="dd">XᵈXᵈ</option></select></label>
+          </div>
+        </div>
+        <div class="gp-parent dad">
+          <span class="gp-who">👨 아버지</span>
+          <div class="gp-row">
+            <label>(가) <select id="geno_d_ga" onchange="applyGeno()">
+              <option>AA</option><option selected>Aa</option><option>aa</option></select></label>
+            <label>(나) <select id="geno_d_na" onchange="applyGeno()">
+              <option>BB</option><option selected>Bb</option><option>bb</option></select></label>
+            <label>(다) <select id="geno_d_da" onchange="applyGeno()">
+              <option value="D">XᴰY</option><option value="d" selected>XᵈY</option></select></label>
+          </div>
+        </div>
+        <div class="btnrow" style="margin-top:6px; justify-content:flex-start;">
+          <button class="btn ghost" style="font-size:15px; padding:8px 14px;" onclick="resetGeno()">교과서 기본값으로</button>
+        </div>
+        <div class="gp-note">유전자형을 바꾸면 컵·표가 새 부모 기준으로 바뀌고, 뽑기와 기록은 처음부터 다시 시작돼요.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 뽑기판 ── -->
+  <section class="card">
+    <h2 class="green">② 막대 뽑기 — <span id="childLabel">첫째</span> 아이</h2>
+    <div class="parents">
+      <div class="parent mom">
+        <div class="pname">👩 어머니의 컵</div>
+        <div class="pgeno" id="pgeno_m">Aa · Bb · X<sup>D</sup>X<sup>d</sup></div>
+        <div class="slots">
+          <div class="slot-col"><div class="slot-cap red">빨간 막대</div>
+            <button class="slot red"    id="s_m_red"    onclick="draw('m','red')"><span>?</span><span class="lab">(가)</span></button></div>
+          <div class="slot-col"><div class="slot-cap blue">파란 막대</div>
+            <button class="slot blue"   id="s_m_blue"   onclick="draw('m','blue')"><span>?</span><span class="lab">(나)</span></button></div>
+          <div class="slot-col"><div class="slot-cap yellow">노란 막대</div>
+            <button class="slot yellow" id="s_m_yellow" onclick="draw('m','yellow')"><span>?</span><span class="lab">(다)</span></button></div>
+        </div>
+      </div>
+      <div class="parent dad">
+        <div class="pname">👨 아버지의 컵</div>
+        <div class="pgeno" id="pgeno_d">Aa · Bb · X<sup>d</sup>Y</div>
+        <div class="slots">
+          <div class="slot-col"><div class="slot-cap red">빨간 막대</div>
+            <button class="slot red"    id="s_d_red"    onclick="draw('d','red')"><span>?</span><span class="lab">(가)</span></button></div>
+          <div class="slot-col"><div class="slot-cap blue">파란 막대</div>
+            <button class="slot blue"   id="s_d_blue"   onclick="draw('d','blue')"><span>?</span><span class="lab">(나)</span></button></div>
+          <div class="slot-col"><div class="slot-cap yellow">노란 막대</div>
+            <button class="slot yellow" id="s_d_yellow" onclick="draw('d','yellow')"><span>?</span><span class="lab">(다)·성별</span></button></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="childResult"></div>
+    <div class="btnrow">
+      <button class="btn green" id="btnRecord" onclick="recordChild()" disabled>표에 기록하고 다음 아이 뽑기</button>
+    </div>
+  </section>
+
+  <!-- ── 기록 표 ── -->
+  <section class="card">
+    <h2>③ 기록 표 — 유전자형과 형질 발현</h2>
+    <div class="modes">
+      <div class="mode"><span><b>(가)</b>는</span>
+        <div class="seg">
+          <button id="mode_ga_dom" class="on" onclick="setMode('ga','dom')">우성형질</button>
+          <button id="mode_ga_rec" onclick="setMode('ga','rec')">열성형질</button>
+        </div>
+      </div>
+      <div class="mode"><span><b>(나)</b>는</span>
+        <div class="seg">
+          <button id="mode_na_dom" onclick="setMode('na','dom')">우성형질</button>
+          <button id="mode_na_rec" class="on" onclick="setMode('na','rec')">열성형질</button>
+        </div>
+      </div>
+      <div class="mode"><span><b>(다)</b>는</span>
+        <div class="seg">
+          <button id="mode_da_dom" class="on" onclick="setMode('da','dom')">우성형질</button>
+          <button id="mode_da_rec" onclick="setMode('da','rec')">열성형질</button>
+        </div>
+      </div>
+    </div>
+    <table class="rec">
+      <thead>
+        <tr><th style="width:14%;">구분</th><th>(가)</th><th>(나)</th><th>(다)</th><th style="width:12%;">성별</th><th style="width:26%;">발현된 형질</th></tr>
+      </thead>
+      <tbody id="recBody"></tbody>
+    </table>
+    <p style="font-size:15px; color:var(--sub); margin-top:8px;">
+      ★ 위의 우성/열성 단추를 바꾸면 「발현된 형질」이 바로 다시 계산된다. 부모의 발현도 함께 살펴보자.</p>
+  </section>
+
+  <!-- ── 정리하기 ── -->
+  <section class="card" id="secWrapup" style="display:none;">
+    <h2 class="amber">④ 정리하기</h2>
+
+    <div class="q">
+      <div class="qt">1. 자녀들의 (가)~(다) 표현형에 차이가 있는가? 있다면 그 까닭은 무엇일까?</div>
+      <textarea placeholder="내 생각을 먼저 적어 보자."></textarea>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans"><span style="color:var(--sub); font-size:14px;">(교과서 기본 유전자형 기준)</span><br>
+      부모가 모두 <b>이형접합성</b>(Aa, Bb, X<sup>D</sup>X<sup>d</sup>)이므로, 생식세포가 형성될 때
+      쌍을 이루던 대립유전자가 <b>분리되어 하나씩</b> 무작위로 전달된다(분리의 법칙).
+      어떤 대립유전자를 물려받느냐에 따라 자녀마다 유전자형이 달라지고, 표현형에도 차이가 생길 수 있다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">2. (다)가 <b>열성형질</b>이라면 부모와 자녀에서 (다)의 형질 발현은 어떻게 달라질까?
+        <span style="font-weight:400; color:var(--sub);">(위 ③의 (다) 단추를 「열성형질」로 바꿔 표를 확인해 보자)</span></div>
+      <textarea placeholder="표에서 관찰한 것을 적어 보자."></textarea>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans"><span style="color:var(--sub); font-size:14px;">(교과서 기본 유전자형 기준)</span><br>
+      아버지(X<sup>d</sup>Y)는 d를 하나만 가져도 형질이 <b>발현</b>되고, 어머니(X<sup>D</sup>X<sup>d</sup>)는
+      우성 대립유전자 D가 있어 <b>발현되지 않는다</b>.
+      아들은 어머니에게서 받은 X염색체 하나로 발현이 결정되므로 X<sup>d</sup>를 받으면 발현되고,
+      딸은 아버지에게서 항상 X<sup>d</sup>를 받으므로 어머니에게서 X<sup>d</sup>를 받으면 발현된다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">3. 이 실험에서 알 수 있는 <b>상염색체 유전</b>과 <b>성염색체 유전</b> 양상의 차이를 설명해 보자.</div>
+      <textarea placeholder="(가)·(나)와 (다)의 차이를 비교해 보자."></textarea>
+      <button class="btn ghost" onclick="toggleAns(this)">모범답안 보기</button>
+      <div class="ans">상염색체에 있는 (가)·(나)는 암수 모두 대립유전자를 <b>한 쌍</b>씩 가지므로
+      성별과 관계없이 같은 원리로 유전되고, 형질이 나타나는 빈도도 이론적으로 성별에 따라 같다.
+      성염색체(X)에 있는 (다)는 아들이 대립유전자를 <b>하나만</b> 가지므로
+      형질이 나타나는 빈도가 <b>성별에 따라 다르다</b>.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">💡 더 해보기 — 이 부모 사이에서 자녀 100명이 태어난다면?</div>
+      <button class="btn" onclick="runSim()">가상 자녀 100명 시뮬레이션</button>
+      <div id="simOut">
+        <table class="rec">
+          <thead>
+            <tr><th>구분</th><th>인원</th><th>(가) 발현</th><th>(다) 발현</th></tr>
+          </thead>
+          <tbody id="simBody"></tbody>
+        </table>
+        <div class="note">상염색체 형질 (가)의 발현 비율은 딸·아들이 비슷하지만,
+        성염색체 형질 <b>(다)의 발현 비율은 성별에 따라 다르게</b> 나타난다.
+        (현재 우성/열성 설정 기준 · 누를 때마다 새로 뽑는다)</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+  </footer>
+
+</div>
+
+<script>
+'use strict';
+// ── 부모 유전자형 (기본값 = 교과서 18쪽 표) ──
+// da: 어머니 = X염색체 대립유전자 2개(예 'Dd'), 아버지 = X염색체 대립유전자 1개('D'|'d')
+var DEFAULT_PARENTS = { m:{ ga:'Aa', na:'Bb', da:'Dd' }, d:{ ga:'Aa', na:'Bb', da:'d' } };
+var parents = JSON.parse(JSON.stringify(DEFAULT_PARENTS));
+
+var CUPS = {};
+function rebuildCups(){
+  CUPS = {
+    m: { red:parents.m.ga.split(''), blue:parents.m.na.split(''), yellow:parents.m.da.split('') },
+    d: { red:parents.d.ga.split(''), blue:parents.d.na.split(''), yellow:['X'+parents.d.da, 'Y'] }
+  };
+}
+var ORDINAL = ['첫째','둘째','셋째','넷째','다섯째','여섯째'];
+var MAX_KIDS = 6, GOAL_KIDS = 3;
+
+var cur = {};        // 이번 아이의 뽑기 결과
+var children = [];   // 기록된 아이들
+var modes = { ga:'dom', na:'rec', da:'dom' };  // 정리하기 1의 기본 설정
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+// ── 막대 뽑기 ──
+function draw(who, color){
+  var key = who + '_' + color;
+  if (cur[key] !== undefined) return;
+  if (children.length >= MAX_KIDS) return;
+  var allele = pick(CUPS[who][color]);
+  cur[key] = allele;
+  var slot = document.getElementById('s_' + key);
+  var disp = allele;
+  if (color === 'yellow') {
+    if (who === 'm') disp = 'X<sup>' + allele + '</sup>';
+    else disp = (allele === 'Y') ? 'Y' : 'X<sup>' + allele.slice(1) + '</sup>';
+  }
+  slot.firstElementChild.innerHTML = disp;
+  slot.classList.add('drawn');
+  checkDone();
+}
+
+function checkDone(){
+  var keys = ['m_red','m_blue','m_yellow','d_red','d_blue','d_yellow'];
+  if (!keys.every(function(k){ return cur[k] !== undefined; })) return;
+  var c = makeChild(cur);
+  var box = document.getElementById('childResult');
+  box.innerHTML =
+    '<div class="birth-emoji">' + (c.sex==='딸' ? '👧' : '👦') + '</div>' +
+    '<div class="birth-title">' + c.sex + '이 태어났다!</div>' +
+    '<div class="birth-geno">(가) <b>' + c.ga + '</b> &nbsp;·&nbsp; (나) <b>' + c.na + '</b> &nbsp;·&nbsp; (다) <b>' + daHTML(c) + '</b></div>';
+  box.style.display = 'block';
+  box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+  burst(box);
+  document.getElementById('btnRecord').disabled = false;
+}
+
+// 탄생 색종이 효과 (가볍게 10조각, 끝나면 제거)
+function burst(box){
+  var em = ['🎉','✨','🎊','⭐'];
+  for (var i=0; i<10; i++){
+    var s = document.createElement('span');
+    s.className = 'confetti';
+    s.textContent = em[i % em.length];
+    s.style.left = (6 + Math.random()*88) + '%';
+    s.style.animationDelay = (Math.random()*0.25) + 's';
+    s.style.fontSize = (14 + Math.random()*14) + 'px';
+    box.appendChild(s);
+    setTimeout((function(el){ return function(){ el.remove(); }; })(s), 1800);
+  }
+}
+
+function makeChild(cu){
+  var sortPair = function(a,b){ return (a < b) ? a+b : b+a; };  // 대문자 앞으로 (Aa)
+  var c = {
+    ga: sortPair(cu.m_red, cu.d_red),
+    na: sortPair(cu.m_blue, cu.d_blue),
+    momX: cu.m_yellow,                       // 'D' | 'd'
+    sex: (cu.d_yellow === 'Y') ? '아들' : '딸'
+  };
+  c.daAlleles = (c.sex === '딸') ? [c.momX, cu.d_yellow.slice(1)] : [c.momX];  // 딸은 아버지 X 포함
+  return c;
+}
+
+function daHTML(c){
+  if (c.sex === '딸') {
+    var a = c.daAlleles.slice().sort();   // 'D'가 'd'보다 앞 (대문자 먼저)
+    return 'X<sup>' + a[0] + '</sup>X<sup>' + a[1] + '</sup>';
+  }
+  return 'X<sup>' + c.momX + '</sup>Y';
+}
+function momDaHTML(){
+  var a = parents.m.da.split('').sort();
+  return 'X<sup>' + a[0] + '</sup>X<sup>' + a[1] + '</sup>';
+}
+function dadDaHTML(){ return 'X<sup>' + parents.d.da + '</sup>Y'; }
+
+// ── 부모 유전자형 표시 갱신 (규칙 표 + 컵 카드) ──
+function renderParents(){
+  document.getElementById('rule_m_ga').textContent = parents.m.ga.split('').join(' ');
+  document.getElementById('rule_d_ga').textContent = parents.d.ga.split('').join(' ');
+  document.getElementById('rule_m_na').textContent = parents.m.na.split('').join(' ');
+  document.getElementById('rule_d_na').textContent = parents.d.na.split('').join(' ');
+  document.getElementById('rule_m_da').innerHTML = momDaHTML().replace('</sup>X', '</sup> X');
+  document.getElementById('rule_d_da').innerHTML = 'X<sup>' + parents.d.da + '</sup> Y';
+  document.getElementById('pgeno_m').innerHTML = parents.m.ga + ' · ' + parents.m.na + ' · ' + momDaHTML();
+  document.getElementById('pgeno_d').innerHTML = parents.d.ga + ' · ' + parents.d.na + ' · ' + dadDaHTML();
+}
+
+// ── 유전자형 변경 적용 (뽑기·기록은 처음부터) ──
+function applyGeno(){
+  parents.m.ga = document.getElementById('geno_m_ga').value;
+  parents.m.na = document.getElementById('geno_m_na').value;
+  parents.m.da = document.getElementById('geno_m_da').value;
+  parents.d.ga = document.getElementById('geno_d_ga').value;
+  parents.d.na = document.getElementById('geno_d_na').value;
+  parents.d.da = document.getElementById('geno_d_da').value;
+  rebuildCups();
+  resetFamily();
+}
+function resetGeno(){
+  document.getElementById('geno_m_ga').value = DEFAULT_PARENTS.m.ga;
+  document.getElementById('geno_m_na').value = DEFAULT_PARENTS.m.na;
+  document.getElementById('geno_m_da').value = DEFAULT_PARENTS.m.da;
+  document.getElementById('geno_d_ga').value = DEFAULT_PARENTS.d.ga;
+  document.getElementById('geno_d_na').value = DEFAULT_PARENTS.d.na;
+  document.getElementById('geno_d_da').value = DEFAULT_PARENTS.d.da;
+  applyGeno();
+}
+
+// ── 가족 초기화 (뽑기·기록·정리하기 잠금) ──
+function resetFamily(){
+  cur = {}; children = [];
+  document.getElementById('progress').textContent = '기록한 아이 0 / ' + GOAL_KIDS;
+  document.getElementById('childLabel').textContent = ORDINAL[0];
+  document.getElementById('childResult').style.display = 'none';
+  document.getElementById('btnRecord').disabled = true;
+  document.getElementById('secWrapup').style.display = 'none';
+  document.getElementById('simOut').style.display = 'none';
+  document.querySelectorAll('.slot').forEach(function(s){
+    s.disabled = false;
+    s.firstElementChild.textContent = '?';
+    s.classList.remove('drawn');
+  });
+  renderParents();
+  renderTable();
+}
+
+// ── 기록 ──
+function recordChild(){
+  children.push(makeChild(cur));
+  cur = {};
+  document.getElementById('btnRecord').disabled = true;
+  document.getElementById('childResult').style.display = 'none';
+  ['m_red','m_blue','m_yellow','d_red','d_blue','d_yellow'].forEach(function(k){
+    var s = document.getElementById('s_' + k);
+    s.firstElementChild.textContent = '?';
+    s.classList.remove('drawn');
+  });
+  var n = children.length;
+  document.getElementById('progress').textContent =
+    '기록한 아이 ' + Math.min(n, GOAL_KIDS) + ' / ' + GOAL_KIDS + (n > GOAL_KIDS ? ' +' + (n-GOAL_KIDS) : '');
+  if (n >= GOAL_KIDS) document.getElementById('secWrapup').style.display = 'block';
+  if (n >= MAX_KIDS) {
+    document.getElementById('childLabel').textContent = '끝';
+    document.querySelectorAll('.slot').forEach(function(s){ s.disabled = true; });
+  } else {
+    document.getElementById('childLabel').textContent = ORDINAL[n];
+  }
+  renderTable();
+}
+
+// ── 발현 판정 ──
+function expressed(alleles, upper, mode){
+  var hasDom = alleles.indexOf(upper) >= 0;
+  return (mode === 'dom') ? hasDom : !hasDom;
+}
+function exprCell(list){
+  var on = list.filter(function(x){ return x.on; }).map(function(x){ return x.name; });
+  return on.length ? '<td class="on">' + on.join(', ') + ' 발현</td>' : '<td class="off">없음</td>';
+}
+function rowExpr(gaAll, naAll, daAll){
+  return exprCell([
+    { name:'(가)', on: expressed(gaAll, 'A', modes.ga) },
+    { name:'(나)', on: expressed(naAll, 'B', modes.na) },
+    { name:'(다)', on: expressed(daAll, 'D', modes.da) }
+  ]);
+}
+
+function renderTable(){
+  var html = '';
+  html += '<tr class="parentRow"><td><b>아버지</b></td><td>' + parents.d.ga + '</td><td>' + parents.d.na + '</td><td>' + dadDaHTML() + '</td><td>남</td>'
+        + rowExpr(parents.d.ga.split(''), parents.d.na.split(''), [parents.d.da]) + '</tr>';
+  html += '<tr class="parentRow"><td><b>어머니</b></td><td>' + parents.m.ga + '</td><td>' + parents.m.na + '</td><td>' + momDaHTML() + '</td><td>여</td>'
+        + rowExpr(parents.m.ga.split(''), parents.m.na.split(''), parents.m.da.split('')) + '</tr>';
+  children.forEach(function(c, i){
+    html += '<tr><td><b>' + ORDINAL[i] + '</b></td><td>' + c.ga + '</td><td>' + c.na + '</td><td>' + daHTML(c) + '</td>'
+          + '<td>' + c.sex + '</td>' + rowExpr(c.ga.split(''), c.na.split(''), c.daAlleles) + '</tr>';
+  });
+  document.getElementById('recBody').innerHTML = html;
+}
+
+function setMode(trait, mode){
+  modes[trait] = mode;
+  document.getElementById('mode_' + trait + '_dom').classList.toggle('on', mode==='dom');
+  document.getElementById('mode_' + trait + '_rec').classList.toggle('on', mode==='rec');
+  renderTable();
+  var so = document.getElementById('simOut');
+  if (so.style.display === 'block') runSim();
+}
+
+// ── 정리하기 ──
+function toggleAns(btn){
+  var ans = btn.nextElementSibling;
+  var open = ans.style.display === 'block';
+  ans.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '모범답안 보기' : '모범답안 닫기';
+}
+
+function runSim(){
+  var N = 100, stat = { '딸':{n:0, ga:0, da:0}, '아들':{n:0, ga:0, da:0} };
+  for (var i=0; i<N; i++){
+    var cu = {};
+    ['m','d'].forEach(function(w){
+      ['red','blue','yellow'].forEach(function(col){ cu[w+'_'+col] = pick(CUPS[w][col]); });
+    });
+    var c = makeChild(cu), s = stat[c.sex];
+    s.n++;
+    if (expressed(c.ga.split(''), 'A', modes.ga)) s.ga++;
+    if (expressed(c.daAlleles,   'D', modes.da)) s.da++;
+  }
+  var html = '';
+  ['딸','아들'].forEach(function(sex){
+    var s = stat[sex], pct = function(k){ return s.n ? Math.round(100*k/s.n) + '%' : '-'; };
+    html += '<tr><td><b>' + (sex==='딸' ? '👧 딸' : '👦 아들') + '</b></td><td>' + s.n + '명</td>'
+          + '<td>' + s.ga + '명 (' + pct(s.ga) + ')</td>'
+          + '<td>' + s.da + '명 (' + pct(s.da) + ')</td></tr>';
+  });
+  document.getElementById('simBody').innerHTML = html;
+  document.getElementById('simOut').style.display = 'block';
+}
+
+// ── 다시 하기 (부모 유전자형도 교과서 기본값으로) ──
+function resetAll(){
+  modes = { ga:'dom', na:'rec', da:'dom' };
+  ['ga','na','da'].forEach(function(t){
+    document.getElementById('mode_'+t+'_dom').classList.toggle('on', modes[t]==='dom');
+    document.getElementById('mode_'+t+'_rec').classList.toggle('on', modes[t]==='rec');
+  });
+  resetGeno();   // 선택폼 복원 → applyGeno → 컵 재구성 + 가족 초기화 + 화면 갱신
+  document.querySelectorAll('.q textarea').forEach(function(t){ t.value=''; });
+  document.querySelectorAll('.q .ans').forEach(function(a){ a.style.display='none'; });
+  document.querySelectorAll('.q .btn.ghost').forEach(function(b){ b.textContent='모범답안 보기'; });
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+rebuildCups();
+renderParents();
+renderTable();
+</script>
+</body>
+</html>

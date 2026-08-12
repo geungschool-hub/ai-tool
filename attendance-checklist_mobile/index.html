@@ -638,6 +638,7 @@ body.mode-subject > .bottom-nav { display: none !important; }
 
 /* ── 출결 현황 뷰 ── */
 #subj-view-summary { display: none; }
+#subj-view-settings { display: none; }
 .summary-cls-section {
   background: white; border-radius: 14px;
   margin-bottom: 12px; overflow: hidden;
@@ -1154,8 +1155,9 @@ body.mode-subject > .bottom-nav { display: none !important; }
 
   <!-- 탭 바 -->
   <div class="subj-tab-bar">
-    <button class="subj-tab active" id="subj-tab-daily"   onclick="switchSubjTab('daily')">일일 체크</button>
-    <button class="subj-tab"        id="subj-tab-summary" onclick="switchSubjTab('summary')">출결 현황</button>
+    <button class="subj-tab active" id="subj-tab-daily"    onclick="switchSubjTab('daily')">일일 체크</button>
+    <button class="subj-tab"        id="subj-tab-summary"  onclick="switchSubjTab('summary')">출결 현황</button>
+    <button class="subj-tab"        id="subj-tab-settings" onclick="switchSubjTab('settings')">⚙ 설정</button>
   </div>
 
   <!-- 반 목록 뷰 -->
@@ -1231,6 +1233,40 @@ body.mode-subject > .bottom-nav { display: none !important; }
     <div class="subj-content" id="subj-summary-content"></div>
   </div>
 
+  <!-- 설정 뷰 -->
+  <div id="subj-view-settings">
+    <div class="subj-content">
+
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">화면 이동</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn ghost full" onclick="goHomeroomFromSubject()" style="color:var(--navy);border-color:#B8C6E0">🏫 담임 출결로 전환</button>
+          <button class="btn ghost full" onclick="backToLanding()">🏠 시작 화면으로</button>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">상단 버튼 위치 조정</div>
+        <p style="font-size:12px;color:#555;line-height:1.8;margin-bottom:12px">위쪽 버튼(⌂ 등)이 카메라 구멍이나 상태 표시줄에 가려지는 기종에서, 상단 여백을 늘려 버튼을 아래로 내릴 수 있습니다. 담임·교과 화면에 모두 적용됩니다.</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px">
+          <button class="btn ghost" id="top-offset-down-s" onclick="adjustTopOffset(-1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 줄이기">−</button>
+          <span id="top-offset-val-s" style="font-size:20px;font-weight:800;color:var(--green);min-width:64px;text-align:center">0px</span>
+          <button class="btn ghost" id="top-offset-up-s" onclick="adjustTopOffset(1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 늘리기">＋</button>
+        </div>
+        <button class="btn ghost full" onclick="resetTopOffset()" style="font-size:13px">기본값으로 되돌리기</button>
+      </div>
+
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">교과 출결 데이터 백업</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn ghost full" onclick="exportSubjBackup()">📤 JSON 내보내기</button>
+          <label class="btn ghost full" style="cursor:pointer;position:relative">📥 JSON 불러오기<input type="file" accept=".json,application/json" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="importSubjBackup(this)"></label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- 반 설정 모달 -->
   <div id="subj-modal-overlay" onclick="if(event.target===this)closeClassModal()">
     <div class="subj-modal">
@@ -1242,16 +1278,6 @@ body.mode-subject > .bottom-nav { display: none !important; }
       <div class="subj-modal-btns">
         <button onclick="closeClassModal()" style="flex:1;padding:13px;border:1.5px solid var(--line);border-radius:10px;background:white;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
         <button onclick="saveClassModal()" style="flex:1;padding:13px;border:none;border-radius:10px;background:var(--green);color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">저장</button>
-      </div>
-    </div>
-  </div>
-
-  <div style="padding:0 16px 4px">
-    <div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)">
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">교과 출결 데이터 백업</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn ghost full" onclick="exportSubjBackup()">📤 JSON 내보내기</button>
-        <label class="btn ghost full" style="cursor:pointer;position:relative">📥 JSON 불러오기<input type="file" accept=".json,application/json" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="importSubjBackup(this)"></label>
       </div>
     </div>
   </div>
@@ -3099,13 +3125,15 @@ function resetTopOffset() {
 }
 function applyTopOffset(v) {
   document.documentElement.style.setProperty('--top-offset', v + 'px');
-  const val = document.getElementById('top-offset-val');
-  if (val) val.textContent = v + 'px';
+  ['', '-s'].forEach(sfx => { // '' = 담임 데이터 탭, '-s' = 교과 설정 탭
+    const val = document.getElementById('top-offset-val' + sfx);
+    if (val) val.textContent = v + 'px';
+    const dn = document.getElementById('top-offset-down' + sfx), up = document.getElementById('top-offset-up' + sfx);
+    if (dn) dn.disabled = v === 0;
+    if (up) up.disabled = v === TOP_OFFSET_MAX;
+  });
   const badge = document.getElementById('top-offset-badge');
   if (badge) badge.textContent = v > 0 ? `(+${v}px)` : '';
-  const dn = document.getElementById('top-offset-down'), up = document.getElementById('top-offset-up');
-  if (dn) dn.disabled = v === 0;
-  if (up) up.disabled = v === TOP_OFFSET_MAX;
 }
 function toggleTopOffsetCard() {
   const body  = document.getElementById('top-offset-card-body');
@@ -3179,11 +3207,17 @@ function enterMode(mode) {
 function backToLanding() {
   localStorage.removeItem('att_mode');
   document.body.className = '';
-  document.getElementById('subj-view-classes').style.display  = '';
-  document.getElementById('subj-view-students').style.display = 'none';
-  document.getElementById('subj-view-summary').style.display  = 'none';
+  showSubjView('classes');
+  _setSubjTabActive('daily');
   subjCurrentTab = 'daily';
   subjClassId    = null;
+}
+
+// 교과 설정 탭 → 담임 출결로 바로 전환 (상단 ⌂이 가려지는 기종 대비)
+function goHomeroomFromSubject() {
+  backToLanding();
+  enterMode('homeroom');
+  window.scrollTo(0, 0);
 }
 
 // ── 교과 출결 데이터 ─────────────────────────────────────────────
@@ -3230,15 +3264,21 @@ function _subjIsWeekend(str) {
 // ── 탭 전환 ─────────────────────────────────────────────────────
 let subjCurrentTab = 'daily';
 
+function _setSubjTabActive(tab) {
+  document.getElementById('subj-tab-daily').classList.toggle('active',    tab === 'daily');
+  document.getElementById('subj-tab-summary').classList.toggle('active',  tab === 'summary');
+  document.getElementById('subj-tab-settings').classList.toggle('active', tab === 'settings');
+}
 function switchSubjTab(tab) {
   subjCurrentTab = tab;
-  document.getElementById('subj-tab-daily').classList.toggle('active',   tab === 'daily');
-  document.getElementById('subj-tab-summary').classList.toggle('active', tab === 'summary');
+  _setSubjTabActive(tab);
   if (tab === 'daily') {
     showSubjView(subjClassId ? 'students' : 'classes');
-  } else {
+  } else if (tab === 'summary') {
     showSubjView('summary');
     renderSubjSummary();
+  } else {
+    showSubjView('settings');
   }
 }
 
@@ -3322,8 +3362,7 @@ function goToDailyCheck(clsId, dateStr) {
   subjDate    = dateStr;
   subjClassId = clsId;
   _setSortMode(false);
-  document.getElementById('subj-tab-daily').classList.add('active');
-  document.getElementById('subj-tab-summary').classList.remove('active');
+  _setSubjTabActive('daily');
   subjCurrentTab = 'daily';
   showSubjView('students');
   renderSubjStudents();
@@ -3406,6 +3445,7 @@ function initSubjApp() {
   subjDate = subjTodayStr();
   document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
   subjCurrentTab = 'daily';
+  _setSubjTabActive('daily');
   showSubjView('classes');
   renderSubjClassList();
 }
@@ -3415,6 +3455,7 @@ function showSubjView(view) {
   document.getElementById('subj-view-classes').style.display  = (view === 'classes')  ? '' : 'none';
   document.getElementById('subj-view-students').style.display = (view === 'students') ? '' : 'none';
   document.getElementById('subj-view-summary').style.display  = (view === 'summary')  ? 'block' : 'none';
+  document.getElementById('subj-view-settings').style.display = (view === 'settings') ? 'block' : 'none';
 }
 
 // ── 반 목록 뷰 ───────────────────────────────────────────────────
@@ -3514,8 +3555,7 @@ function subjClassBack() {
   subjEditMode = false;
   showSubjView('classes');
   renderSubjClassList();
-  document.getElementById('subj-tab-daily').classList.add('active');
-  document.getElementById('subj-tab-summary').classList.remove('active');
+  _setSubjTabActive('daily');
   subjCurrentTab = 'daily';
 }
 function subjClassChangeDate(delta) { subjChangeDate(delta); }

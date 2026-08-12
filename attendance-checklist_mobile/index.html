@@ -19,13 +19,14 @@
   --red: #C0392B; --amber: #E67E22;
   --bg: #E8EBF3; --card: #FFF; --text: #1A1A2E; --muted: #6B7280; --line: #E2E5EC;
   --nav-h: 62px;
+  --top-offset: 0px; /* 기기별 상단 UI 보정 (데이터 탭 > 화면 설정) */
   --sh: 0 1px 3px rgba(0,0,0,.07), 0 2px 6px rgba(0,0,0,.04);
 }
 html { height: 100%; }
 body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
 
 /* ── 헤더 ── */
-.app-header { position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #1B3A6B 0%, #2A52A0 100%); color: white; height: 54px; display: flex; align-items: center; padding: 0 16px; gap: 10px; box-shadow: 0 2px 10px rgba(27,58,107,.3); }
+.app-header { position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #1B3A6B 0%, #2A52A0 100%); color: white; height: calc(54px + var(--top-offset)); display: flex; align-items: center; padding: var(--top-offset) 16px 0; gap: 10px; box-shadow: 0 2px 10px rgba(27,58,107,.3); }
 .app-header h1 { font-size: 16px; font-weight: 700; flex: 1; letter-spacing: -.2px; }
 .hd-badge { font-size: 11px; background: rgba(255,255,255,.18); padding: 3px 10px; border-radius: 12px; font-weight: 600; }
 .zoom-btn { background: rgba(255,255,255,.18); border: none; color: white; width: 30px; height: 30px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -259,7 +260,7 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
 .naeis-row:active { background: #FFE8C8; }
 .naeis-date { font-weight: 700; color: #7A3000; }
 .naeis-modal-ft { padding: 12px 18px; border-top: 1px solid var(--line); flex-shrink: 0; }
-.sticky-banners { position: sticky; top: 54px; z-index: 99; }
+.sticky-banners { position: sticky; top: calc(54px + var(--top-offset)); z-index: 99; }
 .naeis-banner { background: #FFF3E0; color: #7A3000; border-bottom: 2px solid var(--amber); padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; -webkit-tap-highlight-color: transparent; }
 .naeis-banner:active { opacity: .8; }
 .naeis-banner.hidden { display: none; }
@@ -492,8 +493,8 @@ body.mode-subject > .bottom-nav { display: none !important; }
 .subj-header {
   position: sticky; top: 0; z-index: 100;
   background: linear-gradient(135deg, #1A5C3A 0%, #2E8A55 100%);
-  color: white; height: 54px;
-  display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  color: white; height: calc(54px + var(--top-offset));
+  display: flex; align-items: center; padding: var(--top-offset) 12px 0; gap: 8px;
   box-shadow: 0 2px 10px rgba(26,92,58,.35);
 }
 .subj-header h1 { font-size: 16px; font-weight: 700; flex: 1; }
@@ -620,7 +621,7 @@ body.mode-subject > .bottom-nav { display: none !important; }
 .subj-tab-bar {
   display: flex; background: white;
   border-bottom: 1px solid var(--line);
-  position: sticky; top: 54px; z-index: 90;
+  position: sticky; top: calc(54px + var(--top-offset)); z-index: 90;
 }
 .subj-tab {
   flex: 1; padding: 12px 0; text-align: center;
@@ -1020,6 +1021,26 @@ body.mode-subject > .bottom-nav { display: none !important; }
           </div>
           <button class="btn primary full" onclick="addHoliday()" style="margin-top:8px">추가</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="sec-hd">화면 설정</p>
+
+  <div class="card">
+    <div class="card-hd" onclick="toggleTopOffsetCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
+      <span>상단 버튼 위치 조정 <span id="top-offset-badge" style="font-weight:400;font-size:12px;opacity:.7"></span></span>
+      <span id="top-offset-card-arrow" style="font-size:12px;opacity:.8">▶</span>
+    </div>
+    <div id="top-offset-card-body" style="display:none">
+      <div class="card-bd">
+        <p style="font-size:12px;color:#555;line-height:1.8">위쪽 버튼(⌂ · 가− · 가+)이 카메라 구멍이나 상태 표시줄에 가려지는 기종에서, 상단 여백을 늘려 버튼을 아래로 내릴 수 있습니다.<br>담임·교과 화면에 모두 적용되며, 바로 위 파란 헤더에서 즉시 확인됩니다.</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+          <button class="btn ghost" id="top-offset-down" onclick="adjustTopOffset(-1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 줄이기">−</button>
+          <span id="top-offset-val" style="font-size:20px;font-weight:800;color:var(--navy);min-width:64px;text-align:center">0px</span>
+          <button class="btn ghost" id="top-offset-up" onclick="adjustTopOffset(1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 늘리기">＋</button>
+        </div>
+        <button class="btn ghost full" onclick="resetTopOffset()" style="font-size:13px">기본값으로 되돌리기</button>
       </div>
     </div>
   </div>
@@ -3059,6 +3080,41 @@ function applyZoom() {
   document.getElementById('zoom-in').disabled  = _zoomIdx === ZOOM_LEVELS.length - 1;
 }
 
+// ===== 상단 버튼 위치 조정 (기기별 UI 보정) =====
+const TOP_OFFSET_STEP = 5, TOP_OFFSET_MAX = 60;
+function getTopOffset() {
+  let v = parseInt(localStorage.getItem('attendance_top_offset') || '0', 10);
+  if (isNaN(v) || v < 0) v = 0;
+  return Math.min(v, TOP_OFFSET_MAX);
+}
+function initTopOffset() { applyTopOffset(getTopOffset()); }
+function adjustTopOffset(dir) {
+  const v = Math.max(0, Math.min(TOP_OFFSET_MAX, getTopOffset() + dir * TOP_OFFSET_STEP));
+  localStorage.setItem('attendance_top_offset', v);
+  applyTopOffset(v);
+}
+function resetTopOffset() {
+  localStorage.setItem('attendance_top_offset', 0);
+  applyTopOffset(0);
+}
+function applyTopOffset(v) {
+  document.documentElement.style.setProperty('--top-offset', v + 'px');
+  const val = document.getElementById('top-offset-val');
+  if (val) val.textContent = v + 'px';
+  const badge = document.getElementById('top-offset-badge');
+  if (badge) badge.textContent = v > 0 ? `(+${v}px)` : '';
+  const dn = document.getElementById('top-offset-down'), up = document.getElementById('top-offset-up');
+  if (dn) dn.disabled = v === 0;
+  if (up) up.disabled = v === TOP_OFFSET_MAX;
+}
+function toggleTopOffsetCard() {
+  const body  = document.getElementById('top-offset-card-body');
+  const arrow = document.getElementById('top-offset-card-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  arrow.textContent  = open ? '▼' : '▶';
+}
+
 // ===== 공휴일 자동 업데이트 =====
 async function fetchSchoolYearHolidays(yr) {
   const [r1, r2] = await Promise.all([
@@ -3773,6 +3829,7 @@ function saveLandingLabel(mode) {
 })();
 
 // ── 앱 시작 (모드 분기) ──────────────────────────────────────────
+initTopOffset(); // 상단 여백은 모드와 무관하게 항상 적용 (교과 모드로 바로 시작해도)
 const _savedMode = localStorage.getItem('att_mode');
 if (_savedMode === 'homeroom') {
   _appInitialized = true;

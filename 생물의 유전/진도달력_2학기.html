@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>생물의 유전 — 2학기 진도달력 (2026)</title>
+<style>
+:root{
+  --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC;
+  --blue-dark:#1255A0; --green-dark:#2A7A38;
+  --red-accent:#C0392B; --amber:#E67E22;
+  --text-main:#1A1A1A; --text-light:#555; --line:#BBBBBB;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:'Malgun Gothic','Noto Sans KR',sans-serif; background:#f0f2f5; color:var(--text-main); padding:16px;}
+.wrap{max-width:1280px; margin:0 auto;}
+
+/* ── 상단 바 ── */
+.topbar{background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 18px; margin-bottom:12px;
+  display:flex; flex-wrap:wrap; gap:12px; align-items:center;}
+.topbar h1{font-size:19px; color:var(--blue-dark);}
+.topbar .sub{font-size:12px; color:var(--text-light);}
+.spacer{flex:1;}
+button{border:1px solid var(--line); background:#fff; border-radius:8px; padding:9px 14px; font-size:13px;
+  cursor:pointer; min-height:44px;}
+button:hover{background:#f2f7fc; border-color:var(--blue-dark); color:var(--blue-dark);}
+button.danger:hover{border-color:var(--red-accent); color:var(--red-accent); background:#fdf1ef;}
+
+/* 시수 요약 */
+.sumbox{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.sumchip{border-radius:8px; padding:6px 10px; font-size:12.5px; border:1.5px solid;}
+.sumchip b{font-size:13.5px;}
+.sumchip.B{border-color:var(--blue-dark); color:var(--blue-dark); background:#eef5fc;}
+.sumchip.C{border-color:var(--green-dark); color:var(--green-dark); background:#f0faf2;}
+.sumchip.D{border-color:var(--amber); color:#b05e10; background:#fdf3e7;}
+.sumnote{font-size:11px; color:var(--text-light);}
+
+/* ── 범례 ── */
+.legend{display:flex; flex-wrap:wrap; gap:10px; font-size:11.5px; color:var(--text-light);
+  margin:0 2px 10px; align-items:center;}
+.legend .bdg{transform:none;}
+
+/* ── 달력 표 ── */
+table{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); table-layout:fixed;}
+th{background:var(--blue-pastel); border:1px solid var(--line); padding:7px 4px; font-size:13px; color:var(--blue-dark);}
+th.wk{width:112px;} th.plan{width:210px;}
+td{border:1px solid var(--line); vertical-align:top; font-size:12px;}
+tr.month-row td{background:var(--blue-dark); color:#fff; font-weight:700; font-size:13px; padding:5px 10px; letter-spacing:2px;}
+
+/* 주차 칸 */
+td.wk{background:#FAFAFA; padding:7px 6px; text-align:center;}
+td.wk .wno{font-weight:700; font-size:13.5px; color:var(--blue-dark);}
+td.wk .wrange{font-size:10.5px; color:var(--text-light); margin:2px 0 6px;}
+td.wk .whrs{display:flex; gap:3px; justify-content:center; flex-wrap:wrap;}
+td.wk .whrs span{font-size:10.5px; border-radius:4px; padding:1px 5px; border:1px solid;}
+td.wk .whrs .hB{color:var(--blue-dark); border-color:var(--blue-dark);}
+td.wk .whrs .hC{color:var(--green-dark); border-color:var(--green-dark);}
+td.wk .whrs .hD{color:#b05e10; border-color:var(--amber);}
+td.wk .whrs .h0{opacity:.35;}
+
+/* 진도 칸 */
+td.plan{padding:0; background:#fffdf5;}
+/* 날짜 칸 */
+td.day{padding:0; height:96px;}
+td.day.off{background:#f5f5f5;}
+.daytop{display:flex; align-items:center; gap:4px; padding:4px 6px 2px; flex-wrap:wrap;}
+.dnum{font-weight:700; font-size:12.5px; color:var(--text-main);}
+.off .dnum{color:#999;}
+.dnum.sun{color:var(--red-accent);}
+
+/* 배지 */
+.bdg{font-size:10px; border-radius:4px; padding:1px 5px; font-weight:700; white-space:nowrap;}
+.bdg.holiday{background:#fdecea; color:var(--red-accent);}
+.bdg.exam{background:var(--blue-dark); color:#fff;}
+.bdg.event{background:#fdf3e7; color:#b05e10;}
+.bdg.swap{background:#e5f4f2; color:#276e68; border:1px dashed #276e68;}
+.bdg.warn{background:var(--red-accent); color:#fff;}
+.bdg.info{background:#eee; color:#777;}
+
+/* 수업 칩 (클릭 토글) */
+.chips{display:flex; gap:3px; padding:0 6px 2px; flex-wrap:wrap;}
+.chip{font-size:10.5px; border-radius:5px; padding:2px 6px; font-weight:700; cursor:pointer;
+  border:1.5px solid; user-select:none; line-height:1.5;}
+.chip.B{background:#eef5fc; border-color:var(--blue-dark); color:var(--blue-dark);}
+.chip.C{background:#f0faf2; border-color:var(--green-dark); color:var(--green-dark);}
+.chip.D{background:#fdf3e7; border-color:var(--amber); color:#b05e10;}
+.chip.offchip{background:#f1f1f1 !important; border-color:#ccc !important; color:#aaa !important;
+  text-decoration:line-through; font-weight:400;}
+
+/* 편집 영역 */
+.ed{padding:5px 7px; min-height:20px; outline:none; line-height:1.5; word-break:break-all;
+  white-space:pre-wrap; cursor:text;}
+td.plan .ed{min-height:88px; font-size:12px;}
+td.day .ed{font-size:11px; color:#333;}
+.ed:focus{background:#fffbe6; box-shadow:inset 0 0 0 2px var(--amber);}
+.ed:empty::before{content:attr(data-ph); color:#c9c9c9; font-size:10.5px;}
+.edited{position:relative;}
+.edited::after{content:''; position:absolute; top:3px; right:3px; width:7px; height:7px;
+  border-radius:50%; background:var(--amber);}
+td.plan, td.day{position:relative;}
+.rstbtn{display:none; position:absolute; bottom:2px; right:2px; font-size:10px; min-height:0;
+  padding:1px 5px; border-radius:4px; background:#fff; color:var(--text-light);}
+.edited:hover .rstbtn{display:block;}
+
+@media print{
+  body{background:#fff; padding:0;}
+  .topbar button, .legend, .rstbtn{display:none !important;}
+  .topbar{border:none; padding:4px 0; margin-bottom:6px;}
+  td.day{height:auto; min-height:70px;}
+  .edited::after{display:none;}
+  table{font-size:10px;}
+  tr{page-break-inside:avoid;}
+  @page{size:A4 landscape; margin:8mm;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>🧬 생물의 유전 — 2학기 진도달력 <span style="font-weight:400;font-size:14px;">(2026)</span></h1>
+      <div class="sub">중간 9/30~10/7 (범위: <b>Ⅰ단원 p.12~53</b>) · 기말 12/7~11 (범위: <b>Ⅱ단원 + Ⅲ단원</b>) · 진도·메모 칸은 클릭해서 바로 수정 (자동 저장) · 수업 칩은 클릭하면 결손/복구 토글</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="sumbox" id="sumbox"></div>
+    <button onclick="doExport()">💾 내보내기</button>
+    <button onclick="fileIn.click()">📂 가져오기</button>
+    <button onclick="window.print()">🖨 인쇄</button>
+    <button class="danger" onclick="resetAll()">↺ 기본계획 복원</button>
+    <input type="file" id="fileIn" accept=".json" style="display:none" onchange="doImport(this)">
+  </div>
+
+  <div class="legend">
+    <span class="bdg holiday">휴일</span><span class="bdg exam">고사·평가</span>
+    <span class="bdg event">행사</span><span class="bdg swap">금요일 시간표</span>
+    <span class="bdg warn">수행평가 불가</span>
+    <span>│ 수업 칩: <span class="chip B" style="cursor:default">B 5·6</span> 월5·6+금2 ·
+    <span class="chip C" style="cursor:default">C 5</span> 목5+금3·4 ·
+    <span class="chip D" style="cursor:default">D 3·4</span> 화3·4+수5</span>
+    <span>│ 주황 점 = 기본계획에서 수정된 칸</span>
+  </div>
+
+  <table id="cal">
+    <thead><tr>
+      <th class="wk">주차 / 시수</th><th class="plan">주 진도 (수정 가능)</th>
+      <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+    </tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+'use strict';
+/* ═══════════ ① 고정 데이터 (학사일정.pdf → _진도계획_2학기.md 반영) ═══════════ */
+
+// 반별 시간표: 실효 요일(금요일 시간표 교체 반영) → [교시 표시, 시수]
+const TIMETABLE = {
+  B: {1:['5·6',2], 5:['2',1]},      // 월 5·6교시, 금 2교시
+  C: {4:['5',1],  5:['3·4',2]},     // 목 5교시,  금 3·4교시
+  D: {2:['3·4',2],3:['5',1]}        // 화 3·4교시, 수 5교시
+};
+const CLASS_ORDER = ['B','C','D'];
+
+// 금요일 시간표로 운영되는 날 (실효 요일 = 금)
+const FRIDAY_SWAP = ['2026-09-29','2026-12-29','2026-12-30'];
+
+// 학사일정 이벤트. noClass:true = 그날 교과수업 없음(칩 기본 꺼짐, 클릭으로 복구 가능)
+const EVENTS = {
+  '2026-08-10': [{t:'info',    l:'개학 전', noClass:true}],
+  '2026-08-11': [{t:'event',   l:'개학'}],
+  '2026-08-17': [{t:'holiday', l:'대체공휴일', noClass:true}],
+  '2026-08-28': [{t:'event',   l:'은행제', noClass:true}],
+  '2026-09-02': [{t:'exam',    l:'학력평가(1·2)', noClass:true}],
+  '2026-09-04': [{t:'exam',    l:'학업성취도 평가(표집)'},{t:'warn', l:'수행평가 불가'}],
+  '2026-09-24': [{t:'holiday', l:'추석연휴', noClass:true}],
+  '2026-09-25': [{t:'holiday', l:'추석', noClass:true}],
+  '2026-09-29': [{t:'swap',    l:'금요일 시간표'}],
+  '2026-09-30': [{t:'exam',    l:'중간고사①', noClass:true}],
+  '2026-10-01': [{t:'exam',    l:'중간고사②', noClass:true}],
+  '2026-10-02': [{t:'exam',    l:'중간고사③', noClass:true}],
+  '2026-10-05': [{t:'holiday', l:'대체공휴일', noClass:true}],
+  '2026-10-06': [{t:'exam',    l:'중간고사④', noClass:true}],
+  '2026-10-07': [{t:'exam',    l:'중간고사⑤', noClass:true}],
+  '2026-10-09': [{t:'holiday', l:'한글날', noClass:true}],
+  '2026-10-20': [{t:'exam',    l:'학력평가(1·2·3)', noClass:true}],
+  '2026-11-18': [{t:'event',   l:'수능 전 행사', noClass:true}],
+  '2026-11-19': [{t:'holiday', l:'수능', noClass:true}],
+  '2026-11-20': [{t:'holiday', l:'재량휴업일', noClass:true}],
+  '2026-11-24': [{t:'info',    l:'3학년 기말'}],
+  '2026-11-25': [{t:'info',    l:'3학년 기말'}],
+  '2026-11-26': [{t:'info',    l:'3학년 기말'}],
+  '2026-11-27': [{t:'info',    l:'3학년 기말'}],
+  '2026-12-07': [{t:'exam',    l:'기말고사①', noClass:true}],
+  '2026-12-08': [{t:'exam',    l:'기말고사②', noClass:true}],
+  '2026-12-09': [{t:'exam',    l:'기말고사③', noClass:true}],
+  '2026-12-10': [{t:'exam',    l:'기말고사④', noClass:true}],
+  '2026-12-11': [{t:'exam',    l:'기말고사⑤', noClass:true}],
+  '2026-12-25': [{t:'holiday', l:'성탄절', noClass:true}],
+  '2026-12-29': [{t:'swap',    l:'금요일 시간표'}],
+  '2026-12-30': [{t:'swap',    l:'금요일 시간표'}],
+  '2026-12-31': [{t:'event',   l:'방학식', noClass:true}]
+};
+
+// 주 진도 기본값 (키 = 그 주 월요일)
+// ★1주 = 실시 완료. 2주 이후는 계획.
+// ★2026-08-17 개정: 중간 범위를 **Ⅰ단원**으로 되돌리고(2-1은 전부 중간 이후),
+//   1-3에 **비분리·유전병 양상 가계도 연습 1h**를 신설. 비는 시간은 ⛓️복제 모의실험·가계도 심화·중간 대비로.
+//   ★DNA 추출 실험: C 9/10 · B 9/11 고정, D는 9/16(수)로 이동 — 세 반 모두 그 전에 1-4 완료.
+//   ★수행평가 2종은 **전부 중간 이후 · 각 1h**(교사 지시): 수행①=🧵중심원리 모의실험(2-1 완결 직후,
+//     D 10/28·C 10/29·B 10/30) · 수행②=생명윤리 논술(D 11/25·C 11/26·B 11/27 — ★기말 2주 전).
+//     중간 전에는 수행 없음. 기말 전주(17주)는 대비 전용 3h.
+//     세 반의 1h 수업일이 수·목·금이라 둘 다 3일 연속으로 끝난다.
+const WEEK_PLAN = {
+  '2026-08-10': 'OT + 1-1 유전의 기본 원리 ※여기까지 실시 완료\nD 1-1 완결(8/12) · C 1-1+🖥유전형질 모의실험+1-2 가계도(8/14)\nB OT 생략하고 1-1 바로(8/14)',
+  '2026-08-17': '1-2 사람의 유전(🌳가계도 포함) → 1-3 사람의 유전병\nD 8/18 🖥모의실험+1-2 / 8/19 1-3 ①\nC 8/20 1-2 마무리+1-3 ① / 8/21 1-3 ② + ★1-3⁺ 연습\nB 8/21 🖥모의실험+1-2 가계도(1h)',
+  '2026-08-24': '★1-3⁺ 비분리·유전병 양상 가계도 연습 (신설 1h) → 1-4 유전물질과 유전체\nB 8/24 1-2 마무리+1-3 ① · D 8/25 1-3 ②+★1-3⁺ / 8/26 1-4 ① · C 8/27 1-4 ①\n금 은행제 — B·C 결손',
+  '2026-08-31': '1-4 완결 → 1-5 DNA 복제\nB 8/31 1-3 ②+★1-3⁺ · D 9/1 1-4 마무리+1-5 ① · C 9/3 1-4 마무리\n★9/4 표집평가 결손 확정 (B −1h · C −2h)',
+  '2026-09-07': '1-5 DNA 복제 + ⛓️복제 모의실험 (D 9/8 · C 9/11 · B 9/14)\n🧪DNA 추출 실험 — C 9/10 · B 9/11 (D는 9/16)\nB 9/7 1-4(2h) · D 9/9 Ⅰ단원 개념 총정리',
+  '2026-09-14': '★Ⅰ단원 진도 완료 — 여기부터 정리·심화·중간 대비 (중간 전 수행평가 없음)\nB 9/14 1-5+⛓️복제 모의실험 / 9/18 개념 총정리\nD 9/15 🌳가계도 심화(2h) / 9/16 🧪DNA 추출 · C 9/17 개념 총정리 / 9/18 🌳가계도 심화(2h)',
+  '2026-09-21': '추석 주 — C 0h\nB 9/21 🌳가계도 심화 + 실전 가계도 문항(2h)\nD 9/22 중간 대비 실전 문제(2h) / 9/23 오답 정리·최종 점검',
+  '2026-09-28': '중간 대비 마무리\nB 9/28 실전 문제 / 9/29 오답 정리·최종 점검 · C 9/29 실전 문제+최종 점검(2h) · D 0h\n→ 9/30 중간고사 ★범위 = **Ⅰ단원** (p.12~53)',
+  '2026-10-05': '중간고사 주 · 10/8 중간 리뷰 — C만 1h (B·D는 다음 주 첫 시간)',
+  '2026-10-12': '2-1 중심원리 ① 전사 · ② 번역\n중간 리뷰(B·D 1h) 후 진입 · C는 이번 주 3h 모두 2-1',
+  '2026-10-19': '2-1 ③ 유전부호 해독 + 🧵protein-sim 연습 → 2-1 강의 완료\n★D 1h뿐(10/20 학평) — 그 1h를 연습에 씀 · B·C는 2-2 진입',
+  '2026-10-26': '📝**수행① 중심원리 모의실험** — D 10/28(수) · C 10/29(목) · B 10/30(금) **각 1h, 3일 연속**\n나머지 시간은 2-2 유전자발현 조절(원핵 오페론 위주)',
+  '2026-11-02': '2-2 완결 → 2-3 세포분화와 발생\n인류 복지 기여 사례(02-05) — 세특 재료',
+  '2026-11-09': '2-3 완결 + Ⅱ단원 마무리 → 3-1 생명공학기술의 발달\n★C는 3-1 완결 + 3-2 진입 + **수행② 사례 선정**까지 선행 (다음 주 0h)\n★D는 Ⅱ 마무리를 과제로 돌리고 3-1로 (1h 부족분)',
+  '2026-11-16': '3-2 생명공학기술의 활용 — ★📝**수행② 사례 선정**(교과서 p.102~115에서 각자 1개)\n수능 주(수·목·금 없음) — B·D 2h · C 0h',
+  '2026-11-23': '3-3 발달과 사회적 책임(LMO·생명윤리 쟁점) → 📝**수행② 생명윤리 논술**\n**D 11/25(수) · C 11/26(목) · B 11/27(금) — 각 1h, 3일 연속**',
+  '2026-11-30': '★기말 대비 3h (세 반 모두) — Ⅱ·Ⅲ 전 범위 정리·문제풀이\n수행이 다 끝나 있어 대비에만 쓴다\n→ 12/7 기말 ★범위 = Ⅱ단원 전체 + Ⅲ단원',
+  '2026-12-07': '기말고사 (범위: Ⅱ단원 + Ⅲ단원)',
+  '2026-12-14': '세특 보강 활동 ① — 주제 발표 등 (기말 후: B 9h · C 8h · D 6h)',
+  '2026-12-21': '세특 보강 활동 ② · ★D반 실질 종강 12/23(수)',
+  '2026-12-28': '마무리 — 12/29·30 금요일 시간표(B·C만 수업) · 12/31 방학식'
+};
+
+// 일별 메모 기본값
+const DAY_MEMO = {
+  '2026-09-04': '⚠ 평가일 — 수행평가 배치 금지',
+  '2026-10-08': '중간 리뷰 (C반 1h)'
+};
+
+const START = '2026-08-10', END = '2026-12-31';
+// 시수 요약 구간
+const TERMS = [
+  {name:'중간 전', from:'2026-08-10', to:'2026-09-29'},
+  {name:'중간~기말', from:'2026-10-08', to:'2026-12-04'},
+  {name:'기말 후', from:'2026-12-14', to:'2026-12-31'}
+];
+
+/* ═══════════ ② 저장/상태 ═══════════ */
+const LS_KEY = 'genePace2026';
+let store = {weeks:{}, days:{}, chips:{}};
+try{ const s = localStorage.getItem(LS_KEY); if(s) store = Object.assign({weeks:{},days:{},chips:{}}, JSON.parse(s)); }catch(e){}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store)); }catch(e){} }
+
+/* ═══════════ ③ 달력 유틸 ═══════════ */
+function d2s(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function s2d(s){ const p=s.split('-'); return new Date(+p[0], p[1]-1, +p[2]); }
+function effDow(key, d){ return FRIDAY_SWAP.includes(key) ? 5 : d.getDay(); }
+function dayEvents(key){ return EVENTS[key] || []; }
+function isNoClass(key){ return dayEvents(key).some(e=>e.noClass); }
+// 그날 반 cls 수업이 있나 → null(원래 없음) 또는 {label, hrs, on}
+function classOn(key, d, cls){
+  const slot = TIMETABLE[cls][effDow(key,d)];
+  if(!slot) return null;
+  const ov = store.chips[key+'_'+cls];
+  const on = (ov !== undefined) ? ov : !isNoClass(key);
+  return {label:slot[0], hrs:slot[1], on:on};
+}
+
+/* ═══════════ ④ 렌더링 ═══════════ */
+const MONTH_LABEL = {8:'8월', 9:'9월', 10:'10월', 11:'11월', 12:'12월'};
+function build(){
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  let monday = s2d(START), wno = 1, shownMonth = 0;
+  while(d2s(monday) <= END){
+    const mKey = d2s(monday);
+    // 그 주에 새 달이 시작되면 달 구분 행
+    for(let i=0;i<5;i++){
+      const d = new Date(monday); d.setDate(d.getDate()+i);
+      if(d2s(d) > END) break;
+      if(d.getMonth()+1 !== shownMonth && d.getDate() <= 7 || (shownMonth===0)){
+        if(d.getMonth()+1 !== shownMonth){
+          shownMonth = d.getMonth()+1;
+          const mr = document.createElement('tr'); mr.className='month-row';
+          mr.innerHTML = '<td colspan="7">'+MONTH_LABEL[shownMonth]+'</td>';
+          tbody.appendChild(mr);
+        }
+        break;
+      }
+    }
+    const tr = document.createElement('tr');
+    // 주차 칸
+    const fri = new Date(monday); fri.setDate(fri.getDate()+4);
+    const tdw = document.createElement('td'); tdw.className='wk';
+    tdw.innerHTML = '<div class="wno">'+wno+'주</div><div class="wrange">'
+      +(monday.getMonth()+1)+'/'+monday.getDate()+'~'+(fri.getMonth()+1)+'/'+fri.getDate()+'</div>'
+      +'<div class="whrs" id="wh_'+mKey+'"></div>';
+    tr.appendChild(tdw);
+    // 진도 칸
+    tr.appendChild(makeEditTd('plan', mKey, store.weeks[mKey], WEEK_PLAN[mKey]||'', '주 진도 입력'));
+    // 요일 칸
+    for(let i=0;i<5;i++){
+      const d = new Date(monday); d.setDate(d.getDate()+i);
+      const key = d2s(d);
+      if(key > END){ const e=document.createElement('td'); e.className='day off'; tr.appendChild(e); continue; }
+      tr.appendChild(makeDayTd(key, d));
+    }
+    tbody.appendChild(tr);
+    monday.setDate(monday.getDate()+7); wno++;
+  }
+  refreshHours();
+}
+
+function makeDayTd(key, d){
+  const td = document.createElement('td'); td.className='day';
+  const evs = dayEvents(key);
+  if(isNoClass(key)) td.classList.add('off');
+  let html = '<div class="daytop"><span class="dnum">'+(d.getMonth()+1)+'/'+d.getDate()+'</span>';
+  evs.forEach(e=>{ html += '<span class="bdg '+e.t+'">'+e.l+'</span>'; });
+  html += '</div><div class="chips">';
+  CLASS_ORDER.forEach(cls=>{
+    const c = classOn(key, d, cls);
+    if(c) html += '<span class="chip '+cls+(c.on?'':' offchip')+'" data-key="'+key+'" data-cls="'+cls+'">'
+      +cls+' '+c.label+'</span>';
+  });
+  html += '</div>';
+  td.innerHTML = html;
+  td.querySelectorAll('.chip').forEach(ch=>{
+    ch.addEventListener('click', ()=>toggleChip(ch.dataset.key, ch.dataset.cls));
+  });
+  td.appendChild(makeEditor('days', key, store.days[key], DAY_MEMO[key]||'', '메모'));
+  const cur = (store.days[key] !== undefined) ? store.days[key] : null;
+  if(cur !== null && cur !== (DAY_MEMO[key]||'')) markEdited(td, 'days', key);
+  return td;
+}
+
+function makeEditTd(cssCls, key, saved, def, ph){
+  const td = document.createElement('td'); td.className = cssCls;
+  td.appendChild(makeEditor('weeks', key, saved, def, ph));
+  if(saved !== undefined && saved !== def) markEdited(td, 'weeks', key);
+  return td;
+}
+
+function makeEditor(kind, key, saved, def, ph){
+  const div = document.createElement('div');
+  div.className = 'ed'; div.contentEditable = 'true';
+  div.dataset.ph = ph;
+  div.innerText = (saved !== undefined) ? saved : def;
+  div.addEventListener('input', ()=>{
+    const val = div.innerText.replace(/\n$/,'');
+    if(val === def){ delete store[kind][key]; unmarkEdited(div.parentElement); }
+    else{ store[kind][key] = val; markEdited(div.parentElement, kind, key); }
+    save();
+  });
+  return div;
+}
+
+function markEdited(td, kind, key){
+  if(td.classList.contains('edited')) return;
+  td.classList.add('edited');
+  if(!td.querySelector('.rstbtn')){
+    const b = document.createElement('button'); b.className='rstbtn'; b.textContent='↺ 기본값';
+    b.title='이 칸을 기본 계획으로 되돌리기';
+    b.addEventListener('click', ()=>{
+      delete store[kind][key]; save(); build();
+    });
+    td.appendChild(b);
+  }
+}
+function unmarkEdited(td){
+  td.classList.remove('edited');
+  const b = td.querySelector('.rstbtn'); if(b) b.remove();
+}
+
+function toggleChip(key, cls){
+  const d = s2d(key);
+  const cur = classOn(key, d, cls);
+  const defOn = !isNoClass(key);
+  const next = !cur.on;
+  if(next === defOn) delete store.chips[key+'_'+cls];
+  else store.chips[key+'_'+cls] = next;
+  save(); build();
+}
+
+/* ═══════════ ⑤ 시수 집계 ═══════════ */
+function refreshHours(){
+  // 구간별 합계
+  const term = {B:[0,0,0], C:[0,0,0], D:[0,0,0]};
+  // 주별 합계
+  const weekly = {};
+  let d = s2d(START);
+  while(d2s(d) <= END){
+    const key = d2s(d);
+    if(d.getDay()>=1 && d.getDay()<=5){
+      const mon = new Date(d); mon.setDate(mon.getDate()-(mon.getDay()-1));
+      const mKey = d2s(mon);
+      if(!weekly[mKey]) weekly[mKey] = {B:0,C:0,D:0};
+      CLASS_ORDER.forEach(cls=>{
+        const c = classOn(key, d, cls);
+        if(c && c.on){
+          weekly[mKey][cls] += c.hrs;
+          TERMS.forEach((t,i)=>{ if(key>=t.from && key<=t.to) term[cls][i]+=c.hrs; });
+        }
+      });
+    }
+    d.setDate(d.getDate()+1);
+  }
+  // 주차 칸에 표시
+  Object.keys(weekly).forEach(mKey=>{
+    const el = document.getElementById('wh_'+mKey);
+    if(el) el.innerHTML = CLASS_ORDER.map(cls=>{
+      const h = weekly[mKey][cls];
+      return '<span class="h'+cls+(h===0?' h0':'')+'">'+cls+' '+h+'</span>';
+    }).join('');
+  });
+  // 상단 요약
+  document.getElementById('sumbox').innerHTML =
+    CLASS_ORDER.map(cls=>'<span class="sumchip '+cls+'"><b>'+cls+'</b> '
+      +term[cls][0]+' + '+term[cls][1]+' <span style="opacity:.6">+ '+term[cls][2]+'</span>h</span>').join('')
+    +'<span class="sumnote">중간 전 + 중간~기말 <span style="opacity:.6">+ 기말 후</span></span>';
+}
+
+/* ═══════════ ⑥ 내보내기/가져오기/초기화 ═══════════ */
+function doExport(){
+  const blob = new Blob([JSON.stringify(store,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const now = new Date();
+  a.download = '진도달력백업_'+now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function doImport(inp){
+  const f = inp.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const obj = JSON.parse(r.result);
+      if(typeof obj !== 'object' || !obj) throw 0;
+      store = Object.assign({weeks:{},days:{},chips:{}}, obj);
+      save(); build();
+      alert('가져오기 완료 — 수정 칸이 복원되었습니다.');
+    }catch(e){ alert('JSON 형식이 아닙니다.'); }
+    inp.value = '';
+  };
+  r.readAsText(f);
+}
+function resetAll(){
+  if(!confirm('모든 수정 내용을 지우고 기본 계획으로 되돌립니다.\n(내보내기로 백업하지 않은 수정은 사라집니다)\n계속할까요?')) return;
+  store = {weeks:{}, days:{}, chips:{}};
+  save(); build();
+}
+
+build();
+</script>
+</body>
+</html>

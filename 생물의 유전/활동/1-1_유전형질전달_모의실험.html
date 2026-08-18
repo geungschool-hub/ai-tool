@@ -163,8 +163,8 @@
   .q .btn { margin-top:8px; font-size:16px; padding:9px 16px; }
 
   #simOut { display:none; margin-top:12px; }
-  #simOut table.rec { max-width:560px; margin:0 auto; }
-  #simOut .note { font-size:15px; color:var(--sub); text-align:center; margin-top:8px; }
+  #simOut table.rec { max-width:680px; margin:0 auto; }
+  #simOut .note { font-size:15px; color:var(--sub); text-align:center; margin-top:8px; line-height:1.75; }
 
   footer { text-align:center; padding:6px 0 20px; }
 </style>
@@ -349,18 +349,16 @@
     </div>
 
     <div class="q">
-      <div class="qt">💡 더 해보기 — 이 부모 사이에서 자녀 100명이 태어난다면?</div>
-      <button class="btn" onclick="runSim()">가상 자녀 100명 시뮬레이션</button>
+      <div class="qt">💡 더 해보기 — 이 부모 사이에서 자녀 10,000명이 태어난다면?</div>
+      <button class="btn" onclick="runSim()">가상 자녀 10,000명 시뮬레이션</button>
       <div id="simOut">
         <table class="rec">
           <thead>
-            <tr><th>구분</th><th>인원</th><th>(가) 발현</th><th>(다) 발현</th></tr>
+            <tr><th>구분</th><th>인원</th><th>(가) 발현</th><th>(나) 발현</th><th>(다) 발현</th></tr>
           </thead>
           <tbody id="simBody"></tbody>
         </table>
-        <div class="note">상염색체 형질 (가)의 발현 비율은 딸·아들이 비슷하지만,
-        성염색체 형질 <b>(다)의 발현 비율은 성별에 따라 다르게</b> 나타난다.
-        (현재 우성/열성 설정 기준 · 누를 때마다 새로 뽑는다)</div>
+        <div class="note" id="simNote"></div>
       </div>
     </div>
   </section>
@@ -589,8 +587,61 @@ function toggleAns(btn){
   btn.textContent = open ? '모범답안 보기' : '모범답안 닫기';
 }
 
+function comma(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+// ── (다)의 이론적 발현 비율 ──
+// 표본 10,000명은 매번 ±1%p 정도 흔들리므로, 「성별 차이가 있는가」는 확률로 정확히 판정한다.
+function daTheory(momDa, dadDa, mode){
+  var g = { '딸':{n:0, k:0}, '아들':{n:0, k:0} };
+  momDa.split('').forEach(function(ma){
+    ['X'+dadDa, 'Y'].forEach(function(dy){
+      var sex = (dy === 'Y') ? '아들' : '딸';
+      var alleles = (sex === '딸') ? [ma, dy.slice(1)] : [ma];
+      g[sex].n++;
+      if (expressed(alleles, 'D', mode)) g[sex].k++;
+    });
+  });
+  return { d: g['딸'].k / g['딸'].n, s: g['아들'].k / g['아들'].n };
+}
+
+function daLabel(momDa, dadDa){
+  var a = momDa.split('').sort();   // 'D'가 'd'보다 앞
+  return '어머니 X<sup>' + a[0] + '</sup>X<sup>' + a[1] + '</sup> · 아버지 X<sup>' + dadDa + '</sup>Y';
+}
+
+// 성별에 따라 차이가 나타나는 부모 조합 찾기 (어머니를 그대로 둔 조합 우선)
+function findDaDiffCombo(mode){
+  var moms = ['DD','Dd','dd'], dads = ['D','d'], best = null;
+  for (var i=0; i<moms.length; i++){
+    for (var j=0; j<dads.length; j++){
+      var t = daTheory(moms[i], dads[j], mode);
+      if (t.d === t.s) continue;
+      if (moms[i] === parents.m.da) return daLabel(moms[i], dads[j]);
+      if (!best) best = { m:moms[i], d:dads[j] };
+    }
+  }
+  return best ? daLabel(best.m, best.d) : null;
+}
+
+function simNoteHTML(){
+  var t = daTheory(parents.m.da, parents.d.da, modes.da);
+  var pd = (100*t.d).toFixed(0), ps = (100*t.s).toFixed(0);
+  var tail = ' <span style="font-size:14px;">(현재 우성/열성 설정 기준 · 누를 때마다 새로 뽑는다)</span>';
+  if (t.d !== t.s){
+    return '상염색체 형질 (가)·(나)의 발현 비율은 딸·아들이 비슷하지만, '
+         + '성염색체 형질 <b>(다)의 발현 비율은 성별에 따라 다르게</b> 나타난다.'
+         + '<br>이 부모 조합의 이론값은 딸 <b>' + pd + '%</b> · 아들 <b>' + ps + '%</b> 이다.' + tail;
+  }
+  var hint = findDaDiffCombo(modes.da);
+  return '이 부모 조합에서는 <b>(다)의 발현 비율도 딸·아들이 같다</b>(이론값 모두 ' + pd + '%). '
+       + '성염색체 유전이라고 해서 항상 성별 차이가 나타나는 것은 아니다.<br>'
+       + (hint ? '①에서 부모의 (다) 유전자형을 <b>' + hint + '</b>로 바꾸고 이 단추를 다시 누르시오. '
+               : '①에서 (다)의 부모 유전자형을 바꾸어 성별 차이가 나타나는 조합을 찾으시오. ')
+       + '성별 차이가 <b>언제</b> 나타나는지 설명하시오.' + tail;
+}
+
 function runSim(){
-  var N = 100, stat = { '딸':{n:0, ga:0, da:0}, '아들':{n:0, ga:0, da:0} };
+  var N = 10000, stat = { '딸':{n:0, ga:0, na:0, da:0}, '아들':{n:0, ga:0, na:0, da:0} };
   for (var i=0; i<N; i++){
     var cu = {};
     ['m','d'].forEach(function(w){
@@ -599,16 +650,19 @@ function runSim(){
     var c = makeChild(cu), s = stat[c.sex];
     s.n++;
     if (expressed(c.ga.split(''), 'A', modes.ga)) s.ga++;
+    if (expressed(c.na.split(''), 'B', modes.na)) s.na++;
     if (expressed(c.daAlleles,   'D', modes.da)) s.da++;
   }
   var html = '';
   ['딸','아들'].forEach(function(sex){
-    var s = stat[sex], pct = function(k){ return s.n ? Math.round(100*k/s.n) + '%' : '-'; };
-    html += '<tr><td><b>' + (sex==='딸' ? '👧 딸' : '👦 아들') + '</b></td><td>' + s.n + '명</td>'
-          + '<td>' + s.ga + '명 (' + pct(s.ga) + ')</td>'
-          + '<td>' + s.da + '명 (' + pct(s.da) + ')</td></tr>';
+    var s = stat[sex], pct = function(k){ return s.n ? (100*k/s.n).toFixed(1) + '%' : '-'; };
+    html += '<tr><td><b>' + (sex==='딸' ? '👧 딸' : '👦 아들') + '</b></td><td>' + comma(s.n) + '명</td>'
+          + '<td>' + comma(s.ga) + '명 (' + pct(s.ga) + ')</td>'
+          + '<td>' + comma(s.na) + '명 (' + pct(s.na) + ')</td>'
+          + '<td>' + comma(s.da) + '명 (' + pct(s.da) + ')</td></tr>';
   });
   document.getElementById('simBody').innerHTML = html;
+  document.getElementById('simNote').innerHTML = simNoteHTML();
   document.getElementById('simOut').style.display = 'block';
 }
 

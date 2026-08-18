@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNA 복제 모의실험</title>
+<style>
+  :root {
+    --red:    #C0392B;  --red-bg:    #FDECEA;
+    --blue:   #1255A0;  --blue-bg:   #E3F0FB;
+    --yellow: #B7791F;  --yellow-bg: #FDF3D7;
+    --green:  #2A7A38;  --green-bg:  #E6F4E9;
+    --pink:   #C2185B;  --pink-bg:   #FCE4EC;
+    --amber:  #E67E22;  --amber-bg:  #FDE9C9;
+    --ink: #1A1A1A; --sub: #555; --line: #CCC;
+    --old: #6B7280;                 /* 원래(주형) 가닥 회색 — 흰 글씨 배지·라벨 모두 4.5:1 이상 */
+    --amber-ink: #8A4B08;           /* 앰버 계열 '글자'용 진한 색(앰버 원색은 흰 배경에서 2.7:1) */
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+    font-size:17px; color:var(--ink); background:#F0F2F5;
+    padding:12px; line-height:1.6;
+  }
+  .wrap { max-width:920px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+
+  header.top {
+    background:#fff; border-radius:14px; padding:16px 20px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  header.top h1 { font-size:22px; color:var(--blue); }
+  header.top .sub { font-size:15px; color:var(--sub); }
+  header.top .tags { margin-top:4px; }
+  header.top .tag {
+    display:inline-block; font-size:13px; color:var(--blue); background:var(--blue-bg);
+    border-radius:10px; padding:2px 10px; margin-right:4px;
+  }
+  #progress {
+    background:var(--blue); color:#fff; font-weight:700; font-size:16px;
+    padding:8px 16px; border-radius:20px; white-space:nowrap;
+  }
+
+  .card {
+    background:#fff; border-radius:14px; padding:16px 18px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  .card h2 {
+    font-size:19px; margin-bottom:10px; padding:6px 12px; border-radius:6px;
+    border-left:5px solid var(--blue); background:var(--blue-bg);
+  }
+  .card h2.green { border-left-color:var(--green); background:var(--green-bg); }
+  .card h2.pink  { border-left-color:var(--pink);  background:var(--pink-bg); }
+  .card h2.amber { border-left-color:var(--amber); background:var(--amber-bg); }
+
+  table.rules { width:100%; border-collapse:collapse; font-size:16px; }
+  table.rules th, table.rules td { border:1px solid var(--line); padding:8px 8px; vertical-align:middle; }
+  table.rules th { background:#EEF3F8; text-align:center; }
+  table.rules td:first-child { text-align:center; width:88px; background:#FAFAFA; white-space:nowrap; }
+  sup { font-size:.72em; }
+  .note { font-size:15px; color:var(--sub); margin-top:8px; }
+
+  /* ── 염기 색 (부록 137쪽 종이모형 대조 확인: A 빨강 · T 파랑 · G 초록 · C 노랑) ── */
+  .b-A { background:var(--red-bg);    color:var(--red);    border-color:var(--red); }
+  .b-T { background:var(--blue-bg);   color:var(--blue);   border-color:var(--blue); }
+  .b-G { background:var(--green-bg);  color:var(--green);  border-color:var(--green); }
+  .b-C { background:var(--yellow-bg); color:var(--yellow); border-color:var(--yellow); }
+  .chip {
+    display:inline-block; width:27px; height:27px; line-height:23px; text-align:center;
+    border:2px solid; border-radius:6px; font-weight:800; font-size:15px; vertical-align:-6px;
+  }
+
+  /* ── DNA 무대 ── */
+  .dna-outer { overflow-x:auto; padding:4px 0 8px; border:1px solid #E3E7EC; border-radius:10px; background:#FCFDFE; }
+  .dna-inner { width:max-content; min-width:100%; }
+  .dna-row { display:flex; align-items:center; }
+  .rowlab {
+    position:sticky; left:0; z-index:3; flex:0 0 104px; width:104px;
+    font-size:14px; font-weight:700; text-align:right; padding:0 8px 0 4px;
+    background:#FCFDFE; line-height:1.25;
+  }
+  .rowlab.old { color:var(--old); }
+  .rowlab.new { color:var(--green); }
+  .endlab { flex:0 0 26px; width:26px; text-align:center; font-size:13px; font-weight:800; color:var(--sub); }
+  .cells { display:flex; }
+  /* ★한 칸의 실제 간격(pitch) = 24px + 좌우 여백 1px = 26px → JS의 CELL_W 와 반드시 일치 */
+  .cell {
+    flex:0 0 24px; width:24px; height:30px; border:1.6px solid #D5DAE0; border-radius:5px;
+    margin:1px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:800; background:#fff; color:#BBB;
+  }
+  .cell.tmpl { cursor:default; }
+  .cell.tmpl.closed { opacity:.72; }
+  /* 새 가닥 칸은 탭 대상 → 세로를 44px 로 키워 터치 최소 크기를 확보(가로 pitch 는 CELL_W 동기화 때문에 그대로) */
+  .cell.nt { cursor:pointer; touch-action:manipulation; height:44px; }
+  .cell.nt.locked { background:#F1F3F5; border-style:solid; border-color:#E3E7EC; }
+  .cell.nt.openslot { background:#fff; border:2px dashed #B9C2CC; }
+  .cell.nt.target { border:2.5px dashed var(--amber); background:#FFF8EE; animation:tpulse 1.2s ease infinite; }
+  /* ★상태 클래스(openslot/target)가 border 단축 속성을 다시 선언하므로
+     분기점·이음새 표시는 같은 특이도로 그 '뒤'에 두어야 빈 칸에서도 보인다 */
+  .cell.nt.forkcol, .cell.tmpl.forkcol { border-left:3px solid var(--amber); }
+  .cell.nt.seam { border-left:4px solid var(--amber); }
+  .cell.sel { box-shadow:0 0 0 4px rgba(230,126,34,.35); }
+  @keyframes tpulse { 0%,100% { background:#FFF8EE; } 50% { background:#FDE9C9; } }
+  .cell.bondc {
+    height:16px; border:none; background:none; color:#5A6270; font-size:15px; font-weight:700; margin:0 1px;
+  }
+  .cell.numc { height:18px; border:none; background:none; color:#5A6270; font-size:12.5px; font-weight:700; margin:0 1px; }
+  .cell.forkcol { border-left:3px solid var(--amber); }
+  .cell.seam { border-left:4px solid var(--amber); }
+  .cell.joined { border-bottom:3px solid var(--green); }
+  .cell.shake { animation:shake .4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
+
+  .arrowrow { position:relative; height:22px; width:832px; }  /* 32 × 26px */
+  .arrow-bar {
+    position:absolute; top:3px; height:17px; border-radius:9px;
+    background:var(--green); color:#fff; font-size:12px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;
+  }
+  /* 화살촉이 '자라는 끝'에 오도록: 위 가닥은 왼쪽(◀), 아래 가닥은 오른쪽(▶) */
+  .arrow-bar.top { justify-content:flex-start; padding-left:4px; }
+  .arrow-bar.bot { justify-content:flex-end;   padding-right:4px; }
+  .fragrow { display:flex; width:832px; }
+  .fragbox {
+    flex:0 0 208px; width:208px; text-align:center; font-size:13px; font-weight:700;
+    color:var(--amber-ink); border-top:2px dotted var(--amber); margin-top:2px;
+  }
+  .fragbox.done { color:var(--green); border-top-color:var(--green); }
+  .fragbox.blank { color:transparent; border-top-color:transparent; }
+  .forkmark { font-size:13px; font-weight:800; color:var(--amber-ink); }
+
+  /* ── 조작 패널 ── */
+  .panel { border:1px solid var(--line); border-radius:10px; background:#FAFAFA; padding:12px 14px; margin-top:12px; }
+  .panel .ptitle { font-size:16px; font-weight:700; margin-bottom:8px; }
+  .ntrow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .nbtn {
+    flex:0 0 auto; width:66px; min-height:58px; border:2.5px solid; border-radius:12px;
+    font-family:inherit; font-size:25px; font-weight:800; cursor:pointer;
+  }
+  .nbtn .sm { display:block; font-size:11px; font-weight:700; }
+  .strandpick { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .choice {
+    border:2px solid var(--blue); background:#fff; color:var(--blue);
+    font-family:inherit; font-size:16px; font-weight:700;
+    border-radius:10px; padding:10px 16px; min-height:48px; cursor:pointer;
+  }
+  .choice.sel  { background:var(--blue); color:#fff; }
+  .choice.done { border-color:var(--green); color:var(--green); }
+  .choice.sel.done { background:var(--green); border-color:var(--green); color:#fff; }
+  #stageHint { font-size:16px; font-weight:700; color:var(--amber-ink); margin-top:8px; min-height:26px; }
+  #counters  { font-size:15px; color:var(--sub); margin-top:4px; }
+  #unwindInfo{ font-size:15px; color:var(--sub); margin-top:6px; }
+
+  .fb { margin-top:10px; border-radius:8px; padding:9px 12px; font-size:16px; display:none; }
+  .fb.show { display:block; }
+  .fb.good { border-left:4px solid var(--green); background:var(--green-bg); }
+  .fb.warn { border-left:4px solid var(--amber); background:var(--amber-bg); }
+  .fb.bad  { border-left:4px solid var(--red);   background:var(--red-bg); }
+  .fb.info { border-left:4px solid var(--blue);  background:var(--blue-bg); }
+
+  /* ── 버튼 ── */
+  .btn {
+    display:inline-block; border:none; border-radius:10px; cursor:pointer;
+    font-family:inherit; font-size:17px; font-weight:700;
+    padding:12px 22px; min-height:48px; min-width:48px;
+    background:var(--blue); color:#fff;
+  }
+  .btn:active { filter:brightness(.9); }
+  .btn.green { background:var(--green); }
+  .btn.pink  { background:var(--pink); }
+  .btn.gray  { background:#666; }
+  .btn.ghost { background:#fff; color:var(--blue); border:2px solid var(--blue); }
+  .btn:disabled { background:#E5E7EB; cursor:default; border-color:#E5E7EB; color:#4B5563; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; justify-content:center; align-items:center; }
+  .btn.small { font-size:16px; padding:10px 14px; }
+
+  /* ── 딸 DNA ── */
+  .dgt { border:2px solid var(--green); border-radius:12px; background:#FBFEFB; padding:10px 8px; margin-bottom:12px; overflow-x:auto; }
+  .dgt-title { font-size:17px; font-weight:800; color:var(--green); margin:0 0 6px 6px; }
+  .sbadge {
+    position:sticky; left:0; z-index:3; flex:0 0 118px; width:118px; margin-right:4px;
+    font-size:13px; font-weight:800; text-align:center; border-radius:8px; padding:4px 2px; background:#FBFEFB;
+  }
+  .sbadge.old { color:#fff; background:var(--old); }
+  .sbadge.new { color:#fff; background:var(--green); }
+  .cell.sm { flex:0 0 20px; width:20px; height:28px; font-size:13px; border-radius:4px; }
+  #dgtCheck { font-size:16px; font-weight:700; margin-top:6px; }
+  table.cmp { width:100%; border-collapse:collapse; font-size:16px; margin-top:12px; }
+  table.cmp th, table.cmp td { border:1px solid var(--line); padding:8px 8px; vertical-align:middle; text-align:center; }
+  table.cmp th { background:#EEF3F8; }
+  table.cmp th.g { background:var(--green-bg); }
+  table.cmp th.p { background:var(--pink-bg); }
+  table.cmp td.l { text-align:left; }
+
+  /* ── 메셀슨·스탈 ── */
+  .ms-area { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-top:12px; }
+  /* 시험관 5개 + 범례는 고정 폭 → 좁은 화면에서 카드 밖으로 넘치지 않도록 가로 스크롤 */
+  .tube-scroll { overflow-x:auto; max-width:100%; padding-bottom:4px; }
+  .tube-set { display:flex; gap:8px; align-items:flex-end; }
+  .tube-col { flex:0 0 auto; text-align:center; }
+  .tube-cap { font-size:12.5px; font-weight:700; margin-bottom:4px; line-height:1.3; }
+  .tube-cap.pred { color:var(--blue); }
+  .tube-cap.real { color:var(--pink); }
+  .tube {
+    position:relative; width:62px; height:172px; border:2px solid #9DB4CC;
+    border-radius:8px 8px 26px 26px; overflow:hidden;
+    background:linear-gradient(#F8FBFF,#DCE6F2 55%,#BFCFE2);
+  }
+  .band { position:absolute; left:0; right:0; height:10px; margin-top:-5px; background:#243B53; border-radius:2px; }
+  /* ★범례는 .tube-set 안의 첫 칸으로 들어가 시험관과 같은 바닥 정렬을 쓴다
+     (예전처럼 margin-top 으로 맞추면 캡션 줄 수가 바뀔 때 라벨이 띠보다 위를 가리킨다) */
+  .tube-legend { position:relative; width:148px; height:172px; margin-top:0px; }
+  .tube-legend .lg {
+    position:absolute; right:2px; font-size:12.5px; font-weight:700; color:var(--sub);
+    transform:translateY(-50%); text-align:right; line-height:1.25; white-space:nowrap;
+  }
+  .tube-legend .lg::after {
+    content:''; position:absolute; right:-16px; top:50%; width:14px; height:0;
+    border-top:2px dotted #6B7280;
+  }
+  .verdict { border-radius:8px; padding:8px 12px; font-size:15.5px; font-weight:700; margin-top:8px; }
+  .verdict.ok { border-left:4px solid var(--green); background:var(--green-bg); color:var(--green); }
+  .verdict.no { border-left:4px solid var(--red);   background:var(--red-bg);   color:var(--red); }
+  .mol-set { display:flex; gap:10px; flex-wrap:wrap; }
+  .mol { text-align:center; }
+  /* ★가닥의 '출신'을 색만으로 알리면 색약 학생이 판정 근거를 읽을 수 없다
+     → 바 안에 ¹⁵N/¹⁴N 라벨을 넣고, 원래 가닥에는 빗금 무늬를 더한다 */
+  .mol .sb {
+    height:15px; line-height:15px; width:64px; border-radius:5px; margin-bottom:3px;
+    font-size:10.5px; font-weight:800; color:#fff; text-align:center;
+  }
+  .sb.old  { background:var(--old);
+             background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.38) 0 3px,transparent 3px 6px); }
+  .sb.new  { background:var(--green); }
+  .sb.mix  { background:repeating-linear-gradient(90deg,var(--old) 0 8px,var(--green) 8px 16px); }
+  .sb.mix2 { background:repeating-linear-gradient(90deg,var(--old) 0 4px,var(--green) 4px 16px); }
+  .mol .mlab { font-size:12.5px; color:var(--sub); }
+  .legend-inline { font-size:14px; color:var(--sub); margin-top:6px; }
+  .legend-inline i { display:inline-block; width:22px; height:8px; border-radius:4px; vertical-align:1px; }
+
+  /* ── 정리하기 ── */
+  .q { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:#FAFAFA; }
+  .q .qt { font-weight:700; margin-bottom:6px; }
+  .q textarea {
+    width:100%; min-height:70px; font-family:inherit; font-size:16px;
+    border:1px solid var(--line); border-radius:8px; padding:8px; resize:vertical; background:#fff;
+  }
+  .q .ans { display:none; margin-top:8px; border-left:4px solid var(--green); background:var(--green-bg); padding:8px 12px; border-radius:6px; font-size:16px; }
+  .q .btn { margin-top:8px; font-size:16px; padding:9px 16px; }
+  .echo { border-left:4px solid var(--amber); background:var(--amber-bg); border-radius:6px; padding:8px 12px; font-size:16px; margin-bottom:8px; }
+  .chkitem { display:flex; align-items:flex-start; gap:10px; padding:9px 4px; min-height:48px; font-size:16px; }
+  .chkitem input { width:26px; height:26px; margin-top:3px; flex:0 0 26px; }
+  .chkitem b { color:var(--blue); }
+
+  footer { text-align:center; padding:6px 0 20px; }
+
+  /* ── 좁은 태블릿(세로) 보정 ── */
+  @media (max-width:430px){
+    body { padding:8px; }
+    .card { padding:14px 12px; }
+    .tube { width:52px; height:156px; }
+    .tube-legend { width:132px; height:156px; }
+    .tube-set { gap:6px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>🧬 DNA 복제 모의실험</h1>
+      <div class="sub">DNA의 반보존적 복제 과정을 이해하고, 설명할 수 있다 (교과서 48쪽 탐구 · 부록 137쪽 모형)</div>
+      <div class="tags"><span class="tag">반보존적 복제</span><span class="tag">5′→3′ 합성</span><span class="tag">선도·지연 가닥</span></div>
+    </div>
+    <div id="progress">진행 0 / 4</div>
+  </header>
+
+  <!-- ── ① 복제의 규칙 ── -->
+  <section class="card">
+    <h2>① 복제의 규칙 — 이것만 지키면 된다</h2>
+    <table class="rules">
+      <thead><tr><th>규칙</th><th>내용</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>①<br>염기 짝</b></td>
+          <td>주형 가닥의 염기와 <b>상보적인</b> 염기를 가진 뉴클레오타이드만 결합한다 —
+            <span class="chip b-A">A</span>–<span class="chip b-T">T</span> ,
+            <span class="chip b-G">G</span>–<span class="chip b-C">C</span></td>
+        </tr>
+        <tr>
+          <td><b>②<br>3′ 말단</b></td>
+          <td><b>DNA 중합효소</b>는 합성되는 가닥의 <b>3′ 말단</b>에만 뉴클레오타이드를 하나씩 순서대로 연결한다.
+            → 새 가닥은 언제나 <b>5′ → 3′ 방향으로만</b> 자란다.
+            <span style="color:var(--sub); font-size:15px;">(합성을 시작할 3′ 말단을 제공하는 <b>작은 RNA 또는 DNA 조각</b> = <b>프라이머</b> — 용어만 알아 두자)</span></td>
+        </tr>
+        <tr>
+          <td><b>③<br>역평행</b></td>
+          <td>두 주형 가닥의 방향은 서로 <b>반대</b>다(5′ 쪽과 3′ 쪽이 엇갈려 있다).
+            그래서 두 새 가닥이 자라는 방향도 서로 <b>반대</b>가 된다.</td>
+        </tr>
+        <tr>
+          <td><b>④<br>분기점</b></td>
+          <td>이 모형에서 이중나선은 <b>오른쪽에서 왼쪽으로</b> 풀린다(교과서 탐구하기 ❷의 가정).
+            <b>풀린 구간에서만</b> 새 가닥을 합성할 수 있다.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">🧪 이 모형에서는 각 가닥·각 조각의 <b>첫 칸이 프라이머 역할</b>을 한다고 보자
+      (실제 세포에서는 프라이머가 먼저 붙어 3′ 말단을 만들어 준다).</p>
+    <p class="note">🎨 염기 색은 부록 137쪽 종이모형과 같다 —
+      <span class="chip b-A">A</span> 빨강 ·
+      <span class="chip b-T">T</span> 파랑 ·
+      <span class="chip b-G">G</span> 초록 ·
+      <span class="chip b-C">C</span> 노랑.
+      가위·풀 대신 손가락으로 붙여 보자!</p>
+  </section>
+
+  <!-- ── ② 복제 무대 ── -->
+  <section class="card">
+    <h2 class="green">② 복제 무대 — 이중나선을 풀고 새 가닥을 붙이자</h2>
+    <div class="dna-outer">
+      <div class="dna-inner">
+        <div class="dna-row"><div class="rowlab"></div><div class="endlab"></div>
+          <div class="arrowrow"><div class="arrow-bar top" id="arrowTop" style="display:none;"></div></div><div class="endlab"></div></div>
+        <div class="dna-row"><div class="rowlab new" id="lab_newTop">새 가닥 ①</div><div class="endlab">3′</div>
+          <div class="cells" id="row_newTop"></div><div class="endlab">5′</div></div>
+        <div class="dna-row"><div class="rowlab old">위 주형 가닥</div><div class="endlab">5′</div>
+          <div class="cells" id="row_tmplTop"></div><div class="endlab">3′</div></div>
+        <div class="dna-row"><div class="rowlab"></div><div class="endlab"></div>
+          <div class="cells" id="row_bond"></div><div class="endlab"></div></div>
+        <div class="dna-row"><div class="rowlab old">아래 주형 가닥</div><div class="endlab">3′</div>
+          <div class="cells" id="row_tmplBot"></div><div class="endlab">5′</div></div>
+        <div class="dna-row"><div class="rowlab new" id="lab_newBot">새 가닥 ②</div><div class="endlab">5′</div>
+          <div class="cells" id="row_newBot"></div><div class="endlab">3′</div></div>
+        <!-- ★지연 가닥의 화살표는 조각마다 따로 그린다 — 한 개의 긴 막대로 그리면
+             아직 비어 있는 칸까지 덮어 「연속 합성」으로 잘못 읽힌다 -->
+        <div class="dna-row"><div class="rowlab"></div><div class="endlab"></div>
+          <div class="arrowrow">
+            <div class="arrow-bar bot" id="arrowBot_0" style="display:none;"></div>
+            <div class="arrow-bar bot" id="arrowBot_1" style="display:none;"></div>
+            <div class="arrow-bar bot" id="arrowBot_2" style="display:none;"></div>
+            <div class="arrow-bar bot" id="arrowBot_3" style="display:none;"></div>
+          </div><div class="endlab"></div></div>
+        <div class="dna-row"><div class="rowlab" style="font-size:12px; color:var(--amber-ink);" id="fragNote">작은 DNA 조각</div><div class="endlab"></div>
+          <div class="fragrow" id="row_frag"></div><div class="endlab"></div></div>
+        <div class="dna-row"><div class="rowlab" style="font-size:12.5px; color:#5A6270;">자리 번호</div><div class="endlab"></div>
+          <div class="cells" id="row_num"></div><div class="endlab"></div></div>
+      </div>
+    </div>
+    <div id="unwindInfo"></div>
+
+    <div class="btnrow" style="justify-content:flex-start;">
+      <button class="btn" id="btnUnwind" onclick="unwind()">🔓 풀기 (8칸)</button>
+      <button class="btn ghost small" id="btnUnwindAll" onclick="unwindAll()">끝까지 풀기</button>
+    </div>
+
+    <div class="panel">
+      <div class="ptitle">🧩 뉴클레오타이드 붙이기</div>
+      <div class="strandpick">
+        <button class="choice" id="pick_top" onclick="selectStrand('top')">위 주형에 붙이기</button>
+        <button class="choice" id="pick_bot" onclick="selectStrand('bot')">아래 주형에 붙이기</button>
+      </div>
+      <div class="ntrow">
+        <button class="nbtn b-A" id="nb_A" onclick="placeBase('A')">A<span class="sm">아데닌</span></button>
+        <button class="nbtn b-T" id="nb_T" onclick="placeBase('T')">T<span class="sm">타이민</span></button>
+        <button class="nbtn b-G" id="nb_G" onclick="placeBase('G')">G<span class="sm">구아닌</span></button>
+        <button class="nbtn b-C" id="nb_C" onclick="placeBase('C')">C<span class="sm">사이토신</span></button>
+        <button class="btn ghost small" id="btnRemove" onclick="removeLast()">✂ 마지막 하나 떼어내기</button>
+      </div>
+      <div class="note">👆 무대의 칸을 직접 탭할 때는 <b>주황 점선으로 깜박이는 자리</b>만 누르면 돼요 —
+        정확한 이동은 위의 <b>[위 / 아래 주형에 붙이기]</b> 단추가 더 편합니다.
+        (지연 가닥의 작은 DNA 조각을 <b>오카자키 조각</b>이라고도 부르지만, 교과서 표현은 「작은 조각의 DNA」예요.)</div>
+      <div id="stageHint"></div>
+      <div id="counters"></div>
+      <div class="btnrow" style="justify-content:flex-start;">
+        <button class="btn green" id="btnAuto" onclick="autoFill()">⚡ 나머지 자동 합성</button>
+        <button class="btn pink" id="btnLigate" onclick="ligate()">🔗 DNA 연결효소로 잇기</button>
+      </div>
+      <div class="note" id="autoHint"></div>
+      <div class="fb" id="fb_stage"></div>
+    </div>
+  </section>
+  <!-- ── ③ 완성 — 반보존적 확인 ── -->
+  <section class="card">
+    <h2 class="pink">③ 완성 — 딸 DNA 2개를 비교하자</h2>
+    <div id="resultLocked" class="fb warn show">
+      🔒 아직 복제가 끝나지 않았어요. ②에서 <b>이중나선을 끝까지 풀고</b>,
+      <b>두 새 가닥을 모두 완성</b>한 뒤 <b>🔗 DNA 연결효소</b>로 조각을 이으면 열립니다.
+    </div>
+    <div class="btnrow" style="justify-content:flex-start;">
+      <button class="btn pink" id="btnVerify" onclick="verifyDaughters()">🔍 딸 DNA 확인하기</button>
+    </div>
+    <div id="resultBody" style="display:none;">
+      <div id="daughters"></div>
+      <div id="dgtCheck"></div>
+      <table class="cmp">
+        <thead><tr><th></th><th class="g">위 주형 쪽 새 가닥</th><th class="p">아래 주형 쪽 새 가닥</th></tr></thead>
+        <tbody>
+          <tr><th>합성 방향(화면)</th><td>오른쪽 → 왼쪽</td><td>왼쪽 → 오른쪽</td></tr>
+          <tr><th>가닥 자신 기준</th><td colspan="2"><b>둘 다 5′ → 3′ 방향</b> (DNA 중합효소가 3′ 말단에만 붙이므로)</td></tr>
+          <tr><th>분기점이 열리는 방향과의 관계</th><td>같다</td><td>반대다</td></tr>
+          <tr><th>합성 모습</th><td><b>연속적</b> — 한 번에 쭉</td><td><b>불연속적</b> — 조각으로 나누어</td></tr>
+          <tr><th>필요한 효소</th><td>DNA 중합효소</td><td>DNA 중합효소 + <b>DNA 연결효소</b></td></tr>
+          <tr><th>이름</th><td><b>선도 가닥</b></td><td><b>지연 가닥</b></td></tr>
+        </tbody>
+      </table>
+      <div class="fb info show" style="margin-top:12px;">
+        🧬 <b>반보존적 복제</b> — 두 딸 DNA는 서로 <b>같고</b> 원래 DNA와도 같다.
+        그런데 어느 쪽도 「완전히 새것」이 아니다. 각각 <b>원래 가닥 1개 + 새로 합성된 가닥 1개</b>로 이루어져,
+        원래 DNA의 두 가닥이 <b>나뉘어 보존</b>된다. 이것이 반보존적(半保存的) 복제라는 이름의 뜻이다.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ④ 정리하기 ── -->
+  <section class="card">
+    <h2 class="amber">④ 정리하기</h2>
+
+    <div class="q">
+      <div class="qt">1. 복제된 2개의 이중나선 DNA를 비교하고 차이가 있는지 이야기해 보자.</div>
+      <textarea id="ta1" placeholder="두 딸 DNA의 염기서열과, 각 가닥이 어디서 왔는지를 나누어 적어 보자." oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns('ans1', this)">모범답안 보기</button>
+      <div class="ans" id="ans1">두 이중나선 DNA는 <b>염기서열이 서로 같고, 원래의 DNA와도 같다</b> — 즉 유전정보에는 차이가 없다.
+        가닥의 출신을 보아도 <b>공통점</b>이 있다 — 두 딸 DNA <b>모두</b> <b>원래 DNA의 가닥 1개(주형)</b>와
+        <b>새로 합성된 가닥 1개</b>로 이루어져 있다. 다만 딸①은 <b>위 주형</b>을, 딸②는 <b>아래 주형</b>을 물려받아
+        <b>보존한 원래 가닥이 서로 다르다</b>. 이렇게 원래 DNA의 두 가닥이 서로 다른 딸 DNA로 하나씩 나뉘어 들어가
+        그대로 보존되므로 이 방식을 <b>반보존적 복제</b>라고 한다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">2. 위 <b>②(복제 무대)</b>에서 위쪽 가닥과 아래쪽 가닥에 상보적인 DNA 가닥을 합성할 때 어느 방향으로 뉴클레오타이드를 붙여 나갔는가?
+        그렇게 한 까닭을 설명해 보자. <span style="color:var(--sub); font-size:15px; font-weight:400;">(교과서 탐구하기 ❸)</span></div>
+      <textarea id="ta2" placeholder="화면에서 본 방향 + 가닥 자신을 기준으로 한 방향을 함께 적어 보자." oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns('ans2', this)">모범답안 보기</button>
+      <div class="ans" id="ans2">위쪽 주형에서는 <b>오른쪽 → 왼쪽</b>으로, 아래쪽 주형에서는 <b>왼쪽 → 오른쪽</b>으로 붙여 나갔다.
+        방향이 반대로 보이지만, 새로 만들어지는 <b>가닥 자신을 기준으로 하면 둘 다 5′ → 3′ 방향</b>이다.
+        DNA 중합효소가 합성되는 가닥의 <b>3′ 말단에만</b> 뉴클레오타이드를 연결할 수 있기 때문이다.
+        두 주형의 방향이 서로 반대(역평행)이므로, 같은 5′→3′ 규칙을 지키면 두 새 가닥이 자라는 방향은 반대가 된다.
+        그 결과 분기점이 열리는 방향과 같게 연속 합성되는 <b>선도 가닥</b>과,
+        반대 방향으로 조각을 만든 뒤 <b>DNA 연결효소</b>가 이어 붙이는 <b>지연 가닥</b>이 생긴다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">3. 만약 DNA를 복제하는 과정에서 뉴클레오타이드가 잘못 삽입되는 오류가 발생한다면 어떻게 수선하면 될지 이야기해 보자.</div>
+      <div class="echo" id="wrongEcho"></div>
+      <textarea id="ta3" placeholder="잘못 붙은 뉴클레오타이드를 어떻게 찾고, 무엇을 기준으로 고칠 수 있을까?" oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns('ans3', this)">모범답안 보기</button>
+      <div class="ans" id="ans3">잘못 삽입된 뉴클레오타이드는 주형 가닥의 염기와 <b>상보적으로 결합하지 못해</b>
+        그 부분의 이중나선 모양이 어긋난다. 그러므로 어긋난 곳을 찾아 <b>잘못된 뉴클레오타이드를 잘라 내고</b>,
+        <b>주형 가닥을 기준으로</b> 상보적인 옳은 뉴클레오타이드를 다시 붙여 연결하면 된다(교정·수선).
+        이때 <b>반보존적 복제</b>가 큰 도움이 된다 — 딸 DNA에는 언제나 「원래 가닥 1개」가 남아 있어
+        무엇이 옳은 염기였는지 알려 주는 <b>기준(주형)</b>이 되기 때문이다.
+        <span style="color:var(--sub);">[심화]</span> 실제 세포에도 이런 <b>교정·수선</b> 과정이 있다(효소의 자세한 기능은 다루지 않는다).
+        그래도 남는 오류는 <b>돌연변이</b>가 되어 유전적 다양성과 진화의 재료가 된다.</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">4. 모둠별로 반보존적 DNA 복제 과정의 의미를 보여주는 자료를
+        <b>그림, 시청각 설명 자료, 영상, 디지털 플랫폼 등</b> 다양한 매체를 활용하여 제작해 발표하고,
+        반보존적 DNA 복제 방식이 다른 복제 방식에 비해 어떤 장점이 있는지 토의해 보자.</div>
+      <textarea id="ta4" placeholder="모둠에서 만들 자료 아이디어 + 반보존적 복제의 장점을 적어 보자." oninput="saveState()"></textarea>
+      <button class="btn ghost" onclick="toggleAns('ans4', this)">모범답안 보기</button>
+      <div class="ans" id="ans4"><b>장점</b> ① 두 딸 DNA가 모두 <b>원래 가닥 1개를 주형으로</b> 만들어지므로,
+        어느 딸세포도 원본과 같은 유전정보를 정확히 물려받는다.
+        ② 오류가 생겨도 짝을 이루는 <b>옛 가닥이 기준</b>으로 남아 있어 바로 <b>교정·수선</b>할 수 있다.
+        ③ 원래 DNA가 두 딸세포에 <b>공평하게</b> 나뉘어 들어가므로, 한쪽만 「원본」이 되는 일이 없다.
+        <br>이에 비해 <b>보존적</b> 복제라면 원본 분자와 완전히 새로운 분자가 따로 생겨 두 딸세포가 받는 DNA의 성질이 달라질 수 있고,
+        <b>분산적</b> 복제라면 원래 가닥이 잘게 나뉘어 새 부분과 섞이므로 오류가 생겼을 때 무엇이 원본이었는지 알기 어렵다.
+        <br><span style="color:var(--sub);">자료 제작 아이디어: 색이 다른 실·클레이로 만드는 스톱모션(영상),
+        <sup>15</sup>N 실험 원심분리 띠 애니메이션(디지털 플랫폼),
+        「가닥 하나가 대대로 이어진다」를 보여주는 가계도식 그림, 작은 DNA 조각을 이어 붙이는 역할극(시청각 설명 자료) 등.</span></div>
+    </div>
+
+    <div class="q" style="background:#F5F9FD; border-color:var(--blue);">
+      <div class="qt">✅ 스스로 평가하기</div>
+      <label class="chkitem"><input type="checkbox" id="chk1" onchange="saveState()">
+        <span><b>[지식·이해]</b> 반보존적 DNA 복제 과정을 설명할 수 있는가?</span></label>
+      <label class="chkitem"><input type="checkbox" id="chk2" onchange="saveState()">
+        <span><b>[과정·기능]</b> DNA 가닥이 합성되는 방향으로 뉴클레오타이드를 연결하였는가?</span></label>
+      <label class="chkitem"><input type="checkbox" id="chk3" onchange="saveState()">
+        <span><b>[가치·태도]</b> 유전물질의 복제 오류가 생명의 진화에 미치는 영향을 생각해 보았는가?</span></label>
+    </div>
+  </section>
+
+  <!-- ── 💡 더 해보기 — 메셀슨·스탈 ── -->
+  <section class="card">
+    <h2 class="green">💡 더 해보기 — 메셀슨·스탈 실험으로 복제 방식 가려내기</h2>
+    <p>무거운 질소(<sup>15</sup>N) 배양액에서 여러 세대 키운 대장균을 가벼운 질소(<sup>14</sup>N) 배양액으로 옮겨 키우면서
+      DNA의 <b>상대적 밀도</b>를 조사했다. 세 가지 이론적 복제 모델 중 하나를 골라 보자 —
+      그 모델이 맞다면 원심분리 시험관에 띠가 <b>어디에</b> 생겨야 할까?</p>
+    <div class="strandpick">
+      <button class="choice" id="ms_conservative" onclick="pickModel('conservative')">보존적 복제</button>
+      <button class="choice" id="ms_semi"         onclick="pickModel('semi')">반보존적 복제</button>
+      <button class="choice" id="ms_dispersive"   onclick="pickModel('dispersive')">분산적 복제</button>
+    </div>
+    <div id="msDesc" class="note"></div>
+    <div id="msBody" style="display:none;">
+      <div class="ms-area" id="msArea"></div>
+      <div id="msVerdict"></div>
+      <div class="ptitle" style="margin-top:14px; font-size:16px; font-weight:700;">이 모델대로라면 DNA 분자는 이렇게 생긴다</div>
+      <div id="msMol"></div>
+      <div class="legend-inline">
+        <i class="sb old" style="width:22px;"></i> <b>빗금 · ¹⁵N</b> = 원래 가닥 &nbsp;·&nbsp;
+        <i class="sb new" style="width:22px;"></i> <b>민무늬 · ¹⁴N</b> = 새로 합성된 가닥 &nbsp;·&nbsp;
+        <i class="sb mix" style="width:22px;"></i> <b>세로 줄무늬</b> = 두 질소가 섞인 가닥
+        <br>시험관에서 <b>띠가 진할수록</b> 그 무게의 DNA가 <b>많다</b>는 뜻이에요.
+      </div>
+      <div class="fb" id="fb_ms"></div>
+    </div>
+  </section>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+  </footer>
+
+</div>
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   DNA 복제 모의실험 — 교과서 48쪽 탐구 / 부록 137쪽 종이모형
+   서열: 부록 137쪽 모형에서 추출(32 염기쌍). 가로 배치.
+     위 주형   5′-TACCGTAAACAGGTATCATGCGGTCTCCCGAC-3′  (왼쪽 5′ → 오른쪽 3′)
+     아래 주형 3′-ATGGCATTTGTCCATAGTACGCCAGAGGGCTG-5′  (왼쪽 3′ → 오른쪽 5′)
+   분기점: 오른쪽 끝 → 왼쪽으로 진행.
+     · 위 주형의 새 가닥  = 오른쪽→왼쪽 신장 = 분기점과 같은 방향 → 선도 가닥(연속)
+     · 아래 주형의 새 가닥 = 왼쪽→오른쪽 신장 = 분기점과 반대  → 지연 가닥(조각·불연속)
+   ══════════════════════════════════════════════════════════════ */
+
+var TOP_TEMPLATE = 'TACCGTAAACAGGTATCATGCGGTCTCCCGAC';
+var BOT_TEMPLATE = 'ATGGCATTTGTCCATAGTACGCCAGAGGGCTG';
+var N = 32;            // 염기쌍 수
+var SEG = 8;           // 한 번 풀 때 열리는 칸 수 = 오카자키 조각 한 개 길이
+var SEG_COUNT = 4;     // N / SEG
+var CELL_W = 26;       // 한 칸의 간격(px) — ★CSS .cell(24px+여백2px) / .arrowrow(832) / .fragbox(208) 와 일치
+var MANUAL_MIN = 6;    // 자동 합성 개방 기준(각 가닥 직접 붙인 수)
+var LS_KEY = 'dna_sim_v1';
+
+var COMPLEMENT = { A:'T', T:'A', G:'C', C:'G' };
+var BASE_NAME  = { A:'아데닌(A)', T:'타이민(T)', G:'구아닌(G)', C:'사이토신(C)' };
+
+/* ════════════ 순수 로직 (DOM 없음 · 테스트 대상) ════════════ */
+
+function complementOf(base){
+  return COMPLEMENT[base] || null;
+}
+function isComplement(a, b){
+  return !!a && !!b && COMPLEMENT[a] === b;
+}
+/* 로드 시 자기검사 — 두 주형이 위치별로 정확히 상보인지 */
+function checkTemplatePair(top, bot){
+  var bad = [];
+  if (top.length !== bot.length) return { ok:false, len:false, bad:bad };
+  for (var i = 0; i < top.length; i++){
+    if (!isComplement(top.charAt(i), bot.charAt(i))) bad.push(i);
+  }
+  return { ok:(bad.length === 0), len:(top.length === N), bad:bad };
+}
+var SELF_CHECK = checkTemplatePair(TOP_TEMPLATE, BOT_TEMPLATE);
+
+function emptyStrand(){
+  var a = [];
+  for (var i = 0; i < N; i++) a.push(null);
+  return a;
+}
+function strandComplete(arr){
+  for (var i = 0; i < N; i++){ if (!arr[i]) return false; }
+  return true;
+}
+function filledCount(arr){
+  var n = 0;
+  for (var i = 0; i < N; i++){ if (arr[i]) n++; }
+  return n;
+}
+/* 풀린 구간: 오른쪽부터 unwound칸 → 열린 인덱스는 idx >= N-unwound */
+function unwoundStart(unwound){ return N - unwound; }
+function isOpen(idx, unwound){ return idx >= (N - unwound); }
+
+/* 조각(오카자키) 구간 — k=0 이 가장 오른쪽(가장 먼저 열림) */
+function segmentOf(idx){ return Math.floor((N - 1 - idx) / SEG); }
+function segRange(k){ return { start:(N - SEG * (k + 1)), end:(N - SEG * k - 1) }; }
+function openedSegments(unwound){ return Math.floor(unwound / SEG); }
+
+/* 합성 순서
+   위 가닥 : 31 → 0 (오른쪽에서 왼쪽으로 연속)
+   아래 가닥: 열린 조각을 먼저 열린 순서로, 각 조각 안에서는 왼쪽 → 오른쪽 */
+function synthOrder(strand, unwound){
+  var out = [], i, k, r;
+  if (strand === 'top'){
+    for (i = N - 1; i >= 0; i--) out.push(i);
+  } else {
+    var segs = openedSegments(unwound);
+    for (k = 0; k < segs; k++){
+      r = segRange(k);
+      for (i = r.start; i <= r.end; i++) out.push(i);
+    }
+  }
+  return out;
+}
+/* 지금 뉴클레오타이드를 붙일 수 있는 자리(= 새 가닥의 3′ 말단). 없으면 -1 */
+function nextIndexFor(strand, arr, unwound){
+  var order = synthOrder(strand, unwound);
+  for (var t = 0; t < order.length; t++){
+    var i = order[t];
+    if (!arr[i]) return isOpen(i, unwound) ? i : -1;
+  }
+  return -1;
+}
+function nextTopIndex(arr, unwound){ return nextIndexFor('top', arr, unwound); }
+function nextBotIndex(arr, unwound){ return nextIndexFor('bot', arr, unwound); }
+/* 합성 순서상 마지막으로 붙인 자리(떼어내기용). 없으면 -1 */
+function lastPlacedIndex(strand, arr, unwound){
+  var order = synthOrder(strand, unwound), last = -1;
+  for (var t = 0; t < order.length; t++){
+    if (arr[order[t]]) last = order[t]; else break;
+  }
+  return last;
+}
+/* 자리 유효성: ok / notopen / filled / wrongend / blocked / range */
+function placementCheck(strand, idx, newTop, newBot, unwound){
+  if (typeof idx !== 'number' || idx < 0 || idx >= N) return { ok:false, reason:'range', want:-1 };
+  var arr = (strand === 'top') ? newTop : newBot;
+  if (arr[idx]) return { ok:false, reason:'filled', want:-1 };
+  if (!isOpen(idx, unwound)) return { ok:false, reason:'notopen', want:-1 };
+  var want = nextIndexFor(strand, arr, unwound);
+  if (want < 0) return { ok:false, reason:'blocked', want:-1 };
+  if (want !== idx) return { ok:false, reason:'wrongend', want:want };
+  return { ok:true, reason:null, want:want };
+}
+function templateBaseAt(strand, idx){
+  return (strand === 'top') ? TOP_TEMPLATE.charAt(idx) : BOT_TEMPLATE.charAt(idx);
+}
+function strandName(strand){ return (strand === 'top') ? '위 가닥' : '아래 가닥'; }
+
+/* 조각 완성 여부 */
+function fragmentDone(arr, k){
+  var r = segRange(k);
+  for (var i = r.start; i <= r.end; i++){ if (!arr[i]) return false; }
+  return true;
+}
+function fragmentsDoneCount(arr){
+  var n = 0;
+  for (var k = 0; k < SEG_COUNT; k++){ if (fragmentDone(arr, k)) n++; }
+  return n;
+}
+
+/* 딸 DNA 자동 대조 */
+function daughterCheck(tmpl, newArr){
+  var bad = [];
+  for (var i = 0; i < N; i++){
+    if (!isComplement(tmpl.charAt(i), newArr[i])) bad.push(i);
+  }
+  return { matched:(N - bad.length), total:N, bad:bad, ok:(bad.length === 0) };
+}
+/* 두 딸 DNA가 서로 같은지 + 원래 DNA와 같은지
+   딸① = (위 주형, 새 가닥A) / 딸② = (새 가닥B, 아래 주형)
+   → 새 가닥A 는 아래 주형과, 새 가닥B 는 위 주형과 서열이 같아야 한다 */
+function daughtersIdentical(newTop, newBot){
+  for (var i = 0; i < N; i++){
+    if (newTop[i] !== BOT_TEMPLATE.charAt(i)) return false;
+    if (newBot[i] !== TOP_TEMPLATE.charAt(i)) return false;
+  }
+  return true;
+}
+function arrStr(arr){
+  var s = '';
+  for (var i = 0; i < N; i++) s += (arr[i] || '·');
+  return s;
+}
+
+/* ── 메셀슨·스탈: 예상 띠 ── */
+var BAND_META = {
+  light:    { top:26, name:'가벼운 DNA',          sub:'¹⁴N–¹⁴N' },
+  lightmid: { top:38, name:'중간보다 가벼운 DNA', sub:'¹⁵N이 조금씩' },
+  mid:      { top:50, name:'중간 무게 DNA',       sub:'¹⁵N–¹⁴N' },
+  heavy:    { top:74, name:'무거운 DNA',          sub:'¹⁵N–¹⁵N' }
+};
+var MODEL_NAME = { conservative:'보존적 복제', semi:'반보존적 복제', dispersive:'분산적 복제' };
+var MODEL_DESC = {
+  conservative:'원래 이중나선은 두 가닥 그대로 남고, 완전히 새로운 이중나선이 따로 만들어진다.',
+  semi:'두 가닥이 풀려 각각 주형이 되고, 딸 DNA는 「원래 가닥 1개 + 새 가닥 1개」로 이루어진다.',
+  dispersive:'원래 DNA가 조각조각 나뉘고 새로 만들어진 부분과 섞여 딸 DNA를 이룬다.'
+};
+function predictBands(model, gen){
+  if (gen === 0) return [{ pos:'heavy', amt:1 }];
+  if (model === 'conservative'){
+    if (gen === 1) return [{ pos:'light', amt:0.5 }, { pos:'heavy', amt:0.5 }];
+    return [{ pos:'light', amt:0.75 }, { pos:'heavy', amt:0.25 }];
+  }
+  if (model === 'semi'){
+    if (gen === 1) return [{ pos:'mid', amt:1 }];
+    return [{ pos:'light', amt:0.5 }, { pos:'mid', amt:0.5 }];
+  }
+  if (model === 'dispersive'){
+    if (gen === 1) return [{ pos:'mid', amt:1 }];
+    return [{ pos:'lightmid', amt:1 }];
+  }
+  return [];
+}
+/* 실제 실험 결과: 1회 복제 후 중간 무게 띠 1개 / 2회 복제 후 가벼운 띠 + 중간 무게 띠 */
+var ACTUAL_BANDS = {
+  1: [{ pos:'mid', amt:1 }],
+  2: [{ pos:'light', amt:0.5 }, { pos:'mid', amt:0.5 }]
+};
+function bandKeys(bands){
+  var k = [];
+  for (var i = 0; i < bands.length; i++) k.push(bands[i].pos);
+  k.sort();
+  return k.join(',');
+}
+function compareBands(a, b){ return bandKeys(a) === bandKeys(b); }
+/* 모델별 DNA 분자 모습(가닥 구성): 'old' | 'new' | 'mix' | 'mix2' */
+function moleculesFor(model, gen){
+  if (model === 'conservative'){
+    if (gen === 1) return [['old','old'], ['new','new']];
+    return [['old','old'], ['new','new'], ['new','new'], ['new','new']];
+  }
+  if (model === 'semi'){
+    if (gen === 1) return [['old','new'], ['old','new']];
+    return [['old','new'], ['new','new'], ['old','new'], ['new','new']];
+  }
+  if (model === 'dispersive'){
+    if (gen === 1) return [['mix','mix'], ['mix','mix']];
+    return [['mix2','mix2'], ['mix2','mix2'], ['mix2','mix2'], ['mix2','mix2']];
+  }
+  return [];
+}
+function modelVerdictText(model, ok1, ok2){
+  if (model === 'conservative'){
+    return '❌ <b>보존적 복제는 아니다.</b> 보존적 복제라면 원래 분자가 그대로 남아 <b>무거운 띠</b>가 계속 보여야 한다. ' +
+           '그러나 실제로는 1회 복제 후 무거운 띠가 <b>사라지고</b> 중간 무게 띠만 나타났다.';
+  }
+  if (model === 'dispersive'){
+    return '❌ <b>분산적 복제도 아니다.</b> 1회 복제 후 결과(중간 무게 띠 1개)는 반보존적과 똑같아 구별할 수 없다. ' +
+           '그러나 분산적 복제라면 2회 복제 후 모든 DNA가 <sup>15</sup>N을 조금씩 나눠 가져 ' +
+           '<b>중간보다 가벼운 띠 1개</b>만 생겨야 한다. 실제로는 <b>가벼운 띠와 중간 무게 띠 2개</b>가 나타났다.';
+  }
+  if (model === 'semi'){
+    return '✅ <b>반보존적 복제!</b> 1회 복제 후 모든 DNA가 「원래 가닥 1개 + 새 가닥 1개」이므로 <b>중간 무게 띠 1개</b>, ' +
+           '2회 복제 후에는 그중 절반이 <sup>14</sup>N만 가지게 되어 <b>가벼운 띠 + 중간 무게 띠</b>가 나타난다 — ' +
+           '1회·2회 모두 실제 결과와 <b>일치</b>한다.';
+  }
+  return (ok1 && ok2) ? '일치' : '불일치';
+}
+function wrongEchoText(n, usedAuto, placed){
+  /* 아직 붙인 것도, 틀린 것도 없을 때만 '시작 전' 안내 — 붙기 전에 오답을 낸 학생에게는 횟수를 알려야 한다 */
+  if (placed === 0 && !(n > 0)){
+    return '🔧 아직 <b>②에서 뉴클레오타이드를 붙여 보지 않았어요</b> — 몇 개 붙여 본 뒤 이 칸을 다시 읽어 보자. ' +
+           '짝이 맞지 않는 것을 붙이면 어떻게 되는지가 이 문항의 실마리예요.';
+  }
+  if (n > 0){
+    return '🔧 이번 활동에서 짝이 맞지 않는 뉴클레오타이드를 붙이려 한 것이 <b>' + n + '회</b> 있었어요. ' +
+           '그때마다 결합하지 못해 <b>옳은 것으로 바꿔</b> 붙였지요 — 세포도 바로 이렇게 <b>교정(수선)</b>합니다. ' +
+           '무엇이 옳은지는 <b>주형 가닥</b>이 알려 줍니다.';
+  }
+  return '🔧 이번 활동에서는 짝이 맞지 않는 뉴클레오타이드를 붙인 적이 <b>0회</b> — 완벽했어요! ' +
+         '그렇다면 만약 오류가 생겼다면 <b>무엇을 기준</b>으로 옳은 염기를 알 수 있을지 생각해 보자.' +
+         (usedAuto ? ' (⚡자동 합성으로 채운 구간은 주형에 맞춰 대신 채워 준 셈이니, 직접 붙인 구간만 세었어요.)' : '');
+}
+function targetHintText(tTop, tBot, sel){
+  var s = '';
+  if (sel) s += '👉 선택: <b>' + strandName(sel.strand) + ' ' + (sel.idx + 1) + '번</b> 자리 — ';
+  else s += '👉 붙일 자리를 골라 주세요 — ';
+  var parts = [];
+  parts.push('위 가닥 ' + (tTop >= 0 ? (tTop + 1) + '번' : '없음'));
+  parts.push('아래 가닥 ' + (tBot >= 0 ? (tBot + 1) + '번' : '없음'));
+  return s + '지금 붙일 수 있는 3′ 말단: ' + parts.join(' · ');
+}
+function countersText(st){
+  return '붙인 뉴클레오타이드 — 위 가닥 ' + filledCount(st.newTop) + ' / ' + N +
+         ' · 아래 가닥 ' + filledCount(st.newBot) + ' / ' + N +
+         ' &nbsp;|&nbsp; 직접 붙임 ' + st.manualTop + ' · ' + st.manualBot +
+         ' &nbsp;|&nbsp; 짝이 맞지 않아 실패 <b>' + st.wrong + '회</b>' +
+         (st.usedAuto ? ' &nbsp;|&nbsp; ⚡자동 합성 사용' : '');
+}
+function placementMessage(strand, idx, chk){
+  var no = idx + 1;
+  if (chk.reason === 'notopen'){
+    return '🔒 ' + no + '번은 아직 이중나선이 <b>풀리지 않은</b> 자리예요. 주형이 드러나야 뉴클레오타이드가 붙을 수 있어요 — ' +
+           '<b>[🔓 풀기]</b>로 오른쪽부터 풀어 보자.';
+  }
+  if (chk.reason === 'filled'){
+    return 'ℹ️ ' + no + '번 자리에는 이미 뉴클레오타이드가 붙어 있어요.';
+  }
+  if (chk.reason === 'wrongend'){
+    var base = '⛔ <b>DNA 중합효소는 합성되는 가닥의 3′ 말단에만</b> 뉴클레오타이드를 붙일 수 있어요. ';
+    if (strand === 'top'){
+      return base + '위 주형의 새 가닥은 <b>오른쪽에서 왼쪽으로</b> 자라므로, 지금 붙일 수 있는 자리는 <b>' +
+             (chk.want + 1) + '번</b>뿐이에요.';
+    }
+    return base + '아래 주형의 새 가닥은 <b>왼쪽에서 오른쪽으로</b> 자라므로, 지금 이어 붙일 수 있는 자리는 <b>' +
+           (chk.want + 1) + '번</b>뿐이에요. (풀린 구간마다 조각을 새로 시작해요)';
+  }
+  if (chk.reason === 'blocked'){
+    return '⏳ 이 가닥은 <b>풀린 구간을 모두 채웠어요</b>. [🔓 풀기]로 이중나선을 더 풀어야 이어서 붙일 수 있어요.';
+  }
+  return '범위를 벗어난 자리예요.';
+}
+
+/* ════════════ 상태 ════════════ */
+function freshState(){
+  return {
+    unwound: 0,
+    newTop: emptyStrand(),
+    newBot: emptyStrand(),
+    manualTop: 0, manualBot: 0,
+    wrong: 0,
+    usedAuto: false,
+    ligated: false,
+    verified: false,
+    sel: null,
+    ms: { pick:null, tried:{} },
+    ta: {}, chk: {}
+  };
+}
+var state = freshState();
+
+function sanitizeStrand(a){
+  if (!a || typeof a.length !== 'number' || a.length !== N) return null;
+  var out = emptyStrand();
+  for (var i = 0; i < N; i++){
+    var v = a[i];
+    if (v === 'A' || v === 'T' || v === 'G' || v === 'C') out[i] = v;
+  }
+  return out;
+}
+function mergeState(saved){
+  var s = freshState();
+  if (!saved || typeof saved !== 'object') return s;
+  var u = +saved.unwound;
+  if (!isNaN(u)) s.unwound = Math.max(0, Math.min(N, Math.floor(u / SEG) * SEG));
+  var t = sanitizeStrand(saved.newTop), b = sanitizeStrand(saved.newBot);
+  if (t) s.newTop = t;
+  if (b) s.newBot = b;
+  ['manualTop','manualBot','wrong'].forEach(function(k){
+    var v = +saved[k];
+    if (!isNaN(v) && v >= 0) s[k] = v;
+  });
+  s.usedAuto = !!saved.usedAuto;
+  s.ligated  = !!saved.ligated && strandComplete(s.newBot);
+  /* verified 는 「두 딸 DNA가 서로·원래와 같다 ✅」를 화면에 그대로 되살리므로,
+     저장값이 손상됐거나 주형 서열이 바뀐 경우에는 상보성을 다시 확인해야 한다. */
+  s.verified = !!saved.verified && s.ligated && strandComplete(s.newTop) &&
+               daughterCheck(TOP_TEMPLATE, s.newTop).ok && daughterCheck(BOT_TEMPLATE, s.newBot).ok;
+  if (saved.sel && (saved.sel.strand === 'top' || saved.sel.strand === 'bot')) s.sel = saved.sel;
+  if (saved.ms && typeof saved.ms === 'object'){
+    if (MODEL_NAME[saved.ms.pick]) s.ms.pick = saved.ms.pick;
+    if (saved.ms.tried && typeof saved.ms.tried === 'object') s.ms.tried = saved.ms.tried;
+  }
+  if (saved.ta && typeof saved.ta === 'object') s.ta = saved.ta;
+  if (saved.chk && typeof saved.chk === 'object') s.chk = saved.chk;
+  return s;
+}
+function saveState(){
+  try {
+    var ta = {};
+    ['ta1','ta2','ta3','ta4'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) ta[id] = el.value;
+    });
+    state.ta = ta;
+    var ck = {};
+    ['chk1','chk2','chk3'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) ck[id] = !!el.checked;
+    });
+    state.chk = ck;
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+function loadState(){
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (raw){
+      var s = JSON.parse(raw);
+      if (s && typeof s === 'object') return s;
+    }
+  } catch(e) {}
+  return null;
+}
+
+/* ════════════ 진행 배지 ════════════ */
+function stepDone(){
+  var n = 0;
+  if (state.unwound >= N) n++;
+  if (strandComplete(state.newTop)) n++;
+  if (strandComplete(state.newBot) && state.ligated) n++;
+  if (state.verified) n++;
+  return n;
+}
+function updateProgress(){
+  var el = document.getElementById('progress');
+  if (el) el.textContent = '진행 ' + stepDone() + ' / 4';
+}
+/* ════════════ 무대 만들기 (1회) ════════════ */
+function makeCell(key, i, kind){
+  var d = document.createElement('div');
+  d.id = 'c_' + key + '_' + i;
+  d.className = 'cell';
+  if (kind === 'nt'){
+    var s = (key === 'newTop') ? 'top' : 'bot';
+    d.onclick = function(){ tapCell(s, i); };
+  }
+  return d;
+}
+function buildRow(rowId, key, kind){
+  var host = document.getElementById(rowId);
+  if (!host) return;
+  host.innerHTML = '';
+  for (var i = 0; i < N; i++) host.appendChild(makeCell(key, i, kind));
+}
+function buildStage(){
+  buildRow('row_newTop',  'newTop',  'nt');
+  buildRow('row_tmplTop', 'tmplTop', 'tmpl');
+  buildRow('row_bond',    'bond',    'bond');
+  buildRow('row_tmplBot', 'tmplBot', 'tmpl');
+  buildRow('row_newBot',  'newBot',  'nt');
+  buildRow('row_num',     'num',     'num');
+  var fr = document.getElementById('row_frag');
+  if (fr){
+    fr.innerHTML = '';
+    for (var k = SEG_COUNT - 1; k >= 0; k--){       // 화면 왼쪽부터 조각 4·3·2·1
+      var d = document.createElement('div');
+      d.id = 'frag_' + k;
+      d.className = 'fragbox';
+      fr.appendChild(d);
+    }
+  }
+  for (var i = 0; i < N; i++){
+    var nc = document.getElementById('c_num_' + i);
+    if (nc){
+      nc.className = 'cell numc';
+      /* 안내 문구가 「31번 자리」처럼 자리 번호로 지시하므로 4칸마다로는 찾기 어렵다 → 2칸마다 */
+      nc.textContent = (i % 2 === 0 || i === N - 1) ? String(i + 1) : '';
+    }
+  }
+}
+
+/* ════════════ 무대 갱신 ════════════ */
+function setCls(id, cls, text){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = cls;
+  if (text !== undefined) el.textContent = text;
+}
+function ntClass(base, open, isTarget, isSel, extra){
+  var c = 'cell nt';
+  if (base) c += ' filled b-' + base;
+  else if (!open) c += ' locked';
+  else c += ' openslot';
+  if (isTarget) c += ' target';
+  if (isSel) c += ' sel';
+  if (extra) c += ' ' + extra;
+  return c;
+}
+function updateStage(){
+  var tTop = nextTopIndex(state.newTop, state.unwound);
+  var tBot = nextBotIndex(state.newBot, state.unwound);
+  /* 전부 풀린 뒤에는 분기점이 사라진다 — 0번 칸에 유령 분기점이 남지 않도록 */
+  var forkIdx = (state.unwound > 0 && state.unwound < N) ? unwoundStart(state.unwound) : -1;
+  var i, open, extraB;
+  for (i = 0; i < N; i++){
+    open = isOpen(i, state.unwound);
+    var fk = (i === forkIdx) ? ' forkcol' : '';
+    setCls('c_tmplTop_' + i, 'cell tmpl b-' + TOP_TEMPLATE.charAt(i) + (open ? ' open' : ' closed') + fk, TOP_TEMPLATE.charAt(i));
+    setCls('c_tmplBot_' + i, 'cell tmpl b-' + BOT_TEMPLATE.charAt(i) + (open ? ' open' : ' closed') + fk, BOT_TEMPLATE.charAt(i));
+    setCls('c_bond_' + i, 'cell bondc', open ? '' : '‖');
+    var selTop = !!(state.sel && state.sel.strand === 'top' && state.sel.idx === i);
+    var selBot = !!(state.sel && state.sel.strand === 'bot' && state.sel.idx === i);
+    setCls('c_newTop_' + i, ntClass(state.newTop[i], open, i === tTop, selTop, fk.replace(' ', '')), state.newTop[i] || '');
+    extraB = '';
+    if (!state.ligated && open && (i === 8 || i === 16 || i === 24)) extraB = 'seam';
+    else if (state.ligated) extraB = 'joined';
+    if (fk) extraB += ' forkcol';
+    setCls('c_newBot_' + i, ntClass(state.newBot[i], open, i === tBot, selBot, extraB), state.newBot[i] || '');
+  }
+  /* 합성 방향 화살표 (교과서 ③: 합성한 방향을 화살표로 표시) */
+  var cTop = filledCount(state.newTop), cBot = filledCount(state.newBot);
+  var aT = document.getElementById('arrowTop');
+  if (aT){
+    if (cTop > 0){
+      aT.style.display = 'flex';
+      /* 선도 가닥은 31→0 으로 연속이므로 채운 칸은 언제나 오른쪽 끝에 붙은 한 덩어리 */
+      aT.style.left = ((N - cTop) * CELL_W) + 'px';
+      aT.style.width = (cTop * CELL_W) + 'px';
+      aT.textContent = (cTop >= 6) ? '◀ 5′→3′ 합성' : '◀';
+    } else { aT.style.display = 'none'; }
+  }
+  /* ★지연 가닥은 '조각마다' 왼쪽→오른쪽으로 채워진다. 채운 칸이 연속이 아니므로
+     한 개의 막대로 그리면 아직 빈 칸을 덮어 「연속 합성」으로 오독된다.
+     → 조각별 막대를 조각의 왼쪽 끝(분기점 쪽)에서 오른쪽으로 그려 불연속을 눈에 보이게 한다. */
+  for (var kb = 0; kb < SEG_COUNT; kb++){
+    var aB = document.getElementById('arrowBot_' + kb);
+    if (!aB) continue;
+    if (state.ligated){
+      /* 연결 후에는 조각 막대를 하나로 합쳐 「이어졌다」를 보여 준다 */
+      if (kb === 0){
+        aB.style.display = 'flex';
+        aB.style.left = '0px';
+        aB.style.width = (N * CELL_W) + 'px';
+        aB.textContent = '🔗 연결된 지연 가닥 — 5′→3′ ▶';
+      } else { aB.style.display = 'none'; }
+      continue;
+    }
+    var rb = segRange(kb), cb = 0;
+    for (var jb = rb.start; jb <= rb.end; jb++){ if (state.newBot[jb]) cb++; else break; }
+    if (cb > 0){
+      aB.style.display = 'flex';
+      aB.style.left  = (rb.start * CELL_W) + 'px';
+      aB.style.width = (cb * CELL_W) + 'px';
+      aB.textContent = (cb >= 6) ? '5′→3′ 합성 ▶' : '▶';
+    } else { aB.style.display = 'none'; }
+  }
+  /* 조각 라벨 */
+  for (var k = 0; k < SEG_COUNT; k++){
+    var fb = document.getElementById('frag_' + k);
+    if (!fb) continue;
+    if (state.ligated){ fb.className = 'fragbox blank'; fb.textContent = ''; }
+    else if (fragmentDone(state.newBot, k)){ fb.className = 'fragbox done'; fb.textContent = '조각 ' + (k + 1) + ' 완성'; }
+    else if (k < openedSegments(state.unwound)){ fb.className = 'fragbox'; fb.textContent = '조각 ' + (k + 1); }
+    else { fb.className = 'fragbox blank'; fb.textContent = ''; }
+  }
+  var fn = document.getElementById('fragNote');
+  if (fn) fn.textContent = state.ligated ? '🔗 하나로 연결됨' : '작은 DNA 조각';
+  /* 가닥 이름 공개 */
+  var lt = document.getElementById('lab_newTop');
+  if (lt) lt.textContent = strandComplete(state.newTop) ? '새 가닥 ① (선도 가닥)' : '새 가닥 ①';
+  var lb = document.getElementById('lab_newBot');
+  if (lb) lb.textContent = (strandComplete(state.newBot) && state.ligated) ? '새 가닥 ② (지연 가닥)' : '새 가닥 ②';
+  /* 정보줄 · 버튼 */
+  var ui = document.getElementById('unwindInfo');
+  if (ui){
+    ui.innerHTML = '🔓 풀린 길이 <b>' + state.unwound + ' / ' + N + '</b> 염기쌍' +
+      (state.unwound > 0 && state.unwound < N ? ' &nbsp;|&nbsp; 복제 분기점: <b>' + (unwoundStart(state.unwound) + 1) + '번</b> 자리 (여기서 왼쪽은 아직 감겨 있음)'
+                                              : (state.unwound >= N ? ' &nbsp;|&nbsp; 전부 풀렸다' : ' &nbsp;|&nbsp; 아직 감겨 있다 — 오른쪽 끝부터 풀어 보자')) +
+      ' &nbsp;|&nbsp; 열린 조각 <b>' + openedSegments(state.unwound) + ' / ' + SEG_COUNT + '</b>';
+  }
+  var doneAll = strandComplete(state.newTop) && strandComplete(state.newBot);
+  setDisabled('btnUnwind', state.unwound >= N);
+  setDisabled('btnUnwindAll', state.unwound >= N);
+  setDisabled('btnAuto', !autoAvailable());
+  /* 두 가닥이 다 찼으면 염기 단추를 잠근다 — 안 그러면 「붙일 자리가 없어요, 풀기를 누르세요」라는
+     (이미 다 풀린 상태와 모순되는) 안내가 뜬다 */
+  ['A','T','G','C'].forEach(function(b){ setDisabled('nb_' + b, doneAll); });
+  setDisabled('btnRemove', state.verified);
+  setDisabled('btnLigate', !(strandComplete(state.newBot) && !state.ligated));
+  setDisabled('btnVerify', !(strandComplete(state.newTop) && strandComplete(state.newBot) && state.ligated));
+  setCls('pick_top', 'choice' + (state.sel && state.sel.strand === 'top' ? ' sel' : '') + (strandComplete(state.newTop) ? ' done' : ''), '위 주형에 붙이기');
+  setCls('pick_bot', 'choice' + (state.sel && state.sel.strand === 'bot' ? ' sel' : '') + (strandComplete(state.newBot) ? ' done' : ''), '아래 주형에 붙이기');
+  var hint = document.getElementById('stageHint');
+  if (hint) hint.innerHTML = targetHintText(tTop, tBot, state.sel);
+  var cnt = document.getElementById('counters');
+  if (cnt) cnt.innerHTML = countersText(state);
+  var ah = document.getElementById('autoHint');
+  if (ah){
+    if (strandComplete(state.newTop) && strandComplete(state.newBot)){
+      ah.innerHTML = '두 가닥 모두 완성! <b>🔗 DNA 연결효소로 잇기</b>로 지연 가닥의 조각을 이어 붙이자.';
+    } else if (autoAvailable()){
+      ah.innerHTML = '⚡ 요령을 익혔으니 나머지는 자동으로 채울 수 있어요(64번 다 누르지 않아도 됩니다).';
+    } else {
+      ah.innerHTML = '⚡ 자동 합성은 <b>각 가닥에 ' + MANUAL_MIN + '개 이상 직접</b> 붙이면 열립니다 — 현재 위 <b>' +
+        state.manualTop + '</b> / 아래 <b>' + state.manualBot + '</b>.';
+    }
+  }
+  var rl = document.getElementById('resultLocked');
+  var okAll = doneAll && state.ligated;
+  if (rl) rl.style.display = okAll ? 'none' : 'block';
+  /* ★④ 정리하기 3번의 근거 박스는 오답 횟수가 바뀔 때마다 다시 그려야 한다
+     (예전에는 restoreUI 에서만 불려 활동 중 내내 「0회 — 완벽했어요」로 굳어 있었다) */
+  renderWrongEcho();
+}
+function setDisabled(id, flag){
+  var el = document.getElementById(id);
+  if (el) el.disabled = !!flag;
+}
+function showFb(id, cls, html){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'fb show ' + cls;
+  el.innerHTML = html;
+}
+function shakeCell(strand, idx){
+  var el = document.getElementById('c_' + (strand === 'top' ? 'newTop' : 'newBot') + '_' + idx);
+  if (!el) return;
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+}
+
+/* ════════════ 풀기 ════════════ */
+function unwind(){
+  if (state.unwound >= N){
+    showFb('fb_stage', 'info', '이미 이중나선이 끝까지 풀렸어요.');
+    return;
+  }
+  state.unwound = Math.min(N, state.unwound + SEG);
+  var msg;
+  if (state.unwound === N){
+    msg = '🔓 <b>' + N + '칸 전부</b> 풀렸어요 — 교과서 탐구하기 ❹의 「복제되지 않은 나머지 부분도 잘라 풀어낸다」 단계! ' +
+          '이제 마지막 조각까지 합성할 수 있어요.';
+  } else if (state.unwound === N / 2){
+    msg = '🔓 오른쪽에서 <b>절반(' + state.unwound + '칸)</b>이 풀렸어요 — 교과서 탐구하기 ❷의 「반 정도 잘라 두 가닥으로 분리」 단계! ' +
+          '먼저 이 구간에 상보 가닥을 붙여 보자.';
+  } else {
+    msg = '🔓 오른쪽에서 <b>' + state.unwound + '칸</b>까지 풀렸어요. 분기점이 왼쪽으로 이동했습니다 — 풀린 구간에만 합성할 수 있어요.';
+  }
+  if (!state.sel) autoSelect();
+  showFb('fb_stage', 'info', msg);
+  updateStage(); updateProgress(); saveState();
+}
+function unwindAll(){
+  if (state.unwound >= N){
+    showFb('fb_stage', 'info', '이미 끝까지 풀렸어요.');
+    return;
+  }
+  state.unwound = N;
+  if (!state.sel) autoSelect();
+  showFb('fb_stage', 'info', '🔓 이중나선을 <b>끝까지</b> 풀었어요. 아래 가닥은 풀린 순서대로 <b>조각 1 → 2 → 3 → 4</b>로 만들어집니다.');
+  updateStage(); updateProgress(); saveState();
+}
+
+/* ════════════ 자리 선택 ════════════ */
+function currentTargets(){
+  return { top: nextTopIndex(state.newTop, state.unwound), bot: nextBotIndex(state.newBot, state.unwound) };
+}
+function autoSelect(){
+  var t = currentTargets();
+  if (t.top >= 0) state.sel = { strand:'top', idx:t.top };
+  else if (t.bot >= 0) state.sel = { strand:'bot', idx:t.bot };
+  else state.sel = null;
+}
+function selectStrand(s){
+  var t = currentTargets();
+  var idx = (s === 'top') ? t.top : t.bot;
+  if (idx < 0){
+    if (strandComplete(s === 'top' ? state.newTop : state.newBot)){
+      showFb('fb_stage', 'good', '이 가닥은 이미 완성됐어요. 다른 가닥을 살펴보자.');
+    } else {
+      showFb('fb_stage', 'warn', '⏳ 이 가닥에는 지금 붙일 수 있는 자리가 없어요 — <b>[🔓 풀기]</b>로 이중나선을 더 풀어야 해요.');
+    }
+    return;
+  }
+  state.sel = { strand:s, idx:idx };
+  showFb('fb_stage', 'info', '선택: <b>' + strandName(s) + ' ' + (idx + 1) + '번</b> 자리(새 가닥의 3′ 말단). ' +
+    '주형의 <b>' + templateBaseAt(s, idx) + '</b>와 짝이 되는 뉴클레오타이드를 눌러 보자.');
+  updateStage(); saveState();
+}
+function tapCell(strand, idx){
+  var chk = placementCheck(strand, idx, state.newTop, state.newBot, state.unwound);
+  if (chk.ok){
+    state.sel = { strand:strand, idx:idx };
+    showFb('fb_stage', 'info', '선택: <b>' + strandName(strand) + ' ' + (idx + 1) + '번</b> 자리. ' +
+      '주형의 <b>' + templateBaseAt(strand, idx) + '</b>와 짝이 되는 뉴클레오타이드를 눌러 보자.');
+    updateStage(); saveState();
+    return;
+  }
+  shakeCell(strand, idx);
+  showFb('fb_stage', 'warn', placementMessage(strand, idx, chk));
+}
+
+/* ════════════ 뉴클레오타이드 붙이기 ════════════ */
+function placeBase(base){
+  if (!COMPLEMENT[base]) return;
+  if (!state.sel){
+    autoSelect();
+    if (!state.sel){
+      if (strandComplete(state.newTop) && strandComplete(state.newBot)){
+        showFb('fb_stage', 'good', '🎉 두 새 가닥이 <b>이미 모두 완성</b>됐어요 — 다음은 <b>🔗 DNA 연결효소로 잇기</b>, ' +
+          '그다음 <b>③ 딸 DNA 확인하기</b>예요.');
+      } else {
+        showFb('fb_stage', 'warn', '🔒 아직 붙일 자리가 없어요 — <b>[🔓 풀기]</b>로 이중나선을 먼저 풀어야 주형이 드러나요.');
+      }
+      updateStage();
+      return;
+    }
+  }
+  var s = state.sel.strand, idx = state.sel.idx;
+  var chk = placementCheck(s, idx, state.newTop, state.newBot, state.unwound);
+  if (!chk.ok){
+    autoSelect();
+    showFb('fb_stage', 'warn', placementMessage(s, idx, chk));
+    updateStage();
+    return;
+  }
+  var tb = templateBaseAt(s, idx);
+  if (!isComplement(tb, base)){
+    state.wrong++;
+    showFb('fb_stage', 'bad', '❌ 주형의 <b>' + tb + '</b>와 <b>' + base + '</b>는 짝이 아니에요 — 수소 결합을 이루지 못해 붙지 않습니다. ' +
+      tb + '의 짝은 <b>' + complementOf(tb) + '</b>(' + BASE_NAME[complementOf(tb)] + ')예요. (A–T, G–C)');
+    updateStage(); updateProgress(); saveState();
+    /* ★shakeCell 은 반드시 updateStage 뒤에 — updateStage 가 className 을 통째로 덮어써
+       먼저 붙인 shake 클래스를 지워 버리면 흔들림 애니메이션이 한 번도 재생되지 않는다 */
+    shakeCell(s, idx);
+    return;
+  }
+  var arr = (s === 'top') ? state.newTop : state.newBot;
+  arr[idx] = base;
+  if (s === 'top') state.manualTop++; else state.manualBot++;
+  var msg = '✅ 주형의 <b>' + tb + '</b>에 <b>' + base + '</b>가 결합! ';
+  if (s === 'top'){
+    msg += '새 가닥의 3′ 말단이 <b>왼쪽으로</b> 한 칸 자랐어요 — 분기점이 열리는 방향과 <b>같으므로</b> 끊김 없이 이어 갈 수 있어요.';
+  } else {
+    msg += '이 조각의 3′ 말단이 <b>오른쪽으로</b> 한 칸 자랐어요 — 분기점이 열리는 방향과 <b>반대</b>라서, 풀린 구간마다 조각을 새로 시작해야 해요.';
+    var k = segmentOf(idx);
+    if (fragmentDone(state.newBot, k)) msg += ' 🧩 <b>조각 ' + (k + 1) + ' 완성!</b>';
+  }
+  var nxt = nextIndexFor(s, arr, state.unwound);
+  if (nxt >= 0){
+    state.sel = { strand:s, idx:nxt };
+  } else {
+    if (strandComplete(arr)){
+      msg += ' 🎉 <b>' + strandName(s) + ' 완성!</b>' + (s === 'bot' ? ' 이제 <b>🔗 DNA 연결효소</b>로 조각들을 이어 보자.' : '');
+    } else {
+      msg += ' 👉 풀린 구간의 끝이에요 — [🔓 풀기]로 더 풀거나 다른 가닥으로 옮기자.';
+    }
+    var other = (s === 'top') ? 'bot' : 'top';
+    var otherArr = (other === 'top') ? state.newTop : state.newBot;
+    var on = nextIndexFor(other, otherArr, state.unwound);
+    state.sel = (on >= 0) ? { strand:other, idx:on } : null;
+    if (on >= 0) msg += ' (<b>' + strandName(other) + '</b>로 자동 이동했어요)';
+  }
+  showFb('fb_stage', 'good', msg);
+  updateStage(); updateProgress(); saveState();
+}
+
+/* ✂ 마지막 하나 떼어내기 — 교과서 정리하기 3(오류 수선)과 연결 */
+function removeLast(){
+  if (state.verified){
+    showFb('fb_stage', 'info', '이미 복제를 완료했어요. 다시 하려면 맨 아래 <b>🔄 처음부터 다시 하기</b>를 눌러요.');
+    return;
+  }
+  var s = (state.sel && state.sel.strand) ? state.sel.strand : 'top';
+  if (s === 'bot' && state.ligated){
+    showFb('fb_stage', 'warn', '🔗 아래 가닥은 이미 DNA 연결효소로 이어 붙였어요 — 떼어낼 수 없습니다.');
+    return;
+  }
+  var arr = (s === 'top') ? state.newTop : state.newBot;
+  var idx = lastPlacedIndex(s, arr, state.unwound);
+  if (idx < 0){
+    showFb('fb_stage', 'warn', strandName(s) + '에는 아직 떼어낼 뉴클레오타이드가 없어요.');
+    return;
+  }
+  var removed = arr[idx];
+  arr[idx] = null;
+  state.sel = { strand:s, idx:idx };
+  showFb('fb_stage', 'info', '✂ ' + strandName(s) + ' ' + (idx + 1) + '번의 <b>' + removed + '</b>를 떼어냈어요. ' +
+    '이렇게 잘못 붙은 뉴클레오타이드를 잘라 내고 주형에 맞는 것으로 바꾸는 것이 <b>교정·수선</b>입니다.');
+  updateStage(); updateProgress(); saveState();
+}
+
+/* ⚡ 나머지 자동 합성 */
+function autoAvailable(){
+  if (strandComplete(state.newTop) && strandComplete(state.newBot)) return false;
+  return state.manualTop >= MANUAL_MIN && state.manualBot >= MANUAL_MIN;
+}
+function autoFill(){
+  if (!autoAvailable()){
+    if (strandComplete(state.newTop) && strandComplete(state.newBot)){
+      showFb('fb_stage', 'info', '두 가닥이 이미 완성됐어요.');
+    } else {
+      showFb('fb_stage', 'warn', '⚡ 자동 합성은 <b>각 가닥에 ' + MANUAL_MIN + '개 이상 직접</b> 붙인 뒤에 열려요 — ' +
+        '지금은 위 <b>' + state.manualTop + '</b>개, 아래 <b>' + state.manualBot + '</b>개예요. ' +
+        '방향 규칙을 직접 익힌 다음에 건너뛰자!');
+    }
+    return;
+  }
+  state.unwound = N;
+  state.usedAuto = true;
+  var i, guard = 0;
+  while (guard++ < 200){
+    i = nextTopIndex(state.newTop, state.unwound);
+    if (i < 0) break;
+    state.newTop[i] = complementOf(TOP_TEMPLATE.charAt(i));
+  }
+  guard = 0;
+  while (guard++ < 200){
+    i = nextBotIndex(state.newBot, state.unwound);
+    if (i < 0) break;
+    state.newBot[i] = complementOf(BOT_TEMPLATE.charAt(i));
+  }
+  state.sel = null;
+  showFb('fb_stage', 'good', '⚡ 나머지를 같은 규칙으로 자동 합성했어요 — <b>위 가닥은 오른쪽→왼쪽 한 줄로</b>, ' +
+    '<b>아래 가닥은 조각마다 왼쪽→오른쪽으로</b> 채워진 것을 확인하자. 이제 <b>🔗 DNA 연결효소로 잇기</b>!');
+  updateStage(); updateProgress(); saveState();
+}
+
+/* 🔗 DNA 연결효소 */
+function ligate(){
+  if (!strandComplete(state.newBot)){
+    var done = fragmentsDoneCount(state.newBot);
+    showFb('fb_stage', 'warn', '🔗 DNA 연결효소는 <b>완성된 조각들</b>을 이어 붙여요. 아직 완성된 조각이 ' + done + ' / ' + SEG_COUNT +
+      '개예요 — 아래 가닥을 끝까지 채운 뒤 눌러 보자.');
+    return;
+  }
+  if (state.ligated){
+    showFb('fb_stage', 'info', '이미 연결됐어요.');
+    return;
+  }
+  /* 연결 메시지는 「반대쪽 선도 가닥」을 함께 설명한다 — 위 가닥을 아직 만들지 않았다면
+     학생이 만든 적 없는 가닥을 설명하게 되고, 연속↔불연속 비교의 순서도 뒤집힌다 */
+  if (!strandComplete(state.newTop)){
+    showFb('fb_stage', 'warn', '🔗 연결은 <b>마지막 단계</b>예요 — 먼저 <b>위 주형의 새 가닥(연속 합성)</b>도 끝까지 채워 ' +
+      '두 가닥의 합성 모습을 나란히 비교해 보자.');
+    return;
+  }
+  state.ligated = true;
+  showFb('fb_stage', 'good', '🔗 <b>DNA 연결효소</b>가 ' + SEG_COUNT + '개의 조각을 이어 <b>하나의 긴 가닥</b>으로 만들었어요. ' +
+    '이음새가 사라진 것을 확인하자 — 이렇게 <b>불연속적으로</b> 합성된 뒤 연결되는 가닥을 <b>지연 가닥</b>이라고 해요. ' +
+    '반대쪽처럼 <b>연속적으로</b> 합성되는 가닥은 <b>선도 가닥</b>!');
+  updateStage(); updateProgress(); saveState();
+}
+
+/* ════════════ ③ 딸 DNA 확인 ════════════ */
+function cellsHTML(str){
+  var h = '';
+  for (var i = 0; i < N; i++){
+    var b = str.charAt(i);
+    h += '<div class="cell sm b-' + b + '">' + b + '</div>';
+  }
+  return h;
+}
+function strandRowHTML(badge, badgeCls, l, seqStr, r){
+  return '<div class="dna-row"><div class="sbadge ' + badgeCls + '">' + badge + '</div>' +
+    '<div class="endlab">' + l + '</div><div class="cells">' + cellsHTML(seqStr) + '</div>' +
+    '<div class="endlab">' + r + '</div></div>';
+}
+function renderDaughters(){
+  var box = document.getElementById('daughters');
+  if (!box) return;
+  var h = '';
+  h += '<div class="dgt"><div class="dgt-title">딸 DNA ① — 위 주형 가닥을 쓴 쪽</div>' +
+       strandRowHTML('원래 가닥', 'old', '5′', TOP_TEMPLATE, '3′') +
+       strandRowHTML('새로 합성된 가닥', 'new', '3′', arrStr(state.newTop), '5′') + '</div>';
+  h += '<div class="dgt"><div class="dgt-title">딸 DNA ② — 아래 주형 가닥을 쓴 쪽</div>' +
+       strandRowHTML('새로 합성된 가닥', 'new', '5′', arrStr(state.newBot), '3′') +
+       strandRowHTML('원래 가닥', 'old', '3′', BOT_TEMPLATE, '5′') + '</div>';
+  box.innerHTML = h;
+}
+function verifyDaughters(){
+  if (!(strandComplete(state.newTop) && strandComplete(state.newBot))){
+    showFb('fb_stage', 'warn', '아직 두 새 가닥이 완성되지 않았어요.');
+    return;
+  }
+  if (!state.ligated){
+    showFb('fb_stage', 'warn', '🔗 지연 가닥의 조각을 <b>DNA 연결효소</b>로 먼저 이어 주세요.');
+    return;
+  }
+  var a = daughterCheck(TOP_TEMPLATE, state.newTop);
+  var b = daughterCheck(BOT_TEMPLATE, state.newBot);
+  var same = daughtersIdentical(state.newTop, state.newBot);
+  state.verified = a.ok && b.ok && same;
+  renderDaughters();
+  var rb = document.getElementById('resultBody');
+  if (rb) rb.style.display = 'block';
+  var el = document.getElementById('dgtCheck');
+  if (el){
+    el.innerHTML =
+      '🔎 자동 대조 — 딸 DNA ①: <b>' + a.matched + ' / ' + a.total + '</b>쌍 상보 결합' + (a.ok ? ' ✅' : ' ❌') +
+      ' &nbsp;·&nbsp; 딸 DNA ②: <b>' + b.matched + ' / ' + b.total + '</b>쌍' + (b.ok ? ' ✅' : ' ❌') +
+      '<br>두 딸 DNA의 염기쌍 서열이 서로 같고 원래 DNA와도 같은가? <b>' + (same ? '같다 ✅' : '다르다 ❌') + '</b>' +
+      '<br><span style="color:var(--sub); font-size:15px;">새로 합성된 가닥의 서열은 각각 <b>없어진 짝 가닥</b>의 서열과 똑같다 — ' +
+      '주형을 보고 상보적으로 만들었으니 당연하다.</span>';
+  }
+  updateStage(); updateProgress(); saveState();
+}
+
+/* ════════════ 💡 메셀슨·스탈 ════════════ */
+function tubeHTML(bands, cap, capCls){
+  var h = '<div class="tube-col"><div class="tube-cap ' + capCls + '">' + cap + '</div><div class="tube">';
+  for (var i = 0; i < bands.length; i++){
+    var m = BAND_META[bands[i].pos];
+    var op = 0.4 + 0.6 * bands[i].amt;
+    h += '<div class="band" style="top:' + m.top + '%; opacity:' + op.toFixed(2) + ';"></div>';
+  }
+  return h + '</div></div>';
+}
+/* 범례는 .tube-set 안의 첫 칸으로 들어간다 — 시험관과 같은 바닥 정렬을 써야
+   라벨 높이가 띠 높이와 정확히 맞는다(캡션과 같은 높이의 투명 자리를 위에 둔다) */
+function legendHTML(){
+  var order = ['light','lightmid','mid','heavy'];
+  var h = '<div class="tube-col"><div class="tube-cap" style="visibility:hidden;">범례<br>&nbsp;</div>' +
+          '<div class="tube-legend">';
+  for (var i = 0; i < order.length; i++){
+    var m = BAND_META[order[i]];
+    h += '<div class="lg" style="top:' + m.top + '%;">' + m.name + '<br>' + m.sub + '</div>';
+  }
+  return h + '</div></div>';
+}
+/* 가닥 종류를 색만으로 알리지 않도록 바 안에 질소 표기를 넣는다(색약 대응) */
+var SB_LAB = { old:'¹⁵N', new:'¹⁴N', mix:'½ ¹⁵N', mix2:'¼ ¹⁵N' };
+function molHTML(model, gen){
+  var mols = moleculesFor(model, gen), h = '<div class="mol-set">';
+  for (var i = 0; i < mols.length; i++){
+    h += '<div class="mol"><div class="sb ' + mols[i][0] + '">' + (SB_LAB[mols[i][0]] || '') + '</div>' +
+         '<div class="sb ' + mols[i][1] + '">' + (SB_LAB[mols[i][1]] || '') + '</div>' +
+         '<div class="mlab">' + (i + 1) + '</div></div>';
+  }
+  return h + '</div>';
+}
+function pickModel(model){
+  if (!MODEL_NAME[model]) return;
+  state.ms.pick = model;
+  state.ms.tried[model] = true;
+  renderMS();
+  saveState();
+}
+function msTriedCount(){
+  var n = 0;
+  ['conservative','semi','dispersive'].forEach(function(k){ if (state.ms.tried[k]) n++; });
+  return n;
+}
+function renderMS(){
+  ['conservative','semi','dispersive'].forEach(function(k){
+    setCls('ms_' + k, 'choice' + (state.ms.pick === k ? ' sel' : '') + (state.ms.tried[k] ? ' done' : ''), MODEL_NAME[k]);
+  });
+  var model = state.ms.pick;
+  var desc = document.getElementById('msDesc');
+  var body = document.getElementById('msBody');
+  if (!model){
+    if (desc) desc.innerHTML = '위 세 단추를 눌러 모델을 골라 보자. 고른 모델대로라면 나올 <b>예상 결과</b>를 시험관에 그려 줍니다.';
+    if (body) body.style.display = 'none';
+    return;
+  }
+  if (desc) desc.innerHTML = '<b>' + MODEL_NAME[model] + '</b> — ' + MODEL_DESC[model];
+  if (body) body.style.display = 'block';
+  var p1 = predictBands(model, 1), p2 = predictBands(model, 2);
+  var a1 = ACTUAL_BANDS[1], a2 = ACTUAL_BANDS[2];
+  var ok1 = compareBands(p1, a1), ok2 = compareBands(p2, a2);
+  var area = document.getElementById('msArea');
+  if (area){
+    area.innerHTML =
+      '<div><div class="tube-scroll"><div class="tube-set">' +
+        legendHTML() +
+        tubeHTML(predictBands(model, 0), '배양 전<br>(¹⁵N)', 'pred') +
+        tubeHTML(p1, '예상<br>1회 복제 후', 'pred') +
+        tubeHTML(a1, '실제<br>1회 복제 후', 'real') +
+        tubeHTML(p2, '예상<br>2회 복제 후', 'pred') +
+        tubeHTML(a2, '실제<br>2회 복제 후', 'real') +
+      '</div></div>' +
+      '<div class="verdict ' + (ok1 ? 'ok' : 'no') + '">1회 복제 후 — 예상과 실제가 ' + (ok1 ? '<b>일치</b> ✅' : '<b>불일치</b> ❌') + '</div>' +
+      '<div class="verdict ' + (ok2 ? 'ok' : 'no') + '">2회 복제 후 — 예상과 실제가 ' + (ok2 ? '<b>일치</b> ✅' : '<b>불일치</b> ❌') + '</div>' +
+      '</div>';
+  }
+  var mm = document.getElementById('msMol');
+  if (mm){
+    mm.innerHTML = '<div class="note" style="margin:6px 0 2px;">1회 복제 후</div>' + molHTML(model, 1) +
+                   '<div class="note" style="margin:8px 0 2px;">2회 복제 후</div>' + molHTML(model, 2);
+  }
+  var txt = modelVerdictText(model, ok1, ok2);
+  if (msTriedCount() >= 3){
+    txt += '<br><br>🏁 <b>세 모델을 모두 확인했어요.</b> 실제 결과와 1회·2회 모두 일치하는 것은 <b>반보존적 복제</b> 하나뿐 — ' +
+           '메셀슨과 스탈은 이렇게 DNA가 반보존적으로 복제된다는 것을 밝혔습니다.';
+  }
+  showFb('fb_ms', (ok1 && ok2) ? 'good' : 'warn', txt);
+}
+
+/* ════════════ 정리하기 · 복원 · 리셋 ════════════ */
+function toggleAns(ansId, btn){
+  var ans = document.getElementById(ansId);
+  if (!ans) return;
+  var open = ans.style.display === 'block';
+  ans.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '모범답안 보기' : '모범답안 닫기';
+}
+function renderWrongEcho(){
+  var el = document.getElementById('wrongEcho');
+  if (el) el.innerHTML = wrongEchoText(state.wrong, state.usedAuto,
+    filledCount(state.newTop) + filledCount(state.newBot));
+}
+function restoreUI(){
+  buildStage();
+  if (state.sel){
+    var chk = placementCheck(state.sel.strand, state.sel.idx, state.newTop, state.newBot, state.unwound);
+    if (!chk.ok) autoSelect();
+  }
+  updateStage();
+  renderWrongEcho();
+  Object.keys(state.ta || {}).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = state.ta[id];
+  });
+  Object.keys(state.chk || {}).forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.checked = !!state.chk[id];
+  });
+  if (state.verified){
+    renderDaughters();
+    var rb = document.getElementById('resultBody');
+    if (rb) rb.style.display = 'block';
+    var a = daughterCheck(TOP_TEMPLATE, state.newTop), b = daughterCheck(BOT_TEMPLATE, state.newBot);
+    var el2 = document.getElementById('dgtCheck');
+    if (el2) el2.innerHTML = '🔎 자동 대조 완료 — 딸 DNA ①: <b>' + a.matched + ' / ' + a.total + '</b>쌍 ✅ · 딸 DNA ②: <b>' +
+      b.matched + ' / ' + b.total + '</b>쌍 ✅ · 두 딸 DNA는 서로 같고 원래 DNA와도 같다 ✅';
+  }
+  renderMS();
+  if (!SELF_CHECK.ok){
+    showFb('fb_stage', 'bad', '⚠️ 주형 서열 자기검사 실패 — 상보적이지 않은 자리: ' + SELF_CHECK.bad.join(', '));
+  }
+  updateProgress();
+}
+function resetAll(){
+  if (!confirm('붙인 뉴클레오타이드와 적은 답을 모두 지우고 처음부터 다시 할까요?')) return;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  location.reload();
+}
+
+/* ════════════ 시작 ════════════ */
+function init(){
+  var saved = loadState();
+  state = saved ? mergeState(saved) : freshState();
+  restoreUI();
+  /* 한 대의 태블릿을 돌려 쓰면 앞 학생의 기록이 그대로 이어진다 — 불러온 사실을 알려 준다 */
+  var placed = filledCount(state.newTop) + filledCount(state.newBot);
+  if (SELF_CHECK.ok && (placed > 0 || state.unwound > 0)){
+    showFb('fb_stage', 'info', '📂 이전에 하던 기록을 불러왔어요 — 풀린 길이 <b>' + state.unwound + '</b>칸 · ' +
+      '붙인 뉴클레오타이드 <b>' + placed + '</b>개. ' +
+      '내 기록이 아니라면 맨 아래 <b>🔄 처음부터 다시 하기</b>를 눌러 주세요.');
+  }
+}
+if (typeof document !== 'undefined' && document.addEventListener){
+  document.addEventListener('DOMContentLoaded', init);
+}
+</script>
+</body>
+</html>

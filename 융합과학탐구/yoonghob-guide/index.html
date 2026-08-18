@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>후속 탐구 보고서, 이렇게 쓴다</title>
+<meta name="theme-color" content="#6d5ae0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="후속탐구">
+<style>
+  :root{
+    --bg:#f5f4fb; --card:#ffffff; --ink:#241f33; --muted:#6d6a82;
+    --primary:#6d5ae0; --primary-d:#584ac6; --primary-t:#efecfc;
+    --good:#158a52; --good-bg:#e9f7ef; --good-line:#b6e3c9;
+    --bad:#d8483c; --bad-bg:#fdecea; --bad-line:#f4c4bf;
+    --amber:#b8791f; --amber-bg:#fdf3e2;
+    --line:#e7e3f2; --radius:16px;
+    --shadow:0 6px 24px rgba(60,45,120,.10);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;overflow:hidden}
+  body{
+    font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);background:var(--bg);
+    font-size:16px;line-height:1.65;-webkit-text-size-adjust:100%;
+    overflow-wrap:break-word;word-break:break-word;
+  }
+  #app{display:flex;flex-direction:column;height:100vh;height:100dvh;width:100%;max-width:100%;overflow-x:hidden}
+
+  /* ── 헤더 ── */
+  header{flex:0 0 auto;background:linear-gradient(135deg,#6d5ae0,#8b6ff0);color:#fff;
+    padding:7px 16px 7px;padding-top:calc(7px + env(safe-area-inset-top,0))}
+  .h-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .h-title{font-size:15.5px;font-weight:800;letter-spacing:-.02em;min-width:0;max-width:calc(100% - 62px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .h-count{font-size:13px;font-weight:700;opacity:.9;white-space:nowrap;flex:0 0 auto}
+  .h-sub{font-size:11px;opacity:.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar{height:4px;border-radius:6px;background:rgba(255,255,255,.28);margin-top:6px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:#fff;border-radius:6px;transition:width .35s ease}
+
+  /* ── 단계 네비 ── */
+  nav{flex:0 0 auto;background:var(--card);border-bottom:1px solid var(--line);
+    display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  .navtrack{display:flex;gap:6px;padding:6px 10px;margin-inline:auto;flex:0 0 auto}
+  .chip{flex:0 0 auto;min-width:39px;height:37px;border-radius:11px;border:2px solid var(--line);
+    background:#fbfaff;color:var(--muted);font-size:20px;font-weight:800;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;gap:2px;
+    transition:.15s;padding:0 7px}
+  .chip small{font-size:9px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+  .chip .num{font-size:14px}
+  .chip:hover{border-color:#cfc7ee}
+  .chip.on{background:var(--primary-t);border-color:var(--primary);color:var(--primary-d)}
+  .chip.done{border-color:var(--good-line)}
+
+  /* 홈 화면에 추가 안내 바 */
+  .a2hs{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:#efecfc;border-bottom:1px solid #d8d0f6;
+    color:#3a2f78;font-size:12.5px;line-height:1.45;padding:8px 12px}
+  .a2hs span{flex:1;min-width:0}
+  .a2hs b{font-weight:800}
+  .a2hs-x{flex:0 0 auto;width:30px;height:30px;border:none;background:transparent;color:#6d5ae0;
+    font-size:15px;font-weight:800;cursor:pointer;border-radius:8px}
+  .a2hs-x:hover{background:#e0d8f8}
+
+  /* ── 본문 ── */
+  .content{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:13px 16px 18px}
+  .wrap{max-width:720px;margin:0 auto}
+  .eyebrow{font-size:13px;font-weight:800;color:var(--primary-d);letter-spacing:.02em}
+  .screen-title{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:2px 0 4px;display:flex;align-items:center;gap:10px}
+  .screen-title .ic{font-size:26px}
+  .goal{color:var(--muted);font-size:15px;margin:0 0 16px}
+
+  /* 강조 하이라이트 */
+  .em{font-weight:800;color:var(--primary-d);background:linear-gradient(transparent 55%, #e6dfff 55%);padding:0 1px;border-radius:2px}
+
+  .key{background:var(--primary-t);border:1px solid #d8d0f6;border-radius:var(--radius);
+    padding:15px 16px;display:flex;gap:11px;align-items:flex-start;margin-bottom:18px}
+  .key .k-ic{font-size:22px;line-height:1.2;flex:0 0 auto}
+  .key .k-tx{font-size:17px;font-weight:700;color:#3a2f78;letter-spacing:-.01em}
+  .key .k-tx .em{background:linear-gradient(transparent 55%, #d6c9ff 55%)}
+
+  .block{margin-bottom:20px}
+  .block > h3{font-size:15px;font-weight:800;margin:0 0 9px;color:var(--ink);display:flex;align-items:center;gap:7px}
+  ul.clean{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  ul.clean li{position:relative;padding-left:24px;font-size:15.5px}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:9px;width:8px;height:8px;border-radius:50%;background:var(--primary);opacity:.6}
+
+  .gb{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  @media(max-width:560px){.gb{grid-template-columns:minmax(0,1fr)}}
+  .ex{border-radius:14px;padding:13px 14px;border:1.5px solid;min-width:0}
+  .ex.good{background:var(--good-bg);border-color:var(--good-line)}
+  .ex.bad{background:var(--bad-bg);border-color:var(--bad-line)}
+  .ex .tag{font-size:13px;font-weight:800;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+  .ex.good .tag{color:var(--good)} .ex.bad .tag{color:var(--bad)}
+  .ex .tx{font-size:14.5px;white-space:pre-wrap;line-height:1.6}
+  .ex .why{margin-top:9px;font-size:13px;padding-top:8px;border-top:1px dashed rgba(0,0,0,.13);color:#4a4658}
+  .ex .why b{font-weight:800}
+  .ex.good .why .em{color:var(--good);background:linear-gradient(transparent 55%, #cdeed9 55%)}
+  .ex.bad .why .em{color:var(--bad);background:linear-gradient(transparent 55%, #f8d6d2 55%)}
+
+  .tips{background:var(--amber-bg);border:1px solid #f2dcb4;border-radius:14px;padding:13px 15px}
+  .tips h3{color:var(--amber)}
+  .tips ul.clean li::before{background:var(--amber);opacity:.7}
+  .tips .em{color:var(--amber);background:linear-gradient(transparent 55%, #f6e4c2 55%)}
+
+  /* 직접 해보기 */
+  .doit{background:#fbfaff;border:1px dashed #c9bff0;border-radius:14px;padding:15px}
+  .doit h3{color:var(--primary-d)}
+  .field{margin-top:12px}
+  .field:first-of-type{margin-top:6px}
+  .field label{display:block;font-size:14px;font-weight:700;margin-bottom:6px;color:#3a3550}
+  .field textarea{width:100%;border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;
+    font-family:inherit;font-size:16px;line-height:1.55;resize:vertical;min-height:52px;background:#fff;color:var(--ink)}
+  .field textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-t)}
+
+  /* 표/카드 (인용·구조) */
+  .rule{border:1px solid var(--line);border-radius:13px;padding:13px 14px;margin-bottom:11px;background:#fff}
+  .rule .r-src{font-weight:800;font-size:15px;color:var(--primary-d);margin-bottom:5px}
+  .rule .r-fmt{font-size:13.5px;color:var(--muted);background:#f6f4fc;border-radius:8px;padding:7px 9px;margin-bottom:7px}
+  .rule .r-ex{font-size:14.5px}
+  .rule .r-ex b{color:var(--good)}
+  .struct{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}
+  .struct .row{display:flex;gap:0;border-top:1px solid var(--line)}
+  .struct .row:first-child{border-top:none}
+  .struct .part{flex:0 0 84px;background:var(--primary-t);color:var(--primary-d);font-weight:800;
+    font-size:14.5px;padding:12px 10px;display:flex;align-items:center;justify-content:center;text-align:center}
+  .struct .desc{padding:12px 13px;font-size:14.5px;line-height:1.55}
+
+  /* 체크리스트 */
+  .ck-head{display:flex;align-items:center;justify-content:space-between;background:var(--primary-t);
+    border-radius:13px;padding:12px 15px;margin-bottom:14px;font-weight:800;color:var(--primary-d)}
+  .ck-head .n{font-size:22px}
+  .ck{display:flex;flex-direction:column;gap:9px}
+  .ck-item{display:flex;gap:11px;align-items:flex-start;border:1.5px solid var(--line);border-radius:12px;
+    padding:12px 13px;background:#fff;cursor:pointer;transition:.12s;font-size:15px}
+  .ck-item:hover{border-color:#cfc7ee}
+  .ck-item.done{background:var(--good-bg);border-color:var(--good-line)}
+  .ck-box{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:2px solid #c7c0e0;background:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;margin-top:1px}
+  .ck-item.done .ck-box{background:var(--good);border-color:var(--good)}
+  .ck-done-msg{margin-top:14px;text-align:center;background:var(--good-bg);border:1px solid var(--good-line);
+    border-radius:13px;padding:15px;color:var(--good);font-weight:800;display:none;line-height:1.5}
+
+  /* 보고서 미리보기 */
+  .plan-intro{color:var(--muted);font-size:14.5px;margin-bottom:14px}
+  .plan-step{border:1px solid var(--line);border-radius:13px;background:#fff;padding:14px;margin-bottom:12px}
+  .plan-step .ps-t{font-weight:800;color:var(--primary-d);margin-bottom:9px;font-size:15px}
+  .plan-q{font-size:13px;color:var(--muted);font-weight:700;margin-top:9px}
+  .plan-a{font-size:15px;white-space:pre-wrap;padding:2px 0 0}
+  .plan-a.empty{color:#bbb6cc;font-style:italic}
+  .plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+
+  /* ── 푸터 ── */
+  footer{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);
+    padding:7px 14px calc(7px + env(safe-area-inset-bottom,0))}
+  .btn{flex:1;min-height:44px;border-radius:13px;border:none;font-family:inherit;font-size:16px;font-weight:800;
+    cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 14px}
+  .btn:disabled{opacity:.4;cursor:default;box-shadow:none}
+  .swipe-hint{text-align:center;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+  .btn.ghost{background:#fff;border:1.5px solid var(--line);color:var(--muted);flex:0 0 auto;min-width:120px}
+  .btn.copy{background:var(--good);color:#fff;flex:0 0 auto;min-width:130px}
+  .credit{text-align:center;font-size:10.5px;color:#a7a2ba;margin-top:5px}
+  .help-btn{background:none;border:none;color:var(--primary-d);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;padding:0}
+
+  /* 가이드 팝업(모달) */
+  .modal-bg{position:fixed;inset:0;background:rgba(28,20,55,.5);display:flex;align-items:center;justify-content:center;
+    padding:20px;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-bg.show{opacity:1;pointer-events:auto}
+  .modal{position:relative;background:var(--card);border-radius:18px;max-width:400px;width:100%;max-height:88vh;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 20px 60px rgba(40,25,90,.35);
+    padding:22px;transform:translateY(12px);transition:transform .2s}
+  .modal-bg.show .modal{transform:none}
+  .modal h2{margin:0 0 5px;font-size:20px;font-weight:800;color:var(--ink)}
+  .modal .sub{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 16px}
+  .modal .g-list{list-style:none;margin:0 0 18px;padding:0;display:flex;flex-direction:column;gap:12px}
+  .modal .g-list li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;line-height:1.5}
+  .modal .g-ic{flex:0 0 auto;width:32px;height:32px;border-radius:9px;background:var(--primary-t);
+    display:flex;align-items:center;justify-content:center;font-size:17px}
+  .modal .g-list b{color:var(--primary-d);font-weight:800}
+  .modal .m-btn{width:100%;min-height:48px;border:none;border-radius:13px;background:var(--primary);color:#fff;
+    font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+  .modal .m-btn:hover{background:var(--primary-d)}
+  .modal .m-x{position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;background:transparent;
+    color:var(--muted);font-size:16px;cursor:pointer;border-radius:8px}
+  .modal .m-x:hover{background:#f0edf9}
+
+  /* 제출자 정보 입력 */
+  .field input{width:100%;border:1.5px solid var(--line);border-radius:11px;padding:11px 12px;font-family:inherit;font-size:16px;background:#fff;color:var(--ink)}
+  .field input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-t)}
+  /* 제출 안내 박스 */
+  .notice{background:#eef7ff;border:1px solid #bfe0f5;border-radius:13px;padding:13px 15px;margin-bottom:14px;font-size:14px;line-height:1.65}
+  .notice .opt{margin-top:7px;padding-left:2px}
+  .notice .small{display:block;margin-top:9px;color:#5a6b7a;font-size:12.5px}
+  .btn.export{background:#e2564a;color:#fff;flex:0 0 auto;min-width:150px;box-shadow:0 4px 12px rgba(226,86,74,.3)}
+  .btn.export:hover{background:#c9463b}
+  /* 보고서 제출(Firebase) */
+  .btn.submit{flex:1;min-width:100%;background:var(--good);color:#fff;font-size:17px;min-height:52px;box-shadow:0 4px 14px rgba(21,138,82,.32)}
+  .btn.submit:hover{background:#0f7442}
+  .submitted-note{margin:-4px 0 10px;background:var(--good-bg);border:1px solid var(--good-line);border-radius:12px;
+    padding:10px 13px;color:var(--good);font-weight:800;font-size:14.5px}
+  .submitted-note span{font-weight:600;color:#4a4658;font-size:12.5px}
+
+  /* 인쇄(PDF 내보내기)용 문서 — 화면에선 숨김, 인쇄 때만 보임 */
+  #printdoc{display:none}
+  @media print{
+    html,body{height:auto;overflow:visible;background:#fff}
+    #app{display:none!important}
+    #printdoc{display:block!important;color:#000;font-family:"Malgun Gothic","맑은 고딕",serif}
+    .pd-title{font-size:19pt;font-weight:800;text-align:center;margin:0 0 6pt}
+    .pd-meta{display:flex;gap:18pt;justify-content:center;border-bottom:1.5pt solid #333;padding-bottom:8pt;margin-bottom:12pt;font-size:11pt}
+    .pd-step{margin-bottom:11pt;page-break-inside:avoid}
+    .pd-h{font-weight:800;font-size:12.5pt;background:#eee;padding:4pt 7pt;border-left:3pt solid #444;margin-bottom:4pt}
+    .pd-q{font-weight:700;font-size:10.5pt;color:#333;margin-top:6pt}
+    .pd-a{font-size:11.5pt;white-space:pre-wrap}
+    .pd-foot{margin-top:14pt;border-top:1pt solid #999;padding-top:6pt;font-size:9.5pt;color:#555;text-align:center}
+    @page{margin:16mm}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="h-row">
+      <div class="h-title">🧪 후속 탐구 보고서 쓰기</div>
+      <div class="h-count" id="count">1 / 5</div>
+    </div>
+    <div class="h-sub">융합과학탐구 — 1학기 탐구의 아쉬운 점에서 다시 시작한다</div>
+    <div class="bar"><i id="barfill"></i></div>
+  </header>
+
+  <nav id="nav"><div class="navtrack" id="navtrack"></div></nav>
+
+  <main class="content" id="content"><div class="wrap" id="screen"></div></main>
+
+  <footer>
+    <div class="swipe-hint">← 옆으로 넘겨 이동 · 위 번호를 눌러도 돼요 → · <button class="help-btn" type="button" id="helpbtn">❓ 사용법</button></div>
+    <div class="credit">Claude AI로 이 앱을 제작함 by 고은표</div>
+  </footer>
+</div>
+
+<div class="modal-bg" id="introbg" role="dialog" aria-modal="true" aria-labelledby="introttl">
+  <div class="modal">
+    <button class="m-x" type="button" id="introx" aria-label="닫기">✕</button>
+    <h2 id="introttl">👋 반가워요!</h2>
+    <p class="sub">1학기 탐구에서 <b>아쉬웠던 점</b>을 보완하는 <b>후속 탐구 보고서</b>를 단계별로 쓰고, 바로 제출까지 하는 앱이에요.</p>
+    <ul class="g-list">
+      <li><span class="g-ic">🧭</span><span>위 <b>번호(1~4)</b>를 누르거나 화면을 <b>좌우로 밀어</b> 이동해요.</span></li>
+      <li><span class="g-ic">📖</span><span>각 화면엔 <b>설명 · 좋은👍/나쁜👎 예시 · 꿀팁</b>이 있어요.</span></li>
+      <li><span class="g-ic">✏️</span><span><b>직접 해보기</b> 칸에 적으면 <b>자동 저장</b>돼요.</span></li>
+      <li><span class="g-ic">📤</span><span>마지막 <b>점검·제출</b> 화면에서 보고서가 한 편으로 모여요. <b>[보고서 제출하기]</b>를 누르면 끝!</span></li>
+    </ul>
+    <button class="m-btn" type="button" id="introstart">시작하기 →</button>
+  </div>
+</div>
+
+<div id="printdoc" aria-hidden="true"></div>
+
+<script type="application/json" id="report-data">
+{
+"steps":[
+{
+"id":"ov","icon":"🧭","title":"1. 후속 탐구 보고서란?",
+"keyIdea":"후속 보고서는 새 보고서가 아니다. **1학기 탐구의 아쉬운 점**에서 다시 시작하는 보고서다.",
+"goal":"1학기 탐구를 한 줄로 정리하고, 아쉬웠던 점을 이번 탐구의 출발점으로 삼는다.",
+"explain":[
+"1학기 탐구에는 반드시 아쉬운 점이 남아 있다. 자료만 조사했다든지, 출처가 약했다든지, 고찰이 없었다든지.",
+"후속 탐구는 그 **아쉬운 점을 골라 채우는** 탐구다. 그래서 주제는 1학기와 이어져야 한다.",
+"계획서에 쓴 아쉬운 점과 보완 방향을 그대로 가져온다. **계획서가 이 보고서의 설계도**다.",
+"보고서 뼈대는 아래 구조표의 여섯 칸이다. 이 순서대로 쓰면 된다.",
+"이 앱의 칸을 채우면 마지막 화면에서 **완성된 보고서 한 편**으로 모아 준다."
+],
+"struct":[
+{"part":"서론","desc":"1학기에 뭘 했나 + **뭐가 아쉬웠나** + 그래서 이번엔 뭘 알아보나"},
+{"part":"탐구 방법","desc":"무엇을, 어떻게 했나 (설문·간이 실험·추가 자료 조사 등)"},
+{"part":"알아낸 것","desc":"조사·측정으로 얻은 **사실**. 수치와 **출처**를 붙인다"},
+{"part":"고찰","desc":"그 사실이 뭘 뜻하나 + **아쉬웠던 점이 보완되었나** 스스로 판정"},
+{"part":"결론","desc":"후속 탐구 질문에 대한 답 + 남은 한계·다음 궁금증"},
+{"part":"참고 자료","desc":"쓴 자료의 출처 목록. **출처 없이 베끼면 표절(0점)**"}
+],
+"good":{"text":"1학기: '오후 늦게 마신 카페인이 수면을 방해할까?'를 문헌으로 조사해 '방해한다'고 결론지음.\n→ 아쉬운 점: 자료 조사만 하고 실제로 그런지 직접 확인하지 못함.\n→ 후속 질문: '우리 반에서도 늦은 카페인 섭취와 잠드는 시간 사이에 관련이 보일까?'","why":"**아쉬운 점이 그대로 다음 질문**이 됐다. 1학기 탐구와 이번 탐구가 한 줄로 이어진다."},
+"bad":{"text":"1학기에는 카페인을 조사했다. 이번에는 요즘 관심이 생긴 인공 감미료를 조사하려고 한다.","why":"이어짐이 없다. 이건 후속 탐구가 아니라 **새 탐구**라서, 아쉬운 점을 보완했는지 보여줄 수가 없다."},
+"tips":[
+"아쉬운 점이 여러 개면 **하나만** 고른다. 하나를 제대로 채우는 게 후속 탐구다.",
+"계획서를 옆에 펴 놓고 쓴다. 아래 세 칸은 계획서에서 **그대로 가져와도 된다.**",
+"후속 질문도 **물음표로 끝낸다.** 읽으면 뭘 알아볼지 바로 보여야 한다.",
+"'1학기 결론이 진짜 맞나 직접 확인해 보기'도 훌륭한 후속 탐구다. 거창할 필요 없다."
+],
+"templatePrompts":[
+{"label":"1학기 탐구 한 줄 요약 (질문과 결론)","placeholder":"예: '오후 늦게 마신 카페인이 수면을 방해할까?'를 문헌으로 조사해 '방해한다'고 결론지었다."},
+{"label":"아쉬웠던 점 (계획서에 쓴 것을 가져와도 된다)","placeholder":"예: 자료 조사만 하고, 실제로 그런지 직접 확인하지 못했다."},
+{"label":"후속 탐구 질문 (물음표로 끝내기)","placeholder":"예: 우리 반에서도 늦은 카페인 섭취와 잠드는 시간 사이에 관련이 보일까?"}
+]
+},
+{
+"id":"seo","icon":"✍️","title":"2. 서론 쓰기",
+"keyIdea":"서론은 세 문장이면 된다. **한 일 → 아쉬운 점 → 이번에 알아볼 것.** 아쉬운 점이 곧 이 보고서를 쓰는 이유다.",
+"goal":"앞 화면에 적은 세 칸을 이어 붙여 서론 한 문단을 완성한다.",
+"explain":[
+"첫 문장: 1학기에 **무슨 질문을 조사해 어떤 결론**을 냈는지 한두 문장으로 요약한다.",
+"둘째 문장: **무엇이 아쉬웠는지** 밝힌다. 이 문장이 후속 보고서의 심장이다.",
+"셋째 문장: **'그래서 이번에는 ~를 알아보았다'**로 후속 탐구 질문을 예고한다.",
+"보통 보고서 서론과 다른 점은 딱 하나 — **내 지난 탐구에서 출발**한다는 것.",
+"1번 화면의 세 칸을 순서대로 이으면 서론이 거의 완성된다."
+],
+"good":{"text":"1학기에 나는 '오후 늦게 마신 카페인이 청소년의 수면을 방해할까?'를 조사해, 카페인 반감기가 약 5시간이라는 문헌 근거로 '방해한다'고 결론지었다. 그런데 자료 조사만 했을 뿐 실제로 그런지 직접 확인하지 못한 점이 아쉬웠다. 그래서 이번에는 우리 반 학생 20명의 익명 설문 자료로, 늦은 카페인 섭취와 잠드는 시간 사이에 실제로 관련이 있는지 알아보았다.","why":"**한 일 → 아쉬운 점 → 이번에 알아볼 것**, 세 문장이 착착 이어진다. 읽으면 이 보고서가 왜 필요한지 바로 안다."},
+"bad":{"text":"카페인은 현대인에게 매우 중요한 물질이다. 많은 사람들이 매일 카페인을 마신다. 이번 보고서에서는 카페인에 대해 알아보겠다.","why":"1학기 얘기도, 아쉬운 점도 없다. 이래서는 **후속 보고서인지 알 수 없고**, 뭘 알아볼지도 안 보인다."},
+"tips":[
+"'아쉬웠다'를 부끄러워하지 않는다. **한계를 정확히 아는 것**이 가장 과학적인 태도다.",
+"서론은 **3~5문장**이면 충분하다. 길게 늘이지 않는다.",
+"결과를 서론에서 미리 다 말하지 않는다. '알아보았다'까지만 예고한다.",
+"쓴 뒤 소리 내어 읽어 본다. 세 문장이 자연스럽게 이어지면 합격이다."
+],
+"templatePrompts":[
+{"label":"내 서론 문단 (3~5문장)","placeholder":"예: 1학기에 나는 '오후 늦게 마신 카페인이 수면을 방해할까?'를 조사해 '방해한다'고 결론지었다. 그런데 자료 조사만 하고 직접 확인하지 못한 점이 아쉬웠다. 그래서 이번에는 우리 반 설문 자료로 실제로 관련이 있는지 알아보았다."}
+]
+},
+{
+"id":"bon","icon":"🔬","title":"3. 본론 쓰기 — 방법·알아낸 것·고찰",
+"keyIdea":"사실엔 **출처**, 사실 뒤엔 **'그래서 뭘 뜻하나'**. 그리고 마지막에 스스로 묻는다 — **아쉬웠던 점이 채워졌나?**",
+"goal":"무엇을 어떻게 했는지, 무엇을 알아냈는지 쓰고, 아쉬운 점이 보완되었는지 스스로 판정한다.",
+"explain":[
+"방법: **무엇을(대상), 어떻게(설문·실험·추가 문헌), 얼마나(인원·횟수)** 했는지 담백하게 쓴다.",
+"알아낸 것: **사실만** 쓴다. 수치가 있으면 수치로, 남의 자료를 가져왔으면 **출처**를 바로 붙인다.",
+"고찰: 사실 한 줄마다 '그래서 뭘 뜻하지?'를 붙인다. **나열은 조사, 해석이 고찰**이다.",
+"후속 보고서 고찰엔 한 가지가 더 붙는다 — **'1학기의 아쉬운 점이 이번에 보완되었나?'**를 스스로 판정한다.",
+"결과가 예상과 달라도 좋다. **'왜 다를까'를 고찰하면** 오히려 더 좋은 보고서가 된다."
+],
+"good":{"text":"최근 일주일간 우리 반 20명에게 마지막 카페인 섭취 시각과 잠드는 데 걸린 시간을 익명 설문으로 물었다. 오후 6시 이후에 마신 날은 그 전에 마신 날보다 잠드는 데 평균 18분 더 걸렸다. 이는 잠들기 6시간 전 카페인도 수면을 방해했다는 연구(Drake 외, 2013)와 방향이 같다. 그래서 1학기에 문헌으로만 확인했던 결론이 우리 반 자료에서도 나타난 셈이고, '직접 확인하지 못했다'는 아쉬움이 이번 설문으로 채워졌다.","why":"**방법 → 수치 → 출처 → 해석** 순서가 잡혀 있고, 마지막 문장이 **아쉬운 점의 보완 여부**를 스스로 판정한다."},
+"bad":{"text":"설문을 해 보니 학생들은 카페인을 많이 마셨다. 카페인은 잠에 안 좋다. 인터넷에도 그렇게 나와 있다. 카페인은 역시 조심해야 한다.","why":"'많이'가 얼마인지 **수치가 없고 출처도 없다.** 해석 없이 인상만 나열해서, 뭘 보완했는지 알 수 없다."},
+"tips":[
+"'많다·적다' 대신 **숫자**로 쓴다. '평균 18분'이 '꽤 늦게 잠들었다'보다 백 배 세다.",
+"내가 모은 자료(설문·실험)와 **남의 자료(문헌)를 비교**하면 고찰이 저절로 깊어진다.",
+"고찰의 마지막 문장을 '**~라는 아쉬움이 이번에 채워졌다 / 절반쯤 채워졌다**'로 끝내 본다.",
+"보완이 다 안 됐어도 솔직하게 쓴다. 남은 부분은 결론의 '한계'로 넘기면 된다."
+],
+"cite":{
+"intro":"자료를 가져왔으면 **어디서 가져왔는지** 바로 붙인다. 문장을 그대로 옮길 땐 큰따옴표(\" \")로 묶고 출처를 단다. 내 말로 바꿔 썼어도 출처는 밝힌다 — 안 밝히면 **표절이고, 수행평가 0점**이다.",
+"rules":[
+{"source":"인터넷·웹사이트","format":"기관·사이트 이름, 「글 제목」, 웹주소, (확인 날짜)","example":"식품의약품안전처, 「카페인 바로 알기」, mfds.go.kr, (2026. 8. 20. 확인)"},
+{"source":"책","format":"지은이, 『책 제목』, 출판사, 출판연도, 쪽수","example":"캠벨 외, 『생명과학 개념과 현상의 이해』, 바이오사이언스, 2021, 245쪽"},
+{"source":"논문·기사","format":"지은이, 「제목」, 『학술지·신문 이름』, 연도","example":"Drake 외, 「Caffeine effects on sleep」, 『J Clin Sleep Med』, 2013"}
+]
+},
+"templatePrompts":[
+{"label":"무엇을 어떻게 했나 (탐구 방법)","placeholder":"예: 최근 일주일간 우리 반 20명에게 마지막 카페인 섭취 시각과 잠드는 데 걸린 시간을 익명 설문으로 물었다."},
+{"label":"알아낸 것 (사실 + 수치 + 출처)","placeholder":"예: 오후 6시 이후 마신 날은 잠드는 데 평균 18분 더 걸렸다. 잠들기 6시간 전 카페인도 수면을 방해했다는 연구(Drake 외, 2013)와 방향이 같다."},
+{"label":"고찰 (그래서 뭘 뜻하나 + 아쉬운 점이 보완되었나)","placeholder":"예: 1학기에 문헌으로만 확인한 결론이 우리 반 자료에서도 나타났다. '직접 확인하지 못했다'는 아쉬움이 이번 설문으로 채워졌다."}
+]
+},
+{
+"id":"gyeol","icon":"🔍","title":"4. 결론 쓰기",
+"keyIdea":"결론은 **후속 질문에 대한 답** 한두 문장 + **남은 한계** 한 문장. 감상평은 넣지 않는다.",
+"goal":"후속 탐구 질문에 답하고, 이번에도 남은 한계를 솔직하게 밝혀 마무리한다.",
+"explain":[
+"첫 문장은 **'자료를 종합하면 ~라고 답할 수 있다'**로 시작한다. 서론의 질문과 맞물려야 한다.",
+"이번 탐구로 **뭐가 나아졌는지** 한 줄로 짚는다. 1학기엔 몰랐는데 이번에 알게 된 것.",
+"그리고 **남은 한계**를 한 문장 밝힌다. 완벽한 탐구는 없다 — 한계를 아는 것까지가 탐구다.",
+"'재미있었다·유익했다'는 쓰지 않는다. 대신 **'다음엔 ~를 알아보고 싶다'**로 끝낸다.",
+"참고 자료 목록도 여기서 정리한다. 본론에 쓴 출처를 빠짐없이 모은다."
+],
+"good":{"text":"자료를 종합하면, 우리 반에서도 오후 늦은 카페인 섭취는 잠드는 시간을 늦추는 것으로 보인다. 1학기에 문헌으로만 내렸던 결론을 이번에는 실제 자료로 확인했다는 점이 나아졌다. 다만 표본이 20명뿐이고 스스로 답한 설문이라 정확하지 않을 수 있다. 다음에는 수면의 질까지 함께 재어 보고 싶다.","why":"질문에 답하고 → **나아진 점**을 짚고 → **한계와 다음 궁금증**으로 닫았다. 후속 탐구 결론의 정석이다."},
+"bad":{"text":"이번 탐구를 하며 카페인에 대해 더 많이 알게 되어 유익했다. 앞으로 카페인을 줄여야겠다고 다짐했다.","why":"**감상평과 다짐뿐**, 질문에 대한 답이 없다. 애써 모은 자료가 결론에 하나도 안 쓰였다."},
+"tips":[
+"결론만 읽어도 탐구 전체가 보이게 한다. **질문→답→한계** 세 가지가 들어 있는지 확인한다.",
+"답이 '관련 없어 보인다'로 나와도 당당하게 쓴다. **아닌 것을 확인한 것도 발견**이다.",
+"단정 대신 **'~로 보인다', '~라고 판단된다'**를 쓴다. 표본이 작을수록 조심스럽게.",
+"참고 자료는 본론에 쓴 순서대로 번호를 붙이면 깔끔하다."
+],
+"templatePrompts":[
+{"label":"결론 문단 (답 + 나아진 점 + 남은 한계)","placeholder":"예: 자료를 종합하면 우리 반에서도 늦은 카페인 섭취는 잠드는 시간을 늦추는 것으로 보인다. 1학기 결론을 실제 자료로 확인했다는 점이 나아졌다. 다만 표본이 20명뿐이라 정확하지 않을 수 있다."},
+{"label":"참고 자료 목록","placeholder":"예: 1. 식품의약품안전처, 「카페인 바로 알기」, mfds.go.kr (2026. 8. 20. 확인)  2. Drake 외, 「Caffeine effects on sleep」, 『J Clin Sleep Med』, 2013"}
+]
+}
+],
+"checklist":[
+"서론에 **1학기 탐구 요약과 아쉬웠던 점**이 들어 있나?",
+"후속 탐구 질문이 아쉬운 점과 이어지나? **새 주제로 새지** 않았나?",
+"무엇을 어떻게 했는지(방법)가 구체적으로 있나?",
+"알아낸 것에 **수치**가 있고, 가져온 자료엔 **출처**를 붙였나?",
+"사실 문장과 내 해석 문장을 구분했나?",
+"고찰에서 **아쉬운 점이 보완되었는지** 스스로 판정했나?",
+"결론이 서론의 질문에 답하나?",
+"결론에 **남은 한계·다음 궁금증**을 밝혔나?",
+"근거 없는 단정·과장('무조건', '압도적')을 피했나?",
+"그대로 옮긴 문장은 따옴표+출처를 달았나? (**표절은 0점**)"
+]
+}
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+"use strict";
+var DATA = JSON.parse(document.getElementById('report-data').textContent);
+
+/* ════════ Firebase (gongju7-vocab — yoonghobReports/ 공개경로, 무인증 접속) ════════
+   학교망에서 익명로그인이 거부되며 남는 무효 토큰이 RTDB를 막는 사례가 있어,
+   토큰을 비운 뒤 인증 없이 접속한다(reportPlans와 동일 패턴). SDK 로드 실패해도
+   앱의 작성/저장 기능은 그대로 동작하도록 전부 guard 처리한다. */
+var FB = { ready:false, db:null };
+(function initFirebase(){
+  try{
+    if(typeof firebase === 'undefined') return;
+    firebase.initializeApp({
+      apiKey: "AIzaSyDbEgNhJr24GjWPYBx63zQ4MyW2dZA6XSs",
+      authDomain: "gongju7-vocab.firebaseapp.com",
+      databaseURL: "https://gongju7-vocab-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "gongju7-vocab",
+      storageBucket: "gongju7-vocab.firebasestorage.app",
+      messagingSenderId: "249343659059",
+      appId: "1:249343659059:web:532b7d74d0a38286c2a746"
+    });
+    FB.db = firebase.database();
+    try{ firebase.auth().signOut(); }catch(e){}
+    FB.ready = true;
+  }catch(e){ console.error('Firebase 초기화 실패', e); FB.ready=false; }
+})();
+var REPORT_ROOT = 'yoonghobReports';
+function sidKey(s){ return String(s||'').trim().replace(/[.#$\[\]\/]/g,'_'); }
+
+var REPORT_CLOSED = false; /* 보고서 제출 마감 — 마감하려면 true */
+
+/* 화면 구성: 쓰기 4화면 + 점검·제출 */
+var SCREENS = [];
+DATA.steps.forEach(function(s){ SCREENS.push({kind:'step', step:s}); });
+SCREENS.push({kind:'final', icon:'✅', label:'점검·제출'});
+/* 단계 칩 하단 키워드 */
+var STEP_KW = {ov:'개관', seo:'서론', bon:'본론', gyeol:'결론'};
+
+var LS = 'yoonghob_report_v1';
+var store = loadStore();
+var idx = Math.min(store.idx || 0, SCREENS.length - 1);
+
+function loadStore(){
+  try{ var s = JSON.parse(localStorage.getItem(LS)); if(s && typeof s==='object'){ s.inputs=s.inputs||{}; s.checks=s.checks||{}; return s; } }catch(e){}
+  return {inputs:{}, checks:{}, idx:0};
+}
+function save(){ try{ store.idx = idx; localStorage.setItem(LS, JSON.stringify(store)); }catch(e){} }
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* **핵심**을 하이라이트로 */
+function em(t){ return esc(t).replace(/\*\*([^*]+)\*\*/g,'<span class="em">$1</span>'); }
+
+/* ── 네비게이션 렌더 ── */
+function renderNav(){
+  var track = document.getElementById('navtrack');
+  track.innerHTML = SCREENS.map(function(sc,i){
+    var on = i===idx ? ' on':'';
+    var inner;
+    if(sc.kind==='step'){ inner = '<span class="num">'+(i+1)+'</span><small>'+esc(STEP_KW[sc.step.id]||'')+'</small>'; }
+    else { inner = '<span>'+esc(sc.icon)+'</span><small>'+esc(sc.label)+'</small>'; }
+    var title = sc.kind==='step' ? esc(sc.step.title) : esc(sc.label);
+    return '<button class="chip'+on+'" data-i="'+i+'" title="'+title+'">'+inner+'</button>';
+  }).join('');
+  var cur = document.getElementById('nav').querySelector('.chip.on');
+  if(cur && cur.scrollIntoView){ cur.scrollIntoView({inline:'center', block:'nearest'}); }
+}
+
+/* ── 각 화면 렌더 ── */
+function listHTML(arr){ return '<ul class="clean">'+arr.map(function(x){return '<li>'+em(x)+'</li>';}).join('')+'</ul>'; }
+
+function renderStep(s){
+  var h = '';
+  h += '<div class="eyebrow">후속 탐구 보고서 · 화면 '+ (idx+1) +' / '+SCREENS.length+'</div>';
+  h += '<div class="screen-title"><span class="ic">'+esc(s.icon)+'</span>'+esc(s.title.replace(/^\d+\.\s*/,''))+'</div>';
+  h += '<p class="goal">'+em(s.goal)+'</p>';
+  h += '<div class="key"><span class="k-ic">💡</span><span class="k-tx">'+em(s.keyIdea)+'</span></div>';
+
+  h += '<div class="block"><h3>📖 이렇게 이해한다</h3>'+listHTML(s.explain)+'</div>';
+
+  if(s.struct){
+    h += '<div class="block"><h3>📋 후속 보고서의 뼈대</h3><div class="struct">';
+    s.struct.forEach(function(p){
+      h += '<div class="row"><div class="part">'+esc(p.part)+'</div><div class="desc">'+em(p.desc)+'</div></div>';
+    });
+    h += '</div></div>';
+  }
+
+  h += '<div class="block"><div class="gb">';
+  h += '<div class="ex good"><div class="tag">👍 이게 잘 쓴 글</div><div class="tx">'+em(s.good.text)+'</div><div class="why"><b>왜 좋냐면 </b>'+em(s.good.why)+'</div></div>';
+  h += '<div class="ex bad"><div class="tag">👎 이건 흔한 실수</div><div class="tx">'+em(s.bad.text)+'</div><div class="why"><b>왜 아쉽냐면 </b>'+em(s.bad.why)+'</div></div>';
+  h += '</div></div>';
+
+  h += '<div class="block tips"><h3>🍯 꿀팁</h3>'+listHTML(s.tips)+'</div>';
+
+  if(s.cite){
+    h += '<div class="block"><h3>📌 출처는 이렇게 쓴다</h3>';
+    h += '<div class="key" style="margin-bottom:12px"><span class="k-ic">🚫</span><span class="k-tx" style="font-size:14.5px">'+em(s.cite.intro)+'</span></div>';
+    s.cite.rules.forEach(function(r){
+      h += '<div class="rule"><div class="r-src">'+esc(r.source)+'</div>'+
+           '<div class="r-fmt">'+esc(r.format)+'</div>'+
+           '<div class="r-ex"><b>예) </b>'+esc(r.example)+'</div></div>';
+    });
+    h += '</div>';
+  }
+
+  h += '<div class="block doit"><h3>✏️ 직접 해보기 <span style="font-weight:600;color:#8a84a3;font-size:12.5px">(자동 저장된다)</span></h3>';
+  s.templatePrompts.forEach(function(tp, j){
+    var key = s.id+':'+j;
+    var val = store.inputs[key] || '';
+    h += '<div class="field"><label>'+esc(tp.label)+'</label>'+
+         '<textarea data-key="'+key+'" placeholder="'+esc(tp.placeholder)+'">'+esc(val)+'</textarea></div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+/* 보고서 본문을 이루는 칸 (취합 순서) */
+var REPORT_PARTS = [
+  {head:'서론',        key:'seo:0'},
+  {head:'탐구 방법',   key:'bon:0'},
+  {head:'알아낸 것',   key:'bon:1'},
+  {head:'고찰',        key:'bon:2'},
+  {head:'결론',        key:'gyeol:0'},
+  {head:'참고 자료',   key:'gyeol:1'}
+];
+var MEMO_PARTS = [
+  {head:'1학기 탐구 요약', key:'ov:0'},
+  {head:'아쉬웠던 점',     key:'ov:1'},
+  {head:'후속 탐구 질문',  key:'ov:2'}
+];
+
+function renderFinal(){
+  var ck = DATA.checklist;
+  var done = ck.reduce(function(a,_,i){return a + (store.checks[i]?1:0);},0);
+  var h='';
+  h += '<div class="eyebrow">제출 전 마지막 관문</div><div class="screen-title"><span class="ic">✅</span>점검하고 제출하기</div>';
+  h += '<p class="plan-intro">1~4화면에 적은 내용이 아래에서 <b>보고서 한 편</b>으로 모인다. 체크리스트로 점검한 뒤 <b>[보고서 제출하기]</b>를 누르면 선생님에게 바로 전달된다.</p>';
+
+  h += '<div class="ck-head"><span>스스로 확인한다</span><span class="n">'+done+' / '+ck.length+'</span></div>';
+  h += '<div class="ck">';
+  ck.forEach(function(t,i){
+    var on = store.checks[i] ? ' done':'';
+    h += '<div class="ck-item'+on+'" data-ck="'+i+'"><span class="ck-box">'+(store.checks[i]?'✔':'')+'</span><span>'+em(t)+'</span></div>';
+  });
+  h += '</div>';
+  h += '<div class="ck-done-msg" style="'+(done===ck.length?'display:block':'')+';margin-bottom:16px">🎉 전부 확인 완료! 이제 자신 있게 제출한다.</div>';
+
+  h += '<div class="doit" style="margin:16px 0 14px"><h3>🧾 제출자 정보</h3>'+
+       '<div class="field"><label>학번 (5자리)</label><input class="meta-in" data-meta="sid" type="text" inputmode="numeric" placeholder="예: 30215" value="'+esc(store.sid||'')+'"></div>'+
+       '<div class="field"><label>이름</label><input class="meta-in" data-meta="name" type="text" placeholder="예: 김과학" value="'+esc(store.name||'')+'"></div>'+
+       '<div class="field"><label>보고서 제목</label><input class="meta-in" data-meta="title" type="text" placeholder="예: 우리 반 설문으로 확인한 늦은 카페인 섭취와 수면의 관계" value="'+esc(store.title||'')+'"></div></div>';
+
+  h += '<div class="notice"><b>📮 어떻게 제출하나요?</b>'+
+       (REPORT_CLOSED
+         ? '<div class="opt"><b>보고서 제출 — 마감</b><br>제출 기간이 끝났다. 아직 못 낸 사람은 선생님께 직접 이야기한다.</div>'
+         : '<div class="opt"><b>보고서 제출 = 아래 버튼 하나</b><br>학번·이름·제목을 적고 <b>[보고서 제출하기]</b>를 누르면 끝. 선생님이 바로 받는다. 발표자료(PPT 등)는 <b>따로 내지 않는다.</b></div>'+
+           '<div class="opt"><b>기한</b><br>선생님이 공지한 기한까지 낸다. 다시 제출하면 <b>최신 내용으로 덮어써진다.</b></div>')+
+       '<span class="small">인터넷이 안 되면 [PDF로 내보내기]로 저장해 두었다가, 되는 곳에서 다시 제출한다. 표절(출처 없이 베끼기)은 수행평가 0점이다.</span></div>';
+
+  if(REPORT_CLOSED){
+    h += '<div class="plan-actions"><button class="btn submit" id="submitreport" disabled style="opacity:.45;cursor:not-allowed">⛔ 보고서 제출 마감</button></div>';
+  }else{
+    h += '<div class="plan-actions"><button class="btn submit" id="submitreport">'+(store.submittedAt?'🔄 다시 제출하기':'📤 보고서 제출하기')+'</button></div>';
+  }
+  if(store.submittedAt){
+    h += '<div class="submitted-note">✅ 제출됨 · '+esc(fmtWhen(store.submittedAt))+'<span> — 다시 제출하면 최신 내용으로 덮어써진다</span></div>';
+  }
+
+  h += '<div class="plan-actions">'+
+       '<button class="btn export" id="exportpdf">📄 PDF로 내보내기</button>'+
+       '<button class="btn copy" id="copyreport">📋 전체 복사</button>'+
+       '<button class="btn ghost" id="resetall">🗑 전체 지우기</button></div>';
+
+  var any=false;
+  h += '<div class="plan-step"><div class="ps-t">📄 내 보고서 미리보기</div>';
+  h += '<div class="plan-q">제목</div><div class="plan-a'+(store.title?'':' empty')+'">'+(store.title?esc(store.title):'(아직 안 적음)')+'</div>';
+  REPORT_PARTS.forEach(function(p){
+    var v = (store.inputs[p.key]||'').trim();
+    if(v) any=true;
+    h += '<div class="plan-q">'+esc(p.head)+'</div><div class="plan-a'+(v?'':' empty')+'">'+(v?esc(v):'(아직 안 적음)')+'</div>';
+  });
+  h += '</div>';
+  h += '<div class="plan-step"><div class="ps-t">🗂 후속 탐구 재료 메모 (1번 화면)</div>';
+  MEMO_PARTS.forEach(function(p){
+    var v = (store.inputs[p.key]||'').trim();
+    h += '<div class="plan-q">'+esc(p.head)+'</div><div class="plan-a'+(v?'':' empty')+'">'+(v?esc(v):'(아직 안 적음)')+'</div>';
+  });
+  h += '</div>';
+  if(!any){ h += '<p class="plan-intro" style="text-align:center">아직 적은 내용이 없다. 1~4화면의 ✏️ 직접 해보기를 먼저 채운다.</p>'; }
+  return h;
+}
+
+function buildReportText(){
+  var out = ['[ 융합과학탐구 후속 탐구 보고서 ]',
+             '제목: '+(store.title||''),
+             '학번: '+(store.sid||''), '이름: '+(store.name||''), ''];
+  REPORT_PARTS.forEach(function(p){
+    var v=(store.inputs[p.key]||'').trim();
+    out.push('■ '+p.head);
+    out.push(v||'(미작성)');
+    out.push('');
+  });
+  out.push('--- 후속 탐구 재료 메모 ---');
+  MEMO_PARTS.forEach(function(p){
+    var v=(store.inputs[p.key]||'').trim();
+    out.push('· '+p.head+': '+(v||'(미작성)'));
+  });
+  return out.join('\n');
+}
+
+/* 제출 시각 표시용 */
+function fmtWhen(ts){
+  try{ var d=new Date(ts); return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  catch(e){ return ''; }
+}
+
+/* ── 보고서 Firebase 제출 ── */
+function buildSubmission(){
+  var answers={};
+  DATA.steps.forEach(function(s){
+    s.templatePrompts.forEach(function(tp,j){
+      var k=s.id+':'+j, v=(store.inputs[k]||'').trim();
+      if(v) answers[k]=v;
+    });
+  });
+  return {
+    sid: (store.sid||'').trim(),
+    name: (store.name||'').trim(),
+    title: (store.title||'').trim(),
+    answers: answers,
+    reportText: buildReportText(),
+    submittedAt: store.submittedAt || Date.now(),
+    updatedAt: Date.now()
+  };
+}
+var submitting=false;
+function doSubmit(){
+  if(REPORT_CLOSED){ alert('보고서 제출이 마감되었어요. 궁금한 점은 선생님께 직접 물어봐 주세요.'); return; }
+  if(submitting) return;
+  var sid=(store.sid||'').trim(), name=(store.name||'').trim();
+  if(!sid || !name){ alert('학번과 이름을 먼저 적어 주세요. 그래야 선생님이 누구 것인지 알 수 있어요.'); return; }
+  if(!/^\d{5}$/.test(sid)){ if(!confirm('학번이 5자리 숫자가 아니에요("'+sid+'").\n이대로 제출할까요?')) return; }
+  var filled = REPORT_PARTS.some(function(p){ return (store.inputs[p.key]||'').trim(); });
+  if(!filled){ if(!confirm('아직 보고서 내용이 거의 없어요. 그래도 제출할까요?')) return; }
+  if(!FB.ready || !FB.db){ alert('지금은 인터넷 연결이 안 되는 것 같아요. 잠시 후 다시 시도하거나, [PDF로 내보내기]로 저장해 두세요.'); return; }
+
+  var btn=document.getElementById('submitreport');
+  submitting=true; if(btn){ btn.disabled=true; btn.textContent='제출 중…'; }
+  var now=Date.now();
+  var payload=buildSubmission(); payload.updatedAt=now; if(!store.submittedAt) payload.submittedAt=now;
+  /* 학교망 필터로 응답이 영영 안 오는 경우 대비 12초 타임아웃 */
+  var timeout=new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, 12000); });
+  Promise.race([FB.db.ref(REPORT_ROOT+'/'+sidKey(sid)).set(payload), timeout]).then(function(){
+    store.submittedAt = payload.submittedAt; save();
+    submitting=false;
+    alert('제출 완료! 선생님에게 잘 전달됐어요. 내용을 고치면 언제든 다시 제출할 수 있어요.');
+    render();
+  }).catch(function(e){
+    console.error('제출 실패', e);
+    submitting=false; if(btn){ btn.disabled=false; btn.textContent=store.submittedAt?'🔄 다시 제출하기':'📤 보고서 제출하기'; }
+    alert('제출에 실패했어요 😢\n인터넷 상태를 확인하고 다시 눌러 주세요. 계속 안 되면 [PDF로 내보내기]로 저장해 두세요.\n('+((e&&(e.code||e.message))||'unknown')+')');
+  });
+}
+
+/* PDF 내보내기 = 인쇄용 문서 채우고 브라우저 인쇄(→ PDF로 저장) */
+function buildPrintDoc(){
+  var today='';
+  try{ var dt=new Date(); today = dt.getFullYear()+'. '+(dt.getMonth()+1)+'. '+dt.getDate()+'.'; }catch(e){}
+  var h='';
+  h += '<div class="pd-title">'+esc(store.title||'융합과학탐구 후속 탐구 보고서')+'</div>';
+  h += '<div class="pd-meta"><span>학번: '+esc(store.sid||'________')+'</span><span>이름: '+esc(store.name||'________')+'</span><span>작성일: '+esc(today)+'</span></div>';
+  REPORT_PARTS.forEach(function(p){
+    var v=(store.inputs[p.key]||'').trim();
+    h += '<div class="pd-step"><div class="pd-h">'+esc(p.head)+'</div><div class="pd-a">'+(v?esc(v):'—')+'</div></div>';
+  });
+  h += '<div class="pd-foot">융합과학탐구 후속 탐구 보고서 · '+esc(store.sid||'')+' '+esc(store.name||'')+'</div>';
+  document.getElementById('printdoc').innerHTML = h;
+}
+function doExport(){
+  if(!(store.sid&&store.sid.trim()) || !(store.name&&store.name.trim())){
+    if(!confirm('학번 또는 이름이 비어 있다. 그래도 PDF로 내보낼까?\n(인쇄 창에서 대상을 "PDF로 저장"으로 선택한다.)')) return;
+  }
+  buildPrintDoc();
+  window.print();
+}
+
+/* ── 메인 렌더 ── */
+function render(){
+  var sc = SCREENS[idx];
+  var el = document.getElementById('screen');
+  if(sc.kind==='step') el.innerHTML = renderStep(sc.step);
+  else if(sc.kind==='final') el.innerHTML = renderFinal();
+
+  document.getElementById('count').textContent = (idx+1)+' / '+SCREENS.length;
+  document.getElementById('barfill').style.width = ((idx+1)/SCREENS.length*100)+'%';
+  document.getElementById('content').scrollTop = 0;
+  renderNav();
+  save();
+}
+
+function go(i){ if(i<0||i>=SCREENS.length) return; idx=i; render(); }
+
+/* ── 이벤트 ── */
+document.getElementById('nav').addEventListener('click', function(e){
+  var c = e.target.closest('.chip'); if(c) go(parseInt(c.getAttribute('data-i'),10));
+});
+
+/* 좌우 스와이프로 단계 이동 (버튼 대체) — 세로 스크롤·입력과 충돌 안 나게 판별 */
+(function(){
+  var el = document.getElementById('content');
+  var x0=null, y0=null, t0=0;
+  el.addEventListener('touchstart', function(e){
+    if(e.touches.length!==1){ x0=null; return; }
+    var t=e.target;
+    if(t && t.closest && t.closest('textarea,input,button,a,select')){ x0=null; return; } // 입력/버튼 위 스와이프는 무시
+    x0=e.touches[0].clientX; y0=e.touches[0].clientY; t0=Date.now();
+  }, {passive:true});
+  el.addEventListener('touchend', function(e){
+    if(x0==null) return;
+    var dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
+    x0=null;
+    if(Date.now()-t0>700) return;               // 너무 느리면 스와이프 아님
+    if(Math.abs(dx)<55) return;                  // 이동량 부족
+    if(Math.abs(dx) < Math.abs(dy)*1.6) return;  // 세로 움직임이 크면 스크롤로 간주
+    if(dx<0) go(idx+1); else go(idx-1);
+  }, {passive:true});
+})();
+
+/* 본문 위임: 입력 저장 / 체크박스 / 복사 / 초기화 */
+var content = document.getElementById('content');
+content.addEventListener('input', function(e){
+  var ta = e.target.closest('textarea[data-key]');
+  if(ta){ store.inputs[ta.getAttribute('data-key')] = ta.value; save(); return; }
+  var mi = e.target.closest('input[data-meta]');
+  if(mi){ store[mi.getAttribute('data-meta')] = mi.value; save(); return; }
+});
+content.addEventListener('click', function(e){
+  var item = e.target.closest('.ck-item');
+  if(item){
+    var i = item.getAttribute('data-ck');
+    store.checks[i] = !store.checks[i]; save(); render(); return;
+  }
+  if(e.target.closest('#submitreport')){ doSubmit(); return; }
+  if(e.target.closest('#exportpdf')){ doExport(); return; }
+  if(e.target.closest('#copyreport')){ doCopy(); return; }
+  if(e.target.closest('#resetall')){ doReset(); return; }
+});
+
+function doCopy(){
+  var txt = buildReportText();
+  var btn = document.getElementById('copyreport');
+  function ok(){ if(btn){ var o=btn.textContent; btn.textContent='✅ 복사됐다'; setTimeout(function(){btn.textContent=o;},1600); } }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok, function(){ fallback(txt); ok(); });
+  } else { fallback(txt); ok(); }
+}
+function fallback(txt){
+  var t=document.createElement('textarea'); t.value=txt; t.style.position='fixed'; t.style.opacity='0';
+  document.body.appendChild(t); t.focus(); t.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(t);
+}
+function doReset(){
+  if(!confirm('직접 적은 내용과 체크 표시를 모두 지운다.\n되돌릴 수 없다. 계속할까?')) return;
+  store.inputs={}; store.checks={}; save(); render();
+}
+
+/* 키보드 좌우 이동 (입력 중엔 제외) */
+document.addEventListener('keydown', function(e){
+  if(/^(TEXTAREA|INPUT)$/.test((e.target.tagName||''))) return;
+  if(e.key==='ArrowLeft') go(idx-1);
+  else if(e.key==='ArrowRight') go(idx+1);
+});
+
+/* 홈 화면에 추가하면 전체화면(주소창 없음)으로 볼 수 있다는 안내 — 모바일 브라우저에서만, 1회, 닫기 가능 */
+(function(){
+  try{
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
+    if(standalone) return;
+    var isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints||0) > 0;
+    if(!isTouch) return;
+    if(localStorage.getItem('yoonghob_a2hs')==='off') return;
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent||'');
+    var how = ios ? '<b>공유</b> 버튼 → <b>홈 화면에 추가</b>' : '<b>메뉴(⋮)</b> → <b>홈 화면에 추가</b>';
+    var bar = document.createElement('div');
+    bar.className = 'a2hs';
+    bar.innerHTML = '<span>📱 '+how+'를 하면 주소창 없이 <b>전체화면</b>으로 볼 수 있어요.</span>'+
+                    '<button class="a2hs-x" type="button" aria-label="닫기">✕</button>';
+    var app = document.getElementById('app'), content = document.getElementById('content');
+    if(app && content){ app.insertBefore(bar, content); }
+    var x = bar.querySelector('.a2hs-x');
+    if(x){ x.addEventListener('click', function(){ bar.remove(); try{ localStorage.setItem('yoonghob_a2hs','off'); }catch(e){} }); }
+  }catch(e){}
+})();
+
+/* 첫 방문 가이드 팝업 (다시 보기: 하단 '❓ 사용법') */
+(function(){
+  var bg = document.getElementById('introbg');
+  if(!bg) return;
+  function open(){ bg.classList.add('show'); }
+  function close(){ bg.classList.remove('show'); try{ localStorage.setItem('yoonghob_intro','seen'); }catch(e){} }
+  var seen=false; try{ seen = localStorage.getItem('yoonghob_intro')==='seen'; }catch(e){}
+  if(!seen) open();
+  var x=document.getElementById('introx'); if(x) x.addEventListener('click', close);
+  var st=document.getElementById('introstart'); if(st) st.addEventListener('click', close);
+  bg.addEventListener('click', function(e){ if(e.target===bg) close(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && bg.classList.contains('show')) close(); });
+  var hb=document.getElementById('helpbtn'); if(hb) hb.addEventListener('click', open);
+})();
+
+render();
+</script>
+</body>
+</html>

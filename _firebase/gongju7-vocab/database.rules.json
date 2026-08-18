@@ -29,6 +29,10 @@
       ".read": false,
       ".write": false
     },
+    "yoonghobReports": {
+      ".read": true,
+      ".write": true
+    },
     "vote": {
       ".read": true,
       "rooms": {

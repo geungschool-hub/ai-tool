@@ -53,7 +53,12 @@ def main():
                     hits.append((rel, i, '실명 ' + n, line.strip()))
             # ★URL·URL인코딩 문자열 안의 숫자는 상품코드 등이다 → 오탐
             in_url = ('http' in line) or ('%' in line and re.search(r'%[0-9A-F]{2}', line))
-            for m in re.finditer(r'(?<!\d)20[0-7]\d{2}(?!\d)', line):
+            # ★2026-08-18 확대: 종전 `20[0-7]\d{2}`는 **2학년 학번만** 봤다.
+            #   그 사이 3학년 창체 노트에 3학년 학번 4개가 박힌 채 추적되고 있었다(당일 제거).
+            #   3학년(창체 진로활동·융과탐)도 담당하므로 앞자리 2·3을 본다.
+            #   ★1학년(1xxxx)은 일부러 뺐다 — CSS `z-index:10000` 같은 숫자와 부딪쳐 오탐만 난다(실측).
+            #     1학년 자료를 다루게 되면 그때 앞자리에 1을 넣고 z-index 류를 걸러낼 것.
+            for m in re.finditer(r'(?<!\d)[23]0[0-7]\d{2}(?!\d)', line):
                 if m.group(0) not in ALLOW_ID and not in_url:
                     hits.append((rel, i, '학번 ' + m.group(0), line.strip()))
 

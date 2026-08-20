@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>염색체 비분리 모의실험</title>
+<script>
+/* ══ 미완성 잠금 ══════════════════════════════════════════════
+   교사가 「완성」이라고 판단하기 전에는 학생이 들어올 수 없게 막는다.
+   배포는 하되 미완성본이 학생에게 노출되지 않게 하는 장치다(교사 지시 2026-08-18).
+
+   ★완성되면 DRAFT_MODE 를 false 로 바꿔 재배포한다. 그 순간부터 잠금이 사라진다.
+   ★이 스크립트는 <head>에 있어야 한다 — 본문보다 먼저 돌아야 잠긴 화면이 깜빡이지 않는다.
+   ★기본이 「잠김」이다(fail-closed). 조건이 맞을 때만 .unlocked 가 붙는다.
+   ⚠ 이것은 잠금이지 보안이 아니다. 공개 저장소라 소스를 보면 비밀번호가 보인다.
+     「학생이 미완성본을 우연히 여는 것」을 막는 용도다.                        */
+var DRAFT_MODE = false;                   /* ◀ 2026-08-18 교사 완성 판정 — 잠금 해제 */
+var DRAFT_PASS = '7856';
+var DRAFT_KEY  = 'nondisj_sim_draft_ok';
+try {
+  if (!DRAFT_MODE || localStorage.getItem(DRAFT_KEY) === 'y') {
+    document.documentElement.className += ' unlocked';
+  }
+} catch (e) {
+  /* localStorage 를 못 쓰는 환경(사파리 프라이빗 등)에서도 미완성이면 잠긴 채로 둔다 */
+  if (!DRAFT_MODE) document.documentElement.className += ' unlocked';
+}
+</script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   생물의 유전 1-3 — 염색체 비분리 모의실험
+   교과서(이준규) 30~37쪽 · 그림 Ⅰ-18 「염색체비분리현상」의 웹 버전
+   성취기준 12유전01-04 (부: 01-01·01-02)
+   ★모형 = 교과서 그림 그대로 2n=4, n=2
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --red:#C0392B;   --red-bg:#FDECEA;
+  --blue:#1255A0;  --blue-bg:#E8F0FA;
+  --yellow:#B7791F;--yellow-bg:#FDF6E3;
+  --green:#2A7A38; --green-bg:#E9F5EB;
+  --pink:#C2185B;  --pink-bg:#FCE4EC;
+  --amber:#E67E22; --amber-bg:#FDF0E3; --amber-ink:#8A4B08;
+  --purple:#7B4FB5;--purple-bg:#F1EAFA;
+  --old:#6B7280;
+  --ink:#1A1A1A;   --sub:#555;  --line:#D5D8DE;  --paper:#fff;  --bg:#F4F6F9;
+  /* 염색체 팔레트 — 같은 hue 다른 명도 = 상동, 텍스트 라벨(부/모)을 함께 쓴다 */
+  --chr-ap:#2f6fd6; --chr-am:#8fb8f0;
+  --chr-bp:#9b59b6; --chr-bm:#d2a8e0;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.65;
+  font-family:"Malgun Gothic","맑은 고딕",AppleSDGothicNeo-Regular,"Apple SD Gothic Neo",sans-serif;
+  padding:14px 12px 60px; overflow-x:hidden;
+}
+.wrap{max-width:960px;margin:0 auto;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin-bottom:16px;}
+h1{font-size:24px;margin:0 0 4px;color:var(--blue);letter-spacing:-.5px;}
+h2{font-size:19px;margin:0 0 12px;padding:8px 12px;border-left:5px solid var(--blue);background:var(--blue-bg);border-radius:0 8px 8px 0;}
+h2.pink{border-left-color:var(--pink);background:var(--pink-bg);}
+h2.green{border-left-color:var(--green);background:var(--green-bg);}
+h2.amber{border-left-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink);}
+.sub{color:var(--sub);font-size:15px;margin:0 0 10px;}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{font-size:13px;background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:3px 11px;}
+.tag.done{background:var(--green-bg);color:var(--green);}
+.badge{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px;cursor:pointer;user-select:none;}
+
+/* ── 버튼 ── */
+.btn{
+  font:inherit;font-size:16px;font-weight:700;min-height:44px;padding:10px 18px;
+  border-radius:10px;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;
+}
+.btn.ghost{background:#fff;color:var(--blue);}
+.btn.gray{background:#fff;color:var(--old);border-color:var(--old);}
+.btn.pink{background:var(--pink);border-color:var(--pink);color:#fff;}
+.btn:disabled{background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;cursor:not-allowed;}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+
+/* ── 라운드 레일 ── */
+.rail{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px;}
+.rstep{flex:1 1 180px;border:2px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;font-weight:700;font-size:15px;color:var(--sub);background:#fff;}
+.rstep.on{border-color:var(--pink);background:var(--pink-bg);color:var(--pink);}
+.rstep.ok{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.rstep .rsub{display:block;font-size:12.5px;font-weight:400;}
+button.rstep{font:inherit;font-weight:700;font-size:15px;min-height:44px;}
+.rstep.can{cursor:pointer;}
+.rstep.can:hover{border-color:var(--blue);}
+.rstep.ok.on{border-color:var(--green);background:#DCEFE0;}
+
+/* ── 무대 ── */
+/* ★무대에 최소 폭을 준다 — 화면이 좁아도 배율이 640/900 아래로 내려가지 않게 해
+   염색체 탭 영역이 44px 밑으로 줄어드는 것을 막는다. 좁을 때는 이 상자 안에서만 가로로 밀린다
+   (body는 여전히 가로 스크롤하지 않는다). */
+.stage-wrap{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:8px;
+            overflow-x:auto;-webkit-overflow-scrolling:touch;}
+svg.stage{display:block;width:100%;min-width:640px;height:auto;touch-action:none;}
+.stage-hint{font-size:14.5px;color:var(--sub);margin-top:8px;}
+.taskbar{
+  background:var(--yellow-bg);border-left:5px solid var(--yellow);color:var(--amber-ink);
+  border-radius:0 8px 8px 0;padding:9px 13px;font-weight:700;font-size:16px;margin-bottom:10px;
+}
+.msg{border-radius:9px;padding:10px 13px;margin-top:10px;font-size:15.5px;line-height:1.7;}
+.msg.warn{background:var(--amber-bg);border-left:4px solid var(--amber);}
+.msg.good{background:var(--green-bg);border-left:4px solid var(--green);}
+.msg.info{background:var(--blue-bg);border-left:4px solid var(--blue);}
+.msg.hide{display:none;}
+
+/* ── 표 ── */
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;}
+table.t{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;}
+table.t th,table.t td{border:1px solid var(--line);padding:8px 9px;text-align:center;vertical-align:middle;}
+table.t th{background:var(--blue-bg);font-weight:700;}
+table.t th.p{background:var(--pink-bg);}
+table.t td.lock{color:var(--old);background:#F7F8FA;}
+table.t tr.hl td{background:var(--yellow-bg);}
+.chrpair{display:flex;gap:14px;justify-content:center;align-items:flex-end;margin-bottom:6px;}
+.chrpair figure{margin:0;text-align:center;}
+.chrpair figcaption{font-size:12.5px;font-weight:700;color:#33405A;margin-top:3px;}
+.cmpnote{font-size:14px;line-height:1.55;color:var(--sub);}
+.cmpnote b{color:var(--ink);}
+
+/* ── 선택형 ── */
+.choices{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
+.choice{
+  font:inherit;font-size:16px;text-align:left;min-height:44px;padding:11px 15px;
+  border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);font-weight:700;cursor:pointer;
+}
+.choice.picked{background:var(--blue);color:#fff;}
+.choice.right{background:var(--green);border-color:var(--green);color:#fff;}
+.choice.dim{border-color:var(--line);color:#9AA1AC;background:#FAFBFC;}
+.choice:disabled{cursor:default;}
+
+/* ── ④ 연습 문항 ── */
+.pq{border:1px solid var(--line);border-radius:12px;background:#FCFDFE;padding:13px 14px 15px;margin-top:14px;}
+.pq .qtext{font-weight:700;font-size:16.5px;line-height:1.65;}
+.pq .qno{display:inline-block;background:var(--amber);color:#fff;border-radius:999px;
+         min-width:26px;padding:1px 9px;font-weight:700;font-size:14px;margin-right:7px;}
+.pq .expl{margin-top:11px;background:var(--amber-bg);border-left:4px solid var(--amber);
+          border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.pq .expl b{color:var(--amber-ink);}
+
+/* ── 힌트 2단 (④⑤) — 답 대신 관찰 지점을 먼저 가리킨다 ──
+   ★기록에 남기지 않는다(교사 결정 2026-08-20) — 「누르면 감점」으로 오해할 여지를 없앤다.
+   ★답을 고른 뒤에도 접힌 채로 남는다. */
+.hintwrap{margin-top:10px;}
+.hintbtn{font:inherit;font-size:15px;min-height:44px;padding:9px 15px;margin-top:8px;
+         border:2px dashed var(--blue);border-radius:10px;background:#fff;color:var(--blue);
+         font-weight:700;cursor:pointer;}
+.hintbox{margin-top:8px;background:var(--blue-bg);border-left:4px solid var(--blue);
+         border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.hintbox b{color:var(--blue);}
+
+/* ── ⑤ 가계도 문항 ── */
+.pedwrap{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;
+         margin:12px 0 4px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;}
+svg.pedfig{display:block;width:250px;height:auto;flex:0 0 auto;}
+.pedlegend{font-size:13.5px;color:var(--sub);line-height:1.9;flex:1 1 190px;min-width:170px;}
+.pedlegend svg{vertical-align:-4px;margin-right:4px;}
+.datbox{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:0 9px 9px 0;
+        padding:10px 13px;font-size:15.5px;line-height:1.8;margin-top:10px;}
+.datbox ul{margin:6px 0 0;padding-left:20px;}
+.datbox li{margin:2px 0;}
+
+/* ── 해설 안의 작은 도식 (고른 뒤에만 나온다) ── */
+.figwrap{margin-top:11px;}
+.fig{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:6px 10px;
+     background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:7px;}
+.flead{flex:0 0 auto;align-self:center;font-size:13px;font-weight:700;color:var(--amber-ink);
+       background:var(--amber-bg);border-radius:999px;padding:4px 11px;white-space:nowrap;}
+.fcell{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.fbox{display:flex;align-items:flex-end;justify-content:center;gap:5px;
+      min-width:52px;min-height:62px;padding:7px 11px;background:#FBFCFE;
+      border:2px solid #8A93A6;border-radius:44px/38px;}
+.fbox.zyg{border-color:#33405A;border-width:2.6px;border-radius:14px;background:#F4F7FC;}
+.fcap{font-size:12px;font-weight:700;color:#33405A;text-align:center;max-width:130px;line-height:1.35;}
+.fop{align-self:center;font-size:19px;font-weight:700;color:var(--sub);padding:0 2px;}
+.chrp{margin:0;text-align:center;}
+.chrp figcaption{font-size:10.5px;color:#33405A;margin-top:1px;white-space:nowrap;}
+.fnote{font-size:14.5px;line-height:1.7;color:var(--ink);padding:0 2px;}
+
+/* ── 서술·모범답안 ── */
+textarea{
+  width:100%;font:inherit;font-size:16px;line-height:1.7;padding:11px 13px;
+  border:2px solid var(--line);border-radius:10px;resize:vertical;min-height:96px;background:#fff;color:var(--ink);
+}
+.cnt{font-size:13.5px;color:var(--sub);margin-top:4px;}
+.ans{display:none;margin-top:10px;background:var(--green-bg);border-left:4px solid var(--green);border-radius:0 9px 9px 0;padding:11px 14px;font-size:15.5px;}
+footer{text-align:center;margin-top:22px;}
+
+/* ── 미완성 잠금 화면 ── */
+html:not(.unlocked) body > .wrap{display:none;}
+html:not(.unlocked) #draftGate{display:flex;}
+#draftGate{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:var(--bg); align-items:center; justify-content:center; padding:20px;
+}
+#draftGate .box{
+  background:var(--paper); border:1px solid var(--line); border-radius:16px;
+  padding:26px 24px; max-width:420px; width:100%; text-align:center;
+}
+#draftGate h2{border-left:none; background:none; padding:0; margin:0 0 10px; color:var(--blue); font-size:20px;}
+#draftGate p{color:var(--sub); font-size:15.5px; margin:0 0 18px; line-height:1.7;}
+#draftGate input{
+  width:100%; font:inherit; font-size:22px; letter-spacing:6px; text-align:center;
+  min-height:52px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; margin-bottom:12px;
+}
+#draftGate .err{color:var(--red); font-size:15px; min-height:22px; margin-top:8px;}
+
+@media (max-width:640px){
+  body{font-size:16px;padding:10px 8px 50px;}
+  h1{font-size:21px;} h2{font-size:17px;}
+  .card{padding:14px 13px 16px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══ 머리 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1>🧬 염색체 비분리 모의실험</h1>
+        <p class="sub">생식세포분열 과정에서 염색체가 분리되지 않으면 어떤 생식세포가 만들어지는지 확인한다 (교과서 31쪽 그림 Ⅰ-18)</p>
+      </div>
+      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 3</span>
+    </div>
+    <div class="tagrow">
+      <span class="tag">과학적 사고</span><span class="tag">모형 활용</span><span class="tag">자료 해석</span>
+    </div>
+  </div>
+
+  <!-- ══ ① 도입 ══ -->
+  <div class="card">
+    <h2>① 모형과 규칙</h2>
+
+    <div class="tbl-outer">
+      <table class="t">
+        <tbody>
+          <tr>
+            <th style="width:120px;">세포</th>
+            <td>염색체 <b>4개</b> (2<i>n</i>=4) — <b>21번</b> 한 쌍 + <b>1번</b> 한 쌍</td>
+          </tr>
+          <tr>
+            <th>상동염색체</th>
+            <td>아버지에게서 온 것(<b>부</b>) · 어머니에게서 온 것(<b>모</b>)</td>
+          </tr>
+          <tr>
+            <th>정상 생식세포</th>
+            <td>염색체 <b>2개</b> (<i>n</i>=2)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="msg warn" style="margin-top:12px;">
+      <b>이 모의실험의 규칙</b><br>
+      ① 염색체 비분리는 <b>21번에서만</b> 일어난다. 1번은 언제나 정상적으로 갈라진다.<br>
+      ② 감수 2분열의 비분리는 <b>두 딸세포 중 한쪽에서만</b> 일어난다.
+    </div>
+
+    <div class="tbl-outer">
+      <table class="t">
+        <thead><tr><th style="width:120px;">라운드</th><th>만들 것</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td>정상적인 생식세포분열</td></tr>
+          <tr><td><b>2</b></td><td><b>감수 1분열</b>에서 21번이 분리되지 않은 경우</td></tr>
+          <tr><td><b>3</b></td><td><b>감수 2분열</b>에서 21번이 분리되지 않은 경우</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="sub" style="margin-top:12px;">
+      세 경우를 직접 만든 뒤 생식세포의 염색체 수를 비교한다. 결과는 라운드를 끝낸 뒤에 열린다.<br>
+      ※사람의 체세포에는 상염색체 22쌍과 성염색체 1쌍이 있다. 이 모형은 그중 <b>두 쌍만</b> 그린 것이다.
+      21번은 사람의 상염색체 중 가장 작아 그림에서도 짧게 그렸다.
+    </p>
+  </div>
+
+  <!-- ══ ② 무대 ══ -->
+  <div class="card">
+    <h2 class="pink">② 염색체를 직접 움직여 생식세포를 만드시오</h2>
+
+    <div class="rail" id="rail"></div>
+    <div class="taskbar" id="task">준비 중이다.</div>
+
+    <div class="stage-wrap">
+      <svg class="stage" id="stage" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" aria-label="염색체 비분리 무대"></svg>
+    </div>
+    <div class="stage-hint" id="stageHint"></div>
+
+    <div class="msg warn hide" id="fb"></div>
+
+    <div class="btnrow">
+      <button class="btn pink" id="btnNext" onclick="submitPhase()">배치 확인하기</button>
+      <button class="btn ghost" id="btnUndo" onclick="undoPhase()">이 단계 다시 놓기</button>
+      <button class="btn gray" id="btnRedo" onclick="redoRound()" style="display:none;">이 라운드 다시 만들기</button>
+    </div>
+
+    <!-- 라운드 요약 발문 -->
+    <div id="sumBox" style="display:none;margin-top:16px;border-top:2px dashed var(--line);padding-top:14px;">
+      <div style="font-weight:700;font-size:16.5px;" id="sumQ"></div>
+      <div class="choices" id="sumChoices"></div>
+      <div class="msg good hide" id="sumFb"></div>
+    </div>
+  </div>
+
+  <!-- ══ ③ 누적 결과 ══ -->
+  <div class="card">
+    <h2 class="green">③ 세 경우의 결과 비교</h2>
+    <p class="sub">라운드를 마칠 때마다 그 줄이 열린다.</p>
+    <div class="tbl-outer">
+      <table class="t" id="cmp">
+        <thead>
+          <tr>
+            <th style="min-width:150px;">경우</th>
+            <th>생식세포 4개의 염색체 수</th>
+            <th>정상 : 비정상</th>
+            <th class="p" style="min-width:210px;"><i>n</i>+1 생식세포에 든 <b>21번 2개</b></th>
+          </tr>
+        </thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+
+    <div class="msg info hide" id="downNote" style="margin-top:12px;">
+      🧬 비분리로 만들어진 <b><i>n</i>+1 생식세포</b>가 정상 생식세포와 수정하면, 그 수정란은 <b>21번 염색체를 3개</b> 가진다.
+      교과서 31쪽: 다운증후군인 사람은 체세포 1개당 21번 염색체가 3개로, 총 <b>47개</b>의 염색체를 갖는다.
+    </div>
+
+    <div style="margin-top:16px;">
+      <div style="font-weight:700;">감수 1분열 비분리와 감수 2분열 비분리는 생식세포 4개의 조성에서 무엇이 다른가? 두 가지를 들어 서술하시오.</div>
+      <textarea id="taC" placeholder="세 라운드를 모두 마친 뒤 서술한다." oninput="onTa()"></textarea>
+      <div class="cnt" id="cntC">0자</div>
+      <div class="btnrow">
+        <button class="btn ghost" id="ansCBtn" onclick="toggleAns('ansC')">모범답안</button>
+      </div>
+      <div class="ans" id="ansC">
+        <b>①</b> 감수 1분열 비분리는 생식세포 <b>4개가 모두 비정상</b>이지만(<i>n</i>+1, <i>n</i>+1, <i>n</i>−1, <i>n</i>−1),
+        감수 2분열 비분리는 정상인 생식세포와 비정상인 생식세포가 <b>1 : 1</b>로 나타난다(<i>n</i>, <i>n</i>, <i>n</i>+1, <i>n</i>−1).<br>
+        <b>②</b> <i>n</i>+1 생식세포의 구성이 다르다. 감수 1분열 비분리에서는 <b>21번 상동염색체 2개</b>(21-부·21-모)가 함께 들어가고,
+        감수 2분열 비분리에서는 <b>같은 21번 염색체의 염색분체 2개</b>가 들어간다.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ④ 연습 문항 ══ -->
+  <!-- ★문항·선택지·해설을 이 마크업에 두지 않는다 — 본문에 답이 남으면 ②③에서 스스로
+       찾아낼 것을 먼저 읽게 된다. 전부 아래 PRACTICE 배열에서 만들어 붙인다. -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 240px;margin-bottom:0;">④ 연습 문항</h2>
+      <span class="tag" id="pracScore">0 / 0</span>
+    </div>
+    <p class="sub" style="margin-top:10px;">
+      각 문항은 하나를 고르면 곧바로 해설이 열린다. 다시 골라도 되지만 <b>첫 번째로 고른 것</b>만 기록된다.
+    </p>
+    <div class="msg info hide" id="pracLock"></div>
+    <div id="pracBox"></div>
+    <div class="msg good hide" id="pracDone"></div>
+  </div>
+
+  <!-- ══ ⑤ 가계도로 비분리 시기 찾기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 240px;margin-bottom:0;">⑤ 가계도로 비분리가 일어난 곳 찾기</h2>
+      <span class="tag" id="pedScoreTag">0 / 0</span>
+    </div>
+    <p class="sub" style="margin-top:10px;">
+      성염색체에서 비분리가 일어나면 <b>가계도와 형질</b>을 함께 보아 어느 부모의 어느 시기인지 좁힐 수 있다.
+    </p>
+    <!-- ★⑤ 핵형 표를 걷어내면서(교사 지시 2026-08-20) 그 표 아래 있던 안내 두 줄을 여기로 옮겼다. -->
+    <p class="sub" style="margin-top:6px;">
+      ※사람의 체세포는 2<i>n</i>=46이다. ②의 무대는 2<i>n</i>=4 모형이므로 수를 그대로 옮기지 않는다.<br>
+      ※상염색체 이상과 성염색체 이상 모두 <b>같은 원인</b>, 곧 생식세포분열에서의 염색체 비분리로 생긴다.
+    </p>
+    <!-- ★단서를 밝혀 두지 않으면 추론이 성립하지 않는다(교사 지적 2026-08-20).
+         ②는 교차 이야기다 — 교차가 일어나면 자매염색분체의 대립유전자가 달라질 수 있어
+         「색이 같으면 염색분체」라는 판별 근거가 무너진다. 교과서 범위 밖이므로 가정으로 못박는다. -->
+    <div class="msg warn" style="margin-top:4px;font-size:15px;">
+      <b>이 문항들의 단서</b><br>
+      ① 적록색맹은 <b>정상 대립유전자 X<sup>R</sup>가 하나도 없을 때</b>에만 나타난다.
+      X<sup>R</sup>가 하나라도 있으면 겉으로는 정상이다.<br>
+      ② <b>교차는 일어나지 않은 것으로 한다.</b> 그래야 「같은 염색체의 염색분체 2개는 대립유전자가 서로 같다」가 성립한다.
+    </div>
+    <div class="msg info hide" id="pedLock"></div>
+    <div id="pedBox"></div>
+    <div class="msg good hide" id="pedDone"></div>
+  </div>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+  </footer>
+</div>
+
+<div id="draftGate">
+  <div class="box">
+    <h2>🔒 준비 중인 자료이다</h2>
+    <p>이 자료는 아직 완성되지 않았다.<br>담당 교사만 열 수 있다.</p>
+    <input id="draftPass" type="password" inputmode="numeric" autocomplete="off"
+           placeholder="관리자 비밀번호" aria-label="관리자 비밀번호"
+           onkeydown="if(event.key==='Enter') unlockDraft();">
+    <button class="btn" type="button" onclick="unlockDraft()">확인</button>
+    <div class="err" id="draftErr"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ══════════════════ 단일 기준원 ══════════════════
+   교과서 그림 Ⅰ-18(31쪽) 모형: 2n=4, n=2
+   ★결과 배열을 손으로 적지 않는다. 아래 runMeiosis()가 배치에서 결과를 만들고
+     화면·판정·요약·비교표가 전부 그 반환값에서만 파생된다.            */
+var LS_KEY = 'nondisj_sim_v1';
+
+var CHROMS = ['A-p','A-m','B-p','B-m'];
+/* ★내부 id는 A/B로 두고 화면 라벨만 번호를 쓴다(저장본 호환).
+   A쌍 = 21번(비분리가 일어나는 쌍) · B쌍 = 1번(정상 분리)
+   ★21번은 사람 상염색체 중 가장 작다 → 21번을 짧게, 1번을 길게 그린다. */
+var CHROM_META = {
+  'A-p':{pair:'A', num:'21', origin:'p', label:'21-부', color:'#2f6fd6', len:54},
+  'A-m':{pair:'A', num:'21', origin:'m', label:'21-모', color:'#8fb8f0', len:54},
+  'B-p':{pair:'B', num:'1',  origin:'p', label:'1-부',  color:'#9b59b6', len:78},
+  'B-m':{pair:'B', num:'1',  origin:'m', label:'1-모',  color:'#d2a8e0', len:78}
+};
+var CASES = ['normal','nd1','nd2'];
+var CASE_META = {
+  normal:{no:1, name:'정상적인 생식세포분열',                short:'정상',        color:'var(--green)'},
+  nd1:   {no:2, name:'감수 1분열에서 염색체 비분리',          short:'감수 1분열',  color:'var(--pink)'},
+  nd2:   {no:3, name:'감수 2분열에서 염색체 비분리',          short:'감수 2분열',  color:'var(--purple)'}
+};
+
+/* 교과서 31쪽 캡션 원문 — 요약 발문에 답한 뒤에만 공개한다 */
+var CAPTION = {
+  normal:'생식세포 4개의 염색체 수가 모두 정상이다.',
+  nd1:'모든 생식세포의 염색체 수가 정상보다 많거나 적다.',
+  nd2:'염색체 수가 정상인 생식세포와 비정상적인 생식세포가 1 : 1의 비율로 나타난다.'
+};
+
+var PLOIDY_TEXT = { n:'n', np1:'n+1', nm1:'n−1' };   /* − = 음부호 */
+
+/* ── 감수분열을 규칙으로 실행한다 ──
+   pl.m1[chrom]            = 'L' | 'R'   국면 1에서 그 염색체가 간 극
+   pl.m2[chrom + '#0'|'#1']= 'L' | 'R'   국면 2에서 그 염색분체가 간 생식세포 자리(자기 세포 기준)
+   반환 gametes = 생식세포 4개, 각 원소는 그 안에 든 염색체(분체) 라벨 배열              */
+function runMeiosis(pl){
+  var d1 = { L:[], R:[] };
+  CHROMS.forEach(function(c){
+    var s = pl.m1[c];
+    if (s === 'L' || s === 'R') d1[s].push(c);
+  });
+  var gametes = [];
+  ['L','R'].forEach(function(cell){
+    var g = { L:[], R:[] };
+    d1[cell].forEach(function(c){
+      ['#0','#1'].forEach(function(k){
+        var s = pl.m2[c + k];
+        if (s === 'L' || s === 'R') g[s].push(c);
+      });
+    });
+    gametes.push(g.L, g.R);
+  });
+  return { d1:[d1.L, d1.R], gametes:gametes };
+}
+
+function ploidyOf(g){
+  if (g.length === 1) return 'nm1';
+  if (g.length === 2) return 'n';
+  if (g.length === 3) return 'np1';
+  return 'x';
+}
+function summarize(gs){
+  var s = { n:0, np1:0, nm1:0, x:0 };
+  gs.forEach(function(g){ s[ploidyOf(g)]++; });
+  s.normal = s.n;
+  s.abnormal = 4 - s.n;
+  return s;
+}
+/* 다중집합 비교 — 좌우 위치·배열 순서는 의미를 갖지 않는다 */
+function gkey(gs){
+  return gs.map(function(g){ return g.slice().sort().join('+'); }).sort().join(' | ');
+}
+
+/* ── 라운드 목표 판정 (좌우 어느 쪽인지는 전부 무관) ── */
+function sideOf(pl, c){ return pl.m1[c]; }
+function splitOf(pl, c){                       /* 그 염색체의 두 분체가 서로 다른 자리로 갔는가 */
+  var a = pl.m2[c + '#0'], b = pl.m2[c + '#1'];
+  if (!a || !b) return null;
+  return a !== b;
+}
+function chromsInCell(pl, cell){
+  return CHROMS.filter(function(c){ return pl.m1[c] === cell; });
+}
+function unsplitCells(pl){
+  return ['L','R'].filter(function(cell){
+    return chromsInCell(pl, cell).some(function(c){ return splitOf(pl, c) === false; });
+  });
+}
+function countUnsplit(pl){
+  return CHROMS.filter(function(c){ return splitOf(pl, c) === false; }).length;
+}
+
+var GOAL = {
+  /* 국면 1 목표 — 상동염색체가 갈라졌는가 */
+  m1: {
+    normal:function(pl){ return sideOf(pl,'A-p') !== sideOf(pl,'A-m') && sideOf(pl,'B-p') !== sideOf(pl,'B-m'); },
+    nd1:   function(pl){ return sideOf(pl,'A-p') === sideOf(pl,'A-m') && sideOf(pl,'B-p') !== sideOf(pl,'B-m'); },
+    nd2:   function(pl){ return sideOf(pl,'A-p') !== sideOf(pl,'A-m') && sideOf(pl,'B-p') !== sideOf(pl,'B-m'); }
+  },
+  /* 국면 2 목표 — 염색분체가 갈라졌는가 */
+  m2: {
+    normal:function(pl){ return countUnsplit(pl) === 0; },
+    nd1:   function(pl){ return countUnsplit(pl) === 0; },
+    nd2:   function(pl){ return countUnsplit(pl) === 1 && unsplitCells(pl).length === 1; }
+  }
+};
+
+/* ── 오답 피드백 (시험지 문체 · 「옳지 않다.」로 시작) ── */
+var FB = {
+  N1:'옳지 않다. 감수 1분열에서 분리되는 것은 상동염색체이다. 이 단계에서는 염색분체를 따로 움직일 수 없으므로 염색체를 통째로 옮기시오.',
+  N2:'옳지 않다. 한 극에 들어갈 수 있는 자리를 넘었다. 다른 극으로 옮기시오.',
+  N3:'옳지 않다. 정상적인 감수 1분열에서는 상동염색체가 서로 다른 극으로 이동한다. 21번과 1번이 각각 갈라졌는지 확인하시오.',
+  N4:'옳지 않다. 감수 1분열 비분리는 <b>한 쌍</b>에서만 일어난다. <b>21번</b>은 같은 극으로, <b>1번</b>은 서로 다른 극으로 보내시오. [힌트 1] 비분리가 일어나지 않은 쌍은 정상적으로 갈라진다.',
+  N5:'옳지 않다. 이 라운드의 감수 1분열은 <b>정상</b>이다. 21번과 1번이 각각 서로 다른 극으로 가야 한다. 비분리는 다음 단계에서 일으킨다.',
+  N6:'옳지 않다. 정상적인 감수 2분열에서는 모든 염색체의 염색분체가 서로 다른 생식세포로 들어간다. 두 분체가 같은 자리에 함께 있는 염색체가 남아 있는지 확인하시오.',
+  N7:'옳지 않다. 감수 2분열 비분리는 두 딸세포 중 <b>한쪽의 한 염색체</b>에서만 일어난다. 분체를 함께 보낸 염색체가 몇 개인지 확인하시오.',
+  N8:'옳지 않다. 아직 놓지 않은 염색체가 있다. 모두 배치한 뒤 확인하시오.'
+};
+
+/* ══════════════════ 상태 ══════════════════ */
+function freshPlace(){ return { m1:{}, m2:{} }; }
+function freshState(){
+  return {
+    place:{ normal:freshPlace(), nd1:freshPlace(), nd2:freshPlace() },
+    phase:{ normal:1, nd1:1, nd2:1 },     /* 1 = 감수 1분열, 2 = 감수 2분열 */
+    roundDone:{},
+    sumPick:{},
+    pPick:{},
+    first:{},
+    wrong:{},
+    ta:{},
+    startedAt:'',
+    teacherUnlock:false
+  };
+}
+var state = freshState();
+var round = 1;                  /* 파생값 — reconcileRounds()가 다시 계산한다 */
+
+function caseOfRound(r){ return CASES[r - 1]; }
+function curCase(){ return caseOfRound(round); }
+function curPhase(){ return state.phase[curCase()] || 1; }
+
+function reconcileRounds(){
+  var r = 1;
+  for (var i = 0; i < CASES.length; i++){
+    if (state.roundDone[CASES[i]]) r = i + 2;
+  }
+  round = Math.min(r, 3);
+}
+
+function saveState(){
+  try{
+    var ta = {};
+    ['taC'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) ta[id] = el.value;
+    });
+    state.ta = ta;
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  }catch(e){}
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    return o;
+  }catch(e){ return null; }
+}
+
+/* ══════════════════ 무대 좌표 ══════════════════ */
+var VB_W = 900, VB_H = 560;
+var POLE = { L:{ x:150, y:280 }, R:{ x:750, y:280 } };
+var EQ_X = 450;
+var SNAP_R = 62;
+
+/* 국면 1 슬롯 — 각 극 옆에 2×2로 4자리 */
+function m1Slots(){
+  var out = [];
+  var dx = [-52, 52, -52, 52], dy = [-72, -72, 74, 74];
+  ['L','R'].forEach(function(cell){
+    for (var i = 0; i < 4; i++){
+      out.push({ id:'m1:' + cell + ':' + i, cell:cell, idx:i,
+                 x:POLE[cell].x + dx[i], y:POLE[cell].y + dy[i] });
+    }
+  });
+  return out;
+}
+/* 국면 2 슬롯 — 딸세포 2개 × 생식세포 2자리 × 각 3칸 */
+function m2Slots(){
+  var out = [];
+  var cellCx = { L:230, R:670 };
+  ['L','R'].forEach(function(cell){
+    ['L','R'].forEach(function(g, gi){
+      for (var i = 0; i < 3; i++){
+        out.push({ id:'m2:' + cell + ':' + g + ':' + i, cell:cell, g:g, idx:i,
+                   x:cellCx[cell] + (gi === 0 ? -112 : 112) - 42 + i * 42, y:448 });
+      }
+    });
+  });
+  return out;
+}
+
+/* 대기 위치 — 아직 놓지 않은 염색체는 적도판 위에 세로로 늘어선다(중기 배열) */
+function parkPos(i, total){
+  var step = 92;
+  var y0 = 280 - step * (total - 1) / 2;
+  return { x:EQ_X, y:y0 + step * i };
+}
+
+/* ══════════════════ 렌더 ══════════════════ */
+function svgEl(tag, attrs){
+  var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (var k in attrs){ if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]); }
+  return e;
+}
+
+/* 염색체 하나를 그린다.
+   replicated=true  → 염색분체 2개 + 동원체
+   half=0|1         → 염색분체 하나만                                          */
+function drawChrom(g, meta, x, y, mode, dim){
+  var len = meta.len, w = 15;
+  var op = dim ? 0.35 : 1;
+  function arm(cx){
+    var p = svgEl('rect', { x:cx - w / 2, y:y - len / 2, width:w, height:len, rx:7,
+                            fill:meta.color, stroke:'#33405A', 'stroke-width':1.6, opacity:op });
+    g.appendChild(p);
+  }
+  if (mode === 'rep'){
+    arm(x - 9); arm(x + 9);
+    g.appendChild(svgEl('circle', { cx:x, cy:y, r:7, fill:'#fff', stroke:'#33405A', 'stroke-width':1.8, opacity:op }));
+  } else {
+    arm(x);
+    g.appendChild(svgEl('circle', { cx:x, cy:y, r:5.5, fill:'#fff', stroke:'#33405A', 'stroke-width':1.6, opacity:op }));
+  }
+  var t = svgEl('text', { x:x, y:y + len / 2 + 19, 'text-anchor':'middle',
+                          'font-size':15, 'font-weight':'700', fill:'#33405A', opacity:op });
+  t.textContent = meta.label;
+  g.appendChild(t);
+}
+
+/* 염색분체 하나(팔)만 그린다 — 동원체·라벨은 부르는 쪽이 따로 얹는다 */
+function drawArmOnly(g, meta, x, y){
+  g.appendChild(svgEl('rect', { x:x - 7.5, y:y - meta.len / 2, width:15, height:meta.len, rx:7,
+                                fill:meta.color, stroke:'#33405A', 'stroke-width':1.6 }));
+}
+function drawCentromere(g, x, y, r){
+  g.appendChild(svgEl('circle', { cx:x, cy:y, r:r, fill:'#fff', stroke:'#33405A', 'stroke-width':1.8 }));
+}
+function drawLabelOnly(g, meta, x, y){
+  var t = svgEl('text', { x:x, y:y + meta.len / 2 + 19, 'text-anchor':'middle',
+                          'font-size':15, 'font-weight':'700', fill:'#33405A' });
+  t.textContent = meta.label;
+  g.appendChild(t);
+}
+
+function cellOutline(g, cx, cy, rx, ry, label){
+  g.appendChild(svgEl('ellipse', { cx:cx, cy:cy, rx:rx, ry:ry, fill:'#fff',
+                                   stroke:'#9AA7BD', 'stroke-width':2.5, 'stroke-dasharray':'0' }));
+  if (label){
+    var t = svgEl('text', { x:cx, y:cy - ry - 10, 'text-anchor':'middle', 'font-size':15,
+                            'font-weight':'700', fill:'#6B7280' });
+    t.textContent = label;
+    g.appendChild(t);
+  }
+}
+
+var dragState = null;
+
+function render(){
+  var svg = document.getElementById('stage');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  var cs = curCase(), ph = curPhase(), pl = state.place[cs];
+
+  var defs = svgEl('g', {});
+  svg.appendChild(defs);
+
+  if (ph === 1) renderPhase1(svg, cs, pl);
+  else renderPhase2(svg, cs, pl);
+
+  updateTask();
+  updateRail();
+  updateCmp();
+}
+
+function renderPhase1(svg, cs, pl){
+  var bg = svgEl('g', {});
+  svg.appendChild(bg);
+
+  cellOutline(bg, 450, 280, 405, 232, '');
+
+  /* 적도판 */
+  bg.appendChild(svgEl('line', { x1:EQ_X, y1:80, x2:EQ_X, y2:480, stroke:'#C7CEDA',
+                                 'stroke-width':2.5, 'stroke-dasharray':'8 7' }));
+  var eqT = svgEl('text', { x:EQ_X, y:504, 'text-anchor':'middle', 'font-size':14.5, fill:'#8A93A3' });
+  eqT.textContent = '적도판';
+  bg.appendChild(eqT);
+
+  /* 두 극 — 극 표시 + 그 옆 4자리 */
+  ['L','R'].forEach(function(cell){
+    var p = POLE[cell];
+    bg.appendChild(svgEl('circle', { cx:p.x, cy:p.y, r:10, fill:'#8A93A3' }));
+    var t = svgEl('text', { x:p.x, y:p.y + 34, 'text-anchor':'middle', 'font-size':16,
+                            'font-weight':'700', fill:'#5B6779' });
+    t.textContent = (cell === 'L' ? '왼쪽 극' : '오른쪽 극');
+    bg.appendChild(t);
+  });
+  /* 빈 자리 표시 */
+  var used = {};
+  ['L','R'].forEach(function(cell){
+    used[cell] = CHROMS.filter(function(c){ return pl.m1[c] === cell; }).length;
+  });
+  var leftToPlace = CHROMS.filter(function(c){ return !pl.m1[c]; }).length;
+  m1Slots().forEach(function(s2){
+    if (s2.idx < used[s2.cell]) return;                 /* 이미 채워진 자리 */
+    if (s2.idx >= used[s2.cell] + leftToPlace) return;  /* 남은 개수보다 많은 빈 자리는 그리지 않는다 */
+    bg.appendChild(svgEl('rect', { x:s2.x - 26, y:s2.y - 46, width:52, height:92, rx:11,
+                                   fill:'#F2F6FC', stroke:'#C3CFE2', 'stroke-width':2,
+                                   'stroke-dasharray':'6 5' }));
+  });
+
+  /* 놓이지 않은 것은 적도판에, 놓인 것은 극 자리에 */
+  var slots = m1Slots();
+  var parked = CHROMS.filter(function(c){ return !pl.m1[c]; });
+
+  CHROMS.forEach(function(c){
+    var meta = CHROM_META[c], pos, placed = !!pl.m1[c];
+    if (placed){
+      var cell = pl.m1[c];
+      var order = CHROMS.filter(function(x){ return pl.m1[x] === cell; }).indexOf(c);
+      var s3 = slots.filter(function(s4){ return s4.cell === cell; })[order];
+      pos = { x:s3.x, y:s3.y };
+    } else {
+      pos = parkPos(parked.indexOf(c), parked.length);
+    }
+    var g = svgEl('g', { 'data-chrom':c, style:'cursor:grab;touch-action:none;' });
+    /* 히트영역 — 실제 도형보다 크게 잡는다 */
+    g.appendChild(svgEl('rect', { x:pos.x - 32, y:pos.y - meta.len / 2 - 16,
+                                  width:64, height:meta.len + 48, fill:'transparent' }));
+    drawChrom(g, meta, pos.x, pos.y, 'rep', false);
+    g.addEventListener('pointerdown', onChromDown);
+    svg.appendChild(g);
+  });
+}
+
+function renderPhase2(svg, cs, pl){
+  var bg = svgEl('g', {});
+  svg.appendChild(bg);
+
+  var cellCx = { L:230, R:670 }, CELL_CY = 218, CELL_R = 158;
+  var GAM_Y = 448;
+
+  ['L','R'].forEach(function(cell){
+    cellOutline(bg, cellCx[cell], CELL_CY, CELL_R, CELL_R, (cell === 'L' ? '왼쪽 딸세포' : '오른쪽 딸세포'));
+    bg.appendChild(svgEl('line', { x1:cellCx[cell], y1:CELL_CY - CELL_R + 14,
+                                   x2:cellCx[cell], y2:CELL_CY + CELL_R - 14,
+                                   stroke:'#C7CEDA', 'stroke-width':2, 'stroke-dasharray':'8 7' }));
+    [['L',-112],['R',112]].forEach(function(pair){
+      var gx = cellCx[cell] + pair[1];
+      bg.appendChild(svgEl('ellipse', { cx:gx, cy:GAM_Y, rx:78, ry:56, fill:'#F7FAFF',
+                                        stroke:'#B9C6DC', 'stroke-width':2, 'stroke-dasharray':'7 6' }));
+      var t = svgEl('text', { x:gx, y:GAM_Y + 78, 'text-anchor':'middle', 'font-size':14.5,
+                              'font-weight':'700', fill:'#5B6779' });
+      t.textContent = '생식세포';
+      bg.appendChild(t);
+    });
+  });
+
+  var slots = m2Slots();
+
+  ['L','R'].forEach(function(cell){
+    var list = chromsInCell(pl, cell);
+    var stepX = list.length >= 3 ? 84 : 112;
+    var x0 = cellCx[cell] - stepX * (list.length - 1) / 2;
+
+    list.forEach(function(c, ci){
+      var meta = CHROM_META[c];
+      var homeX = x0 + ci * stepX, homeY = CELL_CY;
+      var a = pl.m2[c + '#0'], b = pl.m2[c + '#1'];
+
+      /* ★분체는 언제나 자기 그림을 자기 그룹 안에 갖는다 —
+         그래야 끌 때 실제로 따라 움직인다(투명 히트영역만 끌리던 결함 수정). */
+      var bothHome = !a && !b;
+
+      [0, 1].forEach(function(ki){
+        var id = c + '#' + ki, target = pl.m2[id], pos;
+        if (target){
+          var inSlot = [];
+          list.forEach(function(c2){
+            [0, 1].forEach(function(k2){
+              if (pl.m2[c2 + '#' + k2] === target) inSlot.push(c2 + '#' + k2);
+            });
+          });
+          var order = inSlot.indexOf(id);
+          var cand = slots.filter(function(s2){ return s2.cell === cell && s2.g === target; });
+          var s3 = cand[Math.min(order, cand.length - 1)];
+          pos = { x:s3.x, y:s3.y };
+        } else {
+          /* 둘 다 집에 있으면 붙어 있는 모습(∓9), 짝이 떠났으면 혼자 가운데 */
+          pos = { x:homeX + (bothHome ? (ki === 0 ? -9 : 9) : 0), y:homeY };
+        }
+
+        var g = svgEl('g', { 'data-chromatid':id, style:'cursor:grab;touch-action:none;' });
+        g.appendChild(svgEl('rect', { x:pos.x - 22, y:pos.y - meta.len / 2 - 12,
+                                      width:44, height:meta.len + 42, fill:'transparent' }));
+        drawArmOnly(g, meta, pos.x, pos.y);
+        if (!bothHome || target){
+          /* 혼자 있거나 생식세포에 놓였으면 자기 동원체·라벨을 갖는다 */
+          drawCentromere(g, pos.x, pos.y, 5.5);
+          drawLabelOnly(g, meta, pos.x, pos.y);
+        }
+        g.addEventListener('pointerdown', onChromatidDown);
+        svg.appendChild(g);
+      });
+
+      /* 둘 다 집에 있을 때만 공유 동원체·라벨을 앞 레이어에 얹는다(라벨이 두 번 찍히지 않게) */
+      if (bothHome){
+        var fg = svgEl('g', {});
+        drawCentromere(fg, homeX, homeY, 7);
+        drawLabelOnly(fg, meta, homeX, homeY);
+        svg.appendChild(fg);
+      }
+    });
+  });
+}
+
+/* ══════════════════ 드래그 (Pointer Events + 자석 스냅) ══════════════════ */
+function svgPoint(e){
+  var svg = document.getElementById('stage');
+  var r = svg.getBoundingClientRect();
+  var sx = VB_W / r.width, sy = VB_H / r.height;
+  return { x:(e.clientX - r.left) * sx, y:(e.clientY - r.top) * sy };
+}
+function findSnap(pos, targets){
+  var best = null, bestD = Infinity;
+  targets.forEach(function(t){
+    var d = Math.sqrt((pos.x - t.x) * (pos.x - t.x) + (pos.y - t.y) * (pos.y - t.y));
+    var r = (t.radius === undefined || t.radius === null) ? SNAP_R : t.radius;
+    if (d <= r && d < bestD){ best = t; bestD = d; }
+  });
+  return best;
+}
+
+function beginDrag(e, kind, id){
+  if (dragState) return;                      /* 진행 중 드래그를 두 번째 포인터가 가로채지 않는다 */
+  e.preventDefault();
+  var el = e.currentTarget;
+  if (el.setPointerCapture) { try{ el.setPointerCapture(e.pointerId); }catch(err){} }
+  dragState = { kind:kind, id:id, el:el, pid:e.pointerId, moved:false, from:svgPoint(e) };
+  el.addEventListener('pointermove', onDragMove);
+  el.addEventListener('pointerup', onDragEnd);
+  el.addEventListener('pointercancel', onDragEnd);
+}
+function onChromDown(e){
+  if (curPhase() !== 1) return;
+  beginDrag(e, 'chrom', e.currentTarget.getAttribute('data-chrom'));
+}
+function onChromatidDown(e){
+  if (curPhase() !== 2) return;
+  beginDrag(e, 'chromatid', e.currentTarget.getAttribute('data-chromatid'));
+}
+/* ★잡은 지점을 기준으로 움직인다 — 중심이 포인터로 튀지 않는다 */
+function onDragMove(e){
+  if (!dragState || e.pointerId !== dragState.pid) return;
+  dragState.moved = true;
+  var p = svgPoint(e);
+  dragState.el.setAttribute('transform',
+    'translate(' + (p.x - dragState.from.x) + ',' + (p.y - dragState.from.y) + ')');
+}
+function onDragEnd(e){
+  if (!dragState || e.pointerId !== dragState.pid) return;
+  var ds = dragState;
+  dragState = null;
+  /* ★캡처를 반드시 놓는다 — 놓지 않으면 이 요소가 이후의 포인터 이벤트를 계속 가로채
+     두 번째 드래그부터 다른 염색체를 잡을 수 없게 된다(실제로 겪었다). */
+  if (ds.el.releasePointerCapture && ds.el.hasPointerCapture && ds.el.hasPointerCapture(ds.pid)){
+    try{ ds.el.releasePointerCapture(ds.pid); }catch(err){}
+  }
+  ds.el.removeEventListener('pointermove', onDragMove);
+  ds.el.removeEventListener('pointerup', onDragEnd);
+  ds.el.removeEventListener('pointercancel', onDragEnd);
+  var p = svgPoint(e);
+  var cs = curCase(), pl = state.place[cs];
+  if (state.roundDone[cs]){ render(); return; }   /* 완료한 라운드는 읽기 전용 */
+
+  if (ds.kind === 'chrom'){
+    var s = findSnap(p, m1Slots().map(function(x){ return { id:x.id, x:x.x, y:x.y, cell:x.cell }; }));
+    if (s){
+      var cnt = CHROMS.filter(function(c){ return pl.m1[c] === s.cell; }).length;
+      if (pl.m1[ds.id] !== s.cell && cnt >= 4){ flash('warn', FB.N2); }
+      else { pl.m1[ds.id] = s.cell; }
+    }
+  } else {
+    var s2 = findSnap(p, m2Slots().map(function(x){ return { id:x.id, x:x.x, y:x.y, cell:x.cell, g:x.g }; }));
+    if (s2){
+      var owner = ds.id.split('#')[0];
+      if (pl.m1[owner] !== s2.cell){ flash('warn', '옳지 않다. 이 염색분체는 다른 딸세포에 속한다. 자기 딸세포 안의 생식세포 자리로 옮기시오.'); }
+      else { pl.m2[ds.id] = s2.g; }
+    }
+  }
+  render();
+  saveState();
+}
+
+/* ══════════════════ 진행 ══════════════════ */
+function flash(kind, html){
+  var el = document.getElementById('fb');
+  el.className = 'msg ' + kind;
+  el.innerHTML = html;
+}
+function clearFlash(){
+  var el = document.getElementById('fb');
+  el.className = 'msg warn hide';
+  el.innerHTML = '';
+}
+
+function updateTask(){
+  var cs = curCase(), ph = curPhase(), m = CASE_META[cs];
+  var t = document.getElementById('task');
+  var hint = document.getElementById('stageHint');
+
+  /* ★완료한 라운드는 읽기 전용이다 —
+     배치를 지우면 roundDone 은 true 인 채 비교표만 거짓값을 내게 된다. */
+  var done = !!state.roundDone[cs];
+  var bNext = document.getElementById('btnNext');
+  var bUndo = document.getElementById('btnUndo');
+  var bRedo = document.getElementById('btnRedo');
+  if (bNext) bNext.style.display = done ? 'none' : '';
+  if (bUndo) bUndo.style.display = done ? 'none' : '';
+  if (bRedo) bRedo.style.display = done ? '' : 'none';
+  if (done){
+    t.innerHTML = '✅ 라운드 ' + m.no + ' · <b>' + m.name + '</b> — 완료한 라운드를 다시 보는 중이다.';
+    hint.innerHTML = '위의 라운드 단추로 다른 라운드의 결과를 볼 수 있다. 다시 만들려면 <b>이 라운드 다시 만들기</b>를 누른다.';
+    return;
+  }
+
+  if (ph === 1){
+    t.innerHTML = '👆 라운드 ' + m.no + ' · <b>' + m.name + '</b> — 감수 1분열: 염색체 4개를 두 극으로 옮기시오.';
+    hint.innerHTML = '이 단계에서는 <b>염색체를 통째로</b> 옮긴다. 염색분체는 아직 분리되지 않는다.';
+  } else {
+    t.innerHTML = '👆 라운드 ' + m.no + ' · <b>' + m.name + '</b> — 감수 2분열: 염색분체를 생식세포 자리로 옮기시오.';
+    hint.innerHTML = '이 단계에서는 <b>염색분체 하나하나</b>를 옮긴다. 각 분체는 자기 딸세포 안의 생식세포로만 갈 수 있다.';
+  }
+}
+
+/* 열 수 있는 라운드 = 완료한 라운드 전부 + 그 다음 한 라운드(앞질러 가지는 못한다) */
+function maxOpenRound(){
+  var done = 0;
+  for (var i = 0; i < CASES.length; i++){ if (state.roundDone[CASES[i]]) done++; else break; }
+  return Math.min(done + 1, CASES.length);
+}
+function gotoRound(r){
+  if (r < 1 || r > maxOpenRound()) return false;
+  round = r;
+  document.getElementById('sumBox').style.display = 'none';
+  clearFlash();
+  render();
+  var cs = caseOfRound(r);
+  if (state.roundDone[cs]){
+    if (state.sumPick[cs] === undefined) openSummary(cs);
+    else showSummaryResolved(cs);
+  }
+  saveState();
+  return true;
+}
+
+function updateRail(){
+  var rail = document.getElementById('rail');
+  rail.innerHTML = '';
+  var open = maxOpenRound();
+  CASES.forEach(function(cs, i){
+    var m = CASE_META[cs];
+    var can = (i + 1) <= open;
+    var d = document.createElement(can ? 'button' : 'div');
+    if (can) d.type = 'button';
+    d.className = 'rstep' + (state.roundDone[cs] ? ' ok' : '') + (i + 1 === round ? ' on' : '') +
+                  (can ? ' can' : '');
+    d.innerHTML = '라운드 ' + m.no + '<span class="rsub">' + m.short +
+                  (state.roundDone[cs] ? ' · 완료 ✓' : '') + '</span>';
+    if (can) d.onclick = function(){ gotoRound(i + 1); };
+    rail.appendChild(d);
+  });
+  document.getElementById('progress').textContent =
+    '진행 ' + CASES.filter(function(c){ return state.roundDone[c]; }).length + ' / 3';
+}
+
+function allPlacedM1(pl){ return CHROMS.every(function(c){ return !!pl.m1[c]; }); }
+function allPlacedM2(pl){
+  return CHROMS.every(function(c){
+    return ['#0','#1'].every(function(k){ return !!pl.m2[c + k]; });
+  });
+}
+
+function submitPhase(){
+  var cs = curCase(), ph = curPhase(), pl = state.place[cs];
+  clearFlash();
+  if (ph === 1){
+    if (!allPlacedM1(pl)) { flash('warn', FB.N8); return; }
+    if (!GOAL.m1[cs](pl)){
+      state.wrong[cs + '.m1'] = (state.wrong[cs + '.m1'] || 0) + 1;
+      flash('warn', cs === 'normal' ? FB.N3 : (cs === 'nd1' ? FB.N4 : FB.N5));
+      saveState();
+      return;
+    }
+    state.phase[cs] = 2;
+    flash('good', '감수 1분열의 배치가 조건을 만족한다. 이어서 감수 2분열을 진행하시오.');
+    render(); saveState();
+    return;
+  }
+  if (!allPlacedM2(pl)) { flash('warn', FB.N8); return; }
+  if (!GOAL.m2[cs](pl)){
+    state.wrong[cs + '.m2'] = (state.wrong[cs + '.m2'] || 0) + 1;
+    flash('warn', cs === 'nd2' ? FB.N7 : FB.N6);
+    saveState();
+    return;
+  }
+  state.roundDone[cs] = true;
+  clearFlash();
+  openSummary(cs);
+  saveState();
+  updateRail();
+  updateCmp();
+  renderPractice();
+}
+
+/* 완료한 라운드를 통째로 되돌린다 — 배치·완료표시·요약답을 함께 지워야 비교표가 어긋나지 않는다 */
+function redoRound(){
+  var cs = curCase(), m = CASE_META[cs];
+  if (!state.roundDone[cs]) return false;
+  if (!confirm('라운드 ' + m.no + '(' + m.name + ')의 배치와 결과를 지우고 다시 만드시겠습니까?')) return false;
+  state.place[cs] = freshPlace();
+  state.phase[cs] = 1;
+  delete state.roundDone[cs];
+  delete state.sumPick[cs];
+  reconcileRounds();
+  round = CASE_META[cs].no;
+  document.getElementById('sumBox').style.display = 'none';
+  clearFlash();
+  render();
+  updateCmp();
+  refreshAnsGates();
+  renderPractice();          /* 라운드를 되돌리면 ④도 다시 잠긴다 */
+  saveState();
+  return true;
+}
+
+/* 이미 답한 라운드를 되볼 때의 요약 화면 — 다시 채점하지 않고 결과만 보여 준다 */
+function showSummaryResolved(cs){
+  var box = document.getElementById('sumBox');
+  box.style.display = 'block';
+  document.getElementById('sumQ').textContent =
+    '이 경우 생식세포 4개 중 염색체 수가 정상인 것은 몇 개인가?';
+  var right = sumAnswerIdx(cs), picked = state.sumPick[cs];
+  var wrap = document.getElementById('sumChoices');
+  wrap.innerHTML = '';
+  SUM_CHOICES.forEach(function(label, i){
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choice' + (i === right ? ' right' : ' dim');
+    b.textContent = label;
+    b.disabled = true;
+    wrap.appendChild(b);
+  });
+  var fb = document.getElementById('sumFb');
+  fb.className = 'msg ' + (picked === right ? 'good' : 'warn');
+  fb.innerHTML = (picked === right ? '옳다. ' : '옳지 않다. 정상인 생식세포는 ' + SUM_CHOICES[right] + '이다. ')
+                 + CAPTION[cs];
+}
+
+function undoPhase(){
+  var cs = curCase(), ph = curPhase(), pl = state.place[cs];
+  /* ★완료한 라운드는 여기서도 막는다 — 버튼을 숨기는 것만으로는 부족하다.
+     배치가 지워지면 roundDone 은 true 인 채 비교표가 거짓값을 낸다. */
+  if (state.roundDone[cs]) return false;
+  if (ph === 1){ pl.m1 = {}; pl.m2 = {}; }
+  else { pl.m2 = {}; }
+  clearFlash();
+  render(); saveState();
+}
+
+/* ── 라운드 요약 발문 ── */
+var SUM_CHOICES = ['0개','1개','2개','4개'];
+function sumAnswerIdx(cs){
+  var pl = state.place[cs];
+  var s = summarize(runMeiosis(pl).gametes);
+  return { 0:0, 1:1, 2:2, 4:3 }[s.normal];
+}
+function openSummary(cs){
+  var box = document.getElementById('sumBox');
+  box.style.display = 'block';
+  document.getElementById('sumQ').textContent =
+    '이 경우 생식세포 4개 중 염색체 수가 정상인 것은 몇 개인가?';
+  var wrap = document.getElementById('sumChoices');
+  wrap.innerHTML = '';
+  SUM_CHOICES.forEach(function(label, i){
+    var b = document.createElement('button');
+    b.className = 'choice';
+    b.type = 'button';
+    b.textContent = label;
+    b.onclick = function(){ pickSummary(cs, i); };
+    wrap.appendChild(b);
+  });
+  var fb = document.getElementById('sumFb');
+  fb.className = 'msg good hide';
+  fb.innerHTML = '';
+}
+function pickSummary(cs, i){
+  var right = sumAnswerIdx(cs);
+  var key = cs + '.sum';
+  if (state.first[key] === undefined) state.first[key] = (i === right);
+  state.sumPick[cs] = i;
+
+  var btns = document.getElementById('sumChoices').children;
+  for (var k = 0; k < btns.length; k++){
+    btns[k].className = 'choice' + (k === right ? ' right' : ' dim');
+  }
+  var fb = document.getElementById('sumFb');
+  fb.className = 'msg ' + (i === right ? 'good' : 'warn');
+  var head = (i === right)
+    ? '옳다. '
+    : '옳지 않다. 정상인 생식세포는 ' + SUM_CHOICES[right] + '이다. ';
+  fb.innerHTML = head + CAPTION[cs] +
+    (round < 3 ? ' <b>[다음 라운드로]</b> 단추를 눌러 계속하시오.' : ' 세 경우를 모두 만들었다. 아래 비교표를 확인하시오.');
+
+  if (round < 3){
+    var b = document.createElement('button');
+    b.className = 'btn pink';
+    b.type = 'button';
+    b.style.marginTop = '10px';
+    b.textContent = '다음 라운드로';
+    b.onclick = nextRound;
+    fb.appendChild(document.createElement('br'));
+    fb.appendChild(b);
+  }
+  saveState();
+  updateCmp();
+  refreshAnsGates();
+  renderPractice();          /* 마지막 라운드의 요약에 답하면 여기서 ④가 열린다 */
+}
+function nextRound(){
+  round = Math.min(round + 1, 3);
+  document.getElementById('sumBox').style.display = 'none';
+  clearFlash();
+  render();
+  saveState();
+  var el = document.getElementById('task');
+  if (el && el.scrollIntoView) el.scrollIntoView({ block:'center' });
+}
+
+/* ── 비교표 ── */
+/* n+1 생식세포에 한 개 더 들어간 쌍을 「그림 2개 + 한 줄 뜻」으로 보여 준다.
+   ★핵심은 색이 같은가 다른가다 —
+     감수 1분열 비분리는 부·모에게서 온 서로 다른 염색체, 감수 2분열 비분리는 똑같은 염색체 2개.
+   무대에서 학생이 끌던 색을 그대로 쓴다. */
+function chromIcon(meta){
+  return '<svg width="20" height="40" viewBox="0 0 20 40" aria-hidden="true">' +
+         '<rect x="4" y="1" width="12" height="38" rx="6" fill="' + meta.color +
+         '" stroke="#33405A" stroke-width="1.4"></rect>' +
+         '<circle cx="10" cy="20" r="4" fill="#fff" stroke="#33405A" stroke-width="1.4"></circle></svg>';
+}
+function npOneComposition(cs){
+  var pl = state.place[cs];
+  var gs = runMeiosis(pl).gametes;
+  var np = gs.filter(function(g){ return ploidyOf(g) === 'np1'; })[0];
+  if (!np) return '<span style="color:var(--old);">—</span>';
+
+  var byPair = {};
+  np.forEach(function(c){
+    var pair = CHROM_META[c].pair;
+    (byPair[pair] = byPair[pair] || []).push(c);
+  });
+  var extra = null;
+  Object.keys(byPair).forEach(function(pair){ if (byPair[pair].length === 2) extra = byPair[pair]; });
+  if (!extra) return '<span style="color:var(--old);">—</span>';
+
+  var m0 = CHROM_META[extra[0]], m1 = CHROM_META[extra[1]];
+  var same = (extra[0] === extra[1]);
+  var pic = '<div class="chrpair">' +
+            '<figure>' + chromIcon(m0) + '<figcaption>' + m0.label + '</figcaption></figure>' +
+            '<figure>' + chromIcon(m1) + '<figcaption>' + m1.label + '</figcaption></figure>' +
+            '</div>';
+  var note = same
+    ? '<div class="cmpnote"><b>똑같은 21번 2개</b><br>한쪽에서 온 것이 복제된 것이다.</div>'
+    : '<div class="cmpnote"><b>서로 다른 21번 2개</b><br>아버지에게서 온 것과 어머니에게서 온 것이 함께 들어갔다.</div>';
+  return pic + note;
+}
+
+function updateCmp(){
+  /* 다운증후군 연결은 세 라운드를 다 만든 뒤에만 보인다 */
+  var dn = document.getElementById('downNote');
+  if (dn){
+    var allDone = CASES.every(function(c){ return state.roundDone[c] && state.sumPick[c] !== undefined; });
+    dn.className = 'msg info' + (allDone ? '' : ' hide');
+  }
+  var tb = document.getElementById('cmpBody');
+  tb.innerHTML = '';
+  CASES.forEach(function(cs){
+    var m = CASE_META[cs], tr = document.createElement('tr');
+    var done = !!state.roundDone[cs] && state.sumPick[cs] !== undefined;
+    if (!done){
+      tr.innerHTML = '<td><b>' + m.name + '</b></td>' +
+                     '<td class="lock">🔒 라운드를 마치면 열린다</td><td class="lock">🔒</td><td class="lock">🔒</td>';
+    } else {
+      var gs = runMeiosis(state.place[cs]).gametes;
+      var s = summarize(gs);
+      var counts = gs.map(function(g){ return PLOIDY_TEXT[ploidyOf(g)]; })
+                     .sort(function(a, b){ return a.length - b.length; });
+      tr.className = 'hl';
+      tr.innerHTML = '<td><b>' + m.name + '</b></td>' +
+        '<td>' + counts.join(', ') + '</td>' +
+        '<td><b>' + s.normal + ' : ' + s.abnormal + '</b></td>' +
+        '<td>' + npOneComposition(cs) + '</td>';
+    }
+    tb.appendChild(tr);
+  });
+}
+
+/* ══════════════════ ④ 연습 문항 ══════════════════
+   ★세 라운드를 다 만들고 요약 발문에 답해야 열린다 — ②③에서 학생이 스스로 찾아낼 것을
+     문항이 먼저 알려 주면 활동 전체가 무너진다. 잠금 조건은 다운증후군 연결 문구와 같다.
+   ★첫 시도 정오만 state.first['prac.<id>'] 에 남는다. 다시 골라도 기록은 덮이지 않는다
+     (뒤에 기록 반출을 붙일 때 이 값이 그대로 재료가 된다).
+   ★문항 배치 — ②에서 만든 결과를 다시 쓰게 짰다:
+     p1·p2 = 결과 재현 / p3 = n+1의 구성으로 시기 역추적 / p4·p5 = 수정란 환산.
+   ★2026-08-20 교사 지시로 p6(「판정할 수 있는가」 → 판정 불가)을 뺐다. 같은 개념은
+     ⑤ g2(딸 터너+색맹)에서 가계도로 한 번 다룬다 — 거기 한 곳으로 모은 것이다.      */
+var PRACTICE = [
+  { id:'p1',
+    q:'감수 1분열에서 21번 염색체가 분리되지 않았다. 이때 만들어진 생식세포 4개의 염색체 수로 옳은 것은?',
+    hint:['②에서 만든 <b>라운드 2</b>(감수 1분열 비분리)의 생식세포 4개를 다시 보시오. 21번이 몇 개씩 들어 있는가?',
+          '감수 1분열에서 21번이 한쪽 극으로 함께 가면, 그 뒤 감수 2분열이 정상이어도 <b>딸세포 4개가 모두</b> 그 영향을 받는다.'],
+    ch:['<i>n</i>, <i>n</i>, <i>n</i>, <i>n</i>',
+        '<i>n</i>+1, <i>n</i>+1, <i>n</i>−1, <i>n</i>−1',
+        '<i>n</i>, <i>n</i>, <i>n</i>+1, <i>n</i>−1',
+        '<i>n</i>+1, <i>n</i>−1, <i>n</i>−1, <i>n</i>−1'],
+    a:1,
+    ex:'감수 1분열에서 상동염색체가 분리되지 않으면 딸세포 <b>2개가 모두</b> 비정상이 된다. 이어지는 감수 2분열은 정상적으로 일어나므로 그 결과 생식세포 4개가 모두 비정상이 된다.',
+    fig:{ rows:[{ cells:[ G(['bp','ap','am'], '<i>n</i>+1'), G(['bp','ap','am'], '<i>n</i>+1'),
+                          G(['bm'], '<i>n</i>−1'), G(['bm'], '<i>n</i>−1') ] }],
+          cap:'21번 두 개가 함께 들어간 생식세포 2개와 21번이 하나도 없는 생식세포 2개가 만들어진다. <b>정상인 것이 하나도 없다.</b>' } },
+
+  { id:'p2',
+    q:'염색체 수가 정상인 생식세포와 비정상인 생식세포가 <b>1 : 1</b>로 나타나는 경우는?',
+    hint:['③ 비교표에서 세 경우의 「정상 : 비정상」 칸을 나란히 보시오.',
+          '감수 2분열의 비분리는 <b>두 딸세포 중 한쪽에서만</b> 일어난다. 나머지 한쪽은 정상으로 갈라진다.'],
+    ch:['정상적인 생식세포분열',
+        '감수 1분열에서의 염색체 비분리',
+        '감수 2분열에서의 염색체 비분리',
+        '감수 1분열과 감수 2분열에서 모두 일어난 염색체 비분리'],
+    a:2,
+    ex:'감수 2분열의 비분리는 두 딸세포 중 <b>한쪽에서만</b> 일어난다. 비분리가 일어나지 않은 딸세포에서는 정상 생식세포 2개(<i>n</i>, <i>n</i>)가 만들어지고, 일어난 딸세포에서는 <i>n</i>+1과 <i>n</i>−1이 하나씩 만들어진다.',
+    fig:{ rows:[{ cells:[ G(['bp','ap'], '<i>n</i>'), G(['bp','ap'], '<i>n</i>'),
+                          G(['bm','am','am'], '<i>n</i>+1'), G(['bm'], '<i>n</i>−1') ] }],
+          cap:'정상인 것 2개와 비정상인 것 2개가 <b>1 : 1</b>로 나타난다. <i>n</i>+1에 든 21번 2개는 <b>색이 같다</b> — 같은 염색체의 염색분체다.' } },
+
+  { id:'p3',
+    q:'어떤 <i>n</i>+1 생식세포에 21번 염색체가 2개 들어 있었다. 그 2개는 <b>하나는 아버지에게서, 하나는 어머니에게서</b> 온 것이었다. 비분리가 일어난 시기는?',
+    hint:['생식세포 안에 든 21번 2개가 <b>서로 다른 상동염색체</b>인지, <b>같은 염색체의 염색분체</b>인지를 먼저 가리시오.',
+          '부에게서 온 21번과 모에게서 온 21번은 서로 <b>상동염색체</b>다. 상동염색체가 서로 다른 극으로 갈라지는 것이 어느 분열인지 ②의 국면 1에서 확인하시오.'],
+    ch:['감수 1분열',
+        '감수 2분열',
+        '체세포분열',
+        '이 자료만으로는 판정할 수 없다'],
+    a:0,
+    ex:'아버지에게서 온 21번과 어머니에게서 온 21번은 <b>상동염색체</b>이다. 상동염색체가 갈라지는 시기는 감수 1분열이므로, 이 둘이 한 생식세포에 함께 들어갔다면 감수 1분열에서 분리되지 않은 것이다. 감수 2분열의 비분리였다면 같은 염색체가 복제된 <b>염색분체 2개</b>가 들어가므로 둘 다 한쪽 부모에게서 온 것이 된다.',
+    fig:{ rows:[{ lead:'감수 1분열 비분리', cells:[ G(['ap','am'], '색이 <b>다르다</b><br>서로 다른 21번') ] },
+                { lead:'감수 2분열 비분리', cells:[ G(['am','am'], '색이 <b>같다</b><br>같은 21번의 분체') ] }],
+          cap:'문항의 <i>n</i>+1은 <b>아버지에게서 온 것과 어머니에게서 온 것</b>이었다 — 위쪽이다.' } },
+
+  { id:'p4',
+    q:'21번 염색체가 2개 들어 있는 <i>n</i>+1 생식세포가 정상적인 생식세포와 수정하였다. 이 수정란의 21번 염색체 수와 전체 염색체 수는?',
+    hint:['수정란의 염색체는 두 생식세포의 염색체를 합한 것이다. 각 생식세포에 21번이 몇 개 들어 있는지 먼저 세시오.',
+          '사람의 정상 수정란은 46개이다. 21번이 하나 더 들어오면 그만큼 늘어난다.'],
+    ch:['21번 2개 · 전체 46개',
+        '21번 3개 · 전체 47개',
+        '21번 3개 · 전체 46개',
+        '21번 1개 · 전체 45개'],
+    a:1,
+    ex:'정상적인 생식세포에는 21번이 1개 들어 있으므로 2+1=3개가 된다. 21번을 제외한 나머지는 정상이므로 전체 염색체 수는 46+1=<b>47개</b>이다. 21번 염색체를 3개 가진 사람은 <b>다운증후군</b>으로 나타난다.',
+    fig:{ rows:[{ cells:[ G(['n21','n21'], '<i>n</i>+1 생식세포<br>21번 2개'), OP('+'),
+                          G(['n21'], '정상 생식세포<br>21번 1개'), OP('→'),
+                          Z(['n21','n21','n21'], '수정란<br>21번 <b>3개</b> · 전체 <b>47개</b>') ] }],
+          cap:'그림에는 21번만 그렸다. 나머지 염색체는 정상이므로 46개에서 <b>하나만</b> 늘어난다.' } },
+
+  { id:'p5',
+    q:'21번 염색체가 들어 있지 않은 <i>n</i>−1 생식세포가 정상적인 생식세포와 수정하였다. 이 수정란의 전체 염색체 수는?',
+    hint:['<i>n</i>−1 생식세포에는 21번이 몇 개 들어 있는가?',
+          '정상 수정란의 염색체 수를 먼저 적고, 모자라는 수만큼 빼시오.'],
+    ch:['44개', '45개', '46개', '47개'],
+    a:1,
+    ex:'<i>n</i>−1 생식세포에는 21번이 없으므로 수정란의 21번은 정상 생식세포에서 온 1개뿐이다. 따라서 전체 염색체 수는 46−1=<b>45개</b>이다.',
+    fig:{ rows:[{ cells:[ G(['none'], '<i>n</i>−1 생식세포<br>21번 없음'), OP('+'),
+                          G(['n21'], '정상 생식세포<br>21번 1개'), OP('→'),
+                          Z(['n21'], '수정란<br>21번 <b>1개</b> · 전체 <b>45개</b>') ] }],
+          cap:'점선은 <b>없는 염색체</b>를 나타낸 것이다. 46개에서 <b>하나가 모자란다.</b>' } }
+];
+
+/* ══════════════════ ⑤ 가계도로 비분리가 일어난 곳 찾기 ══════════════════
+   ★성염색체 비분리 + 적록색맹을 겹쳐 놓으면 「어느 부모의 어느 시기인가」까지 좁혀진다.
+     ④의 3번(부·모 = 감수 1분열 / 같은 것 2개 = 감수 2분열)이 여기서 그대로 쓰인다.
+   ★유전자 표기는 1-2 가계도 활동과 같게 맞췄다 — 정상 X<sup>R</sup> · 적록색맹 X′.
+   g1 = 어머니 감수 2분열 / g2 = 부모는 알아도 시기는 판정 불가 / g3 = 아버지 감수 1분열(X와 Y가 함께). */
+var PEDQ = [
+  { id:'g1',
+    ped:{ f:{sex:'M', fill:'none'},    m:{sex:'F', fill:'carrier'},
+          c:{sex:'M', fill:'full', label:'아들', karyo:'44+XXY'} },
+    dat:['아버지는 적록색맹이 아니다.',
+         '어머니는 적록색맹은 아니지만 <b>보인자</b>이다.',
+         '아들은 <b>클라인펠터증후군</b>(44+XXY)이고 <b>적록색맹</b>이다.'],
+    q:'이 아들에게 염색체 비분리가 일어난 곳은 어디인가?',
+    hint:['아들의 성염색체는 X 2개와 Y 1개이다. <b>Y가 누구에게서 왔는지</b>부터 정하시오.',
+          '아들이 적록색맹이므로 X 2개에는 X<sup>R</sup>가 하나도 없다. 그 2개가 서로 다른 X인지 <b>같은 X의 염색분체</b>인지를 어머니의 유전자형으로 따지시오.'],
+    ch:['어머니의 감수 1분열', '어머니의 감수 2분열', '아버지의 감수 1분열', '아버지의 감수 2분열'],
+    a:1,
+    ex:'아들이 Y염색체를 가졌으므로 Y는 아버지에게서 온 것이다. 그러면 <b>X염색체 2개는 모두 어머니에게서</b> 왔다. 어머니는 X<sup>R</sup>X′인데 아들이 적록색맹이므로 아들의 X염색체 2개는 둘 다 X′이다. 서로 다른 상동염색체가 아니라 <b>같은 X염색체가 복제된 염색분체 2개</b>가 함께 들어간 것이므로, 어머니의 <b>감수 2분열</b>에서 비분리가 일어났다. — ④의 3번에서 쓴 판별 근거가 그대로 쓰인다.',
+    fig:{ rows:[{ cells:[ G(['Xp','Xp'], '어머니의 생식세포<br>X′가 <b>2개</b>'), OP('+'),
+                          G(['Y'], '아버지의 생식세포'), OP('→'),
+                          Z(['Xp','Xp','Y'], '아들 <b>44+XXY</b><br>적록색맹') ] }],
+          cap:'어머니는 X<sup>R</sup>X′인데 아들에게 간 X염색체는 둘 다 X′다 — <b>같은 X염색체의 염색분체 2개</b>, 곧 <b>감수 2분열</b>이다.' } },
+
+  { id:'g2',
+    ped:{ f:{sex:'M', fill:'full'},    m:{sex:'F', fill:'none'},
+          c:{sex:'F', fill:'full', label:'딸', karyo:'44+X'} },
+    dat:['아버지는 <b>적록색맹</b>이다.',
+         '어머니는 적록색맹이 아니고 보인자도 아니다.',
+         '딸은 <b>터너증후군</b>(44+X)이고 <b>적록색맹</b>이다.'],
+    q:'이 딸의 염색체 비분리에 대한 설명으로 옳은 것은?',
+    hint:['딸의 성염색체는 X 하나뿐이다. 그 X가 아버지와 어머니 중 누구에게서 온 것인지 <b>형질로</b> 가리시오.',
+          '한쪽 부모의 생식세포에 성염색체가 <b>없었다</b>는 뜻이다. 감수 1분열 비분리와 감수 2분열 비분리 중 어느 쪽이 그런 생식세포를 만드는지 둘 다 확인하시오.'],
+    ch:['아버지에게서 일어났고, 감수 1분열이다',
+        '아버지에게서 일어났고, 감수 2분열이다',
+        '어머니에게서 일어났으나, 시기는 판정할 수 없다',
+        '어머니에게서 일어났고, 감수 1분열이다'],
+    a:2,
+    ex:'딸이 가진 X염색체는 하나뿐이고 그것이 X′이다. 어머니는 X<sup>R</sup>X<sup>R</sup>이므로 X′를 줄 수 없다. 따라서 이 X′는 <b>아버지</b>에게서 왔고, 어머니의 생식세포에는 <b>성염색체가 들어 있지 않았다</b> — 비분리는 어머니에게서 일어난 것이다. 그러나 어머니의 감수 1분열 비분리도, 감수 2분열 비분리도 성염색체가 없는 생식세포를 만든다. 그러므로 <b>시기는 가릴 수 없다.</b>',
+    fig:{ rows:[{ lead:'어머니 감수 1분열 비분리',
+                  cells:[ G(['none'], '성염색체 없음'), OP('+'), G(['Xp'], '아버지'), OP('→'),
+                          Z(['Xp'], '딸 <b>44+X</b> · 적록색맹') ] },
+                { lead:'어머니 감수 2분열 비분리',
+                  cells:[ G(['none'], '성염색체 없음'), OP('+'), G(['Xp'], '아버지'), OP('→'),
+                          Z(['Xp'], '딸 <b>44+X</b> · 적록색맹') ] }],
+          cap:'어머니에게서 일어난 것은 분명하다. 그러나 <b>두 시기가 똑같은 딸을 만든다</b> — 그래서 시기는 판정할 수 없다.' } },
+
+  { id:'g3',
+    ped:{ f:{sex:'M', fill:'none'},    m:{sex:'F', fill:'full'},
+          c:{sex:'M', fill:'none', label:'아들', karyo:'44+XXY'} },
+    dat:['아버지는 적록색맹이 아니다.',
+         '어머니는 <b>적록색맹</b>이다.',
+         '아들은 <b>클라인펠터증후군</b>(44+XXY)이고 적록색맹이 <b>아니다</b>.'],
+    q:'이 아들에게 염색체 비분리가 일어난 곳은 어디인가?',
+    hint:['어머니가 적록색맹이므로 어머니가 주는 X는 모두 X′이다. 아들이 색각 정상이려면 X<sup>R</sup>가 어디에서 와야 하는가?',
+          'X<sup>R</sup>와 Y가 <b>한 생식세포에 함께</b> 들어갔다는 뜻이다. X와 Y는 짝을 이루는 성염색체이므로, 둘이 함께 가는 것이 어느 시기의 비분리인지 생각하시오.'],
+    ch:['아버지의 감수 1분열', '아버지의 감수 2분열', '어머니의 감수 1분열', '어머니의 감수 2분열'],
+    a:0,
+    ex:'어머니는 X′X′이므로 어머니가 주는 X염색체는 반드시 X′이다. 아들이 적록색맹이 아니려면 X<sup>R</sup>가 있어야 하는데, 그것은 <b>아버지</b>에게서 온 것이다. 아들은 Y염색체도 가졌으므로 아버지가 <b>X염색체와 Y염색체를 함께</b> 주었다. X염색체와 Y염색체는 <b>감수 1분열에서 서로 다른 극으로 갈라지는 짝</b>이므로, 둘이 함께 들어갔다는 것은 아버지의 <b>감수 1분열</b>에서 비분리가 일어났다는 뜻이다.',
+    fig:{ rows:[{ cells:[ G(['XR','Y'], '아버지의 생식세포<br>X와 Y가 <b>함께</b>'), OP('+'),
+                          G(['Xp'], '어머니의 생식세포'), OP('→'),
+                          Z(['XR','Xp','Y'], '아들 <b>44+XXY</b><br>적록색맹이 아니다') ] }],
+          cap:'X염색체와 Y염색체는 감수 1분열에서 갈라지는 짝이다. 둘이 한 생식세포에 함께 들어갔으므로 <b>감수 1분열</b>이다.' } }
+];
+
+/* ══════════════════ 해설 도식 ══════════════════
+   ★고른 뒤에 「작은 그림이 딱」 나와 답을 눈으로 확인하게 한다(교사 지시 2026-08-20).
+   ★문항마다 그림을 손으로 그리지 않는다 — 아래 CH(염색체) × G/Z/OP(칸) 로 적으면 figHtml() 이 그린다.
+     막대 길이로 크기를 나타낸다: 1번 > X > 21번 > Y (21번이 사람 상염색체 중 가장 작다).       */
+var CH = {
+  ap  :{ c:'#2f6fd6', t:'21-부', len:32 },
+  am  :{ c:'#8fb8f0', t:'21-모', len:32 },
+  bp  :{ c:'#9b59b6', t:'1-부',  len:44 },
+  bm  :{ c:'#d2a8e0', t:'1-모',  len:44 },
+  n21 :{ c:'#2f6fd6', t:'21번',  len:32 },
+  XR  :{ c:'#2f6fd6', t:'X<sup>R</sup>', len:40 },
+  Xp  :{ c:'#C0392B', t:'X′',    len:40 },
+  Y   :{ c:'#6B7280', t:'Y',     len:26 },
+  none:{ ghost:true,  t:'없음',  len:40 }
+};
+/* 함수 선언은 끌어올려지므로 아래 배열 안에서 바로 쓸 수 있다 */
+function G(chr, cap){ return { k:'gam', chr:chr, cap:cap }; }
+function Z(chr, cap){ return { k:'zyg', chr:chr, cap:cap }; }
+function OP(t){ return { k:'op', t:t }; }
+
+function chrPill(m){
+  var h = m.len, top = 48 - h;
+  return '<figure class="chrp"><svg width="18" height="50" viewBox="0 0 18 50" aria-hidden="true">' +
+         '<rect x="3" y="' + top + '" width="12" height="' + h + '" rx="6" fill="' +
+         (m.ghost ? 'none' : m.c) + '" stroke="#33405A" stroke-width="1.3"' +
+         (m.ghost ? ' stroke-dasharray="3,3"' : '') + '></rect>' +
+         (m.ghost ? '' : '<circle cx="9" cy="' + (top + h / 2).toFixed(1) +
+                         '" r="3.2" fill="#fff" stroke="#33405A" stroke-width="1.1"></circle>') +
+         '</svg><figcaption>' + m.t + '</figcaption></figure>';
+}
+function figHtml(fig){
+  if (!fig || !fig.rows) return '';
+  var out = '<div class="figwrap">';
+  fig.rows.forEach(function(row){
+    out += '<div class="fig">';
+    if (row.lead) out += '<div class="flead">' + row.lead + '</div>';
+    row.cells.forEach(function(c){
+      if (c.k === 'op'){ out += '<div class="fop">' + c.t + '</div>'; return; }
+      var inner = c.chr.map(function(key){ return chrPill(CH[key]); }).join('');
+      out += '<div class="fcell"><div class="fbox' + (c.k === 'zyg' ? ' zyg' : '') + '">' + inner +
+             '</div><div class="fcap">' + c.cap + '</div></div>';
+    });
+    out += '</div>';
+  });
+  if (fig.cap) out += '<div class="fnote">' + fig.cap + '</div>';
+  return out + '</div>';
+}
+
+var pracEls = {};                     /* id → { choices:[버튼], expl:해설칸 } */
+function allQ(){ return PRACTICE.concat(PEDQ); }
+function pracById(id){
+  var L = allQ();
+  for (var i = 0; i < L.length; i++){ if (L[i].id === id) return L[i]; }
+  return null;
+}
+/* 잠금 조건 = ③의 다운증후군 연결과 같다(세 라운드 완료 + 요약 발문에 답함) */
+function practiceOpen(){
+  if (state.teacherUnlock) return true;
+  return CASES.every(function(c){ return !!state.roundDone[c] && state.sumPick[c] !== undefined; });
+}
+function scoreOf(list){
+  var n = 0;
+  list.forEach(function(p){ if (state.first['prac.' + p.id] === true) n++; });
+  return n;
+}
+function answeredOf(list){
+  var n = 0;
+  list.forEach(function(p){ if (state.pPick[p.id] !== undefined) n++; });
+  return n;
+}
+function pracScore(){ return scoreOf(PRACTICE); }
+function pracAnswered(){ return answeredOf(PRACTICE); }
+function pedScore(){ return scoreOf(PEDQ); }
+function pedAnswered(){ return answeredOf(PEDQ); }
+function stripTag(html){ return String(html).replace(/<[^>]*>/g, ''); }
+
+/* 문항 목록 하나를 상자에 그린다 — ④와 ⑤가 같은 기계를 쓴다 */
+function renderQuizInto(list, boxId){
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.innerHTML = '';
+  list.forEach(function(p, idx){
+    var card = document.createElement('div');
+    card.className = 'pq';
+
+    var q = document.createElement('div');
+    q.className = 'qtext';
+    q.innerHTML = '<span class="qno">' + (idx + 1) + '</span>' + p.q;
+    card.appendChild(q);
+
+    /* 가계도 문항이면 자료 상자와 그림을 발문 아래에 붙인다 */
+    if (p.dat){
+      var dat = document.createElement('div');
+      dat.className = 'datbox';
+      dat.innerHTML = '<b>[자료]</b><ul><li>' + p.dat.join('</li><li>') + '</li></ul>';
+      card.appendChild(dat);
+    }
+    if (p.ped){
+      var fig = document.createElement('div');
+      fig.className = 'pedwrap';
+      fig.innerHTML = trioSvg(p.ped) + pedLegend();
+      card.appendChild(fig);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'choices';
+    var btns = [];
+    p.ch.forEach(function(label, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.innerHTML = label;
+      b.onclick = (function(pid, k){ return function(){ pickPractice(pid, k); }; })(p.id, i);
+      wrap.appendChild(b);
+      btns.push(b);
+    });
+    card.appendChild(wrap);
+
+    /* ── 힌트 2단 — 1단(어디를 볼 것인가)을 연 뒤에만 2단(판단 기준)이 열린다 ──
+       ★문구는 배열에 있고 마크업에는 없다. ★기록하지 않는다. ★답을 고른 뒤에도 남는다. */
+    if (p.hint && p.hint.length === 2){
+      var hw = document.createElement('div');
+      hw.className = 'hintwrap';
+      var hb1 = document.createElement('button');
+      hb1.type = 'button'; hb1.className = 'hintbtn'; hb1.textContent = '💡 힌트 보기';
+      var hx1 = document.createElement('div');
+      hx1.className = 'hintbox'; hx1.style.display = 'none';
+      hx1.innerHTML = '<b>힌트 ① 어디를 볼 것인가</b><br>' + p.hint[0];
+      var hb2 = document.createElement('button');
+      hb2.type = 'button'; hb2.className = 'hintbtn'; hb2.textContent = '💡 힌트를 하나 더 보기';
+      hb2.style.display = 'none';
+      var hx2 = document.createElement('div');
+      hx2.className = 'hintbox'; hx2.style.display = 'none';
+      hx2.innerHTML = '<b>힌트 ② 판단 기준</b><br>' + p.hint[1];
+      hb1.onclick = function(){
+        hx1.style.display = 'block'; hb1.style.display = 'none'; hb2.style.display = 'inline-block';
+      };
+      hb2.onclick = function(){ hx2.style.display = 'block'; hb2.style.display = 'none'; };
+      hw.appendChild(hb1); hw.appendChild(hx1); hw.appendChild(hb2); hw.appendChild(hx2);
+      card.appendChild(hw);
+    }
+
+    var ex = document.createElement('div');
+    ex.className = 'expl';
+    ex.style.display = 'none';
+    card.appendChild(ex);
+
+    box.appendChild(card);
+    pracEls[p.id] = { choices:btns, expl:ex };
+    paintPractice(p.id);
+  });
+}
+
+/* ── 가계도 그림 (부·모·자녀 3인) ──
+   ★손으로 좌표를 적지 않는다: 아래 한 벌이 세 문항 모두를 그린다.
+     칠하기 = 형질 표현(흰 정상 / 가운데 점 보인자 / 검게 채움 발현), 자녀 밑에 핵형을 적는다. */
+/* ★크기(r)를 인자로 받는다 — 범례의 작은 기호도 같은 코드로 그린다.
+   전에 문자열을 정규식으로 줄여 쓰다가 circle 의 cx/cy 까지 갈아엎어 원이 깨진 적이 있다. */
+function pedShape(cx, cy, sex, fill, r){
+  r = r || 21;
+  var sw = (r >= 18) ? 2.2 : 1.8;
+  var out = (sex === 'M')
+    ? '<rect x="' + (cx - r) + '" y="' + (cy - r) + '" width="' + (r * 2) + '" height="' + (r * 2) +
+      '" fill="' + (fill === 'full' ? '#33405A' : '#fff') +
+      '" stroke="#33405A" stroke-width="' + sw + '"></rect>'
+    : '<circle cx="' + cx + '" cy="' + cy + '" r="' + r +
+      '" fill="' + (fill === 'full' ? '#33405A' : '#fff') +
+      '" stroke="#33405A" stroke-width="' + sw + '"></circle>';
+  if (fill === 'carrier'){
+    out += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r * 0.31).toFixed(1) +
+           '" fill="#33405A"></circle>';
+  }
+  return out;
+}
+function pedText(x, y, t, size, weight){
+  return '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-size="' + (size || 13) +
+         '" font-weight="' + (weight || '400') + '" fill="#33405A">' + t + '</text>';
+}
+function trioSvg(o){
+  var FX = 64, MX = 222, CX = 143, PY = 48, CY = 126, LINE = 'stroke="#33405A" stroke-width="2.2"';
+  return '<svg class="pedfig" viewBox="0 0 290 188" xmlns="http://www.w3.org/2000/svg" ' +
+         'role="img" aria-label="아버지 어머니 자녀 가계도">' +
+         '<line x1="' + (FX + 21) + '" y1="' + PY + '" x2="' + (MX - 21) + '" y2="' + PY + '" ' + LINE + '></line>' +
+         '<line x1="' + CX + '" y1="' + PY + '" x2="' + CX + '" y2="' + (CY - 21) + '" ' + LINE + '></line>' +
+         pedShape(FX, PY, o.f.sex, o.f.fill) +
+         pedShape(MX, PY, o.m.sex, o.m.fill) +
+         pedShape(CX, CY, o.c.sex, o.c.fill) +
+         pedText(FX, 20, '아버지') + pedText(MX, 20, '어머니') +
+         pedText(CX, CY + 38, o.c.label) +
+         pedText(CX, CY + 56, o.c.karyo, 13, '700') +
+         '</svg>';
+}
+function pedLegend(){
+  function mini(sex, fill){
+    return '<svg width="22" height="22" viewBox="0 0 30 30" aria-hidden="true">' +
+           pedShape(15, 15, sex, fill, 13) + '</svg>';
+  }
+  return '<div class="pedlegend">' +
+         mini('M', 'none') + '남자 &nbsp; ' + mini('F', 'none') + '여자<br>' +
+         mini('M', 'full') + '적록색맹인 사람<br>' +
+         mini('F', 'carrier') + '보인자 (겉으로는 정상)<br>' +
+         '<span style="font-size:12.5px;">정상 대립유전자 X<sup>R</sup> · 적록색맹 대립유전자 X′</span>' +
+         '</div>';
+}
+
+function renderPractice(){       /* ④와 ⑤를 한꺼번에 다시 그린다 */
+  var box = document.getElementById('pracBox');
+  if (!box) return;
+  var open = practiceOpen();
+
+  ['pracLock','pedLock'].forEach(function(id){
+    var lock = document.getElementById(id);
+    if (!lock) return;
+    lock.className = 'msg info' + (open ? ' hide' : '');
+    lock.innerHTML = '🔒 세 라운드를 모두 만들고 각 라운드의 요약 발문에 답하면 열린다.';
+  });
+
+  pracEls = {};
+  if (!open){
+    ['pracBox','pedBox'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+    updatePracDone(); updatePedDone();
+    return;
+  }
+  renderQuizInto(PRACTICE, 'pracBox');
+  renderQuizInto(PEDQ, 'pedBox');
+  updatePracDone(); updatePedDone();
+}
+function paintPractice(id){
+  var p = pracById(id), refs = pracEls[id];
+  if (!p || !refs) return;
+  var pick = state.pPick[id];
+  refs.choices.forEach(function(b, k){
+    b.className = (pick === undefined) ? 'choice' : ('choice' + (k === p.a ? ' right' : ' dim'));
+  });
+  var ex = refs.expl;
+  if (pick === undefined){ ex.style.display = 'none'; ex.innerHTML = ''; return; }
+  ex.style.display = 'block';
+  ex.innerHTML = (pick === p.a ? '옳다. ' : '옳지 않다. 옳은 것은 「' + stripTag(p.ch[p.a]) + '」이다. ') +
+                 p.ex + figHtml(p.fig);        /* ★고른 뒤에만 그림이 나온다 */
+}
+function pickPractice(id, i){
+  if (!practiceOpen()) return false;
+  var p = pracById(id);
+  if (!p) return false;
+  var key = 'prac.' + id;
+  if (state.first[key] === undefined) state.first[key] = (i === p.a);   /* 첫 시도만 기록 */
+  state.pPick[id] = i;
+  paintPractice(id);
+  updatePracDone();
+  updatePedDone();
+  saveState();
+  return true;
+}
+function updatePracDone(){
+  var open = practiceOpen();
+  var sc = document.getElementById('pracScore');
+  if (sc) sc.textContent = (open ? pracScore() : 0) + ' / ' + PRACTICE.length;
+
+  var el = document.getElementById('pracDone');
+  if (!el) return;
+  if (!open || pracAnswered() < PRACTICE.length){
+    el.className = 'msg good hide';
+    el.innerHTML = '';
+    return;
+  }
+  var n = pracScore();
+  el.className = 'msg good';
+  el.innerHTML = '연습 문항 ' + PRACTICE.length + '문항을 모두 풀었다. 첫 번째 시도에 옳게 답한 것은 <b>' +
+                 n + '문항</b>이다.' +
+                 (n === PRACTICE.length
+                   ? ''
+                   : ' 틀린 문항의 해설을 다시 읽고, 필요하면 ② 무대에서 그 경우를 다시 만들어 확인하시오.');
+}
+function updatePedDone(){
+  var open = practiceOpen();
+  var sc = document.getElementById('pedScoreTag');
+  if (sc) sc.textContent = (open ? pedScore() : 0) + ' / ' + PEDQ.length;
+
+  var el = document.getElementById('pedDone');
+  if (!el) return;
+  if (!open || pedAnswered() < PEDQ.length){
+    el.className = 'msg good hide';
+    el.innerHTML = '';
+    return;
+  }
+  var n = pedScore();
+  el.className = 'msg good';
+  el.innerHTML = '가계도 문항 ' + PEDQ.length + '문항을 모두 풀었다. 첫 번째 시도에 옳게 답한 것은 <b>' +
+                 n + '문항</b>이다. ' +
+                 '세 문항의 판별 근거는 하나다 — <b>한 생식세포에 함께 들어간 두 염색체가 서로 다른 짝이면 감수 1분열, ' +
+                 '같은 것이 복제된 분체 2개이면 감수 2분열</b>이다. ' +
+                 '어느 쪽인지 가릴 자료가 없으면 <b>판정할 수 없다</b>고 답해야 한다.';
+}
+
+/* ── 서술·모범답안 잠금 ── */
+var ANS_LABEL = { ansC:'모범답안' };
+function ansGate(key){
+  if (state.teacherUnlock) return { open:true, reason:'' };
+  var doneMap = {
+    ansC: (CASES.every(function(c){ return !!state.roundDone[c]; })
+           && ((state.ta && state.ta.taC) || '').replace(/\s/g, '').length >= 25)
+  };
+  if (doneMap[key]) return { open:true, reason:'' };
+  return { open:false, reason:'세 라운드를 마치고 25자 이상 서술해야 열린다' };
+}
+function refreshAnsGates(){
+  ['ansC'].forEach(function(key){
+    var btn = document.getElementById(key + 'Btn');
+    var box = document.getElementById(key);
+    if (!btn) return;
+    var g = ansGate(key);
+    if (!g.open){
+      btn.textContent = '🔒 ' + g.reason;
+      btn.disabled = true;
+      if (box) box.style.display = 'none';
+    } else {
+      btn.disabled = false;
+      btn.textContent = (box && box.style.display === 'block') ? '모범답안 닫기' : ANS_LABEL[key];
+    }
+  });
+}
+function toggleAns(key){
+  var g = ansGate(key);
+  if (!g.open) return;
+  var box = document.getElementById(key);
+  box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+  refreshAnsGates();
+}
+function onTa(){
+  var el = document.getElementById('taC');
+  var len = (el.value || '').replace(/\s/g, '').length;
+  document.getElementById('cntC').textContent = len + '자';
+  saveState();
+  refreshAnsGates();
+}
+
+/* ── 교사용 해제 (진행 배지 5연타) ── */
+var tapLog = [];
+function tapProgress(){
+  var t = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  tapLog.push(t);
+  if (tapLog.length > 5) tapLog.shift();
+  if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
+    tapLog = [];
+    if (confirm('교사용: 모든 모범답안 잠금을 해제하시겠습니까?')){
+      state.teacherUnlock = true;
+      saveState();
+      refreshAnsGates();
+      renderPractice();
+    }
+  }
+}
+
+/* 미완성 잠금 해제 — 맞으면 이 기기에 기억해 교사가 다시 입력하지 않게 한다 */
+function unlockDraft(){
+  var el = document.getElementById('draftPass');
+  var err = document.getElementById('draftErr');
+  var v = (el && el.value ? el.value : '').trim();
+  if (v !== DRAFT_PASS){
+    if (err) err.textContent = '비밀번호가 옳지 않다.';
+    if (el){ el.value = ''; if (el.focus) el.focus(); }
+    return false;
+  }
+  try{ localStorage.setItem(DRAFT_KEY, 'y'); }catch(e){}
+  document.documentElement.className += ' unlocked';
+  var gate = document.getElementById('draftGate');
+  if (gate) gate.style.display = 'none';
+  if (err) err.textContent = '';
+  return true;
+}
+
+function resetAll(){
+  if (!confirm('지금까지의 배치와 서술을 모두 지우고 처음부터 다시 하시겠습니까?')) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  location.reload();
+}
+
+/* ══════════════════ 시작 ══════════════════ */
+function restoreUI(){
+  reconcileRounds();
+  var ta = document.getElementById('taC');
+  if (ta && state.ta && state.ta.taC) ta.value = state.ta.taC;
+  onTaSilent();
+  render();
+  updateCmp();
+  refreshAnsGates();
+  renderPractice();
+  var cs = curCase();
+  if (state.roundDone[cs] && state.sumPick[cs] === undefined) openSummary(cs);
+}
+function onTaSilent(){
+  var el = document.getElementById('taC');
+  if (!el) return;
+  var len = (el.value || '').replace(/\s/g, '').length;
+  var c = document.getElementById('cntC');
+  if (c) c.textContent = len + '자';
+}
+
+function init(){
+  var saved = loadState();
+  state = freshState();
+  if (saved){
+    Object.keys(state).forEach(function(k){
+      if (saved[k] === undefined || saved[k] === null) return;
+      if (typeof state[k] === 'object' && !Array.isArray(state[k])){
+        if (typeof saved[k] === 'object' && !Array.isArray(saved[k])) state[k] = saved[k];
+      } else {
+        state[k] = saved[k];
+      }
+    });
+  }
+  CASES.forEach(function(c){
+    if (!state.place[c] || typeof state.place[c] !== 'object') state.place[c] = freshPlace();
+    if (!state.place[c].m1 || typeof state.place[c].m1 !== 'object') state.place[c].m1 = {};
+    if (!state.place[c].m2 || typeof state.place[c].m2 !== 'object') state.place[c].m2 = {};
+    if (state.phase[c] !== 1 && state.phase[c] !== 2) state.phase[c] = 1;
+  });
+  ['roundDone','sumPick','pPick','first','wrong','ta'].forEach(function(k){
+    if (!state[k] || typeof state[k] !== 'object' || Array.isArray(state[k])) state[k] = {};
+  });
+  if (!state.startedAt) state.startedAt = 'started';
+  restoreUI();
+}
+
+if (typeof document !== 'undefined' && document.getElementById) init();
+</script>
+</body>
+</html>

@@ -39,6 +39,50 @@
 7. 커밋 메시지에 여러 줄을 넣을 때 **Bash 도구에서 PowerShell here-string(`@'…'@`)을 쓰면 안 된다**
    — 메시지 첫 줄에 `@`가 박힌다(2026-08-18 실제로 amend). heredoc + `git commit -F -` 를 쓸 것.
 
+## ★학생 수업 자료는 「배포 + 허브 등록」까지가 완성 (2026-08-18 지시)
+> "애들 수업 자료는 무조건 허브에도 올리고 배포도 해야돼. 그래야 애들 수업 때 쓸 수 있단 말이야."
+
+**로컬 HTML은 학생이 못 연다.** 학생은 태블릿·폰으로 허브에서 찾아 들어가므로,
+만들었다고 끝이 아니라 **① 별도 레포 push → ② Pages 활성화 → ③ 허브 카드 등록·push** 까지 해야 수업에 쓸 수 있다.
+★**배포 ≠ ai-tool 커밋.** ai-tool 저장소 커밋은 여전히 요청 시에만 한다. 둘을 묶어 미루지 말 것.
+
+```
+git init -b main                     # ★--source . 는 로컬 브랜치 이름을 그대로 올린다
+gh repo create <이름>-sim --public --source . --push
+gh api -X POST repos/geungschool-hub/<이름>-sim/pages -f "source[branch]=main" -f "source[path]=/"
+# 과학허브 index.html 의 CONTENTS 배열에 카드 추가 → 허브도 push
+```
+
+## ★미완성 잠금 — 배포는 하되 학생이 미완성본을 보지 못하게 (2026-08-18 지시)
+"내가 완성 수준이라고 판단하기 전에는 들어갔을 때 관리자 비밀번호를 입력하도록."
+
+**관리자 비밀번호 = `7856`** (교사 지정).
+
+⚠ **이것은 잠금이지 보안이 아니다.** 앱이 PUBLIC 레포에 있으므로 소스를 보면 비밀번호가 그대로 보인다.
+막는 대상은 **「학생이 미완성본을 우연히 여는 것」**이지, 소스를 뒤지는 학생이 아니다. 그 목적에는 충분하다.
+
+**구조 (새 활동에 그대로 복제할 것)**
+1. `<head>`에 짧은 스크립트를 둔다 — **본문보다 먼저 돌아야 잠긴 화면이 깜빡이지 않는다.**
+   ```js
+   var DRAFT_MODE = true;                 /* ◀ 완성되면 false 로 바꿔 재배포 */
+   var DRAFT_PASS = '7856';
+   var DRAFT_KEY  = '<앱이름>_draft_ok';
+   try { if (!DRAFT_MODE || localStorage.getItem(DRAFT_KEY) === 'y')
+           document.documentElement.className += ' unlocked'; }
+   catch (e) { if (!DRAFT_MODE) document.documentElement.className += ' unlocked'; }
+   ```
+2. CSS로 **기본을 잠김(fail-closed)** 으로 둔다. JS가 죽어도 본문이 드러나지 않는다.
+   ```css
+   html:not(.unlocked) body > .wrap{display:none;}
+   html:not(.unlocked) #draftGate{display:flex;}
+   #draftGate{display:none; position:fixed; inset:0; z-index:9999;}
+   ```
+3. 맞으면 `localStorage[DRAFT_KEY]='y'` 로 **그 기기를 기억**한다 — 교사가 매번 입력하지 않아도 된다.
+4. ★**잠금 열쇠와 학습 저장 키를 다른 키로** 둔다. 「처음부터 다시 하기」가 잠금을 풀어 버리면 안 된다.
+5. 완성되면 **`DRAFT_MODE = false` 한 줄만 바꿔 재배포**한다. 그 순간부터 학생이 들어올 수 있다.
+
+첫 적용 = `nondisj-sim`(염색체 비분리, 2026-08-18). 회귀 테스트는 `_test_염색체비분리.js` **[9-3] 미완성 잠금** 절을 복제할 것.
+
 ## .gitignore 정책 (PUBLIC 저장소라 필수)
 `git add -A` 전에 아래가 .gitignore로 차단되는지 확인. 새 폴더/파일이 이 범주면 **먼저 .gitignore에 추가**:
 

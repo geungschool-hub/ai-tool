@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>DNA 염기 암기 카드 — 생물의 유전 1-4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel: #C5E3F7;
+      --green-pastel: #C3E9CC;
+      --blue-dark:   #1255A0;
+      --green-dark:  #2A7A38;
+      --red-accent:  #C0392B;
+      --amber:       #E67E22;
+      --text-main:   #1A1A1A;
+      --text-light:  #555;
+      --line:        #BBBBBB;
+      --white:       #ffffff;
+      /* 교과서 그림 I-27 의 염기 색을 그대로 쓴다 */
+      --base-a: #EE96B4;
+      --base-g: #7CBF89;
+      --base-t: #8CC9EC;
+      --base-c: #F2B168;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Noto Sans KR', sans-serif;
+      font-size:10pt; color:var(--text-main);
+      background:#d0d0d0;
+      display:flex; flex-direction:column; align-items:center;
+      gap:24px; padding:24px;
+    }
+    .page {
+      width:210mm; height:297mm; background:var(--white);
+      box-shadow:0 2px 14px rgba(0,0,0,0.18);
+      display:flex; flex-direction:column;
+      padding:8mm 12mm 7mm 12mm; overflow:hidden;
+    }
+
+    .page-header {
+      display:flex; justify-content:space-between; align-items:flex-end;
+      padding-bottom:5px; border-bottom:2.5px solid var(--blue-dark);
+      margin-bottom:8px; flex-shrink:0;
+    }
+    .header-left .subject    { font-size:13pt; font-weight:700; color:var(--blue-dark); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .header-right { display:flex; gap:16px; }
+    .input-field  { font-size:9pt; display:flex; align-items:center; gap:5px; }
+    .input-field .uline { display:inline-block; width:90px; height:15px; border-bottom:1.5px solid var(--text-main); }
+
+    .page-footer {
+      display:flex; justify-content:center; align-items:center;
+      padding-top:5px; border-top:1px solid var(--line);
+      flex-shrink:0; margin-top:auto;
+    }
+    .page-badge {
+      background:var(--blue-pastel); color:var(--blue-dark);
+      font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px;
+    }
+
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:5px; }
+    .section { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:5px; flex-shrink:0; }
+
+    .section-title {
+      font-size:11pt; font-weight:700;
+      padding:4px 10px; border-radius:4px;
+      border-left:4px solid var(--blue-dark);
+      background:var(--blue-pastel); color:var(--text-main);
+    }
+    .section-title.green { border-left-color:var(--green-dark); background:var(--green-pastel); }
+    .section-title.amber { border-left-color:var(--amber);      background:#FDE9C9; }
+    .section-title.red   { border-left-color:var(--red-accent); background:#FDDEDE; }
+
+    .b    { display:inline-block; min-width:72px; height:16px; border-bottom:1.8px solid var(--text-main); vertical-align:bottom; margin:0 2px; }
+    .b.sm { min-width:50px; }
+    .b.lg { min-width:108px; }
+    .b.xl { min-width:136px; }
+    .b.xs { min-width:32px; }
+
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+
+    .info-box {
+      border:1px solid var(--line); border-radius:4px;
+      padding:7px 12px; font-size:9.5pt; line-height:2.1; background:#FAFAFA;
+    }
+    .key-box {
+      border:2px solid var(--blue-dark); border-radius:4px;
+      padding:6px 11px; font-size:9.5pt; line-height:2.0; background:var(--blue-pastel);
+    }
+    .key-box.green { border-color:var(--green-dark); background:var(--green-pastel); }
+    .key-box.amber { border-color:var(--amber);      background:#FDE9C9; }
+
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th {
+      background:var(--blue-pastel); font-weight:700;
+      padding:4px 8px; border:1px solid var(--line); text-align:center;
+    }
+    .data-table th.g { background:var(--green-pastel); }
+    .data-table th.y { background:#FDE9C9; }
+    .data-table td {
+      padding:3px 9px; border:1px solid var(--line);
+      text-align:center; vertical-align:middle; line-height:1.5;
+    }
+    .data-table td.hi { background:#EAF6EE; font-weight:700; }
+
+    /* ── 규칙 ① : 글자 모양 팀 ── */
+    .team-wrap { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .team {
+      border:2px solid var(--blue-dark); border-radius:6px;
+      padding:5px 8px; text-align:center; background:#F7FBFF;
+    }
+    .team.curve { border-color:var(--green-dark); background:#F5FBF6; }
+    .team .letters { font-size:23pt; font-weight:700; letter-spacing:6px; line-height:1.15; color:var(--blue-dark); }
+    .team.curve .letters { color:var(--green-dark); }
+    .team .cap { font-size:8.5pt; color:var(--text-light); line-height:1.6; }
+    .team .tag {
+      display:inline-block; font-size:8.5pt; font-weight:700; color:#fff;
+      background:var(--blue-dark); border-radius:10px; padding:1px 10px; margin-bottom:2px;
+    }
+    .team.curve .tag { background:var(--green-dark); }
+
+    /* ── 구호 박스 ── */
+    .chant {
+      border:2.5px dashed var(--red-accent); border-radius:6px;
+      background:#FFF6F5; text-align:center; padding:6px 8px;
+    }
+    .chant .line { font-size:12.5pt; font-weight:700; color:var(--red-accent); letter-spacing:1px; }
+    .chant .sub  { font-size:8.5pt; color:var(--text-light); margin-top:2px; }
+
+    /* ── 잘못 그린 그림 카드 ── */
+    .fig-card {
+      border:1px solid var(--line); border-radius:4px;
+      background:#FCFCFC; padding:4px 6px 6px 6px;
+    }
+    .fig-tag { font-size:10pt; font-weight:700; color:var(--amber); }
+    .fig-line { margin-top:7px; }
+
+    .note { font-size:8.5pt; color:var(--text-light); line-height:1.7; }
+    .qnum { font-weight:700; color:var(--blue-dark); }
+    .seq  { font-family:'Consolas','Courier New',monospace; font-size:11pt; font-weight:700; letter-spacing:3px; }
+    .writeline { border-bottom:1.5px solid var(--text-main); display:inline-block; height:17px; }
+
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page {
+        width:210mm; height:297mm; box-shadow:none;
+        page-break-after:always; padding:8mm 12mm 7mm 12mm;
+        -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ 1쪽 : 규칙 카드 ═══════════════ -->
+<div class="page" id="page-1">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생물의 유전</div>
+      <div class="breadcrumb">Ⅰ. 유전자와 유전물질 &gt; 04. 유전물질과 유전체의 구성 &gt; DNA의 구조와 특성 (교과서 41~42쪽)</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- 규칙 ① -->
+    <div class="section">
+      <div class="section-title">규칙 ① 누구와 짝을 이루는가 — 글자의 모양으로 가른다</div>
+      <div class="team-wrap">
+        <div class="team">
+          <span class="tag">직선 팀</span>
+          <div class="letters">A — T</div>
+          <div class="cap">자로 그은 <b>직선</b>만으로 쓰는 글자이다.</div>
+        </div>
+        <div class="team curve">
+          <span class="tag">곡선 팀</span>
+          <div class="letters">G — C</div>
+          <div class="cap">둥글게 돌려 쓰는 <b>곡선</b> 글자이다.</div>
+        </div>
+      </div>
+      <div class="info-box" style="line-height:1.6">
+        📌 <b>G는 C에 꼬리를 하나 붙인 글자이다.</b> G를 쓰다가 멈추면 C가 된다 → <b>G의 짝은 C</b>이고, 남은 <b>A와 T</b>가 짝이 된다.
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- 규칙 ② -->
+    <div class="section">
+      <div class="section-title green">규칙 ② 고리가 몇 개인가 — 이름에 <b>&lsquo;아&rsquo;</b>가 있는지 본다</div>
+      <div class="key-box green" style="text-align:center; font-size:10.5pt; font-weight:700; line-height:1.5">
+        이름에 <span style="color:var(--red-accent)">&lsquo;아&rsquo;</span>가 들어가면 <span style="color:var(--red-accent)">고리 2개</span>, 없으면 <span style="color:var(--blue-dark)">고리 1개</span>이다.
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="g" style="width:26%">염기 이름</th>
+            <th class="g" style="width:14%">기호</th>
+            <th class="g" style="width:18%">&lsquo;아&rsquo;가 있는가</th>
+            <th class="g" style="width:18%">고리 수</th>
+            <th class="g">크기</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="hi">아데닌</td><td>A</td><td>○</td><td class="hi">2개</td><td>큰 염기</td></tr>
+          <tr><td class="hi">구아닌</td><td>G</td><td>○</td><td class="hi">2개</td><td>큰 염기</td></tr>
+          <tr><td>타이민</td><td>T</td><td>×</td><td>1개</td><td>작은 염기</td></tr>
+          <tr><td>사이토신</td><td>C</td><td>×</td><td>1개</td><td>작은 염기</td></tr>
+        </tbody>
+      </table>
+      <div class="note">※ 예외가 없다. RNA의 <b>유라실(U)</b>도 &lsquo;아&rsquo;가 없으므로 고리 1개짜리 작은 염기이다.</div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- 규칙 ③ -->
+    <div class="section">
+      <div class="section-title amber">규칙 ③ 수소결합이 몇 개인가 — <b>작은 염기</b>의 첫 글자만 외운다</div>
+      <div class="two-col">
+        <div class="key-box amber" style="text-align:center; font-size:13pt; font-weight:700; line-height:1.9">
+          <span style="color:var(--blue-dark)">타</span>는 <span style="color:var(--blue-dark)">둘</span> &nbsp;·&nbsp; <span style="color:var(--red-accent)">사</span>는 <span style="color:var(--red-accent)">셋</span>
+        </div>
+        <div class="info-box" style="line-height:1.75; font-size:9pt">
+          <b>타</b>이민(T) → A와 <b>2개</b>의 수소결합<br>
+          <b>사</b>이토신(C) → G와 <b>3개</b>의 수소결합
+        </div>
+      </div>
+      <div class="note">※ 큰 염기(A·G) 쪽까지 함께 외우면 헷갈린다. <b>작은 염기 두 개만</b> 외우면 나머지는 저절로 정해진다.<br>
+      ※ 수소결합이 3개인 G–C 쌍이 더 단단하다. 그러므로 G와 C가 많은 DNA일수록 두 가닥이 잘 떨어지지 않는다.</div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <!-- 통합 그림 -->
+    <div class="section">
+      <div class="section-title">세 규칙이 한 그림에 들어 있다</div>
+      <div style="display:grid; grid-template-columns:0.95fr 1fr; gap:10px; align-items:start">
+
+        <svg viewBox="0 0 344 300" style="width:97%; height:auto">
+          <!-- 당-인산 골격 -->
+          <rect x="16" y="18" width="24" height="244" rx="9" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.6"/>
+          <rect x="302" y="18" width="24" height="244" rx="9" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.6"/>
+          <text x="28" y="278" text-anchor="middle" font-size="9" fill="#1255A0" font-weight="bold">당-인산</text>
+          <text x="314" y="278" text-anchor="middle" font-size="9" fill="#1255A0" font-weight="bold">당-인산</text>
+
+          <!-- 1행 : A - T -->
+          <line x1="40" y1="70" x2="49" y2="70" stroke="#444" stroke-width="1.6"/>
+          <path d="M 154,26 L 115.9,48 L 74.1,34.4 L 48.2,70 L 74.1,105.6 L 115.9,92 L 154,114 L 192.1,92 L 192.1,48 Z"
+                fill="#EE96B4" stroke="#B05372" stroke-width="1.6" stroke-linejoin="round"/>
+          <line x1="115.9" y1="48" x2="115.9" y2="92" stroke="#B05372" stroke-width="1.4"/>
+          <text x="154" y="79" text-anchor="middle" font-size="26" font-weight="bold" fill="#fff">A</text>
+          <text x="95" y="74" text-anchor="middle" font-size="10" fill="#7A3A50" font-weight="bold">아데닌</text>
+
+          <line x1="192.1" y1="57" x2="217.9" y2="57" stroke="#C0392B" stroke-width="2" stroke-dasharray="4,3"/>
+          <line x1="192.1" y1="83" x2="217.9" y2="83" stroke="#C0392B" stroke-width="2" stroke-dasharray="4,3"/>
+
+          <path d="M 256,26 L 217.9,48 L 217.9,92 L 256,114 L 294.1,92 L 294.1,48 Z"
+                fill="#8CC9EC" stroke="#3F7FA0" stroke-width="1.6" stroke-linejoin="round"/>
+          <text x="256" y="76" text-anchor="middle" font-size="24" font-weight="bold" fill="#fff">T</text>
+          <text x="256" y="92" text-anchor="middle" font-size="9" fill="#20475C" font-weight="bold">타이민</text>
+          <line x1="294.1" y1="70" x2="303" y2="70" stroke="#444" stroke-width="1.6"/>
+          <text x="205" y="40" text-anchor="middle" font-size="9.5" fill="#C0392B" font-weight="bold">2개</text>
+
+          <!-- 2행 : G - C -->
+          <line x1="40" y1="190" x2="49" y2="190" stroke="#444" stroke-width="1.6"/>
+          <path d="M 154,146 L 115.9,168 L 74.1,154.4 L 48.2,190 L 74.1,225.6 L 115.9,212 L 154,234 L 192.1,212 L 192.1,168 Z"
+                fill="#7CBF89" stroke="#3E7A4A" stroke-width="1.6" stroke-linejoin="round"/>
+          <line x1="115.9" y1="168" x2="115.9" y2="212" stroke="#3E7A4A" stroke-width="1.4"/>
+          <text x="154" y="199" text-anchor="middle" font-size="26" font-weight="bold" fill="#fff">G</text>
+          <text x="95" y="194" text-anchor="middle" font-size="10" fill="#22492B" font-weight="bold">구아닌</text>
+
+          <line x1="192.1" y1="172" x2="217.9" y2="172" stroke="#C0392B" stroke-width="2" stroke-dasharray="4,3"/>
+          <line x1="192.1" y1="190" x2="217.9" y2="190" stroke="#C0392B" stroke-width="2" stroke-dasharray="4,3"/>
+          <line x1="192.1" y1="208" x2="217.9" y2="208" stroke="#C0392B" stroke-width="2" stroke-dasharray="4,3"/>
+
+          <path d="M 256,146 L 217.9,168 L 217.9,212 L 256,234 L 294.1,212 L 294.1,168 Z"
+                fill="#F2B168" stroke="#A9702B" stroke-width="1.6" stroke-linejoin="round"/>
+          <text x="256" y="196" text-anchor="middle" font-size="24" font-weight="bold" fill="#fff">C</text>
+          <text x="256" y="212" text-anchor="middle" font-size="9" fill="#6A4415" font-weight="bold">사이토신</text>
+          <line x1="294.1" y1="190" x2="303" y2="190" stroke="#444" stroke-width="1.6"/>
+          <text x="205" y="160" text-anchor="middle" font-size="9.5" fill="#C0392B" font-weight="bold">3개</text>
+
+          <!-- 위쪽 방 칸 표시 -->
+          <text x="120" y="15" text-anchor="middle" font-size="9.5" fill="#333" font-weight="bold">고리 2개 (큰 염기)</text>
+          <text x="256" y="15" text-anchor="middle" font-size="9.5" fill="#333" font-weight="bold">고리 1개 (작은 염기)</text>
+
+          <!-- 아래 지름 표시 -->
+          <line x1="40" y1="292" x2="302" y2="292" stroke="#1255A0" stroke-width="1.4"/>
+          <path d="M 40,292 l 7,-4 v8 z" fill="#1255A0"/>
+          <path d="M 302,292 l -7,-4 v8 z" fill="#1255A0"/>
+          <rect x="118" y="284" width="106" height="16" fill="#fff"/>
+          <text x="171" y="296" text-anchor="middle" font-size="9.5" fill="#1255A0" font-weight="bold">지름 일정 (약 2 nm)</text>
+        </svg>
+
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <div class="key-box" style="line-height:1.75">
+            <b>고리 2개 + 고리 1개 = 언제나 고리 3개</b><br>
+            그러므로 염기쌍이 A–T이든 G–C이든 <b>가로 폭이 같고</b>, 이중나선의 <b>지름이 일정</b>하다. (42쪽)
+          </div>
+          <div class="info-box" style="font-size:9pt; line-height:1.8">
+            <b>큰 것 + 작은 것</b>으로만 짝이 된다.<br>
+            • A–A(2+2=4)는 <b>너무 넓어</b> 들어가지 못한다.<br>
+            • T–C(1+1=2)는 <b>너무 좁아</b> 손이 닿지 않는다.
+          </div>
+          <div class="info-box" style="font-size:9pt; line-height:1.8">
+            <b>샤가프의 법칙</b>(41쪽)<br>
+            A와 T가 반드시 짝이고 G와 C가 반드시 짝이므로,<br>
+            어떤 생물의 DNA에서도 <b>A의 양 = T의 양</b>, <b>G의 양 = C의 양</b>이다.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="chant">
+      <div class="line">직선끼리 곡선끼리 · &lsquo;아&rsquo;는 두 칸 · 타는 둘 사는 셋</div>
+      <div class="sub">✏️ 손으로도 외운다 — 짝꿍과 A–T는 손가락 <b>2개</b>로, G–C는 <b>3개</b>로 깍지를 껴 본다. 3개짜리가 잘 안 풀린다.</div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer"><div class="page-badge">1-4 DNA 염기 암기 카드 · 앞면</div></footer>
+</div>
+
+
+<!-- ═══════════════ 2쪽 : 확인 ═══════════════ -->
+<div class="page" id="page-2">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생물의 유전</div>
+      <div class="breadcrumb">Ⅰ. 유전자와 유전물질 &gt; 04. 유전물질과 유전체의 구성 &gt; DNA의 구조와 특성 — 확인</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">학번 <span class="uline"></span></div>
+      <div class="input-field">이름 <span class="uline"></span></div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <div class="section">
+      <div class="section-title red">확인 — 앞면을 덮고 풀어 보시오 🔎</div>
+    </div>
+
+    <div class="section">
+      <div class="info-box" style="line-height:1.8">
+        <span class="qnum">1.</span> 표의 빈칸을 채우시오.
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:24%">염기 이름</th>
+            <th style="width:12%">기호</th>
+            <th style="width:20%">고리 수</th>
+            <th style="width:20%">짝이 되는 염기</th>
+            <th>그 짝의 수소결합 수</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>아데닌</td><td>A</td><td></td><td></td><td></td></tr>
+          <tr><td></td><td>G</td><td></td><td></td><td></td></tr>
+          <tr><td>타이민</td><td></td><td></td><td></td><td></td></tr>
+          <tr><td></td><td>C</td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box" style="line-height:2.2">
+        <span class="qnum">2.</span> 다음은 이중나선 DNA 한 가닥의 염기 서열이다. 상보적인 가닥의 염기 서열을 <b>양 끝의 말단 표시와 함께</b> 쓰시오.<br>
+        <span style="margin-left:14px" class="seq">5&prime;— A T G C C G T A —3&prime;</span><br>
+        <span style="margin-left:14px">→ <span class="writeline" style="width:330px"></span></span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box" style="line-height:2.2">
+        <span class="qnum">3.</span> 2번의 이중나선에서 두 가닥을 잇는 <b>수소결합은 모두 몇 개</b>인가? 세는 과정을 함께 쓰시오.<br>
+        <span style="margin-left:14px"><span class="writeline" style="width:430px"></span></span><br>
+        <span style="margin-left:14px"><span class="writeline" style="width:430px"></span></span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box" style="line-height:2.2">
+        <span class="qnum">4.</span> 어떤 생물의 DNA를 분석하였더니 아데닌이 전체 염기의 <b>30 %</b>였다. 이 DNA에서 <b>구아닌의 비율</b>은 몇 %인가? 그렇게 판단한 까닭을 쓰시오.<br>
+        <span style="margin-left:14px"><span class="writeline" style="width:430px"></span></span><br>
+        <span style="margin-left:14px"><span class="writeline" style="width:430px"></span></span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box" style="line-height:2.2">
+        <span class="qnum">5.</span> 이중나선 DNA는 염기쌍의 종류와 관계없이 <b>지름이 일정하다.</b> 그 까닭을 <b>고리 수</b>를 써서 설명하시오.<br>
+        <span style="margin-left:14px"><span class="writeline" style="width:430px"></span></span><br>
+        <span style="margin-left:14px"><span class="writeline" style="width:430px"></span></span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="section-title amber">잘못 그린 이중나선 찾기 🔎</div>
+      <div class="note" style="margin-bottom:2px">
+        ㉮~㉰은 학생이 그린 이중나선의 일부이다. 세 그림에서 <b>당-인산 골격의 자리는 모두 같다.</b>
+        각 그림에서 <b>무엇이 잘못되었는지</b>와 <b>그 까닭</b>을 쓰시오.
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px">
+        <div class="fig-card">
+          <div class="fig-tag">㉮</div>
+          <svg viewBox="0 0 232 68" style="width:100%;height:auto"><rect x="10" y="6" width="12" height="52" rx="5" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.3"/><line x1="22" y1="32" x2="30" y2="32" stroke="#444" stroke-width="1.4"/><path d="M 82.9,10 L 63.85000000000001,21 L 42.93000000000001,14.2 L 30.000000000000007,32 L 42.93000000000001,49.8 L 63.85000000000001,43 L 82.9,54 L 101.95,43 L 101.95,21 Z" fill="#EE96B4" stroke="#B05372" stroke-width="1.4" stroke-linejoin="round"/><line x1="63.85000000000001" y1="21" x2="63.85000000000001" y2="43" stroke="#B05372" stroke-width="1.2"/><text x="82.9" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">A</text><line x1="101.95" y1="21" x2="125.95" y2="21" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><line x1="101.95" y1="43" x2="125.95" y2="43" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><path d="M 145,10 L 164.05,21 L 184.97,14.2 L 197.9,32 L 184.97,49.8 L 164.05,43 L 145,54 L 125.95,43 L 125.95,21 Z" fill="#7CBF89" stroke="#3E7A4A" stroke-width="1.4" stroke-linejoin="round"/><line x1="164.05" y1="21" x2="164.05" y2="43" stroke="#3E7A4A" stroke-width="1.2"/><text x="145" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">G</text><rect x="172" y="6" width="12" height="52" rx="5" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.3"/></svg>
+          <div class="fig-line"><span class="writeline" style="width:100%"></span></div>
+          <div class="fig-line"><span class="writeline" style="width:100%"></span></div>
+        </div>
+        <div class="fig-card">
+          <div class="fig-tag">㉯</div>
+          <svg viewBox="0 0 232 68" style="width:100%;height:auto"><rect x="10" y="6" width="12" height="52" rx="5" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.3"/><line x1="22" y1="32" x2="30" y2="32" stroke="#444" stroke-width="1.4"/><path d="M 49.05,10 L 29.999999999999996,21 L 29.999999999999996,43 L 49.05,54 L 68.1,43 L 68.1,21 Z" fill="#8CC9EC" stroke="#3F7FA0" stroke-width="1.4" stroke-linejoin="round"/><text x="49.05" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">T</text><line x1="68.1" y1="21" x2="92.1" y2="21" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><line x1="68.1" y1="43" x2="92.1" y2="43" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><path d="M 111.15,10 L 92.10000000000001,21 L 92.10000000000001,43 L 111.15,54 L 130.20000000000002,43 L 130.20000000000002,21 Z" fill="#F2B168" stroke="#A9702B" stroke-width="1.4" stroke-linejoin="round"/><text x="111.15" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">C</text><line x1="130.2" y1="32" x2="172" y2="32" stroke="#444" stroke-width="1.4"/><rect x="172" y="6" width="12" height="52" rx="5" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.3"/></svg>
+          <div class="fig-line"><span class="writeline" style="width:100%"></span></div>
+          <div class="fig-line"><span class="writeline" style="width:100%"></span></div>
+        </div>
+        <div class="fig-card">
+          <div class="fig-tag">㉰</div>
+          <svg viewBox="0 0 232 68" style="width:100%;height:auto"><rect x="10" y="6" width="12" height="52" rx="5" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.3"/><line x1="22" y1="32" x2="30" y2="32" stroke="#444" stroke-width="1.4"/><path d="M 82.9,10 L 63.85000000000001,21 L 42.93000000000001,14.2 L 30.000000000000007,32 L 42.93000000000001,49.8 L 63.85000000000001,43 L 82.9,54 L 101.95,43 L 101.95,21 Z" fill="#EE96B4" stroke="#B05372" stroke-width="1.4" stroke-linejoin="round"/><line x1="63.85000000000001" y1="21" x2="63.85000000000001" y2="43" stroke="#B05372" stroke-width="1.2"/><text x="82.9" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">A</text><line x1="101.95" y1="18" x2="125.95" y2="18" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><line x1="101.95" y1="32" x2="125.95" y2="32" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><line x1="101.95" y1="46" x2="125.95" y2="46" stroke="#C0392B" stroke-width="1.8" stroke-dasharray="3,2.5"/><path d="M 145,10 L 125.95,21 L 125.95,43 L 145,54 L 164.05,43 L 164.05,21 Z" fill="#8CC9EC" stroke="#3F7FA0" stroke-width="1.4" stroke-linejoin="round"/><text x="145" y="38" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">T</text><line x1="164.05" y1="32" x2="172" y2="32" stroke="#444" stroke-width="1.4"/><rect x="172" y="6" width="12" height="52" rx="5" fill="#E7EEF6" stroke="#1255A0" stroke-width="1.3"/></svg>
+          <div class="fig-line"><span class="writeline" style="width:100%"></span></div>
+          <div class="fig-line"><span class="writeline" style="width:100%"></span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer"><div class="page-badge">1-4 DNA 염기 암기 카드 · 뒷면</div></footer>
+</div>
+
+</body>
+</html>

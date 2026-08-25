@@ -432,7 +432,7 @@ console.log('[8] 저장 · 복원');
     ok(!threw, '손상 blob ' + (i + 1) + ' 에서 예외 없이 복구');
   });
 
-  // 첫 시도 기록은 덮어쓰지 않는다
+  // ★③ 요약 발문도 정오를 남기지 않는다 (교사 결정 2026-08-21)
   const K = makeSandbox();
   K.state.roundDone.normal = true;
   K.state.place.normal.m1 = { 'A-p':'L','A-m':'R','B-p':'L','B-m':'R' };
@@ -440,10 +440,12 @@ console.log('[8] 저장 · 복원');
                              'A-m#0':'L','A-m#1':'R','B-m#0':'L','B-m#1':'R'};
   K.openSummary('normal');
   K.pickSummary('normal', 0);            // 오답
-  const firstVal = K.state.first['normal.sum'];
   K.pickSummary('normal', 3);            // 정답으로 고쳐도
-  ok(K.state.first['normal.sum'] === firstVal, '첫 시도 정오를 재시도가 덮어쓰지 않는다');
-  ok(firstVal === false, '첫 시도 오답이 false로 기록');
+  ok(K.state.first === undefined, '★state 에 first(첫 시도 정오) 칸이 아예 없다');
+  ok(K.state.sumPick.normal === 3, '마지막에 고른 답만 남는다');
+  const savedK = JSON.parse(K.localStorage._mem[K.LS_KEY]);
+  ok(savedK.first === undefined && savedK.wrong === undefined,
+     '★저장된 blob 에도 정오·오답횟수 기록이 없다');
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -596,7 +598,6 @@ console.log('[9-4] 완료 라운드 되보기');
       F.state.phase[cs] = 2;
       F.state.roundDone[cs] = true;
       F.state.sumPick[cs] = [3,0,2][i];
-      F.state.first[cs + '.sum'] = true;      // 실제 흐름에서는 pickSummary 가 남긴다
     });
     F.reconcileRounds();
     return F;
@@ -626,9 +627,9 @@ console.log('[9-4] 완료 라운드 되보기');
 
   // 되보기가 요약 답을 다시 채점하지 않는다
   const K = upto(makeSandbox(), 3);
-  const firstBefore = JSON.stringify(K.state.first);
+  const sumBefore = JSON.stringify(K.state.sumPick);
   K.gotoRound(2);
-  ok(JSON.stringify(K.state.first) === firstBefore, '되본다고 첫 시도 기록이 바뀌지 않는다');
+  ok(JSON.stringify(K.state.sumPick) === sumBefore, '되본다고 요약 답이 바뀌지 않는다');
   ok(K._store['sumChoices'].children.every(b => b.disabled === true),
      '되본 라운드의 선택지는 다시 누를 수 없다');
   ok(K._store['sumFb'].innerHTML.indexOf(K.CAPTION.nd1) >= 0, '되본 라운드에 교과서 캡션이 그대로 보인다');
@@ -643,7 +644,6 @@ console.log('[9-4] 완료 라운드 되보기');
   ok(R.state.phase.nd1 === 1, '국면 1부터 다시 시작한다');
   ok(R.state.roundDone.normal === true && R.state.roundDone.nd2 === true,
      '★다른 라운드는 건드리지 않는다');
-  ok(R.state.first['nd1.sum'] !== undefined, '첫 시도 기록은 남는다(평가 자료)');
 
   // 되만들기 확인 대화상자 문구
   ok(/다시 만드시겠습니까\?/.test(js), '되만들기 확인 문구가 ~하시겠습니까?');
@@ -763,7 +763,7 @@ console.log('[11] ④ 연습 문항');
   ok(/🔒/.test(L._store['pracLock'].innerHTML), '잠금 안내가 보인다');
   ok(L._store['pracLock'].className.indexOf('hide') < 0, '잠긴 동안 안내가 숨지 않는다');
   ok(L.pickPractice('p1', 0) === false, '★잠긴 동안에는 답을 고를 수 없다');
-  ok(L.state.first['prac.p1'] === undefined, '잠긴 상태의 시도는 기록되지 않는다');
+  ok(L.state.pPick['p1'] === undefined, '잠긴 상태의 시도는 남지 않는다');
   const leak = JSON.stringify([L._store['pracBox'].innerHTML, L._store['pracDone'].innerHTML,
                                L._store['pracLock'].innerHTML]);
   ok(P.every(p => leak.indexOf(plain(p.ch[p.a]).slice(0, 10)) < 0), '★잠긴 동안 정답 문자열 노출 0');
@@ -783,32 +783,37 @@ console.log('[11] ④ 연습 문항');
   const btns = q1.children[1].children;
   ok(btns.length === 4 && btns.every(b => b.className === 'choice'), '선택지 4개가 초기 상태로 그려진다');
   ok(explOf(q1).style.display === 'none', '고르기 전에는 해설이 닫혀 있다');
-  ok(O._store['pracScore'].textContent === '0 / ' + P.length, '점수 표시가 0으로 시작한다');
+  ok(O._store['pracProg'].textContent === '푼 문항 0 / ' + P.length, '★진행 표시가 「푼 문항 0 / N」으로 시작한다');
 
   // 교사 해제로도 열린다
   const T2 = makeSandbox();
   T2.state.teacherUnlock = true;
   ok(T2.practiceOpen() === true, '교사 해제 시 라운드 없이도 열린다');
 
-  // ── 채점 · 첫 시도만 기록 ──
+  // ── ★정오를 기록하지 않는다 (교사 결정 2026-08-21) ──
   const A = finish(makeSandbox());
   A.renderPractice();
   const wrongIdx = (p1.a + 1) % 4;
   ok(A.pickPractice('p1', wrongIdx) === true, '열린 뒤에는 답을 고를 수 있다');
-  ok(A.state.first['prac.p1'] === false, '첫 시도가 오답이면 false 로 기록된다');
-  ok(A.state.pPick['p1'] === wrongIdx, '고른 번호가 남는다');
+  ok(A.state.pPick['p1'] === wrongIdx, '고른 번호가 남는다 (화면 복원용)');
   ok(A.pickPractice('p1', p1.a) === true, '다시 고를 수 있다');
-  ok(A.state.first['prac.p1'] === false, '★다시 골라도 첫 시도 기록은 덮이지 않는다');
   ok(A.state.pPick['p1'] === p1.a, '화면에 보이는 선택은 마지막 것으로 바뀐다');
-  ok(A.pracScore() === 0, '첫 시도가 오답이었으므로 점수는 0이다');
+  ok(A.state.first === undefined, '★첫 시도 정오가 어디에도 남지 않는다');
+  ok(typeof A.pracScore !== 'function' && typeof A.pedScore !== 'function',
+     '★점수 계산 함수 자체가 없다');
+  ok(A._store['pracProg'].textContent === '푼 문항 1 / ' + P.length,
+     '★오답을 골라도 「푼 문항」은 1로 센다 (맞고 틀림을 세지 않는다)');
 
   const B2 = finish(makeSandbox());
   B2.renderPractice();
-  P.forEach(p => B2.pickPractice(p.id, p.a));
-  ok(B2.pracScore() === P.length, '전부 첫 시도에 맞히면 만점이다');
-  ok(B2._store['pracScore'].textContent === P.length + ' / ' + P.length, '점수 표시가 갱신된다');
+  P.forEach(p => B2.pickPractice(p.id, (p.a + 1) % p.ch.length));
+  ok(B2._store['pracProg'].textContent === '푼 문항 ' + P.length + ' / ' + P.length,
+     '★전부 오답이어도 진행 표시는 다 찬다');
   ok(B2._store['pracDone'].className.indexOf('hide') < 0, '다 풀면 완료 문구가 열린다');
-  ok(B2._store['pracDone'].innerHTML.indexOf('' + P.length) >= 0, '완료 문구에 맞힌 수가 들어간다');
+  ok(!/맞힌|점수|첫 번째 시도/.test(B2._store['pracDone'].innerHTML),
+     '★완료 문구에 맞힌 수·점수가 없다');
+  ok(/해설을 다시 읽고/.test(B2._store['pracDone'].innerHTML),
+     '완료 문구가 해설 다시 읽기로 이끈다');
   ok(B2.pracAnswered() === P.length, '푼 문항 수가 센다');
 
   // 해설은 고른 뒤에만 열린다
@@ -832,8 +837,7 @@ console.log('[11] ④ 연습 문항');
   R2.gotoRound(2);
   ok(R2.redoRound() === true, '완료 라운드를 다시 만든다');
   ok(R2.practiceOpen() === false, '★라운드를 되돌리면 ④가 다시 잠긴다');
-  ok(R2._store['pracScore'].textContent === '0 / ' + P.length, '잠기면 점수 표시도 0으로 내려간다');
-  ok(R2.state.first['prac.p1'] === true, '기록 자체는 남는다 (평가 자료)');
+  ok(R2._store['pracProg'].textContent === '푼 문항 0 / ' + P.length, '잠기면 진행 표시도 0으로 내려간다');
 
   // ── 저장 · 복원 ──
   const D2 = finish(makeSandbox());
@@ -841,7 +845,6 @@ console.log('[11] ④ 연습 문항');
   D2.pickPractice('p2', byId('p2').a);
   const saved = JSON.parse(D2.localStorage._mem[D2.LS_KEY]);
   ok(saved.pPick && saved.pPick['p2'] === byId('p2').a, 'pPick 이 저장된다');
-  ok(saved.first['prac.p2'] === true, '첫 시도 기록이 저장된다');
   const E2 = makeSandbox({ [D2.LS_KEY]: D2.localStorage._mem[D2.LS_KEY] });
   ok(E2.state.pPick['p2'] === byId('p2').a, '새로고침해도 고른 답이 복원된다');
   ok(E2.practiceOpen() === true, '복원 후에도 ④가 열려 있다');
@@ -1048,23 +1051,22 @@ console.log('[12] ⑤ 가계도 문항');
      '★⑤ 머리에 사람 2n=46 임을 밝혀 두었다 (2n=4 모형과 헷갈리지 않게)');
   ok(/상염색체 이상과 성염색체 이상 모두 <b>같은 원인<\/b>/.test(src),
      '★상염색체·성염색체 이상이 같은 원인임을 밝혀 두었다');
-  ok(O._store['pedScoreTag'].textContent === '0 / 3', '⑤ 점수 표시가 0으로 시작');
+  ok(O._store['pedProg'].textContent === '푼 문항 0 / 3', '⑤ 진행 표시가 「푼 문항 0 / 3」으로 시작');
   const card0 = O._store['pedBox'].children[0];
   ok(/\[자료\]/.test(card0.children[1].innerHTML), '자료 상자가 발문 아래에 붙는다');
   ok(/<svg/.test(card0.children[2].innerHTML), '가계도 그림이 붙는다');
 
   ok(O.pickPractice('g1', 0) === true, '열린 뒤 ⑤의 답을 고를 수 있다');
-  ok(O.state.first['prac.g1'] === false, 'g1 첫 시도 오답 기록');
   O.pickPractice('g1', G[0].a);
-  ok(O.state.first['prac.g1'] === false, '★다시 골라도 첫 시도 기록은 덮이지 않는다');
-  ok(O.pedScore() === 0 && O.pracScore() === 0, '④와 ⑤ 점수가 섞이지 않는다');
+  ok(O.state.first === undefined, '★⑤도 첫 시도 정오를 남기지 않는다');
+  ok(O.pedAnswered() === 1 && O.pracAnswered() === 0, '④와 ⑤의 진행이 섞이지 않는다');
 
   const B = finish(makeSandbox());
   B.renderPractice();
   G.forEach(g => B.pickPractice(g.id, g.a));
-  ok(B.pedScore() === 3 && B.pedAnswered() === 3, '⑤ 3문항을 첫 시도에 맞히면 3점');
-  ok(B.pracScore() === 0, '★⑤를 풀어도 ④ 점수는 오르지 않는다');
-  ok(B._store['pedScoreTag'].textContent === '3 / 3', '⑤ 점수 표시 갱신');
+  ok(B.pedAnswered() === 3, '⑤ 3문항을 풀면 진행이 3이다');
+  ok(B.pracAnswered() === 0, '★⑤를 풀어도 ④ 진행은 오르지 않는다');
+  ok(B._store['pedProg'].textContent === '푼 문항 3 / 3', '⑤ 진행 표시 갱신');
   ok(B._store['pedDone'].className.indexOf('hide') < 0, '⑤를 다 풀면 완료 문구가 열린다');
   ok(/감수 1분열/.test(B._store['pedDone'].innerHTML) &&
      /감수 2분열/.test(B._store['pedDone'].innerHTML) &&
@@ -1090,7 +1092,7 @@ console.log('[12] ⑤ 가계도 문항');
   R.gotoRound(3);
   ok(R.redoRound() === true, '라운드를 다시 만든다');
   ok(R._store['pedBox'].innerHTML === '', '★라운드를 되돌리면 ⑤도 다시 잠긴다');
-  ok(R._store['pedScoreTag'].textContent === '0 / 3', '잠기면 ⑤ 점수 표시도 0');
+  ok(R._store['pedProg'].textContent === '푼 문항 0 / 3', '잠기면 ⑤ 진행 표시도 0');
 
   /* ── 답 유출 금지 · 말투 · 표기 ── */
   const bodyMk = src.slice(src.indexOf('<body>'), src.lastIndexOf('<script>'));
@@ -1401,6 +1403,78 @@ console.log('[14] 힌트 2단');
   const styleBlk = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
   ok(!/\n\s*[a-z-]+:[^;{}]+;[^{}]*\}/.test(styleBlk.replace(/\{[^{}]*\}/g, '{}')),
      '★선택자 없이 선언만 남은 CSS 덩이가 없다');
+}
+
+/* ════════════════════════════════════════════════════════════
+   [15] ★기록하지 않는다 (교사 결정 2026-08-21)
+        이 활동은 평가가 아니라 연습이다. 「첫 시도 정오」를 남기던 장치를
+        걷어냈고, 화면은 맞고 틀림이 아니라 「푼 문항 수」만 센다.
+        ※같은 장치가 필요한 활동은 1-2 가계도(state.first) 쪽이다 —
+          거기서 지우라는 뜻이 아니다. 여기서만 없앤다.
+        되살아나면 여기서 잡는다.
+   ════════════════════════════════════════════════════════════ */
+console.log('[15] 기록하지 않는다');
+{
+  const F = makeSandbox();
+
+  /* ── 상태에 기록 칸이 없다 ── */
+  ok(F.state.first === undefined, '★state.first (첫 시도 정오) 칸이 없다');
+  ok(F.state.wrong === undefined, '★state.wrong (오답 횟수) 칸이 없다');
+  ok(!/state\.first\s*\[/.test(js), '★코드 어디에서도 state.first 에 쓰지 않는다');
+  ok(!/state\.wrong\s*\[/.test(js), '★코드 어디에서도 state.wrong 에 쓰지 않는다');
+  ok(!/function\s+(pracScore|pedScore|scoreOf)\b/.test(js),
+     '★점수 계산 함수(scoreOf·pracScore·pedScore)가 없다');
+
+  /* ── 끝까지 풀어도 저장 blob 에 정오가 없다 ── */
+  const D = makeSandbox();
+  D.state.teacherUnlock = true;          // 라운드 준비 없이 ④⑤만 연다
+  D.renderPractice();
+  S.PRACTICE.forEach(p => D.pickPractice(p.id, (p.a + 1) % p.ch.length));   // 전부 오답
+  S.PEDQ.forEach(g => D.pickPractice(g.id, g.a));                           // 전부 정답
+  const blob = JSON.parse(D.localStorage._mem[D.LS_KEY]);
+  ok(blob.first === undefined && blob.wrong === undefined,
+     '★저장된 blob 에 정오·오답횟수가 없다');
+  ok(Object.keys(blob.pPick).length === S.PRACTICE.length + S.PEDQ.length,
+     '고른 답 자체는 남는다 (새로고침 복원용)');
+  ok(!/true|false/.test(JSON.stringify(Object.values(blob.pPick))),
+     '★pPick 에 담기는 것은 고른 번호일 뿐 정오가 아니다');
+
+  /* ── 화면 문구에 점수가 없다 ── */
+  ok(D._store['pracProg'].textContent === '푼 문항 ' + S.PRACTICE.length + ' / ' + S.PRACTICE.length,
+     '★전부 오답이어도 ④ 진행 표시는 다 찬다');
+  ok(D._store['pedProg'].textContent === '푼 문항 ' + S.PEDQ.length + ' / ' + S.PEDQ.length,
+     '⑤ 진행 표시도 푼 수로 센다');
+  const shown = String(D._store['pracDone'].innerHTML) + String(D._store['pedDone'].innerHTML) +
+                String(D._store['pracProg'].textContent) + String(D._store['pedProg'].textContent);
+  ok(!/맞힌|맞힌 수|점수|득점|첫 번째 시도|첫 시도/.test(shown),
+     '★학생 화면 어디에도 맞힌 수·점수 문구가 없다');
+
+  /* ── 안내 문구가 「다시 골라도 된다」로 바뀌었다 ── */
+  ok(/몇 번을 다시 골라도 된다/.test(src), '★④ 안내가 다시 고를 수 있음을 밝힌다');
+  ok(!/첫 번째로 고른 것<\/b>만 기록된다/.test(src), '★「첫 번째로 고른 것만 기록된다」가 사라졌다');
+  ok(/기록되지 않는다/.test(src), '★고른 답이 기록되지 않음을 밝힌다');
+
+  /* ── ★옛 저장분 청소 — 이미 활동을 하던 학생의 브라우저에는
+         first·wrong 이 들어 있는 blob 이 남아 있다. 되살아나면 안 된다. ── */
+  const legacy = JSON.stringify({
+    roundDone:{ normal:true }, sumPick:{ normal:3 }, pPick:{ p1:0 },
+    first:{ 'prac.p1':false, 'normal.sum':true },      // 옛 판(2026-08-20까지)의 기록
+    wrong:{ 'normal.m1':3 },
+    place:{}, phase:{}, ta:{}, startedAt:'started'
+  });
+  const OLD = makeSandbox({ 'nondisj_sim_v1': legacy });
+  ok(OLD.state.first === undefined && OLD.state.wrong === undefined,
+     '★옛 blob 의 first·wrong 이 복원되지 않는다');
+  ok(OLD.state.pPick['p1'] === 0 && OLD.state.roundDone.normal === true,
+     '옛 blob 의 나머지(고른 답·진행)는 그대로 살아남는다');
+  OLD.saveState();
+  const cleaned = JSON.parse(OLD.localStorage._mem[OLD.LS_KEY]);
+  ok(cleaned.first === undefined && cleaned.wrong === undefined,
+     '★한 번 저장하면 옛 기록이 저장소에서도 지워진다');
+
+  /* ── 태그 id 도 뜻에 맞게 바뀌었다 ── */
+  ok(/id="pracProg"/.test(src) && /id="pedProg"/.test(src), '진행 표시 id 가 pracProg·pedProg 이다');
+  ok(!/id="pracScore"/.test(src) && !/id="pedScoreTag"/.test(src), '옛 점수 id 가 남아 있지 않다');
 }
 
 console.log('');

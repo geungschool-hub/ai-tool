@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>DNA 염기 암기 카드 — 정답지</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC;
+      --blue-dark:#1255A0; --green-dark:#2A7A38;
+      --red-accent:#C0392B; --amber:#E67E22;
+      --text-main:#1A1A1A; --text-light:#555; --line:#BBBBBB; --white:#fff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Noto Sans KR', sans-serif; font-size:10pt; color:var(--text-main);
+      background:#d0d0d0; display:flex; flex-direction:column; align-items:center;
+      gap:24px; padding:24px;
+    }
+    .page {
+      width:210mm; height:297mm; background:var(--white);
+      box-shadow:0 2px 14px rgba(0,0,0,0.18);
+      display:flex; flex-direction:column; padding:8mm 12mm 7mm 12mm; overflow:hidden;
+    }
+    .page-header {
+      display:flex; justify-content:space-between; align-items:flex-end;
+      padding-bottom:5px; border-bottom:2.5px solid var(--red-accent);
+      margin-bottom:8px; flex-shrink:0;
+    }
+    .header-left .subject    { font-size:13pt; font-weight:700; color:var(--red-accent); }
+    .header-left .breadcrumb { font-size:7.5pt; color:var(--text-light); margin-top:2px; }
+    .ans-badge {
+      border:2px solid var(--red-accent); color:var(--red-accent);
+      font-size:11pt; font-weight:700; padding:3px 16px; border-radius:4px; letter-spacing:2px;
+    }
+    .page-footer {
+      display:flex; justify-content:center; align-items:center;
+      padding-top:5px; border-top:1px solid var(--line); flex-shrink:0; margin-top:auto;
+    }
+    .page-badge {
+      background:#FDDEDE; color:var(--red-accent);
+      font-size:8.5pt; font-weight:700; padding:2px 14px; border-radius:12px;
+    }
+    .page-content { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:5px; }
+    .section { display:flex; flex-direction:column; gap:4px; }
+    .section-spacer { height:6px; flex-shrink:0; }
+    .section-title {
+      font-size:11pt; font-weight:700; padding:4px 10px; border-radius:4px;
+      border-left:4px solid var(--blue-dark); background:var(--blue-pastel);
+    }
+    .section-title.red   { border-left-color:var(--red-accent); background:#FDDEDE; }
+    .section-title.amber { border-left-color:var(--amber);      background:#FDE9C9; }
+    .info-box {
+      border:1px solid var(--line); border-radius:4px;
+      padding:7px 12px; font-size:9.5pt; line-height:2.0; background:#FAFAFA;
+    }
+    .ans {
+      color:#C0392B; font-weight:700;
+      border-bottom:1.8px solid #C0392B;
+      display:inline-block; padding:0 3px;
+    }
+    .ans.plain { border-bottom:none; }
+    .data-table { width:100%; border-collapse:collapse; font-size:9pt; }
+    .data-table th {
+      background:var(--blue-pastel); font-weight:700;
+      padding:5px 8px; border:1px solid var(--line); text-align:center;
+    }
+    .data-table td {
+      padding:5px 9px; border:1px solid var(--line);
+      text-align:center; vertical-align:middle; line-height:1.8;
+    }
+    .qnum { font-weight:700; color:var(--blue-dark); }
+    .seq  { font-family:'Consolas','Courier New',monospace; font-size:11pt; font-weight:700; letter-spacing:3px; }
+    .note { font-size:8.5pt; color:var(--text-light); line-height:1.7; }
+    @media print {
+      body { background:none; padding:0; gap:0; }
+      .page {
+        width:210mm; height:297mm; box-shadow:none; page-break-after:always;
+        padding:8mm 12mm 7mm 12mm;
+        -webkit-print-color-adjust:exact; print-color-adjust:exact;
+      }
+      .page:last-child { page-break-after:avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <header class="page-header">
+    <div class="header-left">
+      <div class="subject">생물의 유전 — 정답지</div>
+      <div class="breadcrumb">Ⅰ. 유전자와 유전물질 &gt; 04. 유전물질과 유전체의 구성 &gt; DNA의 구조와 특성 — 확인(뒷면)</div>
+    </div>
+    <div class="ans-badge">【 정 답 지 】</div>
+  </header>
+
+  <div class="page-content">
+
+    <div class="section">
+      <div class="section-title red">확인 문항 정답 및 해설</div>
+    </div>
+
+    <div class="section">
+      <div class="info-box"><span class="qnum">1.</span> 표 채우기</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:24%">염기 이름</th>
+            <th style="width:12%">기호</th>
+            <th style="width:20%">고리 수</th>
+            <th style="width:20%">짝이 되는 염기</th>
+            <th>그 짝의 수소결합 수</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>아데닌</td><td>A</td><td><span class="ans">2개</span></td><td><span class="ans">타이민(T)</span></td><td><span class="ans">2개</span></td></tr>
+          <tr><td><span class="ans">구아닌</span></td><td>G</td><td><span class="ans">2개</span></td><td><span class="ans">사이토신(C)</span></td><td><span class="ans">3개</span></td></tr>
+          <tr><td>타이민</td><td><span class="ans">T</span></td><td><span class="ans">1개</span></td><td><span class="ans">아데닌(A)</span></td><td><span class="ans">2개</span></td></tr>
+          <tr><td><span class="ans">사이토신</span></td><td>C</td><td><span class="ans">1개</span></td><td><span class="ans">구아닌(G)</span></td><td><span class="ans">3개</span></td></tr>
+        </tbody>
+      </table>
+      <div class="note">※ 고리 수는 이름에 &lsquo;아&rsquo;가 있는지로 갈린다(아데닌·구아닌 = 2개). 수소결합 수는 작은 염기 쪽으로 외운다(타는 둘, 사는 셋).</div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box">
+        <span class="qnum">2.</span> 주어진 가닥 <span class="seq">5&prime;— A T G C C G T A —3&prime;</span> 의 상보 가닥<br>
+        <span style="margin-left:14px" class="seq ans">3&prime;— T A C G G C A T —5&prime;</span><br>
+        <span class="note">※ 두 가닥의 방향성은 서로 반대이므로(역평행), 왼쪽 끝이 5&prime;이면 상보 가닥의 왼쪽 끝은 3&prime;이다. 말단 표시가 없거나 뒤바뀌면 감점한다.</span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box">
+        <span class="qnum">3.</span> 수소결합의 총 개수 → <span class="ans">20개</span><br>
+        <span style="margin-left:14px">A·T 염기쌍 4개 × 2개 = 8개, &nbsp; G·C 염기쌍 4개 × 3개 = 12개 &nbsp;→&nbsp; 8 + 12 = <b>20개</b></span><br>
+        <span class="note">※ 서열 A T G C C G T A 에서 A·T형은 1·2·7·8번, G·C형은 3·4·5·6번 자리이다.</span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box">
+        <span class="qnum">4.</span> 구아닌의 비율 → <span class="ans">20 %</span><br>
+        <span style="margin-left:14px">A = T이므로 T도 30 %이고, A + T = 60 %이다. 따라서 G + C = 40 %이며, G = C이므로 G = <b>20 %</b>이다.</span><br>
+        <span class="note">※ &ldquo;A와 T의 양이 같고 G와 C의 양이 같다&rdquo;(샤가프의 법칙)를 근거로 제시해야 완전한 답이다. 20 %만 쓰고 까닭이 없으면 부분 점수로 처리한다.</span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="info-box">
+        <span class="qnum">5.</span> 지름이 일정한 까닭<br>
+        <span style="margin-left:14px" class="ans plain">고리가 2개인 염기(A, G)는 반드시 고리가 1개인 염기(T, C)와 결합하므로, 어떤 염기쌍이든 고리 수의 합이 3개로 같다. 그러므로 염기쌍의 가로 폭이 일정하고 이중나선의 지름도 일정하다.</span><br>
+        <span class="note">※ &ldquo;큰 염기와 작은 염기가 결합하기 때문&rdquo; 수준의 서술도 인정하되, <b>고리 수(2 + 1)</b>를 언급하면 완전한 답이다.</span>
+      </div>
+    </div>
+
+    <div class="section-spacer"></div>
+
+    <div class="section">
+      <div class="section-title amber">잘못 그린 이중나선 찾기 — 정답</div>
+      <div class="info-box" style="line-height:1.85">
+        <b>㉮</b> <span class="ans plain">고리가 2개인 A와 고리가 2개인 G를 짝지었다. 고리 수의 합이 4개가 되어 폭이 너무 넓으므로 이중나선의 지름이 커진다. A는 T와, G는 C와 결합해야 한다.</span><br>
+        <b>㉯</b> <span class="ans plain">고리가 1개인 T와 고리가 1개인 C를 짝지었다. 고리 수의 합이 2개가 되어 폭이 너무 좁다.</span><br>
+        <b>㉰</b> <span class="ans plain">짝은 옳으나 수소결합을 3개로 그렸다. A와 T는 수소결합 2개로 결합한다. 수소결합이 3개인 것은 G와 C이다.</span><br>
+        <span class="note">※ 세 그림 모두 &ldquo;고리 2개짜리는 고리 1개짜리와만 짝이 된다&rdquo;와 &ldquo;타는 둘, 사는 셋&rdquo;으로 판정된다. ㉮·㉯는 지름이 달라진다는 점까지 쓰면 완전한 답이다.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer"><div class="page-badge">1-4 DNA 염기 암기 카드 · 정답지</div></footer>
+</div>
+
+</body>
+</html>

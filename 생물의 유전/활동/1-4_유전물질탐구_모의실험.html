@@ -1,0 +1,3005 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>유전물질을 찾는 세 실험</title>
+<script>
+/* ══ 미완성 잠금 ══════════════════════════════════════════════
+   교사가 「완성」이라고 판단하기 전에는 학생이 들어올 수 없게 막는다.
+   배포는 하되 미완성본이 학생에게 노출되지 않게 하는 장치다(교사 지시 2026-08-18).
+
+   ★완성되면 DRAFT_MODE 를 false 로 바꿔 재배포한다. 그 순간부터 잠금이 사라진다.
+   ★이 스크립트는 <head>에 있어야 한다 — 본문보다 먼저 돌아야 잠긴 화면이 깜빡이지 않는다.
+   ★기본이 「잠김」이다(fail-closed). 조건이 맞을 때만 .unlocked 가 붙는다.
+   ⚠ 이것은 잠금이지 보안이 아니다. 공개 저장소라 소스를 보면 비밀번호가 보인다.
+     「학생이 미완성본을 우연히 여는 것」을 막는 용도다.                        */
+var DRAFT_MODE = false;                   /* ◀ 2026-08-25 교사 검토 통과 — 학생에게 열렸다 */
+var DRAFT_PASS = '7856';
+var DRAFT_KEY  = 'dnaproof_sim_draft_ok';
+try {
+  if (!DRAFT_MODE || localStorage.getItem(DRAFT_KEY) === 'y') {
+    document.documentElement.className += ' unlocked';
+  }
+} catch (e) {
+  /* localStorage 를 못 쓰는 환경(사파리 프라이빗 등)에서도 미완성이면 잠긴 채로 둔다 */
+  if (!DRAFT_MODE) document.documentElement.className += ' unlocked';
+}
+</script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   생물의 유전 1-4 — 유전물질을 찾는 세 실험
+   그리피스(1928) → 에이버리(1944) → 허시·체이스(1952)
+   교과서(이준규) 38~39쪽 · 비상교육 교사용 28~31쪽 「해 보기」 두 건을 웹으로
+   성취기준 12유전01-05 (유전물질 규명 과학사)
+   ★이 활동의 뼈대는 세 실험이 「이어지는 논리」다 —
+     n번째 실험이 남긴 질문이 n+1번째 실험의 질문이 된다(⑤ 사슬판).
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --red:#C0392B;   --red-bg:#FDECEA;
+  --blue:#1255A0;  --blue-bg:#E8F0FA;
+  --yellow:#B7791F;--yellow-bg:#FDF6E3;
+  --green:#2A7A38; --green-bg:#E9F5EB;
+  --pink:#C2185B;  --pink-bg:#FCE4EC;
+  --amber:#E67E22; --amber-bg:#FDF0E3; --amber-ink:#8A4B08;
+  --purple:#7B4FB5;--purple-bg:#F1EAFA;
+  --teal:#0F766E;  --teal-bg:#E2F3F1;
+  --old:#6B7280;
+  --ink:#1A1A1A;   --sub:#555;  --line:#D5D8DE;  --paper:#fff;  --bg:#F4F6F9;
+  /* 실험별 고유색 — 사슬판·표·배지가 모두 이 색을 쓴다 */
+  --e1:#C2185B;  --e1-bg:#FCE4EC;   /* 그리피스 */
+  --e2:#7B4FB5;  --e2-bg:#F1EAFA;   /* 에이버리 */
+  --e3:#0F766E;  --e3-bg:#E2F3F1;   /* 허시·체이스 */
+  /* 물질 색 — 무대·범례·표가 같은 값을 쓴다 */
+  --m-dna:#1255A0;      /* DNA = 파랑 */
+  --m-prot:#E67E22;     /* 단백질 = 주황 */
+  --m-rna:#2A7A38;      /* RNA = 초록 */
+  --m-hot:#C0392B;      /* 방사선이 검출된 자리 */
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.65;
+  font-family:"Malgun Gothic","맑은 고딕",AppleSDGothicNeo-Regular,"Apple SD Gothic Neo",sans-serif;
+  padding:14px 12px 60px; overflow-x:hidden;
+}
+.wrap{max-width:980px;margin:0 auto;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin-bottom:16px;}
+h1{font-size:24px;margin:0 0 4px;color:var(--blue);letter-spacing:-.5px;}
+h2{font-size:19px;margin:0 0 12px;padding:8px 12px;border-left:5px solid var(--blue);background:var(--blue-bg);border-radius:0 8px 8px 0;}
+h2.e1{border-left-color:var(--e1);background:var(--e1-bg);color:var(--e1);}
+h2.e2{border-left-color:var(--e2);background:var(--e2-bg);color:var(--e2);}
+h2.e3{border-left-color:var(--e3);background:var(--e3-bg);color:var(--e3);}
+h2.green{border-left-color:var(--green);background:var(--green-bg);}
+h2.amber{border-left-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink);}
+h3{font-size:16.5px;margin:16px 0 8px;color:var(--ink);}
+.sub{color:var(--sub);font-size:15px;margin:0 0 10px;}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{font-size:13px;background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:3px 11px;}
+.tag.done{background:var(--green-bg);color:var(--green);}
+.badge{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px;cursor:pointer;user-select:none;}
+.yr{display:inline-block;font-size:13.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;vertical-align:2px;}
+.yr.e1{background:var(--e1-bg);color:var(--e1);}
+.yr.e2{background:var(--e2-bg);color:var(--e2);}
+.yr.e3{background:var(--e3-bg);color:var(--e3);}
+
+/* ── 버튼 ── */
+.btn{
+  font:inherit;font-size:16px;font-weight:700;min-height:44px;padding:10px 18px;
+  border-radius:10px;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;
+}
+.btn.ghost{background:#fff;color:var(--blue);}
+.btn.gray{background:#fff;color:var(--old);border-color:var(--old);}
+.btn.e1{background:var(--e1);border-color:var(--e1);color:#fff;}
+.btn.e2{background:var(--e2);border-color:var(--e2);color:#fff;}
+.btn.e3{background:var(--e3);border-color:var(--e3);color:#fff;}
+.btn.e1.ghost{background:#fff;color:var(--e1);}
+.btn.e2.ghost{background:#fff;color:var(--e2);}
+.btn.e3.ghost{background:#fff;color:var(--e3);}
+.btn:disabled{background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;cursor:not-allowed;}
+/* ★.btn.e1.ghost 는 클래스 3개(0,3,0)라 .btn:disabled(0,2,0)를 이겨, 꺼진 단추가 켜진 것과 똑같이 보였다.
+   제어 막대가 생기면서 처음 드러났다(2026-08-25 검토). 특이도를 올려 되찾는다. */
+.btn.e1:disabled,.btn.e2:disabled,.btn.e3:disabled,
+.btn.e1.ghost:disabled,.btn.e2.ghost:disabled,.btn.e3.ghost:disabled,.btn.ghost:disabled{
+  background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;
+}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+
+/* ── 진행 레일 (활동 전체) ── */
+.rail{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px;}
+.rstep{flex:1 1 150px;border:2px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;font-weight:700;font-size:15px;color:var(--sub);background:#fff;}
+.rstep.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.rstep.ok{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.rstep .rsub{display:block;font-size:12.5px;font-weight:400;}
+button.rstep{font:inherit;font-weight:700;font-size:15px;min-height:44px;}
+.rstep.can{cursor:pointer;}
+.rstep.can:hover{border-color:var(--blue);}
+
+/* ── 2단 배치 — 자료는 왼쪽에 고정, 조작·문항은 오른쪽에서만 스크롤한다 ──────────
+   교사 지시 2026-08-25: 「자료는 왼쪽에 큼지막하게 두고 오른쪽에서 질문 활동을 하면
+   위아래로 스크롤할 필요가 없다」. ②③④ 무대 카드 세 장에만 쓴다.
+   ★경계는 **1180px**이다. 1024px에서 나누면 왼쪽 칸이 544px밖에 안 돼 무대 배율이 0.75로 떨어져
+     캐션 글자가 **10.2px**가 된다(2026-08-25 태블릿 폭 실측). 캐션이 13px을 지키려면 왼쪽 칸이 ~690px 이상이어야 하고,
+     그러려면 화면이 1180px 이상이어야 한다. 1180 → 13.3px · 1280 → 14.7px.
+   ★그 미만(1024 태블릿 가로·세로·휴대전화)에서는 규칙이 하나도 걸리지 않는다 —
+     한 줄로 내려가는 대신 **무대가 커져 글자가 18px 넘게 된다.** —
+     지금까지대로 위에서 아래로 한 줄이 된다. 되돌리려면 이 블록만 지우면 된다.
+   ★.card.split 의 음수 여백 = 980px 글줄을 지키는 다른 카드는 그대로 두고
+     이 세 장만 화면 쪽으로 넓힌다(최대 1280px). transform 을 쓰지 않는다 — sticky 가 깨진다. */
+@media (min-width:1180px){
+  .card.split{
+    margin-left:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+    margin-right:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+  }
+  .panes{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,400px);
+    gap:18px; align-items:start;      /* ★align-items:start 가 없으면 칸이 늘어나 sticky 가 듣지 않는다 */
+  }
+  /* ★왼쪽 칸이 화면보다 길어질 수 있다(무대 + 표 + 도해).
+     그때는 이 칸 안에서만 밀리게 한다 — 문서 전체가 밀려 무대가 사라지는 일을 막는다. */
+  .pane-l{position:sticky; top:10px; max-height:calc(100vh - 20px); overflow-y:auto;}
+  /* 왼쪽 칸 폭에 맞춰 무대를 줄인다 — 가로로 밀지 않아도 한눈에 들어오게 */
+  .pane-l svg.stage{min-width:0;}
+  /* ★무대가 칸 폭을 다 먹으면 그만큼 키가 커져 아래의 결과표가 잘린다. 760px에서 멈춘다. */
+  .pane-l .stage-wrap{max-width:760px;margin-left:auto;margin-right:auto;}
+  /* ⑥ 카드 덱은 오른쪽 칸 폭을 다 쓴다 — 340px 로 묶어 두면 줄이 더 접혀 덱이 길어진다 */
+  .pane-r .ccard{flex:1 1 100%;max-width:none;}
+}
+
+/* 좁은 화면(태블릿 세로·휴대전화) — 지금까지대로 위에서 아래로 한 줄이다.
+   ★단 DOM 순서는 2단에 맞춰 「자료(왼쪽) → 조작(오른쪽)」으로 적혀 있다. 그대로 한 줄로 세우면
+     주입 버튼보다 결과 무대가 위에 놓여, 누르고 나서 위로 되돌아가야 한다.
+     display:contents 로 칸을 풀고 order 로 「조작 → 자료 → 문항」을 되세운다. */
+/* ★1179.98px — 정수로 끊으면 1179 초과 1180 미만의 소수 폭(브라우저 확대에서 실제로 생긴다)이
+   두 규칙 어디에도 걸리지 않아 .panes 가 그냥 쌓이고 order 보정이 빠진다.
+   그러면 주입 단추보다 결과 무대가 위에 놓인다(2026-08-25 검토). */
+@media (max-width:1179.98px){
+  .panes{display:flex;flex-direction:column;}
+  .pane-r{display:contents;}
+  .pr-do{order:1;}
+  .pane-l{order:2;}
+  .pr-q{order:3;}
+}
+
+/* ── 피막 비교 도해 (② 머리말) ────────────────────────────────
+   ★그림만 SVG이고 글은 HTML이다. 칸이 넓어져도 그림이 따라 커지지 않게 200px에서 멈춘다 —
+     전에는 680px짜리 통 SVG였는데, 왼쪽 칸에 넣으니 폭을 따라 커져 표가 화면 밖으로 밀려났다. */
+.legend2{display:flex;gap:10px;flex-wrap:wrap;}
+.lgcell{flex:1 1 230px;min-width:0;border:1px solid var(--line);border-radius:10px;
+        background:#FBFCFE;padding:6px 10px;display:flex;align-items:center;gap:9px;}
+.lgcell svg{flex:0 0 auto;width:96px;height:auto;}
+.lgcell .lgtext{min-width:0;}
+.lgcell .lgname{display:block;font-weight:700;font-size:16px;}
+.lgcell .lgdesc{display:block;font-size:14.5px;color:var(--sub);line-height:1.5;}
+.lgcell.s .lgname{color:var(--e1);}
+.lgcell.r .lgname{color:#5A616C;}
+
+/* ── 연출 제어 막대 (무대 바로 아래) ─────────────────────────
+   교사 지시 2026-08-25: 「애니메이션 다시 보기가 필요하다」 · 「허시·체이스가 빨라 단계별로 진행할 수 있어야 한다」 */
+.anibar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:8px;}
+.anibar .btn{min-height:44px;padding:8px 12px;font-size:16px;}   /* ★단추 글자는 16px 아래로 내리지 않는다 */
+/* ★라벨 폭을 고정한다 — 단계마다 이름 길이가 달라지면 접힘이 들락날락해 아래 결과표가 튄다 */
+.anistep{font-size:14.5px;color:var(--sub);margin-left:2px;flex:1 1 170px;min-width:170px;}
+.anistep b{color:var(--ink);font-weight:700;}
+
+/* ── 무대 ── */
+.stage-wrap{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:8px;
+            overflow-x:auto;-webkit-overflow-scrolling:touch;}
+svg.stage{display:block;width:100%;min-width:600px;height:auto;touch-action:manipulation;}
+.stage-hint{font-size:14.5px;color:var(--sub);margin-top:8px;}
+.taskbar{
+  background:var(--yellow-bg);border-left:5px solid var(--yellow);color:var(--amber-ink);
+  border-radius:0 8px 8px 0;padding:9px 13px;font-weight:700;font-size:16px;margin-bottom:10px;
+}
+.msg{border-radius:9px;padding:10px 13px;margin-top:10px;font-size:15.5px;line-height:1.7;}
+.msg.warn{background:var(--amber-bg);border-left:4px solid var(--amber);}
+.msg.good{background:var(--green-bg);border-left:4px solid var(--green);}
+.msg.info{background:var(--blue-bg);border-left:4px solid var(--blue);}
+.msg.bad{background:var(--red-bg);border-left:4px solid var(--red);}
+.msg.hide{display:none;}
+
+/* ── 준비물 칩 (그리피스 주사기 / 에이버리 효소 / 허시체이스 표지) ── */
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 2px;}
+.chip{
+  font:inherit;font-size:15.5px;font-weight:700;min-height:44px;padding:9px 14px;
+  border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.chip .dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto;border:1.5px solid rgba(0,0,0,.25);}
+.chip.on{border-color:var(--e1);background:var(--e1-bg);color:var(--e1);}
+.chip.used{opacity:.55;}
+.chip:disabled{cursor:not-allowed;opacity:.5;}
+.chip.sq .dot{border-radius:3px;}
+.slotline{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:15.5px;}
+.slotbox{
+  min-height:44px;min-width:150px;flex:1 1 150px;border:2px dashed var(--line);border-radius:10px;
+  background:#FBFCFE;padding:7px 11px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--sub);
+}
+.slotbox.filled{border-style:solid;border-color:var(--e1);background:var(--e1-bg);color:var(--ink);}
+.pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);
+      border-radius:999px;padding:3px 10px;font-size:14px;font-weight:700;}
+.pill .dot{width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(0,0,0,.25);}
+.pill.sq .dot{border-radius:2px;}
+
+/* ── 예상 고르기 ── */
+.predict{border:1px solid var(--line);border-radius:11px;background:#FCFDFE;padding:11px 13px;margin-top:12px;}
+.predict .pq{font-weight:700;font-size:16px;margin-bottom:8px;}
+.predict .prow{display:flex;flex-wrap:wrap;gap:9px;}
+.pbtn{font:inherit;font-size:15.5px;font-weight:700;min-height:44px;padding:9px 16px;
+      border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);cursor:pointer;}
+.pbtn.on{background:var(--blue);color:#fff;}
+.pbtn:disabled{opacity:.55;cursor:default;}
+
+/* ── 표 ── */
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;}
+table.t{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;}
+table.t th,table.t td{border:1px solid var(--line);padding:8px 9px;text-align:center;vertical-align:middle;}
+table.t th{background:var(--blue-bg);font-weight:700;}
+table.t th.e1{background:var(--e1-bg);color:var(--e1);}
+table.t th.e2{background:var(--e2-bg);color:var(--e2);}
+table.t th.e3{background:var(--e3-bg);color:var(--e3);}
+table.t td.lock{color:var(--old);background:#F7F8FA;}
+table.t td.wait{color:#9AA1AC;background:#FAFBFC;font-size:14px;}
+table.t tr.hl td{background:var(--yellow-bg);}
+table.t td b.dead{color:var(--red);}
+table.t td b.live{color:var(--green);}
+table.t td b.sform{color:var(--e1);}     /* S형균이 관찰됨 */
+table.t td b.nosign{color:#4A5260;}      /* 관찰되지 않음 */
+
+/* ── 선택형 ── */
+.choices{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
+.choice{
+  font:inherit;font-size:16px;text-align:left;min-height:44px;padding:11px 15px;
+  border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);font-weight:700;cursor:pointer;
+}
+.choice.picked{background:var(--blue);color:#fff;}
+.choice.right{background:var(--green);border-color:var(--green);color:#fff;}
+.choice.dim{border-color:var(--line);color:#9AA1AC;background:#FAFBFC;}
+.choice:disabled{cursor:default;}
+
+/* ── 문항 카드 ── */
+.pq-card{border:1px solid var(--line);border-radius:12px;background:#FCFDFE;padding:13px 14px 15px;margin-top:14px;}
+.pq-card .qtext{font-weight:700;font-size:16.5px;line-height:1.65;}
+.pq-card .qno{display:inline-block;background:var(--amber);color:#fff;border-radius:999px;
+              min-width:26px;padding:1px 9px;font-weight:700;font-size:14px;margin-right:7px;}
+.pq-card .qno.e1{background:var(--e1);} .pq-card .qno.e2{background:var(--e2);} .pq-card .qno.e3{background:var(--e3);}
+.pq-card .lv{display:inline-block;font-size:12.5px;font-weight:700;color:var(--sub);background:#F0F2F5;
+             border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:2px;}
+.pq-card .expl{margin-top:11px;background:var(--amber-bg);border-left:4px solid var(--amber);
+               border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.pq-card .expl b{color:var(--amber-ink);}
+.datbox{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:0 9px 9px 0;
+        padding:10px 13px;font-size:15.5px;line-height:1.8;margin-top:10px;}
+.datbox ul{margin:6px 0 0;padding-left:20px;}
+.datbox li{margin:2px 0;}
+
+/* ── 힌트 2단 — 답 대신 관찰 지점을 먼저 가리킨다. 기록하지 않는다. ── */
+.hintwrap{margin-top:10px;}
+.hintbtn{font:inherit;font-size:15px;min-height:44px;padding:9px 15px;margin-top:8px;
+         border:2px dashed var(--blue);border-radius:10px;background:#fff;color:var(--blue);
+         font-weight:700;cursor:pointer;}
+.hintbox{margin-top:8px;background:var(--blue-bg);border-left:4px solid var(--blue);
+         border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.hintbox b{color:var(--blue);}
+
+/* ── 남긴 질문 배너 (실험이 끝날 때마다 열린다 = 다음 실험의 질문) ── */
+.handoff{
+  margin-top:14px;border:2px solid var(--amber);border-radius:12px;background:var(--amber-bg);
+  padding:13px 15px;
+}
+.handoff .hl{font-size:13.5px;font-weight:700;color:var(--amber-ink);letter-spacing:.5px;}
+.handoff .ht{font-size:17.5px;font-weight:700;line-height:1.6;margin-top:4px;color:var(--ink);}
+.handoff .hn{font-size:14.5px;color:var(--sub);margin-top:7px;line-height:1.7;}
+.handoff.hide{display:none;}
+
+/* ── ⑤ 논리 사슬판 ── */
+.chain-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;}
+table.chain{border-collapse:separate;border-spacing:6px;width:100%;min-width:820px;}
+table.chain th{font-size:14px;font-weight:700;color:var(--sub);padding:4px 6px;text-align:center;background:none;}
+table.chain th.rowh{width:112px;}
+table.chain td{vertical-align:middle;padding:0;}
+.slot{
+  min-height:86px;border:2px dashed var(--line);border-radius:11px;background:#FBFCFE;
+  padding:9px 10px;font-size:14.5px;line-height:1.55;color:#9AA1AC;text-align:center;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;width:100%;font-family:inherit;
+}
+.slot.given{border-style:solid;border-color:var(--line);background:#F4F6F9;color:var(--sub);cursor:default;}
+.slot.filled{border-style:solid;color:var(--ink);background:#fff;font-weight:700;}
+.slot.filled.e1{border-color:var(--e1);background:var(--e1-bg);}
+.slot.filled.e2{border-color:var(--e2);background:var(--e2-bg);}
+.slot.filled.e3{border-color:var(--e3);background:var(--e3-bg);}
+.slot.target{border-color:var(--blue);background:var(--blue-bg);border-style:solid;color:var(--blue);}
+.slot.bad{border-color:var(--red);background:var(--red-bg);color:var(--red);}
+.slot.ok{border-color:var(--green);background:var(--green-bg);}
+.rowlab{font-size:14.5px;font-weight:700;text-align:center;line-height:1.4;padding:4px;}
+.rowlab.e1{color:var(--e1);} .rowlab.e2{color:var(--e2);} .rowlab.e3{color:var(--e3);}
+.rowlab small{display:block;font-weight:400;font-size:12.5px;color:var(--sub);}
+/* 이음매 표시 — 이어지기 전에도 「여기가 이어지는 자리」임은 보인다.
+   다만 「두 칸이 같은 문장이다」는 말해 주지 않는다 — 그것을 학생이 발견하는 것이 이 활동이다. */
+.linkmark{text-align:center;font-size:20px;color:var(--amber);line-height:1;padding:2px 0;}
+.linkmark small{display:block;font-size:12px;color:var(--amber-ink);font-weight:700;}
+.linkmark.off{color:#C0C6D0;}
+.linkmark.off small{color:#98A0AC;font-weight:400;}
+.cardpool{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px;}
+.ccard{
+  font:inherit;font-size:14.5px;line-height:1.5;text-align:left;min-height:52px;
+  flex:1 1 240px;max-width:340px;padding:10px 13px;border:2px solid var(--blue);border-radius:11px;
+  background:#fff;color:var(--ink);cursor:pointer;font-weight:600;
+}
+.ccard.sel{background:var(--blue);color:#fff;border-color:var(--blue);}
+.ccard.used{display:none;}
+.chain-note{font-size:14.5px;color:var(--sub);margin-top:10px;line-height:1.7;}
+
+/* ── 서술·모범답안 ── */
+textarea{
+  width:100%;font:inherit;font-size:16px;line-height:1.7;padding:11px 13px;
+  border:2px solid var(--line);border-radius:10px;resize:vertical;min-height:96px;background:#fff;color:var(--ink);
+}
+.cnt{font-size:13.5px;color:var(--sub);margin-top:4px;}
+.ansbox{display:none;margin-top:10px;background:var(--green-bg);border-left:4px solid var(--green);border-radius:0 9px 9px 0;padding:11px 14px;font-size:15.5px;line-height:1.75;}
+.ansbox b{color:var(--green);}
+.qwrap{border:1px solid var(--line);border-radius:12px;padding:13px 14px 15px;margin-top:14px;background:#FCFDFE;}
+.qwrap .qh{font-weight:700;font-size:16.5px;line-height:1.6;margin-bottom:4px;}
+.qwrap .qk{font-size:14px;color:var(--sub);margin-bottom:9px;line-height:1.65;}
+.selfcheck{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:#FAFBFC;padding:13px 15px;}
+.selfcheck h3{margin-top:0;}
+.selfcheck label{display:flex;align-items:flex-start;gap:9px;font-size:15.5px;line-height:1.7;margin:7px 0;cursor:pointer;}
+.selfcheck input{width:22px;height:22px;margin-top:3px;flex:0 0 auto;}
+footer{text-align:center;margin-top:22px;}
+
+/* ── 애니메이션 ──
+   ★모든 연출은 장식이다. 결과 상태는 애니메이션과 무관하게 즉시 확정된다.
+     (Node 헤드리스 검사에는 setTimeout 이 없다 — 가드 안에서만 돈다.)  */
+.ani-plunger{transition:transform .55s ease-in;}
+.ani-fade{transition:opacity .45s ease;}
+.ani-move{transition:transform .7s ease-in-out;}
+.ani-grow{transition:transform .5s ease-out, opacity .5s ease-out;}
+@keyframes shakeX{0%,100%{transform:translateX(0);}20%{transform:translateX(-5px);}40%{transform:translateX(5px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
+.shaking{animation:shakeX .32s linear infinite;}
+@keyframes spinC{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+/* ★.spinning 은 CSS transform 을 만든다 — transform 속성을 가진 <g> 에 직접 걸면 속성이 덮여
+   그림이 0,0 으로 튀어 무대 밖에서 돈다(2026-08-25 「원심분리가 안 보인다」의 원인이 이것이었다).
+   자리 잡는 <g> 를 밖에 두고 안쪽만 돌린다. transform-box:fill-box 라야 제 몸 가운데를 축으로 돈다
+   — 기본값(view-box)이면 무대 한가운데를 축으로 삼아 크게 휘돈다.
+   ★단계를 손으로 넘길 수 있으므로 횟수를 정하지 않고 infinite 로 둔다(머무는 동안 계속 돈다). */
+.spinning{animation:spinC .7s linear infinite;transform-box:fill-box;transform-origin:center;}
+@keyframes pulseHot{0%,100%{opacity:1;}50%{opacity:.35;}}
+.hot{animation:pulseHot .8s ease-in-out infinite;}
+@media (prefers-reduced-motion: reduce){
+  .ani-plunger,.ani-fade,.ani-move,.ani-grow{transition:none !important;}
+  .shaking,.spinning,.hot{animation:none !important;}
+}
+
+/* ── 미완성 잠금 화면 ── */
+html:not(.unlocked) body > .wrap{display:none;}
+html:not(.unlocked) #draftGate{display:flex;}
+#draftGate{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:var(--bg); align-items:center; justify-content:center; padding:20px;
+}
+#draftGate .box{
+  background:var(--paper); border:1px solid var(--line); border-radius:16px;
+  padding:26px 24px; max-width:420px; width:100%; text-align:center;
+}
+#draftGate h2{border-left:none; background:none; padding:0; margin:0 0 10px; color:var(--blue); font-size:20px;}
+#draftGate p{color:var(--sub); font-size:15.5px; margin:0 0 18px; line-height:1.7;}
+#draftGate input{
+  width:100%; font:inherit; font-size:22px; letter-spacing:6px; text-align:center;
+  min-height:52px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; margin-bottom:12px;
+}
+#draftGate .err{color:var(--red); font-size:15px; min-height:22px; margin-top:8px;}
+
+@media (max-width:640px){
+  body{font-size:16px;padding:10px 8px 50px;}
+  h1{font-size:21px;} h2{font-size:17px;}
+  .card{padding:14px 13px 16px;}
+  .ccard{flex:1 1 100%;max-width:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ★다른 탭이 더 새로운 것을 저장했을 때만 뜬다. 평소에는 숨어 있다. -->
+  <div class="msg bad hide" id="tabWarn"></div>
+
+  <!-- ══ 머리 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1>🔎 유전물질을 찾는 세 실험</h1>
+        <p class="sub">그리피스 · 에이버리 · 허시와 체이스의 실험을 직접 실행하고, 세 실험이 <b>이어지는 논리</b>를 사슬로 잇는다 (교과서 38~39쪽)</p>
+      </div>
+      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 4</span>
+    </div>
+    <div class="tagrow">
+      <span class="tag">과학사</span><span class="tag">변인 통제</span><span class="tag">자료 해석</span><span class="tag">12유전01-05</span>
+    </div>
+    <div class="rail" id="rail"></div>
+  </div>
+
+  <!-- ══ ① 1940년대의 문제 ══ -->
+  <div class="card">
+    <h2>① 1943년, 답을 모르던 자리에 서 보시오</h2>
+    <div class="msg info" style="margin-top:0;">
+      1940년대 초, 염색체가 <b>DNA</b>와 <b>단백질</b>로 이루어져 있다는 사실이 밝혀졌다. 유전물질은 둘 중 하나였다.
+      그런데 당시 과학자 대다수는 DNA가 아니라 <b>단백질</b> 쪽에 걸었다.
+      DNA는 겨우 네 종류의 뉴클레오타이드가 되풀이되는 단조로운 물질로 보였고,
+      단백질은 스무 종류의 아미노산으로 무엇이든 만들어 내는 물질로 보였다.
+      지금은 답을 알고 있지만, 답을 모르던 그때로 돌아가 보시오. <b>나라면 둘 중 무엇을 의심하겠는가?</b> 🔎
+    </div>
+
+    <div class="tbl-outer">
+      <table class="t">
+        <thead><tr><th style="width:130px;">후보</th><th>이루는 단위</th><th>당시의 인상</th></tr></thead>
+        <tbody>
+          <tr><td><b>DNA</b></td><td>4종류의 뉴클레오타이드(A · T · G · C)</td><td>단조롭다 — 정보를 담기에 모자라 보인다</td></tr>
+          <tr><td><b>단백질</b></td><td>20종류의 아미노산</td><td>다양하다 — 무엇이든 담을 수 있어 보인다</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="introQ"></div>
+
+    <p class="sub" style="margin-top:14px;">
+      아래 ②③④에서 <b>세 실험을 차례로 직접 실행</b>한다. 한 실험을 마칠 때마다 <b>그 실험이 답하지 못하고 남긴 질문</b>이 열리고,
+      그 질문이 곧 다음 실험의 질문이 된다. ⑤에서 그 사슬을 손으로 잇는다.
+    </p>
+  </div>
+
+  <!-- ══ ② 그리피스 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="e1" style="flex:1 1 300px;margin-bottom:0;">② 그리피스의 형질전환 실험<span class="yr e1">1928</span></h2>
+      <span class="tag" id="grProg">실행한 조건 0 / 4</span>
+    </div>
+    <div class="panes">
+      <!-- ── 왼쪽: 보고 판단할 자료. 오른쪽을 스크롤해도 사라지지 않는다 ── -->
+      <div class="pane-l">
+        <div id="grLegend" style="margin-top:10px;"></div>
+        <div class="stage-wrap" style="margin-top:10px;"><div id="grStage"></div></div>
+        <div id="grAni"></div>
+        <div class="tbl-outer">
+          <table class="t">
+            <thead><tr>
+              <th class="e1" style="width:70px;">조건</th><th class="e1">주입한 것</th>
+              <th class="e1" style="width:120px;">생쥐</th><th class="e1" style="width:180px;">혈액에서 발견된 균</th>
+            </tr></thead>
+            <tbody id="grTbody"></tbody>
+          </table>
+        </div>
+        <p class="sub" style="margin-top:8px;font-size:14px;">
+          ※혈액 칸에는 <b>살아 있는 채로 발견된 균</b>만 적는다. 열처리로 죽은 S형균은 살아 있는 균이 아니므로 적지 않는다.
+        </p>
+      </div>
+
+      <!-- ── 오른쪽: 조작하고 답하는 자리 ── -->
+      <div class="pane-r">
+       <div class="pr-do">
+        <p class="sub" style="margin-top:10px;">
+          폐렴균에는 피막이 있어 표면이 매끈하고 병원성이 있는 <b>S형균</b>과, 피막이 없어 표면이 거칠고 병원성이 없는 <b>R형균</b>이 있다.
+          주사기에 넣을 것을 골라 <b>네 가지 조건</b>을 만들고, 생쥐에 주입하여 결과를 관찰하시오.
+        </p>
+        <div class="taskbar">주사기에 넣을 것을 고르시오 — 두 가지까지 넣을 수 있다.</div>
+        <div class="chips" id="grChips"></div>
+        <div class="slotline">
+          <span style="flex:0 0 auto;font-weight:700;">주사기:</span>
+          <div class="slotbox" id="grSlot">아직 아무것도 넣지 않았다</div>
+          <button type="button" class="btn gray" style="min-height:44px;" onclick="grClear()">비우기</button>
+        </div>
+
+        <div class="predict" id="grPredict"></div>
+        <div class="msg warn hide" id="grFb"></div>
+
+        <div class="btnrow">
+          <button class="btn e1" id="grRunBtn" onclick="grInject()">💉 생쥐에 주입하기</button>
+        </div>
+       </div>
+
+       <div class="pr-q">
+        <div class="msg info" id="grQlock">🔒 네 조건을 모두 실행하면 결론 문항이 열린다.</div>
+        <div id="grQwrap" style="display:none;">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="grQ"></div>
+        </div>
+
+        <div class="handoff hide" id="hoGr"></div>
+       </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ③ 에이버리 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="e2" style="flex:1 1 300px;margin-bottom:0;">③ 에이버리의 효소 처리 실험<span class="yr e2">1944</span></h2>
+      <span class="tag" id="avProg">처리한 것 0 / 4</span>
+    </div>
+    <div class="msg info" id="avLock"></div>
+    <div id="avBody" style="display:none;">
+      <div class="panes">
+        <!-- ── 왼쪽: 보고 판단할 자료 ── -->
+        <div class="pane-l">
+          <div class="stage-wrap" style="margin-top:10px;"><div id="avStage"></div></div>
+          <div id="avAni"></div>
+          <div class="tbl-outer">
+            <table class="t">
+              <thead><tr>
+                <th class="e2" style="width:180px;">처리</th><th class="e2" style="width:100px;">없어진 물질</th>
+                <th class="e2">배양 결과</th><th class="e2" style="width:170px;">판정</th>
+              </tr></thead>
+              <tbody id="avTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── 오른쪽: 조작하고 답하는 자리 ── -->
+        <div class="pane-r">
+         <div class="pr-do">
+          <p class="sub" style="margin-top:10px;">
+            열처리로 죽은 S형균의 <b>세포 추출물</b>에는 DNA · 단백질 · RNA가 모두 들어 있다.
+            추출물을 여러 개로 나누어 효소를 <b>각각 따로</b> 처리한 뒤, 살아 있는 R형균과 함께 배양하시오.
+          </p>
+          <div class="taskbar">처리할 것을 하나씩 골라 네 조건을 모두 실행하시오.</div>
+          <div class="chips" id="avChips"></div>
+
+         </div>
+
+         <div class="pr-q">
+          <div class="msg info" id="avQlock">🔒 네 조건을 모두 실행하면 결론 문항이 열린다.</div>
+          <div id="avQwrap" style="display:none;">
+            <h3>결론 — 무엇을 알 수 있는가</h3>
+            <div id="avQ"></div>
+          </div>
+
+          <div class="handoff hide" id="hoAv"></div>
+         </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ④ 허시·체이스 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="e3" style="flex:1 1 300px;margin-bottom:0;">④ 허시와 체이스의 박테리오파지 실험<span class="yr e3">1952</span></h2>
+      <span class="tag" id="hcProg">실행한 표지 0 / 2</span>
+    </div>
+    <div class="msg info" id="hcLock"></div>
+    <div id="hcBody" style="display:none;">
+      <div class="panes">
+        <!-- ── 왼쪽: 보고 판단할 자료 ── -->
+        <div class="pane-l">
+          <div class="stage-wrap" style="margin-top:10px;"><div id="hcStage"></div></div>
+          <div id="hcAni"></div>
+          <div class="tbl-outer">
+            <table class="t">
+              <thead><tr>
+                <th class="e3" style="width:180px;">표지</th><th class="e3" style="width:110px;">표지된 것</th>
+                <th class="e3">상층액의 방사선</th><th class="e3">침전물의 방사선</th>
+              </tr></thead>
+              <tbody id="hcTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── 오른쪽: 조작하고 답하는 자리 ── -->
+        <div class="pane-r">
+         <div class="pr-do">
+          <p class="sub" style="margin-top:10px;">
+            박테리오파지는 세균에 기생하는 바이러스로, <b>DNA</b>와 이를 감싸는 <b>단백질 껍질</b>만으로 이루어진 단순한 구조이다.
+            파지에는 이 둘 말고 다른 물질이 없으므로, <b>황(S)은 단백질 껍질에만, 인(P)은 DNA에만</b> 들어 있다.
+          </p>
+          <div class="taskbar">표지할 것을 골라 실행하시오 — 감염 → 믹서 → 원심분리 → 방사선 측정이 차례로 진행된다.</div>
+          <div class="chips" id="hcChips"></div>
+
+
+          <div class="msg warn hide" id="hcOne"></div>
+         </div>
+
+         <div class="pr-q">
+          <div class="msg info" id="hcQlock">🔒 두 표지를 모두 실행하면 결론 문항이 열린다.</div>
+          <div id="hcQwrap" style="display:none;">
+            <h3>결론 — 무엇을 알 수 있는가</h3>
+            <div id="hcQ"></div>
+          </div>
+
+          <div class="handoff hide" id="hoHc"></div>
+         </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ⑤ 논리 사슬판 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">⑤ 세 실험 잇기</h2>
+      <span class="tag" id="chProg">놓은 칸 0 / 8</span>
+    </div>
+    <div class="msg info" id="chLock"></div>
+    <div id="chBody" style="display:none;">
+      <div class="panes">
+        <!-- ── 왼쪽: 사슬판. 덱을 훑는 동안 사라지지 않는다 ── -->
+        <div class="pane-l">
+          <div class="chain-outer" id="chBoard"></div>
+          <div class="chain-note" id="chWhy"></div>
+        </div>
+
+        <!-- ── 오른쪽: 안내·손패 → 덱·단추 ── -->
+        <div class="pane-r">
+         <div class="pr-do">
+          <p class="sub" id="chIntro" style="margin-top:10px;"></p>
+          <div class="msg info" id="chHand"></div>
+         </div>
+
+         <div class="pr-q">
+          <h3>카드 덱</h3>
+          <div class="cardpool" id="chDeck"></div>
+
+          <div class="btnrow">
+            <button class="btn" id="chCheckBtn" onclick="chCheck()">🔗 사슬 이어 보기</button>
+            <button class="btn ghost" id="chHardBtn" onclick="chToggleHard()">🔧 더 어렵게 (1행도 비운다)</button>
+            <button class="btn gray" onclick="chReset()">이 판 다시 놓기</button>
+          </div>
+          <div class="msg info hide" id="chMsg"></div>
+          <div class="handoff hide" id="chDone"></div>
+         </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ⑥ 연습 문항 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">⑥ 연습 문항</h2>
+      <span class="tag" id="pracProg">푼 문항 0 / 8</span>
+    </div>
+    <div class="msg info" id="pracLock"></div>
+    <div id="pracBody" style="display:none;">
+      <p class="sub" style="margin-top:10px;">
+        각 문항은 하나를 고르면 곧바로 해설이 열린다. <b>몇 번을 다시 골라도 된다</b> — 고른 답은 기록되지 않는다.
+        난이도가 표시되어 있으므로 어려운 문항은 건너뛰었다가 나중에 풀어도 된다.
+        ⑥과 ⑦은 수업 시간에 다 풀지 못하면 이어서 풀어도 된다 — 답안은 이 기기에 저장된다.
+      </p>
+      <div id="pracBox"></div>
+    </div>
+  </div>
+
+  <!-- ══ ⑦ 정리하기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="green" style="flex:1 1 300px;margin-bottom:0;">⑦ 정리하기</h2>
+      <span class="tag" id="writeProg">작성한 문항 0 / 6</span>
+    </div>
+    <p class="sub" style="margin-top:10px;">
+      ✏️ 작성한 답안은 이 기기에 저장되어 새로고침한 뒤에도 남는다. <b>자동 채점은 하지 않으므로</b>, 모범답안을 열어 스스로 대조하시오.
+    </p>
+    <div id="writeBox"></div>
+    <div class="selfcheck" id="selfBox"></div>
+  </div>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+  </footer>
+</div>
+
+<div id="draftGate">
+  <div class="box">
+    <h2>🔒 준비 중인 자료이다</h2>
+    <p>이 자료는 아직 완성되지 않았다.<br>담당 교사만 열 수 있다.</p>
+    <input id="draftPass" type="password" inputmode="numeric" autocomplete="off"
+           placeholder="관리자 비밀번호" aria-label="관리자 비밀번호"
+           onkeydown="if(event.key==='Enter') unlockDraft();">
+    <button class="btn" type="button" onclick="unlockDraft()">확인</button>
+    <div class="err" id="draftErr"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   내용 정본 — 이 파일 밖에서 실험 결과나 문항 문구를 손으로 적지 않는다.
+   무대·표·판정·해설이 전부 아래 자료에서만 파생된다.
+
+   출처
+   · 채택 교과서(이준규) 38~39쪽 — 표기 기준(폐렴균 · S형균/R형균 · 생쥐 · 형질전환)
+   · 비상교육 교사용 28~31쪽 「해 보기」 두 건 — 발문과 예시 답안
+   ★혈액 칸은 네 조건 모두 「어떤 균이 살아서 발견되었는가」를 적는다.
+     (나)에서 살아 있는 R형균이 발견된다고 적는 것은 2026-08-25 교사 지시이다.
+     채택 교과서·비상 교사용은 이 칸을 S형균 검출 여부로만 적으나, R형균은 피막이 없어
+     병원성이 없을 뿐 살아 있는 균이므로 혈액에서 관찰된다 — 교사 판단으로 넓혔다.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── ② 그리피스 ─────────────────────────────────────────── */
+var GR_ITEMS = [
+  { id:'liveS', name:'살아 있는 S형균',      color:'#C2185B' },
+  { id:'liveR', name:'살아 있는 R형균',      color:'#8A93A6' },
+  { id:'deadS', name:'열처리로 죽은 S형균',  color:'#C2185B', dead:true }
+];
+/* bloodS · bloodR = 혈액에서 「살아 있는」 그 균이 발견되었는가.
+   ★(다)가 「아무 균도 없다」이고 (라)에 S형균이 새로 생긴다는 대비가 이 두 칸에서 나온다. */
+var GR_CONDS = [
+  { id:'A', label:'(가)', mix:['liveS'],
+    inject:'살아 있는 S형균',                        result:'dead', bloodS:true,  bloodR:false, color:'#C2185B' },
+  { id:'B', label:'(나)', mix:['liveR'],
+    inject:'살아 있는 R형균',                        result:'live', bloodS:false, bloodR:true,  color:'#8A93A6' },
+  { id:'C', label:'(다)', mix:['deadS'],
+    inject:'열처리로 죽은 S형균',                    result:'live', bloodS:false, bloodR:false, color:'#E3A9BF' },
+  { id:'D', label:'(라)', mix:['deadS','liveR'],
+    inject:'열처리로 죽은 S형균 + 살아 있는 R형균',  result:'dead', bloodS:true,  bloodR:true,  color:'#C2185B' }
+];
+/* 결과표의 혈액 칸이 여기서만 나온다 — 문장을 손으로 두 번 적지 않는다 */
+function grBloodText(c){
+  if (c.bloodS && c.bloodR) return '살아 있는 S형균<br>+ 살아 있는 R형균';
+  if (c.bloodS) return '살아 있는 S형균';
+  if (c.bloodR) return '살아 있는 R형균';
+  return '살아 있는 균이<br>발견되지 않았다';
+}
+
+/* ── ③ 에이버리 ─────────────────────────────────────────── */
+/* cuts = 이 효소가 잘라 없애는 물질(무대 그림이 쓴다) · result 'S' = S형균이 관찰됨 */
+var AV_TREATS = [
+  { id:'none', name:'효소를 처리하지 않음',   short:'효소를 처리하지 않았다 (대조군)',
+    removed:'없음',   cuts:null,   result:'S',    color:'#8A93A6' },
+  { id:'prot', name:'단백질분해효소 처리',     short:'단백질분해효소를 처리하였다',
+    removed:'단백질', cuts:'prot', result:'S',    color:'#E67E22' },
+  { id:'rna',  name:'RNA 분해효소 처리',       short:'RNA 분해효소를 처리하였다',
+    removed:'RNA',    cuts:'rna',  result:'S',    color:'#2A7A38' },
+  { id:'dna',  name:'DNA 분해효소 처리',       short:'DNA 분해효소를 처리하였다',
+    removed:'DNA',    cuts:'dna',  result:'none', color:'#1255A0' }
+];
+
+/* ── ④ 허시·체이스 ──────────────────────────────────────── */
+/* result 'sup' = 상층액에서 검출 · 'pel' = 침전물에서 검출 */
+var HC_TAGS = [
+  { id:'s35', name:'<sup>35</sup>S로 <b>단백질</b>을 표지', marked:'단백질 껍질', result:'sup',
+    color:'#E67E22',
+    readout:'상층액에서만 방사선이 검출되었다 — 표지한 단백질 껍질은 대장균 밖에 남았다.' },
+  { id:'p32', name:'<sup>32</sup>P로 <b>DNA</b>를 표지',    marked:'DNA',         result:'pel',
+    color:'#1255A0',
+    readout:'침전물에서만 방사선이 검출되었다 — 표지한 DNA는 대장균 안으로 들어갔다.' }
+];
+
+/* ── 실험이 남긴 질문 = 다음 실험의 질문 ────────────────── */
+var HANDOFF = [
+  { id:'hoGr', after:'gr', lead:'② 그리피스의 실험이 남긴 질문',
+    q:'형질전환을 일으킨 물질의 정체는 무엇인가? DNA인가 단백질인가?',
+    note:'그리피스가 본 것은 <b>무엇인가 옮겨 갔다</b>는 사실뿐이다. 그 물질을 손에 쥐고 확인한 것이 아니므로, ' +
+         '물질의 종류는 이 실험만으로 가려낼 수 없다. 이 질문에 답한 것이 <b>③ 에이버리의 실험</b>이다.' },
+  { id:'hoAv', after:'av', lead:'③ 에이버리의 실험이 남긴 질문',
+    q:'DNA와 단백질을 섞이지 않게 갈라놓아도 같은 결론이 나오는가?',
+    note:'세포 추출물에는 단백질이 <b>조금 남아 있을 수 있다</b>. 당시 학자들은 그 미량의 단백질이 진짜 원인일지 모른다고 의심하였고, ' +
+         '오래된 단백질 우세론도 남아 있었다. 이 질문에 답한 것이 <b>④ 허시와 체이스의 실험</b>이다.' },
+  { id:'hoHc', after:'hc', lead:'④ 허시와 체이스의 실험이 남긴 질문',
+    q:'DNA는 어떤 구조이길래 그 안에 유전정보를 담는가?',
+    note:'유전물질이 DNA라는 것은 밝혀졌다. 그러나 <b>네 종류의 염기로 어떻게 그 많은 정보를 담는지</b>는 아직 아무도 몰랐다. ' +
+         '1953년, 이 물음에 답한 사람들이 나타난다. ▶ 다음 차시: DNA의 구조' }
+];
+
+/* ══════════════════ 선택형 문항 ══════════════════
+   q 발문 · ch 선택지 · a 정답 번호(0부터) · no 선택지별 오답 판정 · ex 해설 · hint 2단 · lv 난이도  */
+
+/* ① 도입 */
+var Q_INTRO = [{
+  id:'in1', lv:'',
+  q:'당시 과학자들이 단백질을 유전물질로 더 유력하게 본 까닭으로 가장 적절한 것은?',
+  ch:[
+    '당시에는 세포에서 DNA가 아직 발견되지 않았기 때문이다.',
+    'DNA는 4종류의 염기로 이루어져 단조로운 반면, 단백질은 20종류의 아미노산으로 훨씬 다양한 정보를 담을 수 있다고 보았기 때문이다.',
+    '그리피스의 실험에서 열처리한 S형균의 단백질만 파괴되지 않고 남아 있음이 확인되었기 때문이다.',
+    '에이버리의 실험에서 단백질분해효소를 처리한 경우에만 형질전환이 일어나지 않았기 때문이다.'
+  ],
+  a:1,
+  no:[
+    '옳지 않다. DNA는 이미 19세기에 세포에서 분리되어 알려져 있었다.',
+    '', /* 정답 자리 */
+    '옳지 않다. 그리피스의 실험에는 열처리 뒤 무엇이 남았는지 확인하는 조작이 없다.',
+    '옳지 않다. 에이버리의 실험은 1944년의 일이므로 그 이전의 판단 근거가 될 수 없고, 결과도 반대이다.'
+  ],
+  ex:'유전물질은 한 개체의 수많은 형질을 담을 만큼 정보량이 커야 한다. 당시에는 정보의 다양성이 ' +
+     '<b>구성 단위의 종류 수</b>에서 나온다고 보았으므로, 4종류인 DNA보다 20종류인 단백질이 유전물질에 어울린다고 판단하였다. ' +
+     '단백질의 구조와 기능에 관한 연구가 DNA보다 먼저 쌓여 있었던 것도 이 판단을 굳혔다.<br>' +
+     '※이 추론은 뒤에 반박된다. 정보량은 단위의 종류 수가 아니라 <b>배열의 순서와 길이</b>로도 얼마든지 커질 수 있기 때문이다. ' +
+     '그리고 이 오래된 예상 때문에, 뒤에 나올 에이버리의 결과는 곧바로 받아들여지지 못한다.',
+  hint:['DNA와 단백질을 이루는 <b>단위 물질의 가짓수</b>를 떠올리시오.',
+        '「4종류의 뉴클레오타이드」와 「20종류의 아미노산」을 비교하시오. 당시 사람들 눈에 어느 쪽이 더 많은 정보를 담을 수 있어 보였겠는가?']
+}];
+
+/* ② 그리피스 결론 — 비상교육 「해 보기」 발문 세 건 */
+var Q_GR = [
+  { id:'gr1', lv:'',
+    q:'<b>(가)</b>와 <b>(나)</b>를 비교하여 알 수 있는 것은?',
+    ch:['열처리를 하면 S형균의 병원성이 사라진다.',
+        'S형균은 생쥐를 죽이는 병원성이 있고, R형균은 병원성이 없다.',
+        'S형균에는 R형균을 S형균으로 바꾸는 물질이 들어 있다.',
+        '폐렴균의 유전물질은 DNA이다.'],
+    a:1,
+    no:['옳지 않다. 열처리의 효과는 (가)와 <b>(다)</b>를 비교해야 나온다. (가)와 (나)에는 열처리한 조건이 없다.',
+        '',
+        '옳지 않다. 형질전환을 말하려면 죽은 S형균과 살아 있는 R형균이 함께 들어간 조건이 있어야 한다.',
+        '옳지 않다. 이 실험에는 물질의 종류를 가려내는 조작이 전혀 없다.'],
+    ex:'(가)와 (나)는 <b>주입한 균의 종류만 다르고 나머지 조건은 같다.</b> 살아 있는 S형균을 넣은 생쥐는 죽고 ' +
+       '살아 있는 R형균을 넣은 생쥐는 살았으므로, 두 조건의 차이인 균의 종류가 생쥐의 죽음을 갈랐다고 판단한다. ' +
+       '이 문항은 이후 모든 비교의 <b>기준선</b>을 세운다.',
+    hint:['(가)와 (나)의 「주입한 것」 칸과 「생쥐」 칸만 보시오.',
+          '두 조건에서 <b>다른 것은 균의 종류 하나뿐</b>이다. 살아 있는 S형균과 살아 있는 R형균의 결과를 맞대어 보시오.'] },
+
+  { id:'gr2', lv:'',
+    q:'<b>(가)</b>에서는 생쥐가 죽었으나 <b>(다)</b>에서는 생쥐가 죽지 않았다. 그 까닭으로 가장 타당한 것은?',
+    ch:['열처리로 S형균의 형질전환 물질까지 남김없이 파괴되었기 때문이다.',
+        '열처리를 받은 S형균이 R형균으로 바뀌었기 때문이다.',
+        '열처리로 죽은 S형균은 생쥐 몸속에서 증식하지 못하기 때문이다.',
+        '생쥐가 죽은 S형균에 대한 면역을 얻어 병에 걸리지 않았기 때문이다.'],
+    a:2,
+    no:['옳지 않다. <b>(라)가 반례이다.</b> 열처리로 죽은 S형균을 넣은 (라)에서 형질전환이 일어났으므로, 그 물질은 열처리 뒤에도 남아 있다.',
+        '옳지 않다. 열처리는 균을 죽이는 조작이지 균의 종류를 바꾸는 조작이 아니다.',
+        '',
+        '옳지 않다. 이 실험에는 면역이 생겼는지 확인하는 조작이 없다. 결과 표에서 읽어낼 수 없는 원인을 끌어온 설명이다.'],
+    ex:'(가)와 (다)는 <b>S형균이 살아 있는가 죽어 있는가만 다르다.</b> 결과가 갈렸으므로 생쥐를 죽인 조건은 ' +
+       '「S형균이 살아서 증식하는 것」이다. 다만 여기서 「죽은 S형균은 아무 일도 못 한다」로 굳히면 (라)를 설명할 수 없다. ' +
+       '<b>죽은 S형균은 스스로 증식하지 못하지만, 그 안의 어떤 물질은 열처리 뒤에도 살아남는다</b> — 이것이 (라)로 넘어가는 다리이다.',
+    hint:['(가)와 (다)의 주입물 차이 한 가지를 찾으시오.',
+          '「살아 있는 S형균」과 「열처리로 죽은 S형균」을 비교하시오. 그리고 자신의 답을 <b>(라)에 넣어 보아 모순이 생기지 않는지</b> 확인하시오.'] },
+
+  { id:'gr3', lv:'',
+    q:'<b>(라)</b>의 죽은 생쥐의 혈액에서 살아 있는 S형균이 발견된 까닭으로 가장 타당한 것은?',
+    ch:['열처리로 죽은 S형균이 생쥐 몸속에서 되살아났기 때문이다.',
+        '살아 있는 R형균이 죽은 S형균을 잡아먹고 병원성을 얻었기 때문이다.',
+        '죽은 S형균에 남아 있던 어떤 물질이 살아 있는 R형균에 들어가 S형균으로 바꾸었기 때문이다.',
+        '주입한 죽은 S형균이 그대로 검출된 것일 뿐 살아 있는 균은 아니기 때문이다.'],
+    a:2,
+    no:['옳지 않다. (다)에서 죽은 S형균만 주입한 생쥐는 죽지 않았고 살아 있는 S형균도 발견되지 않았다. 죽은 균은 스스로 되살아나지 못한다.',
+        '옳지 않다. 「잡아먹었다」는 이 실험에서 관찰되지 않은 과정이다. 관찰된 것은 R형균이 S형균의 <b>형질</b>을 나타내게 되었다는 사실이다.',
+        '',
+        '옳지 않다. (라)에서 발견된 것은 <b>살아 있는</b> S형균이며, 이 균은 배양하면 계속 증식한다.'],
+    ex:'(다)와 (라)는 <b>살아 있는 R형균이 있는가 없는가만 다르다.</b> (다)에서는 살아 있는 S형균이 전혀 나오지 않았고, ' +
+       '(라)에서 살아 있는 R형균을 더하자 살아 있는 S형균이 나왔다. 따라서 (라)의 S형균은 죽은 S형균이 되살아난 것일 수 없고, ' +
+       '<b>R형균이 S형균으로 바뀐 것</b>이다. 이러한 현상을 <b>형질전환</b>이라고 한다.<br>' +
+       '※(라)에서 얻은 S형균을 다시 배양해도 계속 S형균으로 증식한다. <b>바뀐 형질이 자손에게 그대로 이어진다</b>는 점이, ' +
+       '옮겨 간 것이 겉모습이 아니라 <b>유전되는 무엇</b>임을 말해 준다.<br>' +
+       '※다만 R형균이 모두 바뀌는 것은 아니다. 대부분은 R형균으로 남고 <b>극히 일부만</b> 형질전환된다.',
+    hint:['「살아 있는 S형균이 발견되었는가」 칸에서 <b>결과가 갈린 두 줄</b>을 먼저 찾으시오.',
+          '그 두 줄에서 주입물의 차이가 <b>살아 있는 R형균 하나뿐</b>인 짝을 고르시오. 「죽은 S형균이 되살아났다」를 무너뜨리는 조건은 죽은 S형균만 넣은 조건이다.'] }
+];
+
+/* ③ 에이버리 결론 */
+var Q_AV = [
+  { id:'av1', lv:'',
+    q:'DNA 분해효소를 처리한 경우에만 S형균이 관찰되지 않았다. 이 결과에서 끌어낼 수 있는 결론은?',
+    ch:['형질전환을 일으킨 물질은 DNA이다.',
+        'DNA 분해효소가 살아 있는 R형균을 죽였다.',
+        'S형균의 병원성은 단백질에 의해 결정된다.',
+        'DNA 분해효소를 처리한 조건 하나만으로도 형질전환 물질을 확정할 수 있다.'],
+    a:0,
+    no:['',
+        '옳지 않다. R형균이 죽었다면 어느 조건에서도 집락이 자라지 않아야 한다. 그러나 그 조건에서도 R형 집락은 자랐고 S형균만 나타나지 않았다.',
+        '옳지 않다. 이 실험은 병원성이 무엇에 의해 결정되는지를 묻지 않았다. 단백질분해효소를 처리한 조건에서도 S형균이 나타났으므로, 여기서 말할 수 있는 것은 <b>단백질을 없애도 형질전환은 일어난다</b>는 사실뿐이다.',
+        '옳지 않다. 한 조건만으로는 「추출물이 처리 과정에서 망가진 것」과 「DNA가 없어진 것」을 가릴 수 없다.'],
+    ex:'<b>DNA를 없앴을 때만 형질전환이 사라지고, 단백질이나 RNA를 없앴을 때는 형질전환이 그대로 일어났다.</b> ' +
+       '결과가 갈린 지점이 DNA 하나이므로, 형질전환을 일으킨 물질은 DNA라고 판단한다. ' +
+       '그리피스가 「어떤 물질이 있다」까지 왔다면, 에이버리는 그 물질에 <b>이름을 붙였다</b>.',
+    hint:['네 조건에서 <b>S형균이 나타난 조건과 나타나지 않은 조건</b>을 나누어 적으시오.',
+          '「DNA를 없앤 조건」과 「단백질·RNA를 없앤 조건」을 비교하시오. 결과가 갈린 지점에 있는 물질이 원인이다.'] },
+
+  { id:'av2', lv:'',
+    q:'에이버리는 세 효소를 한꺼번에 처리하지 않고 <b>각각 따로</b> 처리하였다. 그 까닭으로 가장 타당한 것은?',
+    ch:['세 효소를 섞으면 효소끼리 서로를 분해하여 효과가 사라지기 때문이다.',
+        '한 번에 한 물질만 없애야 어느 물질이 없어졌을 때 형질전환이 사라지는지 가려낼 수 있기 때문이다.',
+        '세 효소를 함께 처리하면 살아 있는 R형균까지 분해되어 죽기 때문이다.',
+        '효소를 따로 처리하면 처리 시간이 짧아져 실험을 빨리 끝낼 수 있기 때문이다.'],
+    a:1,
+    no:['옳지 않다. 효소끼리의 반응은 이 설계의 이유가 아니다. 결과를 해석할 수 없게 되는 문제가 먼저다.',
+        '',
+        '옳지 않다. 효소는 추출물에 처리한 뒤 살아 있는 R형균과 배양한다. R형균의 생사는 이 실험의 논점이 아니다.',
+        '옳지 않다. 시간을 줄이는 것은 실험 설계의 목적이 아니다. 조건 수가 늘어 오히려 손이 더 간다.'],
+    ex:'비교 실험의 원칙은 <b>한 번에 한 가지만 다르게 하는 것</b>이다. 세 효소를 한꺼번에 처리하면 ' +
+       '단백질·RNA·DNA가 모두 사라지므로, S형균이 나타나지 않아도 <b>셋 중 어느 것 때문인지 가려낼 수 없다.</b> ' +
+       '하나씩 없앤 조건을 만들어야 「DNA를 없앴을 때만 형질전환이 사라진다」는 결과를 얻는다.',
+    hint:['각 조건에서 <b>없어진 물질이 몇 가지인지</b> 세어 보시오.',
+          '「셋을 한꺼번에 없앤 조건」과 「하나만 없앤 조건」을 비교하시오. 어느 쪽이 원인을 한 가지로 지목할 수 있는가?'] }
+];
+
+/* ④ 허시·체이스 결론 */
+var Q_HC = [
+  { id:'hc1', lv:'',
+    q:'박테리오파지를 대장균에 감염시킬 때 대장균 안으로 들어간 물질은 무엇인가?',
+    ch:['단백질 껍질이다. <sup>35</sup>S가 침전물에서 검출되었기 때문이다.',
+        'DNA이다. <sup>32</sup>P가 대장균이 있는 침전물에서 검출되었기 때문이다.',
+        '단백질과 DNA가 모두 들어갔다. 두 표지가 모두 검출되었기 때문이다.',
+        '어느 쪽도 들어가지 않았다. 두 표지가 모두 상층액에서 검출되었기 때문이다.'],
+    a:1,
+    no:['옳지 않다. <sup>35</sup>S는 <b>상층액</b>에서만 검출되었다. 상층액에 있는 것은 대장균 밖에 남은 단백질 껍질이다.',
+        '',
+        '옳지 않다. 두 표지는 서로 다른 자리에서 검출되었다. <sup>35</sup>S는 상층액, <sup>32</sup>P는 침전물이다.',
+        '옳지 않다. <sup>32</sup>P는 침전물에서 검출되었다.'],
+    ex:'원심분리하면 크고 무거운 대장균은 가라앉아 <b>침전물</b>이 되고, 가볍고 작은 파지의 단백질 껍질은 <b>상층액</b>에 남는다. ' +
+       '<sup>32</sup>P로 표지한 DNA는 침전물에서, <sup>35</sup>S로 표지한 단백질은 상층액에서 검출되었으므로, ' +
+       '대장균 안으로 들어가 다음 세대의 파지를 만든 물질은 <b>DNA</b>이다.<br>' +
+       '※새로 만들어진 <b>자손 파지</b>에서도 <sup>32</sup>P가 검출되었다. 안으로 들어간 DNA가 다음 세대로 이어졌다는 뜻이며, ' +
+       '「들어갔다」에서 「유전된다」로 넘어가는 자리가 바로 여기다.<br>' +
+       '※실제 실험에서는 상층액에서도 <sup>32</sup>P가 약간 검출되었으나 대부분이 침전물에서 검출되었으므로 결론은 달라지지 않는다.',
+    hint:['원심분리한 뒤 <b>대장균이 어느 쪽에 있는지</b> 먼저 확인하시오.',
+          '두 표지가 각각 검출된 자리를 적고, 그 자리에 무엇이 들어 있는지 맞대어 보시오.'] },
+
+  { id:'hc2', lv:'',
+    q:'표지에 <sup>35</sup>S와 <sup>32</sup>P를 고른 까닭으로 가장 타당한 것은?',
+    ch:['두 원소가 모두 DNA와 단백질에 들어 있어 파지 전체를 표지할 수 있기 때문이다.',
+        '황(S)은 단백질에는 있으나 DNA에는 없고, 인(P)은 DNA에는 있으나 단백질에는 없기 때문이다.',
+        '두 원소의 방사선이 대장균을 죽여 감염 과정을 멈출 수 있기 때문이다.',
+        '두 원소가 파지의 단백질 껍질을 단단하게 만들어 원심분리에 견디게 하기 때문이다.'],
+    a:1,
+    no:['옳지 않다. 두 원소가 양쪽에 다 들어 있다면 어느 쪽이 대장균 안으로 들어갔는지 구별할 수 없다. <b>구별되지 않는 표지는 표지가 아니다.</b>',
+        '',
+        '옳지 않다. 이 실험은 파지가 대장균을 감염시키는 과정을 그대로 두고 관찰한다. 대장균을 죽이는 것은 목적이 아니다.',
+        '옳지 않다. 방사성 동위원소는 물질의 성질을 바꾸는 것이 아니라 위치를 추적하는 표지로 쓰인다.'],
+    ex:'단백질에는 황이 들어 있는 아미노산이 있으나 DNA에는 황이 없고, DNA에는 인산의 인이 들어 있으나 단백질에는 인이 없다. ' +
+       '그래서 <b><sup>35</sup>S는 단백질 껍질만, <sup>32</sup>P는 DNA만</b> 표지한다. 표지가 갈리므로 방사선이 검출된 자리를 보고 ' +
+       '무엇이 대장균 안으로 들어갔는지 가려낼 수 있다. <b>표지 물질을 고르는 일 자체가 이 실험의 핵심 설계이다.</b><br>' +
+       '※이 깔끔한 갈림은 <b>박테리오파지이기 때문에</b> 성립한다. 파지는 DNA와 단백질 껍질뿐이어서 인이 들어갈 다른 자리가 없다. ' +
+       '세균이라면 인이 세포막의 인지질과 RNA에도 들어 있어 표지가 한 물질만을 가리키지 못한다.',
+    hint:['DNA와 단백질을 이루는 원소를 각각 적어 보시오.',
+          '「DNA에는 있고 단백질에는 없는 원소」와 「단백질에는 있고 DNA에는 없는 원소」를 비교하시오.'] }
+];
+
+/* ⑥ 연습 문항 — 실험 하나가 아니라 실험 사이를 묻는 것만 남겼다 */
+var PRACTICE = [
+  { id:'p1', lv:'어려움',
+    q:'(라)에서 발견된 살아 있는 S형균이 <b>죽은 S형균이 되살아난 것이 아니라 R형균이 형질전환된 것</b>임을 보이려면, 어느 두 조건을 비교해야 하는가?',
+    dat:['(가) 살아 있는 S형균 → 생쥐가 죽는다 · 살아 있는 S형균 발견됨',
+         '(나) 살아 있는 R형균 → 생쥐가 죽지 않는다 · 살아 있는 S형균 발견되지 않음',
+         '(다) 열처리로 죽은 S형균 → 생쥐가 죽지 않는다 · 살아 있는 S형균 발견되지 않음',
+         '(라) 열처리로 죽은 S형균 + 살아 있는 R형균 → 생쥐가 죽는다 · 살아 있는 S형균 발견됨'],
+    ch:['(가)와 (나)', '(가)와 (다)', '(다)와 (라)', '(나)와 (다)'],
+    a:2,
+    no:['옳지 않다. (가)와 (나)는 살아 있는 두 균의 병원성 차이만 보여 준다. 죽은 S형균이 들어간 조건이 없다.',
+        '옳지 않다. (가)와 (다)는 열처리의 효과만 보여 준다. 살아 있는 R형균이 들어간 조건이 없어 형질전환을 따질 수 없다.',
+        '',
+        '옳지 않다. (나)와 (다)는 결과가 서로 같다. 결과가 같은 두 조건을 맞대면 원인을 가려낼 수 없다.'],
+    ex:'(다)와 (라)는 <b>살아 있는 R형균이 있는가 없는가만 다르다.</b> 비교 문항의 요령은 하나다 — ' +
+       '<b>결과가 갈린 두 조건을 고르되, 조건의 차이가 하나뿐인 짝을 고르는 것이다.</b>',
+    hint:['「살아 있는 S형균이 발견되었는가」 칸에서 <b>결과가 갈린 두 줄</b>을 먼저 찾으시오.',
+          '그 두 줄 가운데 주입물의 차이가 <b>하나뿐</b>인 짝을 고르시오.'] },
+
+  { id:'p2', lv:'보통',
+    q:'그리피스 실험 (가)~(라)의 결과<b>만으로는</b> 알 수 없는 것은?',
+    ch:['살아 있는 S형균은 생쥐에게 병을 일으킨다.',
+        '죽은 S형균만 주입하면 생쥐는 죽지 않는다.',
+        '죽은 S형균 속에는 R형균을 S형균으로 바꾸는 물질이 있다.',
+        'R형균을 S형균으로 바꾼 물질은 DNA이다.'],
+    a:3,
+    no:['옳지 않다. 이것은 (가)의 결과에서 바로 읽히는 내용이다.',
+        '옳지 않다. 이것은 (다)의 결과에서 바로 읽히는 내용이다.',
+        '옳지 않다. 이것은 (다)와 (라)의 비교에서 확인되는 내용이다.',
+        ''],
+    ex:'그리피스 실험은 <b>형질전환이라는 현상이 일어난다는 사실</b>까지만 보여 준다. ' +
+       '이 실험에는 추출물에서 특정 물질만 없애 보는 조작이 없으므로, 형질전환을 일으킨 물질이 DNA인지 단백질인지 RNA인지 가려낼 수 없다. ' +
+       '<b>「어떤 물질이 있다」와 「그 물질이 무엇이다」는 다른 주장이다.</b> 이 남은 질문에 답한 실험이 에이버리의 실험이다.',
+    hint:['각 선택지를 표의 어느 줄에서 확인할 수 있는지 하나씩 짚어 보시오.',
+          '「실험에서 실제로 조작한 것」과 「선택지가 주장하는 것」을 맞대어 보시오. 물질의 종류를 가려내려면 물질을 하나씩 없애 보는 조작이 있어야 한다.'] },
+
+  { id:'p3', lv:'어려움',
+    q:'에이버리의 실험에서 <b>효소를 처리하지 않은 추출물</b>을 살아 있는 R형균과 배양한 조건(대조군)을 두지 않았다고 하자. 이때 말할 수 <b>없게</b> 되는 것은?',
+    ch:['DNA 분해효소를 처리한 조건에서 S형균이 나타나지 않은 까닭이 DNA가 분해되었기 때문이라는 것',
+        '단백질분해효소를 처리한 조건에서 S형균이 나타났다는 것',
+        'DNA 분해효소를 처리한 조건에서 S형 집락이 관찰되지 않았다는 것',
+        '배양 후에도 R형균이 R형 집락을 만든다는 것'],
+    a:0,
+    no:['',
+        '옳지 않다. 대조군이 없어도 말할 수 있다. S형균이 나타났다는 것은 그 조건에서 형질전환이 실제로 일어났다는 뜻이다.',
+        '옳지 않다. 대조군이 없어도 말할 수 있다. 이것은 관찰한 사실의 진술일 뿐 해석이 아니다.',
+        '옳지 않다. 대조군이 없어도 말할 수 있다. 배지에 자란 집락을 보면 확인된다.'],
+    ex:'대조군은 <b>「아무것도 나타나지 않았다」는 음성 결과를 해석할 때</b> 필요하다. 처리하지 않은 추출물이 형질전환을 일으킨다는 사실을 ' +
+       '먼저 보여 두어야, DNA 분해효소 조건에서 S형균이 나오지 않은 것을 <b>DNA가 없어진 탓</b>으로 돌릴 수 있다. ' +
+       '대조군이 없으면 「추출물이 애초에 형질전환을 일으킬 수 없는 상태였다」는 설명을 배제하지 못한다. ' +
+       '<b>음성 결과는 대조군을 요구하고, 양성 결과는 스스로 선다.</b>',
+    hint:['각 선택지가 <b>관찰한 사실</b>인지 <b>원인을 지목한 해석</b>인지 먼저 나누시오.',
+          '「효소를 처리하지 않은 추출물의 결과」를 모르면, DNA 분해효소 조건의 결과가 무엇 때문인지 지목할 수 있는가?'] },
+
+  { id:'p4', lv:'쉬움',
+    q:'허시·체이스 실험에서 ㉠<b>믹서로 세게 흔드는 조작</b>과 ㉡<b>원심분리하는 조작</b>의 목적을 옳게 짝지은 것은?',
+    ch:['㉠ 대장균 표면에 붙어 있는 파지의 껍질을 떼어낸다 — ㉡ 무거운 대장균은 침전물로, 가벼운 파지 껍질은 상층액으로 나눈다.',
+        '㉠ 파지의 단백질 껍질을 잘게 부순다 — ㉡ 방사성 동위원소를 한곳에 모아 농도를 높인다.',
+        '㉠ 대장균의 세포막을 터뜨려 내용물을 꺼낸다 — ㉡ DNA와 단백질을 서로 분리한다.',
+        '㉠ 파지와 대장균이 골고루 섞여 감염이 잘 일어나게 한다 — ㉡ 살아 있는 대장균과 죽은 대장균을 나눈다.'],
+    a:0,
+    no:['',
+        '옳지 않다. 껍질을 부수면 어느 쪽이 안으로 들어갔는지 알 수 없게 된다. 원심분리는 농축하는 조작이 아니라 무게로 나누는 조작이다.',
+        '옳지 않다. 대장균이 터지면 안으로 들어간 물질이 밖으로 새어 나와 결과를 해석할 수 없다.',
+        '옳지 않다. 믹서는 감염을 돕는 조작이 아니라 감염이 끝난 뒤 <b>붙어 있는 껍질을 떼어내는</b> 조작이다.'],
+    ex:'감염이 끝나면 파지의 단백질 껍질은 대장균 표면에 붙은 채로 남는다. 이 상태로는 「껍질이 밖에 있다」를 보일 수 없으므로 ' +
+       '<b>믹서로 흔들어 껍질을 떼어낸다.</b> 그다음 <b>원심분리하면 크고 무거운 대장균은 가라앉아 침전물이 되고, ' +
+       '가볍고 작은 파지 껍질은 상층액에 남는다.</b> 두 조작을 거쳐야 「안에 있던 것」과 「밖에 있던 것」이 갈라지고, 그제야 방사선을 측정할 자리가 생긴다.',
+    hint:['감염 직후 파지의 단백질 껍질이 <b>어디에 있는지</b> ④의 그림에서 확인하시오.',
+          '「대장균의 크기·무게」와 「파지 껍질의 크기·무게」를 비교하시오. 원심분리 뒤 어느 쪽이 아래로 가는가?'] },
+
+  { id:'p5', lv:'보통',
+    q:'허시와 체이스가 박테리오파지를 실험 재료로 쓴 것이 유리했던 까닭으로 가장 타당한 것은?',
+    ch:['박테리오파지는 스스로 증식할 수 있어 대장균 없이도 실험할 수 있기 때문이다.',
+        '박테리오파지는 DNA만으로 이루어져 있어 표지할 물질이 하나뿐이기 때문이다.',
+        '박테리오파지는 DNA와 단백질 껍질 두 가지로만 이루어져 있어 두 후보를 각각 표지할 수 있고, 감염한 뒤 안과 밖을 갈라 측정할 수 있기 때문이다.',
+        '박테리오파지는 크고 무거워 원심분리하면 침전물로 쉽게 가라앉기 때문이다.'],
+    a:2,
+    no:['옳지 않다. 박테리오파지는 숙주인 대장균 안에서만 증식한다.',
+        '옳지 않다. 박테리오파지는 DNA와 그것을 둘러싼 단백질 껍질로 이루어져 있다. 두 후보 물질이 모두 있기 때문에 오히려 비교가 가능하다.',
+        '',
+        '옳지 않다. 박테리오파지는 대장균보다 훨씬 작고 가벼워 원심분리 뒤 <b>상층액</b>에 남는다.'],
+    ex:'유전물질의 후보는 DNA와 단백질 둘이었다. 박테리오파지는 <b>바로 그 두 물질로만 이루어진 단순한 구조</b>여서 ' +
+       '한쪽씩 표지하면 후보를 정확히 갈라 볼 수 있다. 게다가 감염한 뒤 믹서와 원심분리로 ' +
+       '「대장균 안」과 「대장균 밖」을 물리적으로 나눌 수 있으므로, 어느 쪽이 들어갔는지를 <b>측정으로 판정</b>할 수 있다. ' +
+       '「한쪽만 들어간다」는 것은 재료를 고를 때의 전제가 아니라 이 실험이 <b>확인한 결과</b>이다.<br>' +
+       '※다만 파지의 유전물질이 언제나 DNA인 것은 아니다. <b>RNA를 유전물질로 하는 파지도 있다.</b> ' +
+       '이 실험이 보인 것은 「이 파지에서 대장균 안으로 들어가 자손 파지를 만든 물질이 DNA였다」는 사실이다.',
+    hint:['박테리오파지의 구조 그림에서 <b>부분이 몇 가지인지</b> 세어 보시오.',
+          '「당시의 유전물질 후보 두 가지」와 「박테리오파지를 이루는 물질 두 가지」를 맞대어 보시오.'] },
+
+  { id:'p6', lv:'어려움',
+    q:'<sup>32</sup>P로 DNA를 표지한 실험만 수행하고 <sup>35</sup>S 실험은 하지 않았다고 하자. 이때 <b>결론을 낼 수 없는</b> 까닭으로 가장 타당한 것은?',
+    ch:['<sup>32</sup>P는 DNA와 단백질에 모두 들어 있어 어느 쪽이 표지되었는지 알 수 없기 때문이다.',
+        'DNA가 대장균 안으로 들어간 사실은 보이지만, 단백질 껍질이 밖에 남았다는 사실은 보이지 않기 때문이다.',
+        '대장균 자신도 인을 가지고 있어 침전물의 방사선이 대장균의 것인지 파지의 것인지 알 수 없기 때문이다.',
+        '표지한 파지가 한 종류뿐이면 원심분리로 상층액과 침전물을 나눌 수 없기 때문이다.'],
+    a:1,
+    no:['옳지 않다. 인은 DNA에 있고 단백질에는 없으므로 <sup>32</sup>P는 DNA만 표지한다. 표지의 대상은 분명하다.',
+        '',
+        '옳지 않다. 대장균이 본래 가진 인은 방사성이 아니므로 검출되지 않는다. 측정되는 것은 <b>표지한 <sup>32</sup>P뿐</b>이다.',
+        '옳지 않다. 원심분리는 무게 차이로 나누는 조작이므로 표지의 종류와 관계없이 그대로 이루어진다.'],
+    ex:'<sup>32</sup>P 실험만으로 말할 수 있는 것은 「<b>DNA는 대장균 안으로 들어갔다</b>」까지이다. ' +
+       '여기에 「그러므로 유전물질은 DNA이다」를 붙이려면 <b>단백질은 들어가지 않았다</b>는 사실이 함께 있어야 한다. ' +
+       '<sup>35</sup>S 실험은 단백질이 상층액에만 있었음을 보여 <b>경쟁 후보를 지운다.</b> ' +
+       '두 표지 실험은 서로의 대조군 노릇을 한다.',
+    hint:['<sup>32</sup>P 실험의 결과가 <b>단백질에 대해</b> 무엇을 말해 주는지 확인하시오.',
+          '「DNA가 들어갔다」와 「들어간 것은 DNA뿐이다」 두 문장을 비교하시오. 뒤 문장을 쓰려면 어떤 실험이 더 있어야 하는가?'] },
+
+  { id:'p7', lv:'보통',
+    q:'다음 세 실험을 <b>먼저 이루어진 순서이자 논리가 이어지는 순서</b>대로 옳게 배열한 것은?',
+    dat:['㉮ 열처리로 죽은 S형균의 추출물에 효소를 각각 처리하여, 형질전환을 일으킨 물질이 DNA임을 밝혔다.',
+         '㉯ 죽은 S형균과 살아 있는 R형균을 함께 주입한 생쥐에서 살아 있는 S형균을 발견하여, 형질전환이 일어난다는 사실을 밝혔다.',
+         '㉰ 박테리오파지의 DNA와 단백질을 각각 표지하여, 대장균 안으로 들어가 자손 파지를 만든 물질이 DNA임을 확인하였다.'],
+    ch:['㉯ → ㉮ → ㉰', '㉮ → ㉯ → ㉰', '㉯ → ㉰ → ㉮', '㉰ → ㉯ → ㉮'],
+    a:0,
+    no:['',
+        '옳지 않다. ㉮는 ㉯가 찾아낸 <b>형질전환이라는 현상을 재료로 삼는다.</b> 형질전환을 모르는 상태에서는 「형질전환을 일으키는 물질」을 찾을 수 없다.',
+        '옳지 않다. ㉰는 ㉮의 결론에 대한 의심을 씻으려고 수행된 실험이므로 ㉮보다 앞설 수 없다.',
+        '옳지 않다. ㉰가 맨 앞에 오면 문제 상황 자체가 아직 세워지지 않은 상태가 된다.'],
+    ex:'㉯ 그리피스(1928) — 형질전환이 일어난다. <b>그런데 그 물질은 무엇인가?</b><br>' +
+       '㉮ 에이버리(1944) — 그 물질은 DNA이다. <b>그런데 추출물에 남은 단백질 때문은 아닌가?</b><br>' +
+       '㉰ 허시·체이스(1952) — 세포 안으로 들어가 자손을 만든 물질은 DNA이다.<br>' +
+       '순서를 외우는 것이 목적이 아니다. <b>뒤 실험이 앞 실험의 무엇을 물려받았는지</b>를 말할 수 있어야 한다.',
+    hint:['각 실험이 <b>무엇을 재료로 삼았는지</b> 보시오(생쥐와 폐렴균 / 죽은 균의 추출물 / 파지와 대장균).',
+          '각 실험이 「답한 질문」과 「남긴 질문」을 적어 비교하시오. 앞 실험이 남긴 질문을 받아 든 실험이 바로 다음 실험이다.'] },
+
+  { id:'p8', lv:'어려움',
+    q:'실제 허시·체이스 실험에서 <sup>32</sup>P로 DNA를 표지한 경우, 방사선은 대부분 침전물에서 검출되었으나 상층액에서도 <b>약간</b> 검출되었다. 그 까닭으로 가장 타당한 것은?',
+    ch:['파지의 단백질 껍질에도 인이 상당량 들어 있기 때문이다.',
+        '대장균 안으로 들어간 DNA의 일부가 다시 밖으로 배출되기 때문이다.',
+        '침전물에 들어 있던 <sup>32</sup>P의 일부가 <sup>35</sup>S로 바뀌기 때문이다.',
+        '대장균에 붙지 못했거나 DNA를 주입하지 못한 파지가 상층액에 남고, 일부 대장균이 깨져 표지된 DNA가 새어 나오기 때문이다.'],
+    a:3,
+    no:['옳지 않다. 인은 DNA의 인산에 들어 있고 단백질 껍질에는 없다. 껍질에 인이 많다면 <sup>32</sup>P 표지 자체가 성립하지 않는다.',
+        '옳지 않다. 감염된 파지의 DNA는 대장균 안에서 자손 파지를 만드는 데 쓰인다.',
+        '옳지 않다. 방사성 동위원소가 실험자가 넣지 않은 다른 원소로 저절로 바뀌는 일은 일어나지 않는다.',
+        ''],
+    ex:'분리 조작은 완벽하지 않다. 모든 파지가 제때 붙어 DNA를 주입하는 것은 아니며, 세게 흔드는 과정에서 일부 대장균이 깨지기도 한다. ' +
+       '중요한 것은 <b>양의 비교</b>이다. <sup>32</sup>P는 대부분 침전물에서, <sup>35</sup>S는 대부분 상층액에서 검출되었으므로 결론은 그대로 선다. ' +
+       '<b>실험 결과를 「전부 또는 전무」로 읽지 말고 「어느 쪽이 압도적인가」로 읽어야 한다.</b>',
+    hint:['상층액에 무엇이 들어 있는지 적어 보시오. <b>감염에 실패한 파지</b>는 어디로 가는가?',
+          '결론을 흔드는 것은 「약간 검출됨」인가, 「양쪽이 비슷함」인가?'] }
+];
+
+/* ══════════════════ ⑤ 논리 사슬판 ══════════════════
+   ★n행의 「남은 질문」과 (n+1)행의 「답하려 한 질문」은 같은 문장이다(쌍둥이 카드).
+     같은 문장이 덱에 두 장 있다는 사실 자체가 사슬의 증거다 — 설명으로 알려 주지 않는다.  */
+var CH_ROWS = [
+  { id:'gr', name:'그리피스',    yr:'1928', sub:'폐렴균과 생쥐',      cls:'e1' },
+  { id:'av', name:'에이버리',    yr:'1944', sub:'추출물과 분해효소',  cls:'e2' },
+  { id:'hc', name:'허시·체이스', yr:'1952', sub:'파지와 대장균',      cls:'e3' }
+];
+var CH_COLS = [
+  { id:'q',     name:'이 실험이 답하려 한 질문', tip:'이 실험을 시작하게 만든 물음이다. 물음표로 끝난다.' },
+  { id:'act',   name:'한 조작',                  tip:'실험자가 실제로 손으로 한 일이다. 결과나 결론은 여기에 적지 않는다.' },
+  { id:'found', name:'알아낸 것',                tip:'관찰 결과와 거기서 곧바로 끌어낼 수 있는 결론이다. 관찰한 범위를 넘지 않는다.' },
+  { id:'left',  name:'남은 질문',                tip:'이 실험만으로는 답할 수 없어 다음 실험에 넘긴 물음이다. 물음표로 끝난다.' }
+];
+/* 카드 — slots 가 배열이면 어느 자리에 놓아도 정답이다(쌍둥이) */
+var CH_CARDS = [
+  { id:'C1', text:'죽은 세균의 유전형질이 살아 있는 세균에게 옮겨질 수 있는가?', slots:['gr.q'] },
+  { id:'C2', text:'열처리로 죽인 S형균과 살아 있는 R형균을 섞어 생쥐에 주입하였다.', slots:['gr.act'] },
+  { id:'C3', text:'죽은 S형균의 무언가가 R형균을 S형균으로 바꾸었다(형질전환).', slots:['gr.found'] },
+  { id:'L1', text:'형질전환을 일으킨 물질의 정체는 무엇인가? DNA인가 단백질인가?', slots:['gr.left','av.q'], link:1 },
+  { id:'C5', text:'죽은 S형균 추출물에서 분해효소로 DNA·RNA·단백질을 각각 없앴다.', slots:['av.act'] },
+  { id:'C6', text:'DNA를 없앤 경우에만 형질전환이 일어나지 않았다 → 그 물질은 DNA이다.', slots:['av.found'] },
+  { id:'L2', text:'DNA와 단백질을 섞이지 않게 갈라놓아도 같은 결론이 나오는가?', slots:['av.left','hc.q'], link:2 },
+  { id:'C8', text:'단백질은 <sup>35</sup>S로, DNA는 <sup>32</sup>P로 표지한 파지를 대장균에 감염시켰다.', slots:['hc.act'] },
+  { id:'C9', text:'방사선은 <sup>32</sup>P가 침전물에서, <sup>35</sup>S가 상층액에서 검출되었다 → 들어간 물질은 DNA이다.', slots:['hc.found'] },
+  { id:'L3', text:'DNA는 어떤 구조이길래 그 안에 유전정보를 담는가?', slots:['hc.left'], link:3 },
+  /* ── 오답 카드 — 놓이고 싶은 자리가 정해져 있다 ── */
+  { id:'D1', text:'그리피스는 형질전환을 일으키는 물질이 DNA임을 밝혔다.', bad:'over' },
+  { id:'D2', text:'DNA 분해효소를 처리한 경우에만 S형균이 나타났다.', bad:'flip' },
+  { id:'D3', text:'대장균 안에서 <sup>35</sup>S가 검출되었으므로 단백질이 들어갔다.', bad:'flip' },
+  { id:'D4', text:'파지의 유전물질은 언제나 DNA임이 이 실험으로 확인되었다.', bad:'over' },
+  { id:'D5', text:'열처리로 죽인 S형균만을 생쥐에 주입해 죽는지 확인하였다.', bad:'flip' },
+  { id:'D6', text:'<sup>35</sup>S와 <sup>32</sup>P를 한 파지에 함께 표지해 대장균에 감염시켰다.', bad:'flip' },
+  { id:'D8', text:'DNA는 어떻게 복제되어 다음 세대로 전달되는가?', bad:'over' }
+];
+/* ★덱에 넣을 오답 카드 수 (교사 지시 2026-08-25 「카드가 8개만 있으면 될 것 같애, 너무 많으니까 귀찮네」).
+   0 = 정답 카드만 낸다 → 표준 난도 **8장**(빈 칸 8개와 정확히 맞는다) · 도전 난도 11장.
+   ★되돌리려면 이 수만 올리면 된다 — 7 이면 예전대로 D1~D8 이 전부 들어간다.
+   ★잃는 것: D 카드가 겨냥하던 오개념 되돌림(CH_FB.over 「관찰한 것만으로 말할 수 없다」·flip 「뒤집혀 있다」)이
+     학생 앞에 나올 일이 없어진다. 열·행을 잘못 짚었을 때의 되돌림(col_ · row 갈래)은 그대로 살아 있다.
+     기계는 그대로 두었으므로 이 수만 올리면 곧바로 돌아온다. */
+var CH_BAD_COUNT = 0;
+
+/* 표준 난도에서 미리 채워 두는 자리 — 1행을 완성 예시로 보여 준다.
+   ★1행④가 채워져 있으므로 학생은 덱에서 같은 문장을 또 만나게 된다. */
+var CH_PRESET = ['gr.q', 'gr.act', 'gr.found', 'gr.left'];
+var CH_LINKS = [
+  { n:1, from:'gr.left', to:'av.q',
+    why:'그리피스는 <b>무엇인가 옮겨 갔다</b>는 사실만 보았다. 그 물질을 손에 쥐고 확인한 것은 아니었다.' },
+  { n:2, from:'av.left', to:'hc.q',
+    why:'에이버리의 추출물에는 단백질이 <b>조금 남아 있을 수 있었다.</b> 당시 학자들은 그 점을 의심하였다.' }
+];
+/* 틀린 자리에 놓았을 때의 문구 — 정답은 어떤 경우에도 알려 주지 않는다 */
+var CH_FB = {
+  col_q:'옳지 않다. 이 칸은 <b>「무엇을 물었는가」</b>를 적는 자리이다. 놓인 문장은 물음이 아니라 이미 알아낸 것을 말하고 있다. 문장이 물음표로 끝나는지 확인하시오. 🔎',
+  col_act:'옳지 않다. 이 칸은 <b>실험자가 손으로 한 일</b>을 적는 자리이다. 놓인 문장은 한 일이 아니라 그 결과나 물음을 말하고 있다. 🔎',
+  col_found:'옳지 않다. 이 칸은 <b>관찰에서 끌어낸 것</b>을 적는 자리이다. 놓인 문장은 아직 답하지 않은 물음이다. 🔎',
+  col_left:'옳지 않다. 이 칸은 <b>이 실험이 답하지 못하고 남긴 물음</b>을 적는 자리이다. 놓인 문장은 이미 답이 나온 내용이다. 🔎',
+  row:'옳지 않다. 이 문장에 나오는 재료는 이 행의 실험에서 쓰지 않았다. 어느 실험의 재료인지 짚어 보고 행을 다시 고르시오. 👆',
+  over:'옳지 않다. 이 실험이 실제로 관찰한 것만으로는 여기까지 말할 수 없다. 눈으로 확인한 것이 무엇이었는지 되짚으시오. 🤔',
+  flip:'옳지 않다. 어느 조건에서 무엇이 나타났는지가 반대로 되어 있거나, 하지 않은 조작을 말하고 있다. 앞 단계 화면의 결과를 다시 확인하시오. 📌'
+};
+var CH_DONE_MSG =
+  '🎉 1928년의 「무엇인가 옮겨 갔다」가 1944년의 「그 무엇은 DNA이다」를 거쳐 ' +
+  '1952년의 「세포 안으로 들어간 것도 DNA이다」에 이르렀다. ' +
+  '<b>한 실험이 남긴 물음이 다음 실험이 답할 물음이 되었다.</b>';
+
+/* ══════════════════ ⑦ 정리하기 ══════════════════ */
+var WRITEQ = [
+  { id:'w1', min:60,
+    q:'그리피스의 실험 (라)에서 <b>열처리로 죽은 S형균</b>과 <b>살아 있는 R형균</b>을 함께 주입한 생쥐는 죽었고, ' +
+      '그 혈액에서 <b>살아 있는 S형균</b>이 발견되었다. 주입한 S형균은 이미 죽어 있었는데도 살아 있는 S형균이 발견된 까닭을, ' +
+      '실험 (다)의 결과를 근거로 들어 서술하시오.',
+    need:['죽은 S형균이 되살아난 것이 아니라는 판단과 그 근거((다)의 결과)',
+          '죽은 S형균에 남아 있던 어떤 물질이 살아 있는 R형균 안으로 들어갔다는 설명',
+          '그 결과 R형균이 S형균의 형질을 나타내게 되었다는 것(= 형질전환)'],
+    ans:'열처리로 죽은 S형균이 되살아난 것이 아니다. 실험 (다)에서 죽은 S형균만 주입한 생쥐는 죽지 않았고 살아 있는 S형균도 ' +
+        '발견되지 않았으므로, 죽은 S형균은 스스로 병원성을 되찾지 못한다. 따라서 (라)의 혈액에서 발견된 살아 있는 S형균은 ' +
+        '함께 주입한 살아 있는 R형균이 S형균으로 바뀐 것이다. 죽은 S형균에 남아 있던 어떤 물질이 R형균 안으로 들어가 ' +
+        '피막을 만드는 형질을 나타내게 한 것이며, 이러한 현상을 형질전환이라고 한다. 그리피스는 이처럼 형질을 바꾸어 전달하는 ' +
+        '물질이 유전물질이라고 보았으나, 그 물질의 정체까지는 밝히지 못하였다.' },
+
+  { id:'w2', min:60,
+    q:'에이버리는 열처리로 죽은 S형균의 세포 추출물에 <b>단백질분해효소 · RNA 분해효소 · DNA 분해효소</b>를 각각 처리하였다. ' +
+      'DNA 분해효소 하나만 처리하여도 충분해 보인다. 그런데도 세 효소를 모두 처리해 본 것이 왜 필요하였는지 서술하시오.',
+    need:['추출물 안에 단백질·RNA·DNA가 모두 들어 있어 후보가 셋이라는 점',
+          '단백질·RNA를 없애도 형질전환이 일어났다 → 후보에서 제외된다는 점',
+          '세 결과를 함께 놓아야 「DNA를 없앤 경우에만 사라진다」는 비교가 성립한다는 점'],
+    ans:'열처리로 죽은 S형균의 세포 추출물에는 단백질과 RNA와 DNA가 모두 들어 있으므로, 형질전환을 일으키는 물질의 후보는 세 가지이다. ' +
+        'DNA 분해효소만 처리하여 형질전환이 일어나지 않았다면 DNA가 형질전환에 필요하다는 것까지만 알 수 있을 뿐, ' +
+        '단백질이나 RNA도 함께 있어야 하는지는 알 수 없다. 단백질분해효소와 RNA 분해효소를 처리한 경우에는 S형균이 그대로 관찰되었으므로, ' +
+        '단백질과 RNA는 없어도 형질전환이 일어난다는 사실이 확인되어 후보에서 제외된다. 세 효소의 결과를 함께 놓아야 ' +
+        '「DNA를 없앤 경우에만 형질전환이 사라진다」는 비교가 성립하며, 비로소 형질전환을 일으키는 물질이 단백질이나 RNA가 아닌 ' +
+        'DNA라고 결론지을 수 있다.' },
+
+  { id:'w3', min:60,
+    q:'허시와 체이스는 유전물질을 규명하는 실험의 재료로 <b>박테리오파지</b>를 선택하였다. ' +
+      '박테리오파지를 이용함으로써 얻는 실험상의 이점을 <b>두 가지 이상</b> 들어 서술하시오.',
+    need:['구조가 DNA와 단백질 껍질 두 가지뿐이어서 후보가 둘로 좁혀진다는 점',
+          '인은 DNA에만, 황은 단백질에만 있어 두 물질을 따로 표지할 수 있다는 점',
+          '안으로 들어간 것과 밖에 남은 것을 믹서·원심분리로 나누어 측정할 수 있다는 점'],
+    ans:'박테리오파지는 DNA와 그것을 감싸는 단백질 껍질만으로 이루어진 단순한 구조이므로, 유전물질의 후보가 두 가지로 좁혀진다. ' +
+        '파지에서는 인(P)이 DNA에만 들어 있고 황(S)이 단백질에만 들어 있으므로, 32P와 35S를 이용하여 두 물질을 각각 따로 표지할 수 있다. ' +
+        '또한 파지가 대장균을 감염시키면 껍질은 표면에 붙은 채 남으므로, 믹서로 껍질을 떼어 내고 원심분리하면 크고 무거운 대장균은 ' +
+        '침전물로, 가볍고 작은 단백질 껍질은 상층액으로 나뉜다. 곧 대장균의 안과 밖을 물리적으로 갈라 각각의 방사선을 측정할 수 있으므로, ' +
+        '두 후보 가운데 어느 것이 안으로 들어갔는지를 관찰로 판정할 수 있다.' },
+
+  { id:'w4', min:150,
+    q:'그리피스, 에이버리, 허시와 체이스의 실험을 <b>「앞 실험이 남긴 질문 → 다음 실험이 한 일 → 알아낸 것」</b>의 순서로 이어, ' +
+      '유전물질이 DNA임이 밝혀진 과정을 하나의 흐름으로 서술하시오. ' +
+      '<b>(성취기준 12유전01-05의 발표 자료 설명문으로 그대로 쓸 수 있도록, 앞의 세 문항보다 길게 작성하시오.)</b>',
+    need:['세 실험 각각이 답한 질문과 새로 남긴 질문이 드러날 것',
+          '그리피스 = 물질의 존재 확인(정체는 모름) → 에이버리 = 그 물질이 DNA → 허시·체이스 = 세포 안으로 들어가 다음 세대를 만드는 물질이 DNA',
+          '에이버리의 결론이 곧바로 받아들여지지 않은 까닭'],
+    ans:'1928년 그리피스는 열처리로 죽은 S형균과 살아 있는 R형균을 함께 주입한 생쥐에서 살아 있는 S형균을 발견하였다. ' +
+        '이로써 죽은 S형균에서 나온 어떤 물질이 R형균의 형질을 바꾸어 전달한다는 사실이 확인되었고, 그리피스는 그 물질이 ' +
+        '유전물질일 것이라고 생각하였다. 그러나 그 물질의 정체는 밝혀지지 않았고, 「형질전환을 일으키는 물질은 무엇인가」라는 질문이 남았다. ' +
+        '1944년 에이버리는 이 질문에 답하기 위하여 죽은 S형균의 세포 추출물에 단백질분해효소·RNA 분해효소·DNA 분해효소를 각각 처리한 뒤 ' +
+        '살아 있는 R형균과 함께 배양하였고, DNA 분해효소를 처리한 경우에만 S형균이 관찰되지 않았다. 이는 형질전환을 일으키는 물질이 ' +
+        '단백질이나 RNA가 아닌 DNA임을 뜻한다. 그럼에도 세포 추출물에 섞여 있었을지 모르는 소량의 단백질이 실제 원인일 수 있다는 의심과 ' +
+        '단백질이 유전물질일 것이라는 오랜 예상 때문에 이 결론은 널리 받아들여지지 못하였고, 「살아 있는 세포 안으로 실제로 들어가 ' +
+        '다음 세대를 만드는 물질은 무엇인가」라는 질문이 남았다. 1952년 허시와 체이스는 DNA와 단백질 껍질만으로 이루어진 박테리오파지를 ' +
+        '32P와 35S로 각각 표지하여 대장균에 감염시킨 뒤 믹서와 원심분리로 안과 밖을 나누어 방사선을 측정하였고, 32P는 대장균이 있는 ' +
+        '침전물에서, 35S는 단백질 껍질이 있는 상층액에서만 검출되었다. 대장균 안으로 들어가 다음 세대의 파지를 만든 물질은 DNA였으며, ' +
+        '이로써 세 실험은 「형질전환을 일으키는 물질이 있다 → 그 물질은 DNA이다 → 살아 있는 세포 안으로 들어가 다음 세대를 만드는 물질도 ' +
+        'DNA이다」라는 하나의 사슬로 이어졌고, 폐렴균과 박테리오파지에서 유전물질이 DNA라는 사실이 널리 받아들여지게 되었다.' },
+
+  { id:'c1', min:80, creative:true,
+    q:'🤔 <b>창의력 키우기 1.</b> ①에서 고른 답을 근거로 삼아, <b>1943년의 과학자에게 「유전물질은 단백질이다」라고 주장하는 짧은 글</b>을 쓰시오. ' +
+      '단, 지금 알고 있는 답(DNA)은 근거로 쓸 수 없다. <b>당시에 알려져 있던 사실만으로</b> 주장하시오.',
+    need:['염색체가 DNA와 단백질로 이루어져 후보가 둘이라는 전제',
+          '정보량이 커야 한다는 요구와, 단위 물질의 종류 수(4 대 20) 비교',
+          '단백질 연구가 먼저 쌓여 있었다는 당시 사정'],
+    ans:'염색체는 DNA와 단백질로 이루어져 있으므로 유전물질은 둘 중 하나이다. 유전물질은 한 개체의 수많은 형질을 빠짐없이 담을 만큼 ' +
+        '많은 정보를 지녀야 한다. DNA는 4종류의 뉴클레오타이드가 늘어선 단조로운 물질이지만, 단백질은 20종류의 아미노산이 다양한 순서와 ' +
+        '입체구조로 배열되므로 훨씬 많은 정보를 담을 수 있다. 또한 효소를 비롯하여 생명 활동을 실제로 수행하는 물질이 단백질임이 이미 ' +
+        '밝혀져 있고, 단백질의 구조와 기능에 관한 연구가 DNA보다 먼저 쌓여 있다. 따라서 유전정보를 담는 물질은 단백질이라고 보는 것이 타당하다.<br><br>' +
+        '<b>되짚기 —</b> 이 주장의 약한 고리는 「정보량은 구성 단위의 <b>종류 수</b>로 정해진다」는 전제이다. 정보량은 종류 수뿐 아니라 ' +
+        '<b>배열의 순서와 길이</b>로도 커진다. 4종류의 염기라도 순서를 달리하면 담을 수 있는 정보는 사실상 무한하다. ' +
+        '전제가 무너지면 근거가 아무리 그럴듯해도 결론은 지켜지지 않는다.' },
+
+  { id:'c2', min:80, creative:true,
+    q:'💡 <b>창의력 키우기 2.</b> 허시와 체이스가 박테리오파지 대신 <b>살아 있는 S형균과 R형균</b>을 재료로 삼아 같은 방식의 표지 실험을 하려 하였다면 ' +
+      '어떤 어려움이 있었겠는가? 박테리오파지를 고른 것이 왜 결정적이었는지 <b>실험 설계의 관점</b>에서 서술하시오.',
+    need:['세균 한 마리는 구성 물질이 많아 후보를 둘로 좁힐 수 없다는 점',
+          '인과 황이 다른 물질에도 들어 있어 표지가 한 물질만 가리키지 못한다는 점',
+          '안으로 들어간 것과 밖에 남은 것을 물리적으로 나눌 수 없다는 점'],
+    ans:'폐렴균은 세포 하나가 DNA와 단백질뿐 아니라 세포막, 세포벽, 라이보솜, RNA, 다당류 피막 등 수많은 물질로 이루어져 있어 ' +
+        '유전물질의 후보를 둘로 좁힐 수 없다. 인과 황으로 표지하더라도 인은 세포막의 인지질과 RNA에도, 황은 여러 단백질에도 들어 있으므로 ' +
+        '표지가 한 물질만을 가리키지 못한다. 또한 형질전환은 죽은 균의 물질이 살아 있는 균 안으로 들어가는 드문 현상이어서, ' +
+        '무엇이 안으로 들어갔는지를 실험이 끝난 뒤에 안과 밖으로 갈라 측정하기 어렵다. 이에 비하여 박테리오파지는 DNA와 단백질 껍질 ' +
+        '두 가지뿐이고, 감염할 때 유전물질만 대장균 안으로 들어가고 껍질은 밖에 남으므로 믹서와 원심분리로 안과 밖을 물리적으로 나눌 수 있다. ' +
+        '곧 후보가 둘뿐이고, 둘을 따로 표지할 수 있으며, 들어간 것과 남은 것을 분리하여 측정할 수 있다는 세 조건을 동시에 만족하는 ' +
+        '재료였기 때문에 결론이 결정적이었다.' }
+];
+
+var SELFCHECK = [
+  { id:'s1', k:'지식·이해', t:'그리피스, 에이버리, 허시와 체이스의 실험이 각각 무엇을 밝혔는지 구분하여 설명할 수 있는가?' },
+  { id:'s2', k:'과정·기능', t:'각 실험에서 서로 비교되는 조건을 찾아, 결론이 성립하는 근거를 따져 보았는가?' },
+  { id:'s3', k:'가치·태도', t:'에이버리의 결과가 곧바로 받아들여지지 않은 까닭을 통해, 과학에서 증거와 설득이 갖는 의미를 생각해 보았는가?' }
+];
+
+/* ══════════════════════════════════════════════════════════════
+   무대 — 세 실험의 그림과 연출
+   ★설계 원칙: 결과는 애니메이션과 무관하게 즉시 확정된다.
+     ani.ph 는 「지금 어디까지 보여 주었는가」일 뿐이고,
+     상태(state.grRun 등)는 실행 버튼을 누른 순간 이미 정해져 있다.
+     setTimeout 이 없는 환경(헤드리스 검사)에서는 ph 가 곧바로 LAST 가 된다.
+   ══════════════════════════════════════════════════════════════ */
+var ANI_LAST = 4;                 /* 0 준비 → 1 → 2 → 3 → 4 완료 */
+/* 한 단계에 머무는 시간 — 무대마다 다르다.
+   ★허시·체이스는 감염·믹서·원심분리·측정으로 볼 것이 많아 느리다(교사 지시 2026-08-25 「좀 빠르다」). */
+var ANI_MS = { gr:900, av:900, hc:1600 };
+/* 단계 이름 — 제어 막대가 이것만 읽는다. 길이가 곧 단계 수다. */
+var ANI_STEPS = {
+  gr:['주사기를 채운다', '생쥐에 주입한다', '생쥐를 관찰한다', '혈액을 뽑는다', '혈액을 관찰한다'],
+  av:['죽은 S형균 추출물', '효소를 넣는다', '물질이 분해된다', 'R형균과 배양한다', '집락을 관찰한다'],
+  hc:['표지한 파지와 대장균', '파지가 감염한다', '믹서로 흔든다', '원심분리한다', '방사선을 측정한다']
+};
+/* ★대조군은 효소를 넣지도, 무엇을 분해하지도 않는다. 무대별 이름 한 벌만 두면
+   대조군 화면에 「효소를 넣는다」·「물질이 분해된다」가 떠 사실과 정반대를 말한다(2026-08-25 검토).
+   조건별로 덮어쓸 이름은 여기에 둔다. */
+var ANI_STEPS_BY_ID = {
+  av:{ none:['죽은 S형균 추출물', '효소를 넣지 않는다', '분해된 물질이 없다', 'R형균과 배양한다', '집락을 관찰한다'] }
+};
+function aniSteps(st, id){
+  var byId = ANI_STEPS_BY_ID[st];
+  if (byId && byId[id]) return byId[id];
+  return ANI_STEPS[st] || [];
+}
+
+/* st = 'gr' | 'av' | 'hc'
+   gen    = 세대 번호. 손으로 단계를 넘기면 올라가고, 예약돼 있던 자동 진행이 여기서 끊긴다.
+   auto   = 자동으로 넘어가는 중인가.
+   reveal = 이번 재생이 「처음 밝히는」 재생인가. 다시 보기일 때는 false —
+            결과표가 「관찰 중이다…」로 되돌아가지 않게 한다. 이미 아는 결과를 감출 이유가 없다. */
+var ani = { st:null, id:null, ph:ANI_LAST, gen:0, auto:false, reveal:false };
+
+function aniPlaying(st, id){
+  return ani.reveal && ani.st === st && ani.id === id && ani.ph < ANI_LAST;
+}
+function aniOf(st, id){
+  return (ani.st === st && ani.id === id) ? ani.ph : ANI_LAST;
+}
+function aniStart(st, id, reveal){
+  aniRelease(st, id);                       /* 보던 무대는 완료 상태로 남겨 두고 넘어간다 */
+  ani = { st:st, id:id, ph:0, gen:ani.gen + 1, auto:true, reveal:!!reveal };
+  if (typeof setTimeout === 'undefined'){ ani.ph = ANI_LAST; ani.auto = false; return; }
+  aniStep();
+}
+function aniStep(){
+  if (!ani.auto || ani.ph >= ANI_LAST) return;
+  var gen = ani.gen;
+  setTimeout(function(){
+    /* ★손으로 단계를 넘겼으면 gen 이 달라져 여기서 조용히 끊긴다 */
+    if (gen !== ani.gen || !ani.auto || ani.ph >= ANI_LAST) return;
+    ani.ph++;
+    renderStage(ani.st);
+    aniStep();
+  }, ANI_MS[ani.st] || 900);
+}
+/* ★잡고 있던 무대를 놓는다 — 그 무대를 완료 국면으로 되돌리고 다시 그린다.
+   이게 없으면 재생 도중 다른 무대를 건드렸을 때 떠난 무대가 중간 그림에 얼어붙고,
+   결과표가 「관찰 중이다…」로 영원히 남으며, 화면에 보이는 단계 번호와 실제 ph 가 어긋나
+   ◀ 이전이 앞으로 가고 ▶ 다음이 단계를 건너뛴다(2026-08-25 검토에서 잡았다).
+   ★한 번에 한 무대만 재생 중이다 — 나머지 무대는 언제나 완료 상태로 보인다. */
+function aniRelease(st, id){
+  if (!ani.st) return;
+  if (ani.st === st && ani.id === id) return;
+  var prev = ani.st;
+  ani = { st:ani.st, id:ani.id, ph:ANI_LAST, gen:ani.gen + 1, auto:false, reveal:false };
+  renderStage(prev);
+}
+/* 이 무대를 내가 잡는다 — 다른 조건을 보고 있었거나 아무것도 안 보고 있었으면 마지막 국면부터 시작한다 */
+function aniHold(st, id){
+  aniRelease(st, id);
+  if (ani.st !== st || ani.id !== id){
+    ani = { st:st, id:id, ph:ANI_LAST, gen:ani.gen + 1, auto:false, reveal:false };
+  }
+  /* ★한 번 끝까지 간 뒤에 손으로 되돌아가는 것은 「다시 보기」다 —
+     이미 밝혀진 결과를 결과표에서 도로 감추지 않는다.
+     아직 처음 재생이 끝나지 않았다면 reveal 을 그대로 두어 단계에 맞춰 밝혀지게 한다. */
+  if (ani.ph >= ANI_LAST) ani.reveal = false;
+  ani.gen++;
+  ani.auto = false;
+}
+function aniSkip(st, id){
+  if (st){ aniHold(st, id); } else if (!ani.st){ return; } else { ani.gen++; ani.auto = false; }
+  ani.ph = ANI_LAST;
+  renderStage(ani.st);
+}
+/* ★다시 보기 — 그림만 처음부터 다시 그린다. state.grRun/avRun/hcRun 은 손대지 않는다.
+   결과는 실행한 순간 이미 확정돼 있으므로 몇 번을 다시 보아도 달라지지 않는다. */
+function aniReplay(st, id){
+  if (!st || !id) return;
+  aniStart(st, id, false);
+  renderStage(st);
+}
+/* 손으로 한 단계 — 자동 진행을 끊고 옮긴다 */
+function aniGo(st, id, delta){
+  if (!st || !id) return;
+  aniHold(st, id);
+  var p = ani.ph + delta;
+  ani.ph = p < 0 ? 0 : (p > ANI_LAST ? ANI_LAST : p);
+  renderStage(st);
+}
+/* 무대 아래 제어 막대 — 지금 무대에 그려져 있는 조건(id)에 대해 만든다 */
+function aniBarHtml(st, id, cls){
+  if (!id) return '';
+  var steps = aniSteps(st, id);
+  var ph = aniOf(st, id);
+  var atEnd = (ph >= ANI_LAST);
+  var q = function(a, b){ return "'" + a + "','" + b + "'"; };
+  function btn(label, on, act){
+    return '<button type="button" class="btn ' + cls + ' ghost"' + (on ? '' : ' disabled') +
+           ' onclick="' + act + '">' + label + '</button>';
+  }
+  return '<div class="anibar">' +
+    btn('⏮ 처음부터', true,   'aniReplay(' + q(st, id) + ')') +
+    btn('◀ 이전',    ph > 0,  'aniGo(' + q(st, id) + ',-1)') +
+    btn('▶ 다음',    !atEnd,  'aniGo(' + q(st, id) + ',1)') +
+    btn('⏩ 끝까지',  !atEnd,  'aniSkip(' + q(st, id) + ')') +
+    '<span class="anistep">' + (steps[ph] || '') +
+      ' <b>' + (ph + 1) + ' / ' + steps.length + '</b></span>' +
+  '</div>';
+}
+function renderStage(st){
+  if (st === 'gr') renderGr();
+  else if (st === 'av') renderAv();
+  else if (st === 'hc') renderHc();
+}
+function setHTML(id, html){
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+function svgOpen(w, h, label){
+  return '<svg class="stage" viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" ' +
+         'role="img" aria-label="' + label + '">';
+}
+
+/* ★SVG <text> 안에는 HTML 태그를 넣을 수 없다.
+   <b>·<sup> 를 만나면 HTML 파서가 「외래 콘텐츠 이탈」 규칙으로 <text> 와 <svg> 를 통째로 닫아 버려,
+   문장 뒷부분이 그림 밖으로 새어 나와 본문 글꼴로 찍힌다.
+   ★실제로 그렇게 새고 있었다 — ④의 1/5(표지 이름의 <sup>·<b>)와 3/5(믹서 캡션의 <b>).
+     전에는 900ms 스쳐 지나가 안 보였고, 단계별로 세울 수 있게 되면서 드러났다(2026-08-25).
+   칩·표에 쓰는 HTML 문구를 무대에 옮길 때는 반드시 이것을 거칠 것. */
+function svgText(html){
+  return String(html)
+    .replace(/<sup>([\s\S]*?)<\/sup>/g, '<tspan baseline-shift="super" font-size="0.7em">$1</tspan>')
+    .replace(/<sub>([\s\S]*?)<\/sub>/g, '<tspan baseline-shift="sub" font-size="0.7em">$1</tspan>')
+    .replace(/<b>([\s\S]*?)<\/b>/g,     '<tspan font-weight="bold">$1</tspan>')
+    .replace(/<strong>([\s\S]*?)<\/strong>/g, '<tspan font-weight="bold">$1</tspan>')
+    .replace(/<\/?(?:i|em|span|p|br\s*\/?)>/g, '');
+}
+
+/* ── 공통 도형 ────────────────────────────────────────────── */
+/* 폐렴균 — S형균은 피막이 있어 매끈하고, R형균은 피막이 없어 거칠다.
+   ★쌍구균이므로 둘씩 붙은 모양으로 그린다. */
+function bactS(x, y, s, dead){
+  s = s || 1;
+  var col = dead ? '#9AA1AC' : '#C2185B';
+  var cap = dead ? '#D8DCE3' : '#F3B8CE';
+  var g = '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')">';
+  /* ★피막 — 윤곽선을 주어 「피막이 있다」가 눈에 보이게 한다. R형균에는 이 타원이 아예 없다. */
+  g += '<ellipse cx="0" cy="0" rx="21" ry="13" fill="' + cap + '" opacity=".85" ' +
+       'stroke="' + (dead ? '#B9BFC8' : '#E893B4') + '" stroke-width="1.6"></ellipse>';
+  g += '<circle cx="-7" cy="0" r="8" fill="' + col + '"></circle>';
+  g += '<circle cx="7" cy="0" r="8" fill="' + col + '"></circle>';
+  if (dead) g += '<path d="M-13,-8 L13,8 M13,-8 L-13,8" stroke="#5A616C" stroke-width="2.2" stroke-linecap="round"></path>';
+  g += '</g>';
+  return g;
+}
+function bactR(x, y, s){
+  s = s || 1;
+  var g = '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')">';
+  /* 거친 표면 = 톱니 윤곽 */
+  g += '<path d="M-15,-3 L-12,-9 L-6,-6 L-3,-11 L3,-8 L8,-11 L11,-5 L16,-2 L12,3 L15,9 L8,8 L4,12 L-1,8 L-6,12 L-9,6 L-15,5 Z" ' +
+       'fill="#8A93A6" stroke="#5A616C" stroke-width="1.6" stroke-linejoin="round"></path>';
+  g += '<circle cx="-5" cy="0" r="5" fill="#6B7280"></circle>';
+  g += '<circle cx="5" cy="1" r="5" fill="#6B7280"></circle>';
+  g += '</g>';
+  return g;
+}
+/* ② 머리말 도해 — 피막이 있는 S형균과 피막이 없는 R형균을 나란히 놓는다.
+   ★혈액 검사 시야에서 두 균을 가려내려면 무엇을 보고 가리는지 먼저 알아야 한다.
+   ★그림만 SVG이고 이름·설명은 HTML이다. 칸 폭이 좁아져도 글자가 같이 작아지지 않는다. */
+function bactLegendHtml(){
+  function cell(cls, draw, name, desc){
+    return '<div class="lgcell ' + cls + '">' +
+             '<svg viewBox="0 0 104 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + name + ' 모식도">' +
+               draw +
+             '</svg>' +
+             '<div class="lgtext">' +
+               '<span class="lgname">' + name + '</span>' +
+               '<span class="lgdesc">' + desc + '</span>' +
+             '</div>' +
+           '</div>';
+  }
+  /* ★「피막이 있다/없다」는 SVG 글자가 아니라 HTML 글자다 —
+     그림을 96px로 줄이면 SVG 안의 12.5px 글자는 8px가 되어 읽을 수 없다. */
+  return '<div class="legend2">' +
+           cell('s', bactS(52, 40, 1.5), 'S형균', '<b>피막이 있다</b><br>표면이 매끈하다 · 병원성이 있다') +
+           cell('r', bactR(52, 40, 1.5), 'R형균', '<b>피막이 없다</b><br>표면이 거칠다 · 병원성이 없다') +
+         '</div>';
+}
+
+/* 현미경 시야 */
+function scopeField(cx, cy, r, inner, capt){
+  var g = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="#F7FAFF" stroke="#8A93A6" stroke-width="3"></circle>';
+  g += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - 7) + '" fill="none" stroke="#CFD6E0" stroke-width="1.4"></circle>';
+  g += inner;
+  /* 캡션은 「|」로 줄을 나눈다 — 한 줄로 두면 무대 밖으로 삐져나간다 */
+  if (capt){
+    String(capt).split('|').forEach(function(line, i){
+      g += '<text x="' + cx + '" y="' + (cy + r + 20 + i * 18) + '" text-anchor="middle" font-size="13.5" fill="#555">' +
+           line + '</text>';
+    });
+  }
+  return g;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ② 그리피스 — 주사기에 넣을 것을 고르고 생쥐에 주입한다
+   ══════════════════════════════════════════════════════════════ */
+/* 조합 담기 — 이 넷만 실행할 수 있다(그리피스가 실제로 한 조건) */
+var grPick = [];      /* 화면 전용(저장하지 않는다). 새로고침하면 비워진다 */
+
+function grComboKey(list){
+  return list.slice().sort().join('+');
+}
+function grCondByKey(k){
+  for (var i = 0; i < GR_CONDS.length; i++){
+    if (grComboKey(GR_CONDS[i].mix) === k) return GR_CONDS[i];
+  }
+  return null;
+}
+function grToggle(id){
+  var i = grPick.indexOf(id);
+  if (i >= 0) grPick.splice(i, 1);
+  else {
+    if (grPick.length >= 2){ grFlash('warn', '주사기에는 두 가지까지만 넣을 수 있다. 넣은 것을 하나 빼고 다시 고르시오.'); return; }
+    grPick.push(id);
+  }
+  grFlash('', '');
+  renderGr();
+}
+function grClear(){ grPick = []; grFlash('', ''); renderGr(); }
+
+function grFlash(kind, html){
+  var el = document.getElementById('grFb');
+  if (!el) return;
+  if (!html){ el.className = 'msg warn hide'; el.innerHTML = ''; return; }
+  el.className = 'msg ' + (kind || 'warn');
+  el.innerHTML = html;
+}
+function grPredict(v){
+  var c = grCondByKey(grComboKey(grPick));
+  if (!c) return;
+  state.grPre[c.id] = v;
+  saveState();
+  renderGr();
+}
+function grInject(){
+  var key = grComboKey(grPick);
+  var c = grCondByKey(key);
+  if (!c){
+    grFlash('warn',
+      '<b>이 조합은 이 실험에 포함되지 않는다.</b> 그리피스가 실제로 주입한 것은 아래 네 가지이다.<br>' +
+      '(가) 살아 있는 S형균 · (나) 살아 있는 R형균 · (다) 열처리로 죽은 S형균 · (라) 열처리로 죽은 S형균 + 살아 있는 R형균');
+    return;
+  }
+  if (state.grPre[c.id] === undefined){
+    grFlash('warn', '주입하기 전에 <b>생쥐가 어떻게 될지 예상</b>을 먼저 고르시오. 예상은 기록되지 않는다.');
+    return;
+  }
+  state.grRun[c.id] = c.result;          /* ★결과는 지금 확정된다 — 연출과 무관하다 */
+  saveState();
+  aniStart('gr', c.id, true);
+  renderGr();
+  updateRail();
+  updateLocks();
+  updateHandoffs();
+}
+
+function renderGr(){
+  var key = grComboKey(grPick);
+  var cond = grCondByKey(key);
+
+  /* ── 준비물 칩 ── */
+  var chips = '';
+  GR_ITEMS.forEach(function(it){
+    var on = grPick.indexOf(it.id) >= 0;
+    chips += '<button type="button" class="chip' + (on ? ' on' : '') + '" onclick="grToggle(\'' + it.id + '\')">' +
+             '<span class="dot" style="background:' + it.color + ';' + (it.dead ? 'opacity:.5;' : '') + '"></span><span>' +
+             it.name + '</span></button>';
+  });
+  setHTML('grChips', chips);
+
+  /* ── 주사기 담긴 것 ── */
+  var slot = '';
+  if (!grPick.length) slot = '아직 아무것도 넣지 않았다';
+  else grPick.forEach(function(id){
+    var it = null;
+    GR_ITEMS.forEach(function(x){ if (x.id === id) it = x; });
+    if (it) slot += '<span class="pill"><span class="dot" style="background:' + it.color + ';' + (it.dead ? 'opacity:.5;' : '') + '"></span><span>' + it.name + '</span></span>';
+  });
+  var sb = document.getElementById('grSlot');
+  if (sb){ sb.className = 'slotbox' + (grPick.length ? ' filled' : ''); sb.innerHTML = slot; }
+
+  /* ── 예상 고르기 ── */
+  var pre = '';
+  if (cond){
+    var already = !!state.grRun[cond.id];
+    var v = state.grPre[cond.id];
+    pre = '<div class="pq">조건 <b>' + cond.label + '</b> — 이것을 주입하면 생쥐는 어떻게 되겠는가?</div>' +
+          '<div class="prow">' +
+          '<button type="button" class="pbtn' + (v === 'dead' ? ' on' : '') + '"' + (already ? ' disabled' : '') +
+          ' onclick="grPredict(\'dead\')">생쥐가 죽는다</button>' +
+          '<button type="button" class="pbtn' + (v === 'live' ? ' on' : '') + '"' + (already ? ' disabled' : '') +
+          ' onclick="grPredict(\'live\')">생쥐가 죽지 않는다</button>' +
+          '</div>';
+    if (already && v !== undefined){
+      var hit = (v === cond.result);
+      pre += '<div class="msg ' + (hit ? 'good' : 'warn') + '" style="margin-top:10px;">' +
+             (hit ? '예상과 관찰 결과가 <b>같다</b>.' : '예상과 관찰 결과가 <b>다르다</b>.') +
+             ' 결과는 아래 표에 남는다. 예상은 기록되지 않는다.</div>';
+    }
+  } else {
+    pre = '<div class="pq">주사기에 넣을 것을 골라 네 조건 중 하나를 만드시오.</div>' +
+          '<div class="prow"><span class="sub" style="margin:0;">조건이 만들어지면 예상을 고를 수 있다.</span></div>';
+  }
+  setHTML('grPredict', pre);
+
+  /* ── 실행 버튼 ── */
+  var btn = document.getElementById('grRunBtn');
+  if (btn){
+    var ran = cond && state.grRun[cond.id];
+    btn.disabled = !cond || !!ran;
+    btn.textContent = ran ? '이 조건은 이미 실행하였다' : '💉 생쥐에 주입하기';
+  }
+
+  /* ── 머리말 도해(바뀌지 않는다 — 한 번만 그린다) ── */
+  var lg = document.getElementById('grLegend');
+  if (lg && !lg.innerHTML) lg.innerHTML = bactLegendHtml();
+
+  /* ── 무대 ── */
+  setHTML('grStage', grStageSvg(cond));
+  setHTML('grAni', (cond && state.grRun[cond.id]) ? aniBarHtml('gr', cond.id, 'e1') : '');
+
+  /* ── 결과표 ── */
+  var rows = '';
+  GR_CONDS.forEach(function(c){
+    var done = !!state.grRun[c.id];
+    var showing = !aniPlaying('gr', c.id);
+    if (done && showing){
+      var dead = (c.result === 'dead');
+      rows += '<tr><td><b>' + c.label + '</b></td><td>' + c.inject + '</td>' +
+              '<td><b class="' + (dead ? 'dead' : 'live') + '">' + (dead ? '죽는다' : '죽지 않는다') + '</b></td>' +
+              '<td>' + grBloodText(c) + '</td></tr>';
+    } else if (done){
+      rows += '<tr><td><b>' + c.label + '</b></td><td>' + c.inject + '</td>' +
+              '<td class="wait">관찰 중이다…</td><td class="wait">—</td></tr>';
+    } else {
+      rows += '<tr><td><b>' + c.label + '</b></td><td>' + c.inject + '</td>' +
+              '<td class="wait">아직 실행하지 않았다</td><td class="wait">—</td></tr>';
+    }
+  });
+  setHTML('grTbody', rows);
+
+  var n = 0;
+  GR_CONDS.forEach(function(c){ if (state.grRun[c.id]) n++; });
+  var tag = document.getElementById('grProg');
+  if (tag) tag.textContent = '실행한 조건 ' + n + ' / ' + GR_CONDS.length;
+
+  /* 네 조건을 모두 실행해야 결론 문항이 열린다 */
+  var qwrap = document.getElementById('grQwrap');
+  if (qwrap) qwrap.style.display = (n === GR_CONDS.length || state.teacherUnlock) ? 'block' : 'none';
+  var qlock = document.getElementById('grQlock');
+  if (qlock) qlock.className = 'msg info' + ((n === GR_CONDS.length || state.teacherUnlock) ? ' hide' : '');
+}
+
+function grStageSvg(cond){
+  var ph = cond ? aniOf('gr', cond.id) : ANI_LAST;
+  var ran = cond && !!state.grRun[cond.id];
+  var W = 680, H = 290;          /* 혈액 검사 캡션이 네 줄까지 늘어난다 */
+  var s = svgOpen(W, H, '그리피스의 형질전환 실험 무대');
+
+  /* 배경 */
+  s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#FBFCFE"></rect>';
+
+  /* ── 주사기 ── */
+  /* 밀대를 밀면 그만큼 액이 줄어든다 — 밀대와 액 사이에 빈틈이 생기지 않게 같은 값에서 파생시킨다 */
+  var push = (ran && ph >= 1) ? 118 : 0;
+  var rodEnd = 40 + push;
+  var liq = grPick.length ? 1 : 0;
+  s += '<g>';
+  s += '<rect x="34" y="54" width="150" height="46" rx="8" fill="#fff" stroke="#5A616C" stroke-width="2.4"></rect>';
+  if (liq){
+    var lcol = (grPick.length > 1)
+      ? '#E8C9D8'
+      : (grCondByKey(grComboKey(grPick)) ? grCondByKey(grComboKey(grPick)).color : '#DCE3EC');
+    s += '<rect x="' + rodEnd + '" y="58" width="' + (180 - rodEnd) + '" height="38" rx="5" fill="' + lcol + '"></rect>';
+  }
+  s += '<rect x="' + (6 + push) + '" y="50" width="16" height="54" rx="4" fill="#8A93A6"></rect>';
+  s += '<line x1="' + (22 + push) + '" y1="77" x2="' + rodEnd + '" y2="77" stroke="#8A93A6" stroke-width="7"></line>';
+  s += '<line x1="184" y1="77" x2="240" y2="77" stroke="#5A616C" stroke-width="4"></line>';
+  s += '<text x="109" y="122" text-anchor="middle" font-size="13.5" fill="#555">주사기</text>';
+  s += '</g>';
+
+  /* ── 주입 방울 ── */
+  if (ran && ph === 1){
+    s += '<circle cx="272" cy="77" r="7" fill="' + (cond.color || '#C2185B') + '" class="ani-fade"></circle>';
+    s += '<circle cx="296" cy="79" r="5" fill="' + (cond.color || '#C2185B') + '" opacity=".6"></circle>';
+  }
+
+  /* ── 생쥐 ── */
+  var dead = ran && ph >= 2 && cond.result === 'dead';
+  s += grMouse(360, 118, dead, ran && ph >= 2);
+
+  /* ── 현미경 (혈액 검사) ──
+     ★4국면 = 혈액을 뽑는다(아직 관찰 전) · 5국면 = 관찰 결과.
+       전에는 4국면에 이미 결과가 다 떠서 마지막 「▶ 다음」이 새로 보여 주는 것이 없었다(2026-08-25 검토). */
+  if (ran && ph === 3){
+    s += '<circle cx="562" cy="122" r="64" fill="#F7FAFF" stroke="#8A93A6" stroke-width="3"></circle>';
+    s += '<circle cx="562" cy="122" r="57" fill="none" stroke="#CFD6E0" stroke-width="1.4"></circle>';
+    s += '<text x="562" y="118" text-anchor="middle" font-size="14" fill="#8A93A6">혈액을 뽑았다</text>';
+    s += '<text x="562" y="140" text-anchor="middle" font-size="14" fill="#8A93A6">아직 관찰하지 않았다</text>';
+    s += '<text x="562" y="206" text-anchor="middle" font-size="13.5" fill="#555">혈액 검사</text>';
+  } else if (ran && ph >= 4){
+    var inner = '', capt;
+    if (cond.bloodS && cond.bloodR){
+      /* ★(라) — R형균이 모두 바뀌는 것이 아니다. 대부분은 R형균으로 남고 극히 일부만 형질전환된다. */
+      inner = bactR(534, 100, .8) + bactR(582, 96, .75) + bactR(520, 142, .75) +
+              bactR(594, 148, .8) + bactR(552, 168, .7) + bactS(562, 126, .95);
+      capt = '혈액 검사|살아 있는 S형균이 발견되었다|대부분은 피막이 없는|R형균으로 남아 있다';
+    } else if (cond.bloodS){
+      inner = bactS(560, 108, 1) + bactS(586, 136, .85) + bactS(536, 142, .8);
+      capt = '혈액 검사|살아 있는 S형균이 발견되었다|모두 피막이 있어 매끈하다';
+    } else if (cond.bloodR){
+      /* ★(나) — 살아 있는 R형균은 병원성이 없을 뿐 죽지 않는다. 피막이 없어 표면이 거칠다. */
+      inner = bactR(556, 104, .95) + bactR(588, 138, .85) + bactR(530, 140, .8);
+      capt = '혈액 검사|살아 있는 R형균이 발견되었다|피막이 없어 표면이 거칠다';
+    } else {
+      inner = '<text x="562" y="120" text-anchor="middle" font-size="14" fill="#8A93A6">살아 있는 균이</text>' +
+              '<text x="562" y="140" text-anchor="middle" font-size="14" fill="#8A93A6">발견되지 않았다</text>';
+      capt = '혈액 검사|살아 있는 균이 발견되지 않았다';
+    }
+    s += scopeField(562, 122, 64, inner, capt);
+  } else {
+    s += '<circle cx="562" cy="122" r="64" fill="#F4F6F9" stroke="#D5D8DE" stroke-width="2.4" stroke-dasharray="6,5"></circle>';
+    s += '<text x="562" y="127" text-anchor="middle" font-size="13.5" fill="#9AA1AC">혈액 검사</text>';
+  }
+
+  /* 진행 안내 */
+  var cap = ['주사기를 채웠다', '주입한다', ran && cond.result === 'dead' ? '생쥐가 폐렴에 걸려 죽었다' : '생쥐가 살아 있다',
+             '혈액을 뽑아 관찰한다', ''][Math.min(ph, 4)];
+  if (ran && cap){
+    s += '<text x="250" y="250" text-anchor="middle" font-size="14.5" fill="#555">' + cap + '</text>';
+  }
+  s += '</svg>';
+  return s;
+}
+
+function grMouse(x, y, dead, shown){
+  var body = dead ? '#B9BFC8' : '#D9C3A5';
+  var line = dead ? '#7A828E' : '#8A7355';
+  var rot = dead ? ' rotate(16)' : '';
+  var g = '<g transform="translate(' + x + ',' + y + ')' + rot + '">';
+  g += '<path d="M46,10 C74,4 78,26 62,30" fill="none" stroke="' + line + '" stroke-width="3.2" stroke-linecap="round"></path>';
+  g += '<ellipse cx="0" cy="10" rx="50" ry="30" fill="' + body + '" stroke="' + line + '" stroke-width="2.4"></ellipse>';
+  g += '<circle cx="-52" cy="-2" r="22" fill="' + body + '" stroke="' + line + '" stroke-width="2.4"></circle>';
+  g += '<circle cx="-56" cy="-22" r="10" fill="#E9D3BC" stroke="' + line + '" stroke-width="2"></circle>';
+  g += '<circle cx="-34" cy="-18" r="9" fill="#E9D3BC" stroke="' + line + '" stroke-width="2"></circle>';
+  if (dead){
+    g += '<path d="M-64,-6 L-56,2 M-56,-6 L-64,2" stroke="#3A4048" stroke-width="2.6" stroke-linecap="round"></path>';
+    g += '<path d="M-46,-6 L-38,2 M-38,-6 L-46,2" stroke="#3A4048" stroke-width="2.6" stroke-linecap="round"></path>';
+  } else {
+    g += '<circle cx="-60" cy="-2" r="3.2" fill="#3A4048"></circle>';
+    g += '<circle cx="-42" cy="-2" r="3.2" fill="#3A4048"></circle>';
+  }
+  g += '<circle cx="-72" cy="4" r="3.4" fill="#C98B9B"></circle>';
+  g += '</g>';
+  /* ★라벨은 회전 밖에 둔다 — 안에 두면 글자까지 기울어 읽기 어려워진다 */
+  g += '<text x="' + x + '" y="' + (y + 72) + '" text-anchor="middle" font-size="13.5" fill="#555">생쥐' +
+       (shown ? (dead ? ' — 죽었다' : ' — 살아 있다') : '') + '</text>';
+  return g;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ③ 에이버리 — 죽은 S형균의 세포 추출물에 효소를 처리한다
+   ══════════════════════════════════════════════════════════════ */
+function avRun(id){
+  var t = null;
+  AV_TREATS.forEach(function(x){ if (x.id === id) t = x; });
+  if (!t) return;
+  if (state.avRun[id]) return;
+  state.avRun[id] = t.result;      /* ★결과는 지금 확정된다 */
+  saveState();
+  aniStart('av', id, true);
+  renderAv();
+  updateRail();
+  updateLocks();
+  updateHandoffs();
+}
+
+function renderAv(){
+  /* 버튼 */
+  var b = '';
+  AV_TREATS.forEach(function(t){
+    var done = !!state.avRun[t.id];
+    /* ★다 한 칩을 잠그지 않는다 — 누르면 그 조건의 연출을 다시 본다.
+       잠가 두면 마지막에 실행한 것 말고는 무대에 다시 불러올 방법이 없다. */
+    b += '<button type="button" class="chip sq' + (done ? ' used' : '') + '"' +
+         ' onclick="' + (done ? 'aniReplay(\'av\',\'' + t.id + '\')' : 'avRun(\'' + t.id + '\')') + '"' +
+         (done ? ' title="이 조건의 연출을 다시 본다"' : '') + '>' +
+         '<span class="dot" style="background:' + t.color + '"></span><span>' + t.name +
+         (done ? ' ✅' : '') + '</span></button>';
+  });
+  setHTML('avChips', b);
+
+  var cur = (ani.st === 'av') ? ani.id : null;
+  var lastDone = null;
+  AV_TREATS.forEach(function(t){ if (state.avRun[t.id]) lastDone = t.id; });
+  var showId = cur || lastDone;
+  var t2 = null;
+  AV_TREATS.forEach(function(x){ if (x.id === showId) t2 = x; });
+  setHTML('avStage', avStageSvg(t2));
+  setHTML('avAni', t2 ? aniBarHtml('av', t2.id, 'e2') : '');
+
+  var rows = '';
+  AV_TREATS.forEach(function(t){
+    var done = !!state.avRun[t.id];
+    var showing = !aniPlaying('av', t.id);
+    if (done && showing){
+      var yes = (t.result === 'S');
+      rows += '<tr' + (t.id === 'dna' ? ' class="hl"' : '') + '><td><b>' + t.name + '</b></td>' +
+              '<td>' + t.removed + '</td>' +
+              '<td><b class="' + (yes ? 'sform' : 'nosign') + '">' + (yes ? 'S형균이 관찰됨' : 'S형균이 관찰되지 않음') + '</b></td>' +
+              '<td>' + (yes ? '형질전환이 일어났다' : '형질전환이 일어나지 않았다') + '</td></tr>';
+    } else if (done){
+      rows += '<tr><td><b>' + t.name + '</b></td><td>' + t.removed + '</td>' +
+              '<td class="wait">배양 중이다…</td><td class="wait">—</td></tr>';
+    } else {
+      rows += '<tr><td><b>' + t.name + '</b></td><td>' + t.removed + '</td>' +
+              '<td class="wait">아직 처리하지 않았다</td><td class="wait">—</td></tr>';
+    }
+  });
+  setHTML('avTbody', rows);
+
+  var n = 0;
+  AV_TREATS.forEach(function(t){ if (state.avRun[t.id]) n++; });
+  var tag = document.getElementById('avProg');
+  if (tag) tag.textContent = '처리한 것 ' + n + ' / ' + AV_TREATS.length;
+
+  var qwrap = document.getElementById('avQwrap');
+  if (qwrap) qwrap.style.display = (n === AV_TREATS.length || state.teacherUnlock) ? 'block' : 'none';
+  var qlock = document.getElementById('avQlock');
+  if (qlock) qlock.className = 'msg info' + ((n === AV_TREATS.length || state.teacherUnlock) ? ' hide' : '');
+}
+
+function avStageSvg(t){
+  var ph = t ? aniOf('av', t.id) : ANI_LAST;
+  var W = 680, H = 250;
+  var s = svgOpen(W, H, '에이버리의 효소 처리 실험 무대');
+  s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#FBFCFE"></rect>';
+
+  if (!t){
+    s += '<text x="340" y="120" text-anchor="middle" font-size="16" fill="#8A93A6">' +
+         '처리할 것을 골라 실행하시오.</text>';
+    s += '<text x="340" y="146" text-anchor="middle" font-size="14" fill="#9AA1AC">' +
+         '열처리로 죽은 S형균의 세포 추출물에는 DNA · 단백질 · RNA가 모두 들어 있다.</text>';
+    s += '</svg>';
+    return s;
+  }
+
+  /* ── 시험관 ── */
+  var cut = (ph >= 2);
+  s += '<g transform="translate(60,36)">';
+  s += '<path d="M0,0 L0,118 A38,38 0 0 0 76,118 L76,0 Z" fill="#EAF1FA" stroke="#5A616C" stroke-width="2.4"></path>';
+  s += '<rect x="-4" y="-8" width="84" height="10" rx="4" fill="#8A93A6"></rect>';
+  /* 분자 3종 */
+  s += avMolDna(20, 26, cut && t.cuts === 'dna');
+  s += avMolProt(52, 74, cut && t.cuts === 'prot');
+  s += avMolRna(20, 110, cut && t.cuts === 'rna');
+  s += '<text x="38" y="172" text-anchor="middle" font-size="13" fill="#555">죽은 S형균 추출물</text>';
+  s += '</g>';
+
+  /* ★대조군은 넣는 것도 잘리는 것도 없어 1·2·3국면 그림이 한 글자도 다르지 않았다.
+     단계별로 세울 수 있게 되면서 「단추가 고장 났다」로 보인다 — 무엇이 일어나지 않는지 적어 준다. */
+  if (!t.cuts && ph >= 1 && ph <= 2){
+    s += '<text x="300" y="86" text-anchor="middle" font-size="14.5" fill="#8A93A6">' +
+         (ph === 1 ? '아무 효소도 넣지 않는다' : '분해된 물질이 없다') + '</text>';
+    s += '<text x="300" y="108" text-anchor="middle" font-size="13.5" fill="#9AA1AC">' +
+         'DNA · 단백질 · RNA가 그대로 남아 있다</text>';
+  }
+
+  /* ── 스포이트와 방울 ── */
+  if (t.cuts){
+    s += '<g transform="translate(120,6)">';
+    s += '<rect x="0" y="0" width="20" height="26" rx="9" fill="' + t.color + '" opacity=".85"></rect>';
+    s += '<rect x="7" y="24" width="6" height="16" fill="#8A93A6"></rect>';
+    s += '</g>';
+    if (ph === 1){
+      s += '<circle cx="130" cy="58" r="6" fill="' + t.color + '"></circle>';
+      s += '<circle cx="130" cy="80" r="5" fill="' + t.color + '" opacity=".6"></circle>';
+    }
+  }
+  s += '<text x="130" y="240" text-anchor="middle" font-size="13.5" fill="' + (t.cuts ? t.color : '#5A616C') + '">' + t.short + '</text>';
+
+  /* ── 화살표 → 배양 ── */
+  s += '<path d="M200,110 L268,110" stroke="#8A93A6" stroke-width="3"></path>';
+  s += '<path d="M262,103 L272,110 L262,117 Z" fill="#8A93A6"></path>';
+  s += '<text x="234" y="98" text-anchor="middle" font-size="12.5" fill="#555">R형균과 배양</text>';
+
+  /* ── 배양접시 ── */
+  var grown = (ph >= 4);
+  var mid = (ph === 3);
+  s += '<g transform="translate(300,32)">';
+  s += '<ellipse cx="140" cy="88" rx="132" ry="82" fill="#FFFDF6" stroke="#5A616C" stroke-width="2.6"></ellipse>';
+  s += '<ellipse cx="140" cy="88" rx="120" ry="72" fill="none" stroke="#DCE3EC" stroke-width="1.6"></ellipse>';
+  if (mid){
+    s += '<text x="140" y="94" text-anchor="middle" font-size="15" fill="#9AA1AC">배양 중이다…</text>';
+  }
+  if (grown){
+    /* R형균 집락은 어느 경우에나 자란다 */
+    var rpos = [[74,58],[104,116],[176,132],[204,62],[142,44],[70,110],[196,104],[120,86]];
+    rpos.forEach(function(p){
+      s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="7" fill="#B9BFC8" stroke="#7A828E" stroke-width="1.4" stroke-dasharray="3,2"></circle>';
+    });
+    if (t.result === 'S'){
+      var spos = [[92,80],[150,108],[188,80],[126,62]];
+      spos.forEach(function(p){
+        s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="11" fill="#F3B8CE" stroke="#C2185B" stroke-width="2"></circle>';
+        s += '<circle cx="' + (p[0] - 3) + '" cy="' + (p[1] - 3) + '" r="3.4" fill="#fff" opacity=".8"></circle>';
+      });
+    }
+  }
+  s += '<text x="140" y="190" text-anchor="middle" font-size="13.5" fill="#555">' +
+       (grown ? (t.result === 'S' ? '매끈한 S형 집락이 나타났다 — 형질전환이 일어났다'
+                                  : '거친 R형 집락만 있다 — 형질전환이 일어나지 않았다')
+              : '배양접시') + '</text>';
+  s += '</g>';
+  s += '</svg>';
+  return s;
+}
+function avMolDna(x, y, cutIt){
+  var g = '<g transform="translate(' + x + ',' + y + ')">';
+  if (!cutIt){
+    g += '<path d="M0,0 C14,10 -14,20 0,30 C14,40 -14,50 0,60" fill="none" stroke="#1255A0" stroke-width="3.2"></path>';
+    g += '<path d="M18,0 C4,10 32,20 18,30 C4,40 32,50 18,60" fill="none" stroke="#1255A0" stroke-width="3.2"></path>';
+    for (var i = 0; i < 4; i++){
+      g += '<line x1="4" y1="' + (7 + i * 14) + '" x2="14" y2="' + (7 + i * 14) + '" stroke="#7FA6D4" stroke-width="2.4"></line>';
+    }
+  } else {
+    for (var j = 0; j < 7; j++){
+      g += '<line x1="' + (j % 3) * 12 + '" y1="' + (j * 8 + 2) + '" x2="' + ((j % 3) * 12 + 8) + '" y2="' + (j * 8 + 6) + '" stroke="#1255A0" stroke-width="3" stroke-linecap="round" opacity=".55"></line>';
+    }
+  }
+  g += '</g>';
+  return g;
+}
+function avMolProt(x, y, cutIt){
+  var g = '<g transform="translate(' + x + ',' + y + ')">';
+  if (!cutIt){
+    g += '<path d="M0,0 C16,-10 26,4 18,14 C28,22 18,36 4,30 C-8,36 -16,20 -8,12 C-14,2 -8,-6 0,0 Z" fill="#E67E22" opacity=".85" stroke="#B4621A" stroke-width="1.8"></path>';
+  } else {
+    var pts = [[-10,0],[2,-6],[12,4],[4,16],[-8,12]];
+    pts.forEach(function(p){
+      g += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.6" fill="#E67E22" opacity=".6"></circle>';
+    });
+  }
+  g += '</g>';
+  return g;
+}
+function avMolRna(x, y, cutIt){
+  var g = '<g transform="translate(' + x + ',' + y + ')">';
+  if (!cutIt){
+    g += '<path d="M0,0 C12,6 -8,14 4,20 C16,26 -4,32 6,38" fill="none" stroke="#2A7A38" stroke-width="3"></path>';
+  } else {
+    for (var j = 0; j < 5; j++){
+      g += '<circle cx="' + (j * 7) + '" cy="' + (j % 2 ? 10 : 26) + '" r="3.2" fill="#2A7A38" opacity=".55"></circle>';
+    }
+  }
+  g += '</g>';
+  return g;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ④ 허시·체이스 — 표지한 파지를 대장균에 감염시킨다
+   ══════════════════════════════════════════════════════════════ */
+function hcRun(id){
+  var t = null;
+  HC_TAGS.forEach(function(x){ if (x.id === id) t = x; });
+  if (!t) return;
+  if (state.hcRun[id]) return;
+  state.hcRun[id] = t.result;      /* ★결과는 지금 확정된다 */
+  saveState();
+  aniStart('hc', id, true);
+  renderHc();
+  updateRail();
+  updateLocks();
+  updateHandoffs();
+}
+
+function renderHc(){
+  var b = '';
+  HC_TAGS.forEach(function(t){
+    var done = !!state.hcRun[t.id];
+    /* ★다 한 칩을 잠그지 않는다 — 누르면 그 표지의 연출을 다시 본다 */
+    b += '<button type="button" class="chip' + (done ? ' used' : '') + '"' +
+         ' onclick="' + (done ? 'aniReplay(\'hc\',\'' + t.id + '\')' : 'hcRun(\'' + t.id + '\')') + '"' +
+         (done ? ' title="이 표지의 연출을 다시 본다"' : '') + '>' +
+         '<span class="dot" style="background:' + t.color + '"></span><span>' +
+         t.name + (done ? ' ✅' : '') + '</span></button>';
+  });
+  setHTML('hcChips', b);
+
+  var cur = (ani.st === 'hc') ? ani.id : null;
+  var lastDone = null;
+  HC_TAGS.forEach(function(t){ if (state.hcRun[t.id]) lastDone = t.id; });
+  var showId = cur || lastDone;
+  var t2 = null;
+  HC_TAGS.forEach(function(x){ if (x.id === showId) t2 = x; });
+  setHTML('hcStage', hcStageSvg(t2));
+  setHTML('hcAni', t2 ? aniBarHtml('hc', t2.id, 'e3') : '');
+
+  var rows = '';
+  HC_TAGS.forEach(function(t){
+    var done = !!state.hcRun[t.id];
+    var showing = !aniPlaying('hc', t.id);
+    if (done && showing){
+      rows += '<tr><td><b>' + t.name + '</b></td><td>' + t.marked + '</td>' +
+              '<td>' + (t.result === 'sup' ? '<b class="dead">검출됨</b>' : '검출 안 됨') + '</td>' +
+              '<td>' + (t.result === 'pel' ? '<b class="dead">검출됨</b>' : '검출 안 됨') + '</td></tr>';
+    } else if (done){
+      rows += '<tr><td><b>' + t.name + '</b></td><td>' + t.marked + '</td>' +
+              '<td class="wait">측정 중이다…</td><td class="wait">측정 중이다…</td></tr>';
+    } else {
+      rows += '<tr><td><b>' + t.name + '</b></td><td>' + t.marked + '</td>' +
+              '<td class="wait">아직 실행하지 않았다</td><td class="wait">—</td></tr>';
+    }
+  });
+  setHTML('hcTbody', rows);
+
+  var n = 0;
+  HC_TAGS.forEach(function(t){ if (state.hcRun[t.id]) n++; });
+  var tag = document.getElementById('hcProg');
+  if (tag) tag.textContent = '실행한 표지 ' + n + ' / ' + HC_TAGS.length;
+
+  var one = document.getElementById('hcOne');
+  if (one){
+    var showOne = (n === 1);
+    one.className = 'msg warn' + (showOne ? '' : ' hide');
+    if (showOne) one.innerHTML = '한 가지 표지만으로는 결론을 낼 수 없다. <b>나머지 하나도 실행</b>하시오.';
+  }
+
+  var qwrap = document.getElementById('hcQwrap');
+  if (qwrap) qwrap.style.display = (n === HC_TAGS.length || state.teacherUnlock) ? 'block' : 'none';
+  var qlock = document.getElementById('hcQlock');
+  if (qlock) qlock.className = 'msg info' + ((n === HC_TAGS.length || state.teacherUnlock) ? ' hide' : '');
+}
+
+function hcStageSvg(t){
+  var ph = t ? aniOf('hc', t.id) : ANI_LAST;
+  var W = 680, H = 260;
+  var s = svgOpen(W, H, '허시와 체이스의 박테리오파지 실험 무대');
+  s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#FBFCFE"></rect>';
+
+  if (!t){
+    s += '<text x="340" y="118" text-anchor="middle" font-size="16" fill="#8A93A6">표지할 것을 골라 실행하시오.</text>';
+    s += '<text x="340" y="144" text-anchor="middle" font-size="14" fill="#9AA1AC">' +
+         '황(S)은 단백질에만 있고, 인(P)은 DNA에만 있다.</text>';
+    s += '</svg>';
+    return s;
+  }
+  var hotDna = (t.id === 'p32');       /* 표지된 쪽 */
+  var dnaCol = hotDna ? t.color : '#1255A0';
+  var capCol = hotDna ? '#E67E22' : t.color;
+
+  if (ph <= 0){
+    /* 준비 — 표지된 파지와 대장균 */
+    s += hcPhage(150, 60, 1.15, dnaCol, capCol, hotDna, !hotDna, 0);
+    s += hcEcoli(430, 130, 1, '');
+    s += '<text x="150" y="200" text-anchor="middle" font-size="13.5" fill="#555">' + svgText(t.name) + '</text>';
+    s += '<text x="430" y="200" text-anchor="middle" font-size="13.5" fill="#555">대장균</text>';
+  } else if (ph === 1){
+    /* 감염 — 파지가 붙어 DNA를 넣는다 */
+    s += hcEcoli(400, 140, 1.25, dnaCol);
+    s += hcPhage(400, 34, 1, dnaCol, capCol, hotDna, !hotDna, 1);
+    s += '<text x="340" y="228" text-anchor="middle" font-size="14.5" fill="#555">' +
+         '파지가 대장균 표면에 붙어 <tspan font-weight="bold" fill="' + dnaCol + '">DNA</tspan>를 대장균 안으로 넣는다. 단백질 껍질은 밖에 남는다.</text>';
+  } else if (ph === 2){
+    /* 믹서 */
+    s += '<g class="shaking">';
+    s += '<rect x="252" y="40" width="176" height="126" rx="12" fill="#EAF1FA" stroke="#5A616C" stroke-width="2.6"></rect>';
+    s += hcEcoli(340, 108, 1, dnaCol);
+    s += hcShell(292, 62, .72, capCol, !hotDna);
+    s += hcShell(392, 74, .72, capCol, !hotDna);
+    s += '</g>';
+    s += '<rect x="240" y="166" width="200" height="18" rx="6" fill="#8A93A6"></rect>';
+    s += '<text x="340" y="216" text-anchor="middle" font-size="14.5" fill="#555">' +
+         svgText('믹서로 세게 흔들어 <b>대장균에 붙어 있던 빈 껍질</b>을 떼어 낸다.') + '</text>';
+  } else if (ph === 3){
+    /* 원심분리 — 회전자에 시험관 두 개가 마주 보고 달려 돈다.
+       ★자리 잡는 <g> 는 밖, 도는 <g> 는 안. 도는 쪽에 transform 속성을 주면 CSS 가 덮어써서 튄다.
+       ★도는 반지름을 72 → 56 으로 줄였다(교사 지시 2026-08-25 「돌아가는 원의 지름을 줄여라」). */
+    var hcTube = function(deg){
+      return '<g transform="rotate(' + deg + ')">' +
+               '<rect x="-13" y="-56" width="26" height="38" rx="4" fill="#EAF1FA" stroke="#5A616C" stroke-width="2.2"></rect>' +
+               '<rect x="-15" y="-24" width="30" height="8" rx="3" fill="#8A93A6"></rect>' +
+             '</g>';
+    };
+    s += '<g transform="translate(340,112)">';
+    s +=   '<circle cx="0" cy="0" r="62" fill="none" stroke="#D5D8DE" stroke-width="1.6" stroke-dasharray="5,5"></circle>';
+    s +=   '<g class="spinning">' + hcTube(0) + hcTube(180) +
+           '<circle cx="0" cy="0" r="11" fill="#8A93A6"></circle>' +
+           '<circle cx="0" cy="0" r="4" fill="#5A616C"></circle></g>';
+    s += '</g>';
+    s += '<text x="340" y="222" text-anchor="middle" font-size="14.5" fill="#555">' +
+         '원심분리한다 — 크고 무거운 대장균은 가라앉고, 가벼운 단백질 껍질은 위에 뜬다.</text>';
+  } else {
+    /* 측정 */
+    s += '<g transform="translate(150,26)">';
+    s += '<path d="M-40,0 L40,0 L34,132 A34,34 0 0 1 -34,132 Z" fill="#F7FAFF" stroke="#5A616C" stroke-width="2.6"></path>';
+    /* 상층액 */
+    s += '<rect x="-38" y="6" width="76" height="70" fill="#E9EFF7"></rect>';
+    /* 침전물 */
+    s += '<path d="M-33,110 L33,110 L30,132 A30,30 0 0 1 -30,132 Z" fill="#DCE3EC"></path>';
+    if (!hotDna){ s += hcShell(-14, 26, .5, capCol, true) + hcShell(16, 50, .5, capCol, true); }
+    else { s += hcShell(-14, 26, .5, '#B9BFC8', false) + hcShell(16, 50, .5, '#B9BFC8', false); }
+    s += hcEcoli(0, 124, .5, hotDna ? dnaCol : '');
+    s += '<text x="66" y="46" font-size="13" fill="#555">상층액</text>';
+    s += '<text x="66" y="128" font-size="13" fill="#555">침전물</text>';
+    s += '</g>';
+    /* 계수기 2대 */
+    s += hcCounter(400, 40, '상층액', t.result === 'sup');
+    s += hcCounter(400, 148, '침전물', t.result === 'pel');
+    s += '<text x="340" y="252" text-anchor="middle" font-size="14.5" fill="#555">' + svgText(t.readout) + '</text>';
+  }
+  s += '</svg>';
+  return s;
+}
+function hcPhage(x, y, sc, dnaCol, capCol, hotDna, hotCap, injecting){
+  var g = '<g transform="translate(' + x + ',' + y + ') scale(' + sc + ')">';
+  /* 머리(단백질 껍질) */
+  g += '<path d="M0,-26 L22,-13 L22,13 L0,26 L-22,13 L-22,-13 Z" fill="' + (hotCap ? capCol : '#CBD3DE') +
+       '" stroke="#5A616C" stroke-width="2.2"' + (hotCap ? ' class="hot"' : '') + '></path>';
+  /* 안의 DNA */
+  if (!injecting){
+    g += '<path d="M-9,-12 C6,-6 -9,2 6,8 C-4,13 4,16 8,14" fill="none" stroke="' + dnaCol +
+         '" stroke-width="2.6"' + (hotDna ? ' class="hot"' : '') + '></path>';
+  }
+  /* 꼬리 */
+  g += '<rect x="-5" y="26" width="10" height="34" fill="#8A93A6"></rect>';
+  g += '<rect x="-16" y="60" width="32" height="7" rx="3" fill="#8A93A6"></rect>';
+  g += '<path d="M-16,67 L-24,84 M0,67 L0,86 M16,67 L24,84" stroke="#8A93A6" stroke-width="2.6" stroke-linecap="round"></path>';
+  if (injecting){
+    g += '<path d="M0,60 L0,104" stroke="' + dnaCol + '" stroke-width="3.4" stroke-linecap="round"' +
+         (hotDna ? ' class="hot"' : '') + '></path>';
+  }
+  g += '</g>';
+  return g;
+}
+function hcShell(x, y, sc, col, hot){
+  var g = '<g transform="translate(' + x + ',' + y + ') scale(' + sc + ')">';
+  g += '<path d="M0,-26 L22,-13 L22,13 L0,26 L-22,13 L-22,-13 Z" fill="' + col +
+       '" stroke="#5A616C" stroke-width="2.2"' + (hot ? ' class="hot"' : '') + '></path>';
+  g += '<rect x="-5" y="26" width="10" height="26" fill="#8A93A6"></rect>';
+  g += '</g>';
+  return g;
+}
+function hcEcoli(x, y, sc, inCol){
+  var g = '<g transform="translate(' + x + ',' + y + ') scale(' + sc + ')">';
+  g += '<rect x="-64" y="-30" width="128" height="60" rx="30" fill="#E3EEDF" stroke="#4B7A45" stroke-width="2.6"></rect>';
+  if (inCol){
+    g += '<path d="M-30,-6 C-14,-18 2,8 18,-6 C30,-16 40,2 46,-4" fill="none" stroke="' + inCol +
+         '" stroke-width="3.4" stroke-linecap="round" class="hot"></path>';
+  }
+  g += '</g>';
+  return g;
+}
+function hcCounter(x, y, label, hot){
+  var g = '<g transform="translate(' + x + ',' + y + ')">';
+  g += '<rect x="0" y="0" width="196" height="88" rx="10" fill="#fff" stroke="#5A616C" stroke-width="2.4"></rect>';
+  g += '<text x="14" y="26" font-size="14" fill="#555">' + label + '</text>';
+  g += '<circle cx="150" cy="30" r="12" fill="' + (hot ? '#C0392B' : '#DCE3EC') + '"' + (hot ? ' class="hot"' : '') + '></circle>';
+  g += '<text x="14" y="64" font-size="17" font-weight="bold" fill="' + (hot ? '#C0392B' : '#8A93A6') + '">' +
+       (hot ? '방사선 검출됨' : '방사선 검출 안 됨') + '</text>';
+  g += '</g>';
+  return g;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ⑤ 논리 사슬판 — 이 활동의 핵심 산출물
+   ★가르치려는 것은 딱 하나다: 한 실험이 남긴 물음이 다음 실험의 물음이 된다.
+     그래서 이음매 두 칸에는 「같은 문장」이 들어간다. 설명으로 알려 주지 않고
+     덱에 같은 문장이 두 장(또는 한 장 + 이미 채워진 칸) 있다는 사실로 알게 한다.
+   ★탭-선택-탭-배치. 드래그를 쓰지 않는다(태블릿에서 스크롤과 충돌하고, 카드가 손에 가린다).
+   ★정오를 기록하지 않는다 — 시도 횟수도 세지 않는다. 배치만 저장해 새로고침을 견딘다.
+   ══════════════════════════════════════════════════════════════ */
+var chHand = null;      /* 손에 든 카드의 인스턴스 id (화면 전용) */
+var chFb = {};          /* 칸별 되돌림 문구 (화면 전용) */
+
+function chSlotId(r, c){ return r + '.' + c; }
+function chRowOf(sid){ return String(sid).split('.')[0]; }
+function chColOf(sid){ return String(sid).split('.')[1]; }
+function chCardOf(inst){ return String(inst).split('#')[0]; }
+function chCardById(cid){
+  for (var i = 0; i < CH_CARDS.length; i++){ if (CH_CARDS[i].id === cid) return CH_CARDS[i]; }
+  return null;
+}
+function chPreset(){ return state.chainHard ? ['gr.q'] : CH_PRESET; }
+function chIsPreset(sid){ return chPreset().indexOf(sid) >= 0; }
+function chAllSlots(){
+  var out = [];
+  CH_ROWS.forEach(function(r){ CH_COLS.forEach(function(c){ out.push(chSlotId(r.id, c.id)); }); });
+  return out;
+}
+/* 미리 채운 칸에 들어 있는 카드 */
+function chPresetCard(sid){
+  for (var i = 0; i < CH_CARDS.length; i++){
+    var c = CH_CARDS[i];
+    if (c.slots && c.slots.indexOf(sid) >= 0) return c;
+  }
+  return null;
+}
+/* 덱 — 빈 칸에 필요한 만큼 인스턴스를 만든다(쌍둥이 카드가 두 장 필요할 수 있다) */
+function chDeckAll(){
+  var out = [];
+  var bad = 0;
+  CH_CARDS.forEach(function(c){
+    if (c.bad){
+      if (bad < CH_BAD_COUNT){ out.push(c.id + '#0'); bad++; }
+      return;
+    }
+    var need = 0;
+    c.slots.forEach(function(s){ if (!chIsPreset(s)) need++; });
+    for (var i = 0; i < need; i++) out.push(c.id + '#' + i);
+  });
+  return out;
+}
+function chPlacedInsts(){
+  var used = {};
+  Object.keys(state.chain).forEach(function(sid){ used[state.chain[sid]] = true; });
+  return used;
+}
+/* ★덱을 섞어서 낸다 (교사 지시 2026-08-25 「카드가 안 섞여 있으니 찾는 맛도 안 난다」).
+   CH_CARDS 차례대로 내면 정답 카드가 판에 놓을 순서 그대로 줄지어 나와 고를 것이 없었다.
+   ★한 번 섞은 차례는 state.deckOrder 에 남긴다 — 카드를 놓을 때마다 다시 섞이면 눈이 따라가지 못한다.
+     난도를 바꾸면 덱의 구성 자체가 달라지므로(아래 검사) 그때는 다시 섞는다. */
+function chShuffledAll(){
+  var all = chDeckAll();
+  var order = state.deckOrder;
+  var same = !!order && order.length === all.length;
+  if (same){
+    var seen = {};
+    order.forEach(function(x){ seen[x] = true; });
+    for (var k = 0; k < all.length; k++){ if (!seen[all[k]]){ same = false; break; } }
+  }
+  if (!same){
+    order = all.slice();
+    for (var i = order.length - 1; i > 0; i--){
+      var j = (typeof Math.random === 'function') ? Math.floor(Math.random() * (i + 1)) : 0;
+      var t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    state.deckOrder = order;
+  }
+  return order;
+}
+function chDeck(){
+  var used = chPlacedInsts();
+  return chShuffledAll().filter(function(inst){ return !used[inst]; });
+}
+function chBlanks(){
+  return chAllSlots().filter(function(s){ return !chIsPreset(s); });
+}
+function chFilledCount(){
+  var n = 0;
+  chBlanks().forEach(function(s){ if (state.chain[s]) n++; });
+  return n;
+}
+/* 그 칸에 놓인 카드가 옳은가 */
+function chSlotOk(sid){
+  if (chIsPreset(sid)) return true;
+  var inst = state.chain[sid];
+  if (!inst) return false;
+  var c = chCardById(chCardOf(inst));
+  return !!(c && c.slots && c.slots.indexOf(sid) >= 0);
+}
+function chAllOk(){
+  return chAllSlots().every(function(s){ return chSlotOk(s); });
+}
+/* 이음매가 이어졌는가 — 두 칸에 같은 카드가 놓였는가 */
+function chLinkOn(link){
+  var a = chIsPreset(link.from) ? (chPresetCard(link.from) || {}).id : chCardOf(state.chain[link.from] || '');
+  var b = chIsPreset(link.to)   ? (chPresetCard(link.to)   || {}).id : chCardOf(state.chain[link.to]   || '');
+  return !!a && a === b;
+}
+
+/* ── 조작 ── */
+function chPickCard(inst){
+  /* ★완성한 뒤에는 집어도 놓을 칸이 없다(chTapSlot 이 chainOk 에서 되돌아간다).
+     그런데 트레이는 「놓을 칸을 탭하시오」라고 지시해 아무 일도 안 나는 상태가 됐다(2026-08-25 검토). */
+  if (state.chainOk) return;
+  chHand = (chHand === inst) ? null : inst;
+  renderChain();
+}
+function chDrop(){ chHand = null; renderChain(); }
+
+function chTapSlot(sid){
+  if (state.chainOk) return;
+  if (chIsPreset(sid)) return;
+  if (chHand){
+    if (state.chain[sid]) return;           /* 이미 놓인 칸에는 덮어 놓지 않는다 */
+    state.chain[sid] = chHand;
+    chHand = null;
+    delete chFb[sid];
+    saveState();
+    renderChain();
+    return;
+  }
+  if (state.chain[sid]){                    /* 놓인 카드를 다시 탭하면 덱으로 돌아간다 */
+    delete state.chain[sid];
+    delete chFb[sid];
+    saveState();
+    renderChain();
+  }
+}
+
+/* 12칸을 다 채운 뒤 한꺼번에 판정한다 — 놓는 도중에는 판정하지 않는다 */
+function chCheck(){
+  var blanks = chBlanks();
+  var missing = blanks.filter(function(s){ return !state.chain[s]; });
+  var msg = document.getElementById('chMsg');
+  if (missing.length){
+    if (msg){
+      msg.className = 'msg warn';
+      msg.innerHTML = '아직 비어 있는 칸이 <b>' + missing.length + '칸</b> 있다. 모두 채운 뒤에 확인하시오.';
+    }
+    return;
+  }
+  chFb = {};
+  var wrong = 0;
+  blanks.forEach(function(sid){
+    if (chSlotOk(sid)) return;
+    wrong++;
+    var inst = state.chain[sid];
+    var c = chCardById(chCardOf(inst));
+    var t;
+    if (!c) t = CH_FB.row;
+    else if (c.bad) t = CH_FB[c.bad] || CH_FB.over;
+    else {
+      var sameCol = c.slots.some(function(s){ return chColOf(s) === chColOf(sid); });
+      t = sameCol ? CH_FB.row : (CH_FB['col_' + chColOf(sid)] || CH_FB.row);
+    }
+    chFb[sid] = t;
+    delete state.chain[sid];               /* 틀린 카드는 덱으로 돌아간다 */
+  });
+  if (!wrong){
+    state.chainOk = true;
+    /* 이음매가 끊긴 채로 통과할 수는 없다 — 정답 배치면 두 이음매는 반드시 이어진다 */
+  }
+  saveState();
+  renderChain();
+  updateRail();
+  updateLocks();
+  if (msg){
+    if (wrong){
+      msg.className = 'msg bad';
+      msg.innerHTML = '<b>' + wrong + '칸</b>이 제자리가 아니다. 그 칸의 카드는 덱으로 돌아갔다. ' +
+                      '칸에 남은 문구를 읽고 다시 놓으시오. <b>정답은 알려 주지 않는다.</b>';
+    } else {
+      msg.className = 'msg good';
+      msg.innerHTML = CH_DONE_MSG;
+    }
+  }
+}
+
+function chToggleHard(){
+  var next = !state.chainHard;
+  if (chFilledCount() > 0 || state.chainOk){
+    /* ★사슬을 완성한 뒤라면 chainOk 가 꺼지면서 ⑥ 연습 문항도 함께 잠긴다.
+       문구가 그 사실을 말하지 않아 학생이 모르고 눌렀다(2026-08-25 검토). */
+    if (!confirm(state.chainOk
+        ? '난도를 바꾸면 지금 놓은 카드가 모두 지워지고 사슬을 완성한 기록도 사라진다.\n' +
+          '⑥ 연습 문항이 다시 잠긴다 — 새 난도로 사슬을 완성하면 다시 열린다.\n바꾸시겠습니까?'
+        : '난도를 바꾸면 지금 놓은 카드가 모두 지워진다. 바꾸시겠습니까?')) return;
+  }
+  state.chainHard = next;
+  state.chain = {};
+  state.chainOk = false;
+  state.deckOrder = null;          /* 구성이 달라지므로 다시 섞는다 */
+  chHand = null; chFb = {};
+  saveState();
+  renderChain();
+  updateRail();
+  updateLocks();
+}
+function chReset(){
+  /* ★여기도 같다 — 완성한 뒤에 지우면 ⑥이 함께 잠긴다 */
+  /* 다시 놓을 때는 덱도 다시 섞는다 — 같은 자리에 같은 카드가 있으면 다시 하는 뜻이 옅다 */
+  if (!confirm(state.chainOk
+      ? '지금까지 놓은 카드를 모두 지우면 사슬을 완성한 기록도 사라진다.\n' +
+        '⑥ 연습 문항이 다시 잠긴다 — 사슬을 다시 완성하면 열린다.\n처음부터 다시 하시겠습니까?'
+      : '지금까지 놓은 카드를 모두 지우고 처음부터 다시 하시겠습니까?')) return;
+  state.chain = {};
+  state.chainOk = false;
+  state.deckOrder = null;
+  chHand = null; chFb = {};
+  saveState();
+  renderChain();
+  updateRail();
+  updateLocks();
+}
+
+/* ── 그리기 ── */
+function chCardText(cid){
+  var c = chCardById(cid);
+  return c ? c.text : '';
+}
+function chRowMeta(rid){
+  for (var i = 0; i < CH_ROWS.length; i++){ if (CH_ROWS[i].id === rid) return CH_ROWS[i]; }
+  return null;
+}
+
+function renderChain(){
+  /* ── 손에 든 카드 트레이 ── */
+  var tray = document.getElementById('chHand');
+  if (tray){
+    if (chHand){
+      tray.className = 'msg info';
+      tray.innerHTML = '✋ <b>손에 든 카드</b> — ' + chCardText(chCardOf(chHand)) +
+                       ' &nbsp;<button type="button" class="btn ghost" style="padding:8px 14px;" onclick="chDrop()">내려놓기</button>' +
+                       '<br><span style="font-size:14.5px;color:#555;">놓을 칸을 탭하시오.</span>';
+    } else {
+      tray.className = 'msg info';
+      tray.innerHTML = '아래 덱에서 카드를 하나 탭한 뒤, 판의 빈 칸을 탭하여 놓으시오. ' +
+                       '놓은 카드를 다시 탭하면 덱으로 돌아간다.';
+    }
+  }
+
+  /* ── 판 ── */
+  var h = '<table class="chain"><thead><tr><th class="rowh"></th>';
+  CH_COLS.forEach(function(c){
+    h += '<th>' + c.name + '<br><span style="font-weight:400;font-size:12px;color:#8A93A6;">' + c.tip + '</span></th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  CH_ROWS.forEach(function(r, ri){
+    h += '<tr><td><div class="rowlab ' + r.cls + '">' + r.name +
+         '<small>' + r.yr + '년<br>' + r.sub + '</small></div></td>';
+    CH_COLS.forEach(function(col){
+      var sid = chSlotId(r.id, col.id);
+      var preset = chIsPreset(sid);
+      var inst = state.chain[sid];
+      var cls = 'slot';
+      var body;
+      if (preset){
+        cls += ' given';
+        body = '📌 ' + chCardText((chPresetCard(sid) || {}).id);
+      } else if (inst){
+        cls += ' filled ' + r.cls;
+        if (state.chainOk) cls += ' ok';
+        body = chCardText(chCardOf(inst));
+      } else if (chFb[sid]){
+        cls += ' bad';
+        body = chFb[sid];
+      } else {
+        if (chHand) cls += ' target';
+        body = '비어 있음';
+      }
+      /* ★칸 안의 글은 반드시 <span> 하나로 감싼다 —
+         .slot 이 flex 라서 감싸지 않으면 <sup>·<b> 가 저마다 flex 항목이 되어 글자가 흩어진다. */
+      h += '<td><button type="button" class="' + cls + '" onclick="chTapSlot(\'' + sid + '\')">' +
+           '<span>' + body + '</span></button></td>';
+    });
+    h += '</tr>';
+
+    /* 행 사이 이음매 표시 */
+    var link = null;
+    CH_LINKS.forEach(function(L){ if (chRowOf(L.from) === r.id) link = L; });
+    if (link){
+      var on = chLinkOn(link);
+      h += '<tr><td></td><td colspan="4"><div class="linkmark' + (on ? '' : ' off') + '">↓' +
+           '<small>🔗' + link.n + ' ' +
+           (on ? '위 칸의 「남은 질문」이 아래 칸의 「답하려 한 질문」이 되었다'
+               : '이 두 칸은 서로 이어지는 자리이다') +
+           '</small></div></td></tr>';
+    }
+    if (ri === CH_ROWS.length - 1 && state.chainOk){
+      h += '<tr><td></td><td colspan="4"><div class="linkmark">↓<small>🔗3 이 물음에는 이 사슬의 어느 실험도 답하지 못하였다</small></div></td></tr>';
+    }
+  });
+  h += '</tbody></table>';
+  setHTML('chBoard', h);
+
+  /* ── 덱 ── */
+  var deck = chDeck();
+  var d = '';
+  deck.forEach(function(inst){
+    var sel = (chHand === inst) ? ' sel' : '';
+    d += '<button type="button" class="ccard' + sel + '" onclick="chPickCard(\'' + inst + '\')">' +
+         chCardText(chCardOf(inst)) + '</button>';
+  });
+  if (!deck.length) d = '<span class="sub" style="margin:0;">덱이 비었다. 아래에서 사슬을 확인하시오.</span>';
+  setHTML('chDeck', d);
+
+  /* ── 진행·버튼 ── */
+  var tag = document.getElementById('chProg');
+  if (tag) tag.textContent = '놓은 칸 ' + chFilledCount() + ' / ' + chBlanks().length;
+
+  var btn = document.getElementById('chCheckBtn');
+  if (btn){
+    btn.disabled = !!state.chainOk;
+    btn.textContent = state.chainOk ? '사슬이 이어졌다' : '🔗 사슬 이어 보기';
+  }
+  var hb = document.getElementById('chHardBtn');
+  if (hb) hb.textContent = state.chainHard ? '🔧 표준 난도로 (1행을 예시로 채운다)' : '🔧 더 어렵게 (1행도 비운다)';
+
+  /* ★안내문은 난도에 따라 달라져야 한다 — 붙박이로 두었더니 도전 난도에서 두 문장이 모두 거짓이 됐다.
+     도전 난도는 1행도 비우므로 「1행은 예시로 채워 두었다」가 틀리고,
+     덱에 판의 문장이 아니라 「같은 문장 두 장」이 들어가므로 단서를 가리키는 곳도 달라진다(2026-08-25 검토). */
+  var intro = document.getElementById('chIntro');
+  if (intro){
+    intro.innerHTML = state.chainHard
+      ? ('첫 칸 하나만 남기고 판을 <b>모두 비웠다.</b> 나머지 열한 칸을 직접 채우시오. ' +
+         '<b>덱에는 글자 하나 다르지 않은 같은 문장이 두 장 들어 있다.</b> 왜 그런지 생각하며 놓으시오.')
+      : ('1행 <b>그리피스</b>는 완성된 예시로 채워 두었다. 그 네 칸을 먼저 읽고, 같은 방식으로 2행과 3행을 채우시오. ' +
+         '<b>덱의 카드 가운데는 판에 이미 있는 문장과 똑같은 것이 섞여 있다.</b> 왜 그런지 생각하며 놓으시오.');
+  }
+
+  /* ── 완성 후 ── */
+  var done = document.getElementById('chDone');
+  if (done){
+    if (state.chainOk){
+      done.className = 'handoff';
+      done.innerHTML =
+        '<div class="hl">그래도 남은 질문</div>' +
+        '<div class="ht">DNA는 어떤 구조이길래 그 안에 유전정보를 담는가?</div>' +
+        '<div class="hn">1953년, 이 물음에 답한 사람들이 나타난다. ▶ 다음 차시: DNA의 구조<br>' +
+        '※과학사가 이렇게 한 줄로만 흐른 것은 아니다. 이 판은 세 실험의 <b>논리</b>를 잇는 그림이다. ' +
+        '그리피스가 처음 하려던 연구도 폐렴 백신 개발이었다.</div>';
+    } else {
+      done.className = 'handoff hide';
+      done.innerHTML = '';
+    }
+  }
+
+  /* 이음매 까닭 — 답을 알려 주지 않으므로 언제나 열어 둔다 */
+  var why = document.getElementById('chWhy');
+  if (why){
+    var w = '';
+    CH_LINKS.forEach(function(L){
+      w += '<li>🔗' + L.n + ' ' + L.why + '</li>';
+    });
+    why.innerHTML = '<b>왜 이 물음이 남았는가</b><ul style="margin:6px 0 0;padding-left:20px;">' + w + '</ul>';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   공통 기계 — 상태 · 저장 · 잠금 · 문항 · 모범답안
+   ★이 활동은 「연습」이다 → 정오를 기록하지 않는다.
+     고른 답(pPick)은 새로고침 복원용으로만 남는다.
+     (정책 정본: 작업노트/방법_활동기록_어디에남길것인가.md)
+   ══════════════════════════════════════════════════════════════ */
+var LS_KEY = 'dnaproof_sim_v1';
+
+var STEPS = [
+  { key:'gr', no:'②', name:'그리피스',    yr:'1928', cls:'e1' },
+  { key:'av', no:'③', name:'에이버리',    yr:'1944', cls:'e2' },
+  { key:'hc', no:'④', name:'허시·체이스', yr:'1952', cls:'e3' },
+  { key:'ch', no:'⑤', name:'세 실험 잇기', yr:'',    cls:'' }
+];
+
+function freshState(){
+  return {
+    grRun:{},        /* 그리피스: 실행한 조건 'A'~'D' → 결과 문자열 */
+    grPre:{},        /* 예상 고르기 (기록이 아니라 화면 복원용) */
+    avRun:{},        /* 에이버리: 실행한 처리 'none','prot','rna','dna' */
+    hcRun:{},        /* 허시·체이스: 실행한 표지 's35','p32' */
+    qPick:{},        /* 실험별 결론 문항 + 도입 문항 */
+    chain:{},        /* 사슬판 배치 { slotId: 카드 인스턴스 id } */
+    chainOk:false,   /* 사슬 확인에 통과했는가 */
+    chainHard:false, /* 1행까지 비우는 도전 난도 */
+    pPick:{},        /* ⑥ 연습 문항 */
+    ta:{},           /* ⑦ 서술형 */
+    self:{},         /* 자기평가 체크 */
+    teacherUnlock:false,
+    seq:0,           /* ★저장할 때마다 하나씩 오른다 — 두 탭이 서로를 지우지 않게 하는 표다 */
+    deckOrder:null   /* ★한 번 섞은 덱의 차례. 다시 그릴 때 카드가 흔들리지 않게 남긴다 */
+  };
+}
+var state = freshState();
+
+/* ★두 탭이 서로를 지우던 문제 (2026-08-25 검토에서 재현됨)
+   이 활동은 state 를 통째로 한 칸에 저장한다. 탭마다 state 는 「열 때 읽은 스냅숏」이라
+   다른 탭이 그 뒤에 무엇을 썼는지 알 방법이 없어, 마지막에 저장한 탭이 무조건 이겼다.
+   ★특히 나쁜 길: 새로 연 두 번째 탭은 ③④⑤⑥이 잠겨 있어도 ⑦ 정리하기는 처음부터 열려 있다.
+     그 칸에 한 글자만 쳐도 saveState 가 돌아 앞 탭의 실험 결과·사슬·문항이 통째로 지워졌다.
+   → 저장할 때마다 seq 를 올리고, **저장소의 seq 가 내 것보다 크면 덮어쓰지 않는다.**
+     대신 학생에게 알린다. 조용히 잃는 것보다 낫다.
+   ★옛 저장분에는 seq 가 없다 — 그때는 그냥 저장한다(뒤로 호환). 무슨 예외가 나도 저장은 한다. */
+function saveState(){
+  try{
+    var ta = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) ta[w.id] = el.value;
+    });
+    state.ta = ta;
+
+    var mine = (typeof state.seq === 'number') ? state.seq : 0;
+    var newer = false;
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw){
+        var stored = JSON.parse(raw);
+        if (stored && typeof stored.seq === 'number' && stored.seq > mine) newer = true;
+      }
+    }catch(e2){ newer = false; }      /* 읽다 실패하면 막지 않는다 */
+
+    if (newer){ warnOtherTab(true); return; }
+
+    state.seq = mine + 1;
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  }catch(e){}
+}
+function warnOtherTab(on){
+  var el = document.getElementById('tabWarn');
+  if (!el) return;
+  el.className = 'msg bad' + (on ? '' : ' hide');
+  if (on){
+    el.innerHTML = '⚠ 이 활동이 <b>다른 탭에서도 열려 있다.</b> 이 탭에서 한 것은 저장되지 않는다.<br>' +
+                   '탭을 하나만 남기고 새로고침하시오.';
+  }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    return o;
+  }catch(e){ return null; }
+}
+
+/* ── 완료 판정 — 화면·잠금·레일이 전부 여기서만 파생된다 ── */
+function grDone(){ return GR_CONDS.every(function(c){ return !!state.grRun[c.id]; }) && state.qPick['gr1'] !== undefined; }
+function avDone(){ return AV_TREATS.every(function(t){ return !!state.avRun[t.id]; }) && state.qPick['av1'] !== undefined; }
+function hcDone(){ return HC_TAGS.every(function(t){ return !!state.hcRun[t.id]; }) && state.qPick['hc1'] !== undefined; }
+function chDone(){ return !!state.chainOk; }
+function stepDone(k){
+  if (k === 'gr') return grDone();
+  if (k === 'av') return avDone();
+  if (k === 'hc') return hcDone();
+  if (k === 'ch') return chDone();
+  return false;
+}
+/* 앞 실험을 마쳐야 다음이 열린다 — 사슬을 논리 순서로 밟게 하는 장치 */
+function stepOpen(k){
+  if (state.teacherUnlock) return true;
+  if (k === 'gr') return true;
+  if (k === 'av') return grDone();
+  if (k === 'hc') return avDone();
+  if (k === 'ch') return hcDone();
+  if (k === 'prac') return chDone();
+  return false;
+}
+function doneCount(){
+  var n = 0;
+  STEPS.forEach(function(s){ if (stepDone(s.key)) n++; });
+  return n;
+}
+
+/* ── 진행 레일 · 배지 ── */
+function updateRail(){
+  var h = '';
+  STEPS.forEach(function(s){
+    var cls = 'rstep';
+    if (stepDone(s.key)) cls += ' ok';
+    else if (stepOpen(s.key)) cls += ' on';
+    h += '<div class="' + cls + '">' + s.no + ' ' + s.name +
+         '<span class="rsub">' + (s.yr ? s.yr + '년' : '논리 사슬') + '</span></div>';
+  });
+  setHTML('rail', h);
+  var b = document.getElementById('progress');
+  if (b) b.textContent = '진행 ' + doneCount() + ' / ' + STEPS.length;
+}
+
+/* 잠긴 구역에 안내를 띄우고 본문을 감춘다 */
+function applyLock(key, lockId, bodyId, text){
+  var lock = document.getElementById(lockId);
+  var body = document.getElementById(bodyId);
+  var open = stepOpen(key);
+  if (lock){
+    lock.className = 'msg info' + (open ? ' hide' : '');
+    if (!open) lock.innerHTML = '🔒 ' + text;
+  }
+  if (body) body.style.display = open ? 'block' : 'none';
+}
+function updateLocks(){
+  applyLock('av', 'avLock', 'avBody', '②를 마친 뒤에 열린다. 그리피스의 실험 네 가지를 모두 실행하고 결론 문항에 답하시오.');
+  applyLock('hc', 'hcLock', 'hcBody', '③을 마친 뒤에 열린다. 에이버리의 실험 네 가지를 모두 실행하고 결론 문항에 답하시오.');
+  applyLock('ch', 'chLock', 'chBody', '④를 마친 뒤에 열린다. 두 가지 표지를 모두 실행하고 결론 문항에 답하시오.');
+  applyLock('prac', 'pracLock', 'pracBody', '⑤의 사슬을 완성한 뒤에 열린다.');
+}
+
+/* ══════════════════ 선택형 문항 (실험 결론 · 연습) ══════════════════
+   ★④와 ⑥이 같은 기계를 쓴다. id 는 전 활동에서 유일해야 한다.        */
+var qEls = {};
+function qById(id){
+  var L = ALLQ();
+  for (var i = 0; i < L.length; i++){ if (L[i].id === id) return L[i]; }
+  return null;
+}
+function ALLQ(){ return [].concat(Q_INTRO, Q_GR, Q_AV, Q_HC, PRACTICE); }
+function pickStore(id){ return (id.indexOf('p') === 0) ? state.pPick : state.qPick; }
+function answeredOf(list, store){
+  var n = 0;
+  list.forEach(function(p){ if (store[p.id] !== undefined) n++; });
+  return n;
+}
+
+function renderQuizInto(list, boxId, colorCls){
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.innerHTML = '';
+  list.forEach(function(p, idx){
+    var card = document.createElement('div');
+    card.className = 'pq-card';
+
+    var q = document.createElement('div');
+    q.className = 'qtext';
+    q.innerHTML = '<span class="qno' + (colorCls ? ' ' + colorCls : '') + '">' + (idx + 1) + '</span>' +
+                  (p.lv ? '<span class="lv">' + p.lv + '</span>' : '') + p.q;
+    card.appendChild(q);
+
+    if (p.dat){
+      var dat = document.createElement('div');
+      dat.className = 'datbox';
+      dat.innerHTML = '<b>[자료]</b><ul><li>' + p.dat.join('</li><li>') + '</li></ul>';
+      card.appendChild(dat);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'choices';
+    var btns = [];
+    p.ch.forEach(function(label, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.innerHTML = label;
+      b.onclick = (function(pid, k){ return function(){ pickQ(pid, k); }; })(p.id, i);
+      wrap.appendChild(b);
+      btns.push(b);
+    });
+    card.appendChild(wrap);
+
+    /* 힌트 2단 — 1단(어디를 볼 것인가)을 연 뒤에 2단(판단 기준)이 열린다. 기록하지 않는다. */
+    if (p.hint && p.hint.length === 2){
+      var hw = document.createElement('div');
+      hw.className = 'hintwrap';
+      var hb1 = document.createElement('button');
+      hb1.type = 'button'; hb1.className = 'hintbtn'; hb1.textContent = '💡 힌트 보기';
+      var hx1 = document.createElement('div');
+      hx1.className = 'hintbox'; hx1.style.display = 'none';
+      hx1.innerHTML = '<b>힌트 ① 어디를 볼 것인가</b><br>' + p.hint[0];
+      var hb2 = document.createElement('button');
+      hb2.type = 'button'; hb2.className = 'hintbtn'; hb2.textContent = '💡 힌트를 하나 더 보기';
+      hb2.style.display = 'none';
+      var hx2 = document.createElement('div');
+      hx2.className = 'hintbox'; hx2.style.display = 'none';
+      hx2.innerHTML = '<b>힌트 ② 판단 기준</b><br>' + p.hint[1];
+      hb1.onclick = function(){
+        hx1.style.display = 'block'; hb1.style.display = 'none'; hb2.style.display = 'inline-block';
+      };
+      hb2.onclick = function(){ hx2.style.display = 'block'; hb2.style.display = 'none'; };
+      hw.appendChild(hb1); hw.appendChild(hx1); hw.appendChild(hb2); hw.appendChild(hx2);
+      card.appendChild(hw);
+    }
+
+    var ex = document.createElement('div');
+    ex.className = 'expl';
+    ex.style.display = 'none';
+    card.appendChild(ex);
+
+    box.appendChild(card);
+    qEls[p.id] = { choices:btns, expl:ex };
+    paintQ(p.id);
+  });
+}
+
+function paintQ(id){
+  var p = qById(id), els = qEls[id];
+  if (!p || !els) return;
+  var store = pickStore(id);
+  var picked = store[id];
+  els.choices.forEach(function(b, i){
+    var cls = 'choice';
+    if (picked === undefined){ b.className = cls; b.disabled = false; return; }
+    if (i === p.a) cls += ' right';
+    else if (i === picked) cls += ' picked';
+    else cls += ' dim';
+    b.className = cls;
+  });
+  if (picked === undefined){
+    els.expl.style.display = 'none';
+    els.expl.innerHTML = '';
+  } else {
+    var head = (picked === p.a)
+      ? '<b>✅ 옳다.</b> '
+      : '<b>❌ ' + (p.no && p.no[picked] ? p.no[picked] : '옳지 않다.') + '</b> ';
+    els.expl.style.display = 'block';
+    els.expl.innerHTML = head + p.ex;
+  }
+}
+
+function pickQ(id, i){
+  var store = pickStore(id);
+  store[id] = i;                 /* ★정오를 남기지 않는다 — 마지막 선택만 화면 복원용으로 저장한다 */
+  paintQ(id);
+  saveState();
+  afterAnswer(id);
+}
+
+/* 문항에 답한 뒤 열리는 것들 */
+function afterAnswer(id){
+  if (id === 'gr1' || id === 'av1' || id === 'hc1'){
+    updateHandoffs();
+    updateRail();
+    updateLocks();
+    renderChain();
+  }
+  updateProgTags();
+  refreshAnsGates();
+}
+
+function updateProgTags(){
+  var t1 = document.getElementById('pracProg');
+  if (t1) t1.textContent = '푼 문항 ' + answeredOf(PRACTICE, state.pPick) + ' / ' + PRACTICE.length;
+  var t2 = document.getElementById('writeProg');
+  if (t2){
+    var n = 0;
+    WRITEQ.forEach(function(w){
+      if (String((state.ta && state.ta[w.id]) || '').replace(/\s/g, '').length > 0) n++;
+    });
+    t2.textContent = '작성한 문항 ' + n + ' / ' + WRITEQ.length;
+  }
+}
+
+/* ══════════════════ ⑦ 서술형 그리기 ══════════════════
+   ★마크업을 손으로 적지 않는다 — WRITEQ 하나가 발문·요소·모범답안·저장 id를 모두 정한다. */
+function renderWrite(){
+  var box = document.getElementById('writeBox');
+  if (!box) return;
+  box.innerHTML = '';
+  WRITEQ.forEach(function(w, i){
+    var d = document.createElement('div');
+    d.className = 'qwrap';
+    var head = w.creative ? w.q : '<b>서술형 ' + (i + 1) + '.</b> ' + w.q;
+    d.innerHTML =
+      '<div class="qh">' + head + '</div>' +
+      '<div class="qk">답안에 반드시 들어가야 할 것 — ' + w.need.join(' · ') + '</div>' +
+      '<textarea id="ta_' + w.id + '" placeholder="여기에 서술하시오." oninput="onTa(\'' + w.id + '\')"></textarea>' +
+      '<div class="cnt"><span id="cnt_' + w.id + '">0자</span> · 모범답안은 ' + w.min + '자 이상 서술하면 열린다</div>' +
+      '<div class="btnrow"><button type="button" class="btn ghost" id="ansBtn_' + w.id + '" onclick="toggleAns(\'' + w.id + '\')">모범답안</button></div>' +
+      '<div class="ansbox" id="ans_' + w.id + '"><b>모범답안</b><br>' + w.ans + '</div>';
+    box.appendChild(d);
+  });
+
+  var sc = document.getElementById('selfBox');
+  if (sc){
+    var h = '<h3>스스로 평가하기</h3>';
+    SELFCHECK.forEach(function(s){
+      h += '<label><input type="checkbox" id="self_' + s.id + '" onchange="onSelf(\'' + s.id + '\')">' +
+           '<span><b>' + s.k + '</b> ' + s.t + '</span></label>';
+    });
+    sc.innerHTML = h;
+  }
+}
+
+/* ══════════════════ 남긴 질문 배너 ══════════════════
+   ★이 활동의 뼈대 — 실험이 끝나면 「그래서 아직 모르는 것」이 열리고,
+     그것이 다음 실험의 제목 옆에 그대로 걸린다.                       */
+function updateHandoffs(){
+  HANDOFF.forEach(function(h){
+    var box = document.getElementById(h.id);
+    if (!box) return;
+    var open = stepDone(h.after);
+    box.className = 'handoff' + (open ? '' : ' hide');
+    if (open){
+      box.innerHTML = '<div class="hl">' + h.lead + '</div>' +
+                      '<div class="ht">' + h.q + '</div>' +
+                      '<div class="hn">' + h.note + '</div>';
+    }
+  });
+}
+
+/* ══════════════════ ⑦ 서술 · 모범답안 잠금 ══════════════════ */
+function ansGate(id){
+  if (state.teacherUnlock) return { open:true, reason:'' };
+  var w = null;
+  WRITEQ.forEach(function(x){ if (x.id === id) w = x; });
+  if (!w) return { open:false, reason:'' };
+  var len = String((state.ta && state.ta[id]) || '').replace(/\s/g, '').length;
+  if (len >= w.min) return { open:true, reason:'' };
+  return { open:false, reason:w.min + '자 이상 서술해야 열린다' };
+}
+function refreshAnsGates(){
+  WRITEQ.forEach(function(w){
+    var btn = document.getElementById('ansBtn_' + w.id);
+    var box = document.getElementById('ans_' + w.id);
+    if (!btn) return;
+    var g = ansGate(w.id);
+    if (!g.open){
+      btn.textContent = '🔒 ' + g.reason;
+      btn.disabled = true;
+      if (box) box.style.display = 'none';
+    } else {
+      btn.disabled = false;
+      btn.textContent = (box && box.style.display === 'block') ? '모범답안 닫기' : '모범답안';
+    }
+  });
+}
+function toggleAns(id){
+  var g = ansGate(id);
+  if (!g.open) return;
+  var box = document.getElementById('ans_' + id);
+  if (!box) return;
+  box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+  refreshAnsGates();
+}
+function onTa(id){
+  var el = document.getElementById('ta_' + id);
+  if (!el) return;
+  var len = String(el.value || '').replace(/\s/g, '').length;
+  var c = document.getElementById('cnt_' + id);
+  if (c) c.textContent = len + '자';
+  saveState();
+  refreshAnsGates();
+  updateProgTags();
+}
+function onSelf(k){
+  var el = document.getElementById('self_' + k);
+  if (!el) return;
+  state.self[k] = !!el.checked;
+  saveState();
+}
+
+/* ══════════════════ 교사용 해제 (진행 배지 5연타) ══════════════════ */
+var tapLog = [];
+function tapProgress(){
+  var t = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  tapLog.push(t);
+  if (tapLog.length > 5) tapLog.shift();
+  if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
+    tapLog = [];
+    if (confirm('교사용: 모든 잠금과 모범답안을 해제하시겠습니까?')){
+      state.teacherUnlock = true;
+      saveState();
+      restoreUI();
+    }
+  }
+}
+
+/* 미완성 잠금 해제 — 맞으면 이 기기에 기억해 교사가 다시 입력하지 않게 한다 */
+function unlockDraft(){
+  var el = document.getElementById('draftPass');
+  var err = document.getElementById('draftErr');
+  var v = (el && el.value ? el.value : '').trim();
+  if (v !== DRAFT_PASS){
+    if (err) err.textContent = '비밀번호가 옳지 않다.';
+    if (el){ el.value = ''; if (el.focus) el.focus(); }
+    return false;
+  }
+  try{ localStorage.setItem(DRAFT_KEY, 'y'); }catch(e){}
+  document.documentElement.className += ' unlocked';
+  var gate = document.getElementById('draftGate');
+  if (gate) gate.style.display = 'none';
+  if (err) err.textContent = '';
+  return true;
+}
+
+function resetAll(){
+  if (!confirm('지금까지의 실험 결과와 서술을 모두 지우고 처음부터 다시 하시겠습니까?')) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  /* ★메모리도 함께 비운다 — 새로고침이 끝나기 전에 무엇이든 한 번 누르면
+     saveState() 가 옛 state 를 그대로 다시 써 버려 지운 것이 되살아난다(2026-08-25 검토). */
+  state = freshState();
+  chHand = null;
+  grPick = [];
+  ani = { st:null, id:null, ph:ANI_LAST, gen:ani.gen + 1, auto:false, reveal:false };
+  if (typeof location !== 'undefined' && location.reload) location.reload();
+}
+
+/* ══════════════════ 시작 ══════════════════ */
+function restoreUI(){
+  renderGr();
+  renderAv();
+  renderHc();
+  renderChain();
+  renderQuizInto(Q_INTRO, 'introQ', '');
+  renderQuizInto(Q_GR, 'grQ', 'e1');
+  renderQuizInto(Q_AV, 'avQ', 'e2');
+  renderQuizInto(Q_HC, 'hcQ', 'e3');
+  renderQuizInto(PRACTICE, 'pracBox', '');
+  renderWrite();
+  WRITEQ.forEach(function(w){
+    var el = document.getElementById('ta_' + w.id);
+    if (el && state.ta && state.ta[w.id]) el.value = String(state.ta[w.id]);
+    var c = document.getElementById('cnt_' + w.id);
+    if (c && el) c.textContent = String(el.value || '').replace(/\s/g, '').length + '자';
+  });
+  Object.keys(state.self || {}).forEach(function(k){
+    var s = document.getElementById('self_' + k);
+    if (s) s.checked = !!state.self[k];
+  });
+  updateHandoffs();
+  updateRail();
+  updateLocks();
+  updateProgTags();
+  refreshAnsGates();
+}
+
+function init(){
+  var saved = loadState();
+  state = freshState();
+  if (saved){
+    /* ★freshState() 가 정의한 칸만 복원한다 —
+       옛 저장분에 딴 칸이 있어도 되살아나지 않고, 한 번 저장하면 저장소에서도 지워진다. */
+    Object.keys(state).forEach(function(k){
+      if (saved[k] === undefined || saved[k] === null) return;
+      if (typeof state[k] === 'object' && !Array.isArray(state[k])){
+        if (typeof saved[k] === 'object' && !Array.isArray(saved[k])) state[k] = saved[k];
+      } else {
+        state[k] = saved[k];
+      }
+    });
+  }
+  ['grRun','grPre','avRun','hcRun','qPick','chain','pPick','ta','self'].forEach(function(k){
+    if (!state[k] || typeof state[k] !== 'object' || Array.isArray(state[k])) state[k] = {};
+  });
+  /* ★deckOrder 는 배열이라 위 병합이 걸러낸다(거기는 객체만 받는다) — 따로 되살린다.
+     배열이 아니면 null 로 두어 다시 섞게 한다. */
+  state.deckOrder = (saved && Array.isArray(saved.deckOrder)) ? saved.deckOrder.slice() : null;
+  state.chainOk = !!state.chainOk;
+  state.chainHard = !!state.chainHard;
+  state.teacherUnlock = !!state.teacherUnlock;
+  restoreUI();
+}
+
+if (typeof document !== 'undefined' && document.getElementById) init();
+</script>
+</body>
+</html>

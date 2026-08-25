@@ -1132,6 +1132,45 @@ console.log('[13-7] 카드 덱');
 }
 
 /* ════════════════════════════════════════════════════════════
+   [13-8] 교사용 해제는 저장하지 않는다 (교사 지시 2026-08-25)
+   ★진행 배지 2.5초 안에 5번 탭 → 확인 이면 ②~⑥ 잠금과 ⑦ 모범답안이 전부 열린다.
+     태블릿에서 초당 2번 탭은 학생도 쉽게 만들 수 있는데, 전에는 그것이 저장분에 남아
+     새로고침해도 유지되고 되돌리는 길이 「전체 초기화」뿐이었다.
+   → 화면에서는 그대로 풀리되 **저장분에는 쓰지 않는다.** 새로고침하면 도로 잠긴다.
+   ════════════════════════════════════════════════════════════ */
+console.log('[13-8] 교사용 해제');
+{
+  const T = makeSandbox();
+  T.state.teacherUnlock = true;
+  T.grPick = ['liveS']; T.grPredict('dead'); T.grInject();   /* 저장이 일어난다 */
+  ok(T.state.teacherUnlock === true, '이 화면에서는 해제가 유지된다 (교사 화면이 갑자기 닫히면 안 된다)');
+  ok(T.stepOpen('prac') === true, '해제된 화면에서는 ⑥도 열려 있다');
+
+  const blob = T.localStorage._mem['dnaproof_sim_v1'];
+  ok(JSON.parse(blob).teacherUnlock === false,
+     '★저장분에는 교사 해제가 꺼진 채로 적힌다');
+  ok(Object.keys(JSON.parse(blob).grRun).length === 1,
+     '★그 밖의 기록은 그대로 저장된다 (해제만 빼는 것이지 저장을 막는 것이 아니다)');
+
+  /* 새로고침 = 새 샌드박스가 그 저장분을 읽는 것 */
+  const R = makeSandbox({ 'dnaproof_sim_v1': blob });
+  ok(R.state.teacherUnlock === false, '★새로고침하면 도로 잠긴다');
+  ok(R.stepOpen('av') === false, '★잠금 순서도 되살아난다');
+
+  /* 이 변경 전에 켠 채로 저장된 옛 저장분도 함께 꺼진다 */
+  const old = JSON.stringify({ grRun:{A:'dead'}, teacherUnlock:true });
+  const O = makeSandbox({ 'dnaproof_sim_v1': old });
+  ok(O.state.teacherUnlock === false,
+     '★옛 저장분에 teacherUnlock:true 가 남아 있어도 켜지 않는다');
+
+  /* 교사에게 뜨는 문구가 그 사실을 말한다 */
+  ok(/새로고침하면 도로 잠긴다/.test(src),
+     '★교사용 확인 문구가 「새로고침하면 도로 잠긴다」고 알린다');
+  ok(!/state\.teacherUnlock = !!state\.teacherUnlock/.test(src),
+     '★저장분의 값을 그대로 살리던 줄이 남아 있지 않다');
+}
+
+/* ════════════════════════════════════════════════════════════
    [14] 진행 레일 · 초기화
    ════════════════════════════════════════════════════════════ */
 console.log('[14] 진행과 초기화');

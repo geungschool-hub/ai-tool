@@ -2572,7 +2572,16 @@ function saveState(){
     if (newer){ warnOtherTab(true); return; }
 
     state.seq = mine + 1;
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
+
+    /* ★교사 해제는 저장하지 않는다 (교사 지시 2026-08-25).
+       학생이 진행 배지 5연타를 우연히 찾아 확인을 눌러도 **새로고침하면 도로 잠긴다.**
+       교사는 제스처를 다시 하면 그만이다.
+       ★화면의 state 는 건드리지 않는다 — 지금 열어 둔 교사 화면이 갑자기 닫히면 안 된다.
+         저장분에서만 끈다. */
+    var toSave = {};
+    Object.keys(state).forEach(function(k){ toSave[k] = state[k]; });
+    toSave.teacherUnlock = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(toSave));
   }catch(e){}
 }
 function warnOtherTab(on){
@@ -2905,8 +2914,10 @@ function tapProgress(){
   if (tapLog.length > 5) tapLog.shift();
   if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
     tapLog = [];
-    if (confirm('교사용: 모든 잠금과 모범답안을 해제하시겠습니까?')){
-      state.teacherUnlock = true;
+    if (confirm('교사용: 모든 잠금과 모범답안을 해제합니다.\n' +
+                '★이 화면에서만 풀린다 — 새로고침하면 도로 잠긴다.\n' +
+                '해제하시겠습니까?')){
+      state.teacherUnlock = true;   /* 이 화면에서만. 저장하지 않으므로 새로고침하면 도로 잠긴다 */
       saveState();
       restoreUI();
     }
@@ -2995,7 +3006,9 @@ function init(){
   state.deckOrder = (saved && Array.isArray(saved.deckOrder)) ? saved.deckOrder.slice() : null;
   state.chainOk = !!state.chainOk;
   state.chainHard = !!state.chainHard;
-  state.teacherUnlock = !!state.teacherUnlock;
+  /* ★저장분에 teacherUnlock 이 남아 있어도 켜지 않는다 — 새로고침하면 언제나 잠긴 채로 시작한다.
+     옛 저장분(이 변경 전에 켠 채로 저장된 것)도 여기서 함께 꺼진다. */
+  state.teacherUnlock = false;
   restoreUI();
 }
 

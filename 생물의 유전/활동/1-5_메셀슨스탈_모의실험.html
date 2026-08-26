@@ -1,0 +1,2881 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>메셀슨과 스탈 — DNA 복제 방식 가려내기</title>
+<script>
+/* ══ 미완성 잠금 ══════════════════════════════════════════════
+   교사가 「완성」이라고 판단하기 전에는 학생이 들어올 수 없게 막는다.
+   ★완성되면 DRAFT_MODE 를 false 로 바꿔 재배포한다.
+   ★이 스크립트는 <head>에 있어야 한다 — 본문보다 먼저 돌아야 잠긴 화면이 깜빡이지 않는다.
+   ★기본이 「잠김」이다(fail-closed). 조건이 맞을 때만 .unlocked 가 붙는다.
+   ⚠ 이것은 잠금이지 보안이 아니다. 공개 저장소라 소스를 보면 비밀번호가 보인다.       */
+var DRAFT_MODE = true;
+var DRAFT_PASS = '7856';                  /* ★교사 지정. 모든 활동이 같은 값을 쓴다 — 작업노트/git백업_커밋정책.md */
+var DRAFT_KEY  = 'meselson_sim_draft_ok';
+try {
+  if (!DRAFT_MODE || localStorage.getItem(DRAFT_KEY) === 'y') {
+    document.documentElement.className += ' unlocked';
+  }
+} catch (e) {
+  if (!DRAFT_MODE) document.documentElement.className += ' unlocked';
+}
+</script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   생물의 유전 1-5 — 메셀슨과 스탈 (1958)
+   교과서(이준규) 46쪽 그림 Ⅰ-31 · 비상교육 교사용 39쪽 「해 보기」
+   성취기준 12유전01-07 (반보존적 DNA 복제 이해·의미 추론)
+
+   ★이 활동의 심장은 하나다 — **띠는 그려 넣은 그림이 아니라 가닥 조성에서 계산된다.**
+     분자 = 가닥 2개, 가닥 = ¹⁵N 비율(p15), 밀도 = 두 가닥 p15 의 평균.
+     화면의 모든 띠·모든 이름·모든 표가 그 한 값에서 파생된다.
+     그래서 「무거워서 아래에 있다」가 말이 아니라 기계다.
+   ★자매 활동: 1-5 DNA 복제 모의실험(dna-sim)이 복제 *기작*(3′말단·선도/지연)을 맡는다.
+     이 활동은 복제 *방식을 가려낸 실험*만 다룬다. 효소·프라이머는 다루지 않는다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --red:#C0392B;   --red-bg:#FDECEA;
+  --blue:#1255A0;  --blue-bg:#E8F0FA;
+  --yellow:#B7791F;--yellow-bg:#FDF6E3;
+  --green:#2A7A38; --green-bg:#E9F5EB;
+  --amber:#E67E22; --amber-bg:#FDF0E3; --amber-ink:#8A4B08;
+  --purple:#7B4FB5;--purple-bg:#F1EAFA;
+  --teal:#0F766E;  --teal-bg:#E2F3F1;
+  --pink:#C2185B;  --pink-bg:#FCE4EC;
+  --old:#6B7280;
+  --ink:#1A1A1A;   --sub:#555;  --line:#D5D8DE;  --paper:#fff;  --bg:#F4F6F9;
+
+  /* ★질소 색 — 활동 전체에서 이 두 색만 쓴다.
+     같은 색조의 진하기 차이로 「무겁다 / 가볍다」를 읽게 한다.
+     범례·가닥·띠·표가 모두 이 값에서 나온다. */
+  /* ★2026-08-26 교사 지시: 「¹⁴N 을 연보라로 하니 잘 안 보인다. 확 다른 색, 채도가 높은 색으로」
+     → 진보라(¹⁵N) ↔ 선명한 청록(¹⁴N). 두 색을 섞은 중간색도 뚜렷한 남청색이라 중간 띠가 산다.
+     ⚠ 두 색은 2형 색각에서 가까워질 수 있다 — 그래서 ¹⁵N 칸에는 **흰 점**을 함께 찍는다(색 단독 전달 금지). */
+  --n15:#3B1E87;   --n15-bg:#E8E3F6;   /* 무거운 질소 ¹⁵N — ★JS 의 C_N15 와 같은 값이어야 한다 */
+  --n14:#00B8A9;   --n14-bg:#DFF7F4;   /* 가벼운 질소 ¹⁴N — ★JS 의 C_N14 와 같은 값이어야 한다 */
+  --n14-ink:#00776C;                   /* --n14 는 글자로 쓰기엔 밝다. 글자용 짙은 짝 */
+  --nmid:#1E6B98;  --nmid-bg:#E3EEF6;  /* 두 색을 f15=0.5 로 섞은 값 = 중간 무게 */
+
+  /* 모델별 고유색 — 예상표·튜브 테두리·배지가 모두 이 색을 쓴다 */
+  --m1:#C2185B; --m1-bg:#FCE4EC;   /* 보존적 */
+  --m2:#2A7A38; --m2-bg:#E9F5EB;   /* 반보존적 */
+  --m3:#7B4FB5; --m3-bg:#F1EAFA;   /* 분산적 */
+  --real:#B7791F; --real-bg:#FDF6E3; /* 실제 실험 결과 */
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.65;
+  font-family:"Malgun Gothic","맑은 고딕",AppleSDGothicNeo-Regular,"Apple SD Gothic Neo",sans-serif;
+  padding:14px 12px 60px; overflow-x:hidden;
+}
+.wrap{max-width:980px;margin:0 auto;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin-bottom:16px;}
+h1{font-size:24px;margin:0 0 4px;color:var(--blue);letter-spacing:-.5px;}
+h2{font-size:19px;margin:0 0 12px;padding:8px 12px;border-left:5px solid var(--blue);background:var(--blue-bg);border-radius:0 8px 8px 0;}
+h2.m1{border-left-color:var(--m1);background:var(--m1-bg);color:var(--m1);}
+h2.m2{border-left-color:var(--m2);background:var(--m2-bg);color:var(--m2);}
+h2.m3{border-left-color:var(--m3);background:var(--m3-bg);color:var(--m3);}
+h2.green{border-left-color:var(--green);background:var(--green-bg);}
+h2.amber{border-left-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink);}
+h2.teal{border-left-color:var(--teal);background:var(--teal-bg);color:var(--teal);}
+h3{font-size:16.5px;margin:16px 0 8px;color:var(--ink);}
+.sub{color:var(--sub);font-size:15px;margin:0 0 10px;}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{font-size:13px;background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:3px 11px;}
+.badge{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px;cursor:pointer;user-select:none;}
+.yr{display:inline-block;font-size:13.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;vertical-align:2px;
+    background:var(--blue-bg);color:var(--blue);}
+
+/* ── 버튼 ── */
+.btn{
+  font:inherit;font-size:16px;font-weight:700;min-height:44px;padding:10px 18px;
+  border-radius:10px;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;
+}
+.btn.ghost{background:#fff;color:var(--blue);}
+.btn.gray{background:#fff;color:var(--old);border-color:var(--old);}
+.btn.m1{background:var(--m1);border-color:var(--m1);color:#fff;}
+.btn.m2{background:var(--m2);border-color:var(--m2);color:#fff;}
+.btn.m3{background:var(--m3);border-color:var(--m3);color:#fff;}
+.btn.m1.ghost{background:#fff;color:var(--m1);}
+.btn.m2.ghost{background:#fff;color:var(--m2);}
+.btn.m3.ghost{background:#fff;color:var(--m3);}
+.btn.real{background:var(--real);border-color:var(--real);color:#fff;}
+.btn:disabled{background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;cursor:not-allowed;}
+/* ★.btn.m1.ghost 는 클래스 3개(0,3,0)라 .btn:disabled(0,2,0)를 이겨, 꺼진 단추가 켜진 것과
+   똑같이 보인다(1-4 에서 실제로 겪었다). 특이도를 올려 되찾는다. */
+.btn.m1:disabled,.btn.m2:disabled,.btn.m3:disabled,.btn.real:disabled,
+.btn.m1.ghost:disabled,.btn.m2.ghost:disabled,.btn.m3.ghost:disabled,.btn.ghost:disabled{
+  background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;
+}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+
+/* ── 진행 레일 ── */
+.rail{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px;}
+.rstep{flex:1 1 150px;border:2px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;font-weight:700;font-size:15px;color:var(--sub);background:#fff;}
+.rstep.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.rstep.ok{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.rstep .rsub{display:block;font-size:12.5px;font-weight:400;}
+
+/* ── 2단 배치 — 자료는 왼쪽에 고정, 조작·문항은 오른쪽에서만 스크롤한다 ──────────
+   본(本)은 1-4 활동이다(작업노트/생물의유전_활동_유전물질.md §3-2).
+   ★경계는 1180px. 1024px 에서 나누면 왼쪽 칸이 544px 밖에 안 돼 무대 캡션이 10px 대로 떨어진다.
+   ★그 미만(태블릿 세로·휴대전화)에서는 규칙이 하나도 걸리지 않아 지금까지대로 한 줄이다.
+   ★.card.split 의 음수 여백으로 이 카드들만 화면 쪽으로 넓힌다(최대 1280px).
+     transform 을 쓰지 않는다 — sticky 가 깨진다. */
+@media (min-width:1180px){
+  .card.split{
+    margin-left:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+    margin-right:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+  }
+  .panes{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,440px);
+    gap:18px; align-items:start;   /* ★align-items:start 가 없으면 칸이 늘어나 sticky 가 듣지 않는다 */
+  }
+  .pane-l{position:sticky; top:10px; max-height:calc(100vh - 20px); overflow-y:auto;}
+  .pane-l svg.stage{min-width:0;}
+  /* ★오른쪽 칸은 폭이 고정된 좀은 칸이다 — 여기의 무대는 min-width:600px 로
+     버티지 않고 칸에 맞춰 줄인다. 안 그러면 배양 무대(460px)가
+     항상 가로 스크롤 상태로 남아 오른쪽 끝이 잘린다(2026-08-26 브라우저 확인). */
+  .pane-r svg.stage{min-width:0;}
+  .pane-l .stage-wrap{max-width:760px;margin-left:auto;margin-right:auto;}
+}
+/* ★1179.98px — 정수로 끊으면 1179 초과 1180 미만의 소수 폭(브라우저 확대에서 실제로 생긴다)이
+   두 규칙 어디에도 안 걸려 .panes 가 그냥 쌓이고 order 보정이 빠진다. */
+@media (max-width:1179.98px){
+  .panes{display:flex;flex-direction:column;}
+  .pane-r{display:contents;}
+  .pr-do{order:1;}
+  .pane-l{order:2;}
+  .pr-q{order:3;}
+}
+
+/* ── 무대 ── */
+.stage-wrap{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:8px;
+            overflow-x:auto;-webkit-overflow-scrolling:touch;}
+svg.stage{display:block;width:100%;min-width:600px;height:auto;touch-action:manipulation;}
+.stage-hint{font-size:14.5px;color:var(--sub);margin-top:8px;}
+.taskbar{
+  background:var(--yellow-bg);border-left:5px solid var(--yellow);color:var(--amber-ink);
+  border-radius:0 8px 8px 0;padding:9px 13px;font-weight:700;font-size:16px;margin-bottom:10px;
+}
+.msg{border-radius:9px;padding:10px 13px;margin-top:10px;font-size:15.5px;line-height:1.7;}
+.msg.warn{background:var(--amber-bg);border-left:4px solid var(--amber);}
+.msg.good{background:var(--green-bg);border-left:4px solid var(--green);}
+.msg.info{background:var(--blue-bg);border-left:4px solid var(--blue);}
+.msg.bad{background:var(--red-bg);border-left:4px solid var(--red);}
+.msg.hide{display:none;}
+
+/* ── 연출 제어 막대 (무대 바로 아래) ── */
+.anibar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:8px;}
+.anibar .btn{min-height:44px;padding:8px 12px;font-size:16px;}  /* ★단추 글자는 16px 아래로 내리지 않는다 */
+.anistep{font-size:14.5px;color:var(--sub);margin-left:2px;flex:1 1 170px;min-width:170px;}
+.anistep b{color:var(--ink);font-weight:700;}
+
+/* ── 조성표(③) — 열 성격을 색으로 나눈다 ────────────────────────
+   ★오른쪽(조작) 칸에 두었다가 6열이 잘려 안 보였다(2026-08-26 교사 지적).
+     왼쪽(자료) 칸으로 옮기고, 머리글에 「무거운 / 중간 / 가벼운」 부제를 붙여
+     표만 보고도 어느 열이 어느 띠인지 알게 했다. */
+table.t.compo th{padding:7px 6px;line-height:1.35;}
+table.t.compo th .thsub{display:block;font-size:11.5px;font-weight:600;opacity:.8;margin-top:2px;}
+table.t.compo th.n15{background:var(--n15-bg); color:var(--n15);}
+table.t.compo th.nmid{background:var(--nmid-bg);color:var(--nmid);}
+table.t.compo th.n14{background:var(--n14-bg); color:var(--n14-ink);}
+table.t.compo th.nmix{background:#F0F2F5;      color:var(--sub);}
+table.t.compo td{font-size:16px;}
+/* 0이 아닌 칸만 눈에 들어오게 — 「—」가 표를 채우면 어디를 볼지 알 수 없다 */
+table.t.compo td.zero{color:#B9BFC8;}
+table.t.compo td.has{font-weight:800;}
+table.t.compo td.has.n15{background:var(--n15-bg); color:var(--n15);}
+table.t.compo td.has.nmid{background:var(--nmid-bg);color:var(--nmid);}
+table.t.compo td.has.n14{background:var(--n14-bg); color:var(--n14-ink);}
+table.t.compo td.has.nmix{background:#F0F2F5;}
+table.t.compo tr.now td{box-shadow:inset 0 0 0 2px var(--yellow);}
+
+/* ── ① 세 복제모델 도해 카드 3장 ──────────────────
+   ★.mcard svg 의 max-width 를 빼지 말 것 — 빼면 300×132 도해가 카드 너비까지
+     부풀어 글자가 제목만 해진다(2026-08-26 브라우저 확인에서 실제로 겪었다). */
+.modelrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;}
+.mcard{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;
+       border:1.5px solid var(--line);border-radius:12px;background:#FCFDFE;padding:10px 12px 12px;}
+.mcard .mname{font-weight:700;font-size:16.5px;text-align:center;
+              border-radius:8px;padding:5px 8px;margin-bottom:6px;}
+.mcard svg{display:block;width:100%;min-width:0;max-width:300px;height:auto;margin:0 auto;}
+/* ★min-width:0 을 빼면 위의 svg.stage\{min-width:600px\} 가 이긴다 —
+   min-width 가 max-width 보다 세다. 도해가 카드 밖으로 600px 까지 빠져나간다. */
+.mcard .mdesc{font-size:14.5px;color:var(--sub);line-height:1.7;margin-top:8px;}
+.mcard.m1{border-color:var(--m1);} .mcard.m1 .mname{background:var(--m1-bg);color:var(--m1);}
+.mcard.m2{border-color:var(--m2);} .mcard.m2 .mname{background:var(--m2-bg);color:var(--m2);}
+.mcard.m3{border-color:var(--m3);} .mcard.m3 .mname{background:var(--m3-bg);color:var(--m3);}
+@media (max-width:820px){ .mcard{flex:1 1 100%;} }
+
+/* ── 질소 범례 · 칩 ────────────────────────────────────────────
+   ★그림만 SVG이고 이름·설명은 HTML이다. 칸이 좁아져도 글자가 같이 작아지지 않는다
+     (1-4 에서 통 SVG 로 만들었다가 칸 폭을 따라 커져 아래 표를 밀어냈다). */
+.legend2{display:flex;gap:10px;flex-wrap:wrap;}
+.lgcell{flex:1 1 230px;min-width:0;border:1px solid var(--line);border-radius:10px;
+        background:#FBFCFE;padding:6px 10px;display:flex;align-items:center;gap:9px;}
+.lgcell svg{flex:0 0 auto;width:104px;height:auto;}
+.lgcell .lgtext{min-width:0;}
+.lgcell .lgname{display:block;font-weight:700;font-size:16px;}
+.lgcell .lgdesc{display:block;font-size:14.5px;color:var(--sub);line-height:1.5;}
+.lgcell.h .lgname{color:var(--n15);}
+.lgcell.l .lgname{color:var(--n14-ink);}
+
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 2px;}
+.chip{
+  font:inherit;font-size:15.5px;font-weight:700;min-height:44px;padding:9px 14px;
+  border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.chip .dot{width:15px;height:15px;border-radius:4px;flex:0 0 auto;border:1.5px solid rgba(0,0,0,.25);}
+.chip.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.chip:disabled{cursor:not-allowed;opacity:.5;}
+.slotline{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:15.5px;}
+.slotbox{
+  min-height:44px;min-width:130px;flex:1 1 130px;border:2px dashed var(--line);border-radius:10px;
+  background:#FBFCFE;padding:7px 11px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:var(--sub);
+}
+.slotbox.filled{border-style:solid;border-color:var(--blue);background:var(--blue-bg);color:var(--ink);}
+
+/* ── 표 ── */
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;}
+table.t{border-collapse:collapse;width:100%;min-width:520px;font-size:15px;}
+table.t th,table.t td{border:1px solid var(--line);padding:8px 9px;text-align:center;vertical-align:middle;}
+table.t th{background:var(--blue-bg);font-weight:700;}
+table.t th.m1{background:var(--m1-bg);color:var(--m1);}
+table.t th.m2{background:var(--m2-bg);color:var(--m2);}
+table.t th.m3{background:var(--m3-bg);color:var(--m3);}
+table.t th.real{background:var(--real-bg);color:var(--amber-ink);}
+table.t td.wait{color:#9AA1AC;background:#FAFBFC;font-size:14px;}
+table.t td.out{background:var(--red-bg);}
+table.t td.keep{background:var(--green-bg);}
+table.t tr.hl td{background:var(--yellow-bg);}
+
+/* ── 예상표(대조표) 안의 작은 튜브 ── */
+.minitube{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.minitube svg{display:block;width:34px;height:auto;}
+.minitube .mt{font-size:12.5px;color:var(--sub);line-height:1.35;}
+.verdict{font-size:13.5px;font-weight:700;margin-top:3px;display:block;}
+.verdict.no{color:var(--red);}
+.verdict.yes{color:var(--green);}
+
+/* ── 선택형 ── */
+.choices{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
+.choice{
+  font:inherit;font-size:16px;text-align:left;min-height:44px;padding:11px 15px;
+  border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);font-weight:700;cursor:pointer;
+}
+.choice.picked{background:var(--blue);color:#fff;}
+.choice.right{background:var(--green);border-color:var(--green);color:#fff;}
+.choice.dim{border-color:var(--line);color:#9AA1AC;background:#FAFBFC;}
+.choice:disabled{cursor:default;}
+
+/* ── 문항 카드 ── */
+.pq-card{border:1px solid var(--line);border-radius:12px;background:#FCFDFE;padding:13px 14px 15px;margin-top:14px;}
+.pq-card .qtext{font-weight:700;font-size:16.5px;line-height:1.65;}
+.pq-card .qno{display:inline-block;background:var(--amber);color:#fff;border-radius:999px;
+              min-width:26px;padding:1px 9px;font-weight:700;font-size:14px;margin-right:7px;}
+.pq-card .qno.m1{background:var(--m1);} .pq-card .qno.m2{background:var(--m2);} .pq-card .qno.m3{background:var(--m3);}
+.pq-card .qno.teal{background:var(--teal);}
+.pq-card .lv{display:inline-block;font-size:12.5px;font-weight:700;color:var(--sub);background:#F0F2F5;
+             border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:2px;}
+.pq-card .expl{margin-top:11px;background:var(--amber-bg);border-left:4px solid var(--amber);
+               border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.pq-card .expl b{color:var(--amber-ink);}
+.datbox{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:0 9px 9px 0;
+        padding:10px 13px;font-size:15.5px;line-height:1.8;margin-top:10px;}
+.datbox ul{margin:6px 0 0;padding-left:20px;}
+.datbox li{margin:2px 0;}
+
+/* ── 힌트 2단 — 답 대신 볼 자리를 먼저 가리킨다. 기록하지 않는다. ── */
+.hintwrap{margin-top:10px;}
+.hintbtn{font:inherit;font-size:15px;min-height:44px;padding:9px 15px;margin-top:8px;
+         border:2px dashed var(--blue);border-radius:10px;background:#fff;color:var(--blue);
+         font-weight:700;cursor:pointer;}
+.hintbox{margin-top:8px;background:var(--blue-bg);border-left:4px solid var(--blue);
+         border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.hintbox b{color:var(--blue);}
+
+/* ── 「아직 못 가른다」 배너 ── */
+.handoff{margin-top:14px;border:2px solid var(--amber);border-radius:12px;background:var(--amber-bg);padding:13px 15px;}
+.handoff .hl{font-size:13.5px;font-weight:700;color:var(--amber-ink);letter-spacing:.5px;}
+.handoff .ht{font-size:17.5px;font-weight:700;line-height:1.6;margin-top:4px;color:var(--ink);}
+.handoff .hn{font-size:14.5px;color:var(--sub);margin-top:7px;line-height:1.7;}
+.handoff.hide{display:none;}
+
+/* ── 서술·모범답안 ── */
+textarea{
+  width:100%;font:inherit;font-size:16px;line-height:1.7;padding:11px 13px;
+  border:2px solid var(--line);border-radius:10px;resize:vertical;min-height:96px;background:#fff;color:var(--ink);
+}
+.cnt{font-size:13.5px;color:var(--sub);margin-top:4px;}
+.ansbox{display:none;margin-top:10px;background:var(--green-bg);border-left:4px solid var(--green);border-radius:0 9px 9px 0;padding:11px 14px;font-size:15.5px;line-height:1.75;}
+.ansbox b{color:var(--green);}
+.qwrap{border:1px solid var(--line);border-radius:12px;padding:13px 14px 15px;margin-top:14px;background:#FCFDFE;}
+.qwrap .qh{font-weight:700;font-size:16.5px;line-height:1.6;margin-bottom:4px;}
+.qwrap .qk{font-size:14px;color:var(--sub);margin-bottom:9px;line-height:1.65;}
+.selfcheck{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:#FAFBFC;padding:13px 15px;}
+.selfcheck h3{margin-top:0;}
+.selfcheck label{display:flex;align-items:flex-start;gap:9px;font-size:15.5px;line-height:1.7;margin:7px 0;cursor:pointer;}
+.selfcheck input{width:22px;height:22px;margin-top:3px;flex:0 0 auto;}
+footer{text-align:center;margin-top:22px;}
+
+/* ── 애니메이션 ──
+   ★모든 연출은 장식이다. 결과 상태는 애니메이션과 무관하게 즉시 확정된다.
+     (Node 헤드리스 검사에는 setTimeout 이 없다 — 앱의 typeof 가드 안에서만 돈다.) */
+.ani-fade{transition:opacity .45s ease;}
+.ani-move{transition:transform .7s ease-in-out;}
+@keyframes spinC{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+/* ★.spinning 이 만드는 CSS transform 은 <g> 의 transform **속성**을 통째로 덮어쓴다 —
+   자리 잡는 <g> 에 직접 걸면 그림이 0,0 으로 튀어 무대 밖에서 돈다(1-4 에서 실제로 겪었다).
+   자리 잡는 <g> 는 밖, 도는 <g> 는 안. 도는 쪽에는 transform 속성을 주지 않는다.
+   transform-box:fill-box 라야 제 몸 가운데를 축으로 돈다(기본값 view-box 면 무대 한가운데를 축으로 크게 휘돈다).
+   ★단계를 손으로 넘길 수 있으므로 횟수를 정하지 않고 infinite 로 둔다. */
+/* ── ③ 무대의 이동 애니메이션 ────────────────────────────────
+   ★chromolab 은 framer-motion 이 `animate={{left,top}}` 로 미끄러뜨린다.
+     여기서는 **가닥마다 <g> 를 고정해 두고 transform 만 바꾸면** CSS 가 같은 일을 한다.
+     그래서 국면이 바뀌어도 노드를 새로 만들면 안 된다 — 새 노드는 전환 없이 튀어나온다.
+   ★transform 은 SVG **속성**으로 준다(CSS transform 이 아니다). 속성도 transition 이 걸린다. */
+.rmove{transition:transform .85s cubic-bezier(.4,0,.2,1), opacity .45s ease;}
+/* 분자 라벨 두 줄 — JS 가 class 이름으로 찾아 글자를 갈아 끼운다 */
+.rmove .ln{font-weight:700;}
+.rmove .ls{fill:var(--sub);}
+.rfade{transition:opacity .45s ease;}
+.spinning{animation:spinC .7s linear infinite;transform-box:fill-box;transform-origin:center;}
+@keyframes settleDown{from{opacity:0;}to{opacity:1;}}
+.settling{animation:settleDown .6s ease-out;}
+@media (prefers-reduced-motion: reduce){
+  .ani-fade,.ani-move,.rmove,.rfade{transition:none !important;}
+  .spinning,.settling{animation:none !important;}
+}
+
+/* ── 미완성 잠금 화면 ── */
+html:not(.unlocked) body > .wrap{display:none;}
+html:not(.unlocked) #draftGate{display:flex;}
+#draftGate{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:var(--bg); align-items:center; justify-content:center; padding:20px;
+}
+#draftGate .box{
+  background:var(--paper); border:1px solid var(--line); border-radius:16px;
+  padding:26px 24px; max-width:420px; width:100%; text-align:center;
+}
+#draftGate h2{border-left:none; background:none; padding:0; margin:0 0 10px; color:var(--blue); font-size:20px;}
+#draftGate p{color:var(--sub); font-size:15.5px; margin:0 0 18px; line-height:1.7;}
+#draftGate input{
+  width:100%; font:inherit; font-size:22px; letter-spacing:6px; text-align:center;
+  min-height:52px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; margin-bottom:12px;
+}
+#draftGate .err{color:var(--red); font-size:15px; min-height:22px; margin-top:8px;}
+
+@media (max-width:640px){
+  body{font-size:16px;padding:10px 8px 50px;}
+  h1{font-size:21px;} h2{font-size:17px;}
+  .card{padding:14px 13px 16px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ★다른 탭이 더 새로운 것을 저장했을 때만 뜬다. 평소에는 숨어 있다. -->
+  <div class="msg bad hide" id="tabWarn"></div>
+
+  <!-- ══ 머리 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1>⚖️ 메셀슨과 스탈 — DNA 복제 방식 가려내기</h1>
+        <p class="sub">보존적 · 반보존적 · 분산적 세 복제모델을 직접 굴려 보고, <b>질소의 무게 차이가 만든 띠</b>로 어느 것이 지워지는지 가려낸다 (교과서 46쪽 그림 Ⅰ-31)</p>
+      </div>
+      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 3</span>
+    </div>
+    <div class="tagrow">
+      <span class="tag">반보존적 복제</span><span class="tag">동위원소 표지</span><span class="tag">밀도</span><span class="tag">가설 배제</span><span class="tag">12유전01-07</span>
+    </div>
+    <div class="rail" id="rail"></div>
+  </div>
+
+  <!-- ══ ① 세 가지 복제모델 ══ -->
+  <div class="card">
+    <h2>① 복제모델은 셋이었다</h2>
+    <div class="msg info" style="margin-top:0;">
+      DNA가 복제된다는 사실은 알려져 있었으나, <b>어떤 방식으로</b> 복제되는지는 알려져 있지 않았다.
+      과학자들이 내놓은 복제모델은 셋이었다. 셋 모두 「원래 DNA와 똑같은 DNA 두 개가 만들어진다」는 결과는 같다.
+      다른 것은 <b>원래 가닥이 어떻게 되는가</b>뿐이다. 🤔
+    </div>
+    <div id="modelCards"></div>
+    <div class="msg warn">
+      세 모델은 <b>결과가 같고 과정만 다르다.</b> 눈으로 복제 과정을 볼 수 없던 시절에 이것을 어떻게 가려냈는가 —
+      메셀슨과 스탈이 <b>1958년</b>에 내놓은 답이 이 활동의 내용이다.
+    </div>
+    <div id="introQ"></div>
+  </div>
+
+  <!-- ══ ② 무게를 재는 법 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 style="flex:1 1 300px;margin-bottom:0;">② 무게를 재는 법<span class="yr">밀도</span></h2>
+      <span class="tag" id="balProg">만들어 본 조합 0 / 4</span>
+    </div>
+    <div class="panes">
+      <!-- ── 왼쪽: 보고 판단할 자료 ── -->
+      <div class="pane-l">
+        <div id="nLegend" style="margin-top:10px;"></div>
+        <div class="stage-wrap" style="margin-top:10px;"><div id="balStage"></div></div>
+        <div id="balAni"></div>
+        <div class="tbl-outer">
+          <table class="t">
+            <thead><tr>
+              <th style="width:64px;">조합</th><th>위 가닥</th><th>아래 가닥</th>
+              <th style="width:110px;"><sup>15</sup>N 가닥 수</th><th style="width:150px;">띠가 생기는 자리</th>
+            </tr></thead>
+            <tbody id="balTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── 오른쪽: 조작하고 답하는 자리 ── -->
+      <div class="pane-r">
+       <div class="pr-do">
+        <div id="pIntro"></div>
+        <p class="sub" style="margin-top:10px;">
+          질소(N)는 뉴클레오타이드의 <b>염기</b>에만 들어 있다. 당과 인산에는 질소가 없다.
+          그러므로 배지의 질소를 바꾸면 <b>DNA 전체의 무게</b>가 달라진다.
+          <sup>15</sup>N은 <sup>14</sup>N보다 중성자가 1개 더 많아 그만큼 무겁다.
+        </p>
+        <div class="taskbar">위 가닥과 아래 가닥을 각각 고른 뒤 실행하시오 — 네 조합을 모두 만들어야 한다.</div>
+        <div class="chips" id="balChipsTop"></div>
+        <div class="chips" id="balChipsBot"></div>
+        <div class="slotline">
+          <span style="flex:0 0 auto;font-weight:700;">조립대:</span>
+          <div class="slotbox" id="balSlot">아직 고르지 않았다</div>
+        </div>
+        <div class="msg warn hide" id="balFb"></div>
+        <div class="btnrow">
+          <button class="btn" id="balRunBtn" onclick="balRun()">🧪 맞붙여 원심분리하기</button>
+        </div>
+        <div class="msg info" style="font-size:14.5px;">
+          💡 이 활동의 DNA는 길이가 모두 같다. 길이가 같으면 <b>무거울수록 밀도도 크다.</b>
+          원심분리하면 밀도가 큰 DNA일수록 <b>아래쪽</b>에 자리를 잡는다.
+        </div>
+       </div>
+
+       <div class="pr-q">
+        <div class="msg info" id="balQlock">🔒 네 조합을 모두 만들면 결론 문항이 열린다.</div>
+        <div id="balQwrap" style="display:none;">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="balQ"></div>
+        </div>
+       </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ③ 세 모델로 굴려 보기 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="m2" style="flex:1 1 300px;margin-bottom:0;">③ 세 모델을 직접 굴려 보시오<span class="yr">예상</span></h2>
+      <span class="tag" id="repProg">굴려 본 모델 0 / 3</span>
+    </div>
+    <div class="msg info" id="repLock"></div>
+    <div id="repBody" style="display:none;">
+     <div class="panes">
+      <div class="pane-l">
+        <div id="nLegend2" style="margin-top:10px;"></div>
+        <div class="stage-wrap" style="margin-top:10px;"><div id="repStage"></div></div>
+        <div id="repAni"></div>
+        <h3 style="margin-bottom:6px;">이 모델이 예상하는 원심분리 결과</h3>
+        <div class="stage-wrap"><div id="repTubes"></div></div>
+        <!-- ★조성표는 「자료」다 → 왼쪽 칸에 둔다. 오른쪽(조작) 칸은 440px 이라 6열이 잘렸다. -->
+        <h3 style="margin-bottom:6px;margin-top:16px;">세대별 DNA 분자의 조성</h3>
+        <div class="tbl-outer">
+          <table class="t compo">
+            <thead><tr>
+              <th style="width:70px;">세대</th><th style="width:88px;">분자 수</th>
+              <th class="n15"><sup>15</sup>N–<sup>15</sup>N<span class="thsub">무거운 DNA</span></th>
+              <th class="nmid"><sup>14</sup>N–<sup>15</sup>N<span class="thsub">중간 무게</span></th>
+              <th class="n14"><sup>14</sup>N–<sup>14</sup>N<span class="thsub">가벼운 DNA</span></th>
+              <th class="nmix">섞임<span class="thsub">가닥 안에서 섞임</span></th>
+            </tr></thead>
+            <tbody id="repTbody"></tbody>
+          </table>
+        </div>
+        <div class="msg info" style="font-size:14.5px;">
+          📌 띠에서 읽을 것은 두 가지이다. <b>띠의 높이는 밀도</b>를, <b>띠의 굵기는 그 무게를 가진 DNA가 몇 분자인지</b>를 나타낸다. 분자가 2배로 늘면 띠도 2배 굵어진다.
+        </div>
+      </div>
+      <div class="pane-r">
+       <div class="pr-do">
+        <p class="sub" style="margin-top:10px;">
+          <sup>15</sup>N 배지에서 여러 세대 배양한 대장균을 <b><sup>14</sup>N 배지로 옮긴</b> 뒤,
+          1세대(G1)와 2세대(G2)에서 DNA를 뽑아 원심분리한다.
+          <b>세 모델이 각각 무엇을 예상하는지</b> 직접 굴려 확인하시오.
+        </p>
+        <div class="taskbar">모델을 하나 고르시오 — 셋을 모두 굴려야 다음이 열린다.</div>
+        <div class="chips" id="repChips"></div>
+       </div>
+       <div class="pr-q">
+        <div class="msg info" id="repQlock">🔒 세 모델을 모두 굴리면 결론 문항이 열린다.</div>
+        <div id="repQwrap" style="display:none;">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="repQ"></div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+  </div>
+
+  <!-- ══ ④ 실제 결과와 대조 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">④ 실제 실험 결과와 맞추어 보시오<span class="yr">배제</span></h2>
+      <span class="tag" id="cmpProg">공개한 세대 0 / 2</span>
+    </div>
+    <div class="msg info" id="cmpLock"></div>
+    <div id="cmpBody" style="display:none;">
+     <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap" style="margin-top:10px;"><div id="cmpStage"></div></div>
+        <div id="cmpAni"></div>
+        <div id="cmpNote"></div>
+      </div>
+      <div class="pane-r">
+       <div class="pr-do">
+        <p class="sub" style="margin-top:10px;">
+          메셀슨과 스탈이 실제로 얻은 결과를 <b>한 세대씩</b> 공개한다.
+          공개된 결과만으로 어느 모델을 지울 수 있는지 판단하시오.
+        </p>
+        <div class="btnrow">
+          <button class="btn real" id="cmpG1Btn" onclick="cmpReveal(1)">▶ 1세대(G1) 결과 공개</button>
+          <button class="btn real" id="cmpG2Btn" onclick="cmpReveal(2)">▶ 2세대(G2) 결과 공개</button>
+        </div>
+        <div class="handoff hide" id="hoG1"></div>
+       </div>
+       <div class="pr-q">
+        <div class="msg info" id="cmpQlock">🔒 1세대 결과를 공개하면 문항이 열린다.</div>
+        <div id="cmpQwrap" style="display:none;">
+          <h3>판단 — 무엇을 지울 수 있는가</h3>
+          <div id="cmpQ"></div>
+        </div>
+        <div class="msg good hide" id="cmpDone"></div>
+       </div>
+      </div>
+     </div>
+    </div>
+  </div>
+
+  <!-- ══ 💪 더 풀어 보기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="teal" style="flex:1 1 300px;margin-bottom:0;">💪 더 풀어 보기</h2>
+      <span class="tag" id="pracProg">푼 문항 0 / 4</span>
+    </div>
+    <p class="sub">활동을 마친 뒤 푸는 문항이다. <b>풀지 않아도 활동은 완료된다.</b></p>
+    <div class="msg info" id="pracLock"></div>
+    <div id="pracBody" style="display:none;"><div id="pracBox"></div></div>
+  </div>
+
+  <!-- ══ ⑤ 정리하기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="green" style="flex:1 1 300px;margin-bottom:0;">⑤ 정리하기</h2>
+      <span class="tag" id="writeProg">작성한 문항 0 / 4</span>
+    </div>
+    <p class="sub">모범답안은 <b>스스로 서술한 뒤에</b> 열린다. ✏️</p>
+    <div id="writeBox"></div>
+    <div class="selfcheck" id="selfBox"></div>
+  </div>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+    <p class="sub" style="margin-top:10px;font-size:13.5px;">
+      생물의 유전 Ⅰ-05 DNA 복제 · 교과서 46쪽 그림 Ⅰ-31 · 성취기준 12유전01-07<br>
+      복제가 <b>어떻게</b> 일어나는지(선도 가닥·지연 가닥)는 자매 활동 「DNA 복제 모의실험」에서 다룬다.
+    </p>
+  </footer>
+</div>
+
+<!-- ══ 미완성 잠금 화면 ══ -->
+<div id="draftGate">
+  <div class="box">
+    <h2>🔒 아직 준비 중이다</h2>
+    <p>이 활동은 아직 완성되지 않았다.<br>교사가 알려 준 번호를 입력하시오.</p>
+    <input id="draftPass" type="tel" inputmode="numeric" maxlength="8" autocomplete="off" aria-label="비밀번호">
+    <button class="btn" style="width:100%;" onclick="unlockDraft()">열기</button>
+    <div class="err" id="draftErr"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   메셀슨과 스탈 — DNA 복제 방식 가려내기
+   ★이 파일의 심장은 「밀도 기계」다(§2).
+     화면의 모든 띠·이름·표가 **가닥 조성 하나**에서 계산된다. 그려 넣은 그림이 아니다.
+     그래서 「무거우면 아래」가 말이 아니라 기계다 — 교사가 지목한 목표가 이것이다.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ★「서술 표현」과의 어긋남 스위치 (정확성 브리프 §4-3 · §7 위험 1)
+   ⚠ 어긋나는 것은 **그림이 아니라 문장 하나**다. 교과서 46쪽 그림 Ⅰ-31 왼쪽(이론적 복제모델)에는
+     시험관·띠가 아예 없고, 오른쪽 시험관 3개는 실제 결과다 — 모델별 예상 띠 그림 자체가 없다.
+     비상교육 교사용 39쪽 예시답안 그림은 분산적 G2 띠를 이미 ¹⁴N-¹⁴N 과 ¹⁴N-¹⁵N 사이에 그려 두었고,
+     그것은 아래 계산값(f15 = 0.25)과 같은 자리다.
+     어긋나는 것은 **교사용 46쪽 해설 문장**(「중간 무게의 DNA 띠만 나타나야 한다」)뿐이다.
+   ★어느 쪽이든 「띠가 하나뿐」이라는 점은 같고, 분산적을 지우는 근거도 그것이다.
+   → 그러므로 false 가 정본이다. true 로 두면 해설 문장에 맞추어 중간 자리에 고정한다. */
+var DISP_G2_AT_MIDDLE = false;
+
+/* ── 질소 색 — CSS 변수와 **손으로 맞춰야 한다**. 검사가 이 짝을 문다. ── */
+var C_N15 = '#3B1E87';   /* 무거운 질소 ¹⁵N — ★CSS --n15 와 같아야 한다 */
+var C_N14 = '#00B8A9';   /* 가벼운 질소 ¹⁴N — ★CSS --n14 와 같아야 한다 (2026-08-26 교사 지시로 채도를 올렸다) */
+var C_GEAR = '#8A93A6';  /* 기구 — DNA 에는 절대 쓰지 않는다 */
+var C_GEARD = '#5A616C';
+var C_OK = '#2A7A38';
+var C_NO = '#C0392B';
+
+/* ══════════════════════════════════════════════════════════════
+   1. 분자 데이터 — 세 모델이 만드는 가닥 조성
+   H = ¹⁵N 칸 · L = ¹⁴N 칸 · 한 가닥 8칸 → 분자 하나 16칸
+   ★분산적만 한 가닥 안에서 H·L 이 섞인다(조각으로 잘려 섞이기 때문이다).
+   ★어느 모델이든 세대마다 **H 칸의 총합은 언제나 16** 이다 —
+     ¹⁵N 원자는 배지를 바꾼 순간 더 늘어나지 않는다. 검사가 이것을 문다.
+   ══════════════════════════════════════════════════════════════ */
+var MOL_P = [{ top:'HHHHHHHH', bot:'HHHHHHHH' }];
+
+var MODELS = [
+  { id:'cons', cls:'m1', name:'보존적 복제',
+    desc:'원래 이중나선은 두 가닥 그대로 남고, 완전히 새로운 이중나선이 따로 만들어진다.',
+    G1:[{ top:'HHHHHHHH', bot:'HHHHHHHH' }, { top:'LLLLLLLL', bot:'LLLLLLLL' }],
+    G2:[{ top:'HHHHHHHH', bot:'HHHHHHHH' }, { top:'LLLLLLLL', bot:'LLLLLLLL' },
+        { top:'LLLLLLLL', bot:'LLLLLLLL' }, { top:'LLLLLLLL', bot:'LLLLLLLL' }],
+    actSep:'원본은 열리지 않는다', actSyn:'새 분자를 따로 만든다',
+    actSep2:'이번에도 열리지 않는다', actSyn2:'분자마다 새 DNA 를 만든다',
+    capSep:'원래 이중나선은 열리지 않는다.|두 가닥이 그대로 붙어 있다.',
+    capSyn:'두 가닥 모두 새것인 DNA 를|따로 만든다.',
+    capSep2:'이번에도 어느 분자도 열리지 않는다.',
+    capSyn2:'분자마다 새 DNA 를|하나씩 더 만든다.',
+    capG1:'무거운 DNA 1개와 가벼운 DNA 1개가|생긴다. 띠가 둘이다.',
+    capG2:'무거운 DNA 1개와 가벼운 DNA 3개가|되었다. 가벼운 DNA 가 세 배 많다.' },
+
+  { id:'semi', cls:'m2', name:'반보존적 복제',
+    desc:'두 가닥이 풀려 각각 주형이 되고, 딸 DNA 는 「원래 가닥 1개 + 새 가닥 1개」로 이루어진다.',
+    G1:[{ top:'HHHHHHHH', bot:'LLLLLLLL' }, { top:'LLLLLLLL', bot:'HHHHHHHH' }],
+    G2:[{ top:'HHHHHHHH', bot:'LLLLLLLL' }, { top:'LLLLLLLL', bot:'LLLLLLLL' },
+        { top:'LLLLLLLL', bot:'HHHHHHHH' }, { top:'LLLLLLLL', bot:'LLLLLLLL' }],
+    actSep:'① 두 가닥이 갈라진다', actSyn:'② 새 가닥이 합성된다',
+    actSep2:'① 네 가닥이 각각 갈라진다', actSyn2:'② 새 가닥이 네 개 합성된다',
+    capSep:'두 가닥이 지퍼처럼 갈라진다.|갈라진 가닥이 각각 주형이 된다. 아직 새 가닥은 없다.',
+    capSyn:'주형에 맞추어 ¹⁴N 뉴클레오타이드가|붙어 새 가닥이 만들어진다.',
+    capSep2:'네 가닥이 각각 갈라져|다시 주형이 된다.',
+    capSyn2:'주형마다 새 ¹⁴N 가닥이|하나씩 만들어진다.',
+    capG1:'두 분자 모두 ¹⁴N-¹⁵N 이다.|중간 무게의 띠 하나가 생긴다.',
+    capG2:'중간 무게의 DNA 2개와 가벼운 DNA|2개가 되었다. 두 띠의 굵기가 같다.' },
+
+  { id:'disp', cls:'m3', name:'분산적 복제',
+    desc:'원래 DNA 가 조각조각 나뉘고 새로 만들어진 부분과 섞여 딸 DNA 를 이룬다.',
+    G1:[{ top:'HLHLHLHL', bot:'LHLHLHLH' }, { top:'LHLHLHLH', bot:'HLHLHLHL' }],
+    G2:[{ top:'HLLLHLLL', bot:'LLHLLLHL' }, { top:'LHLLLHLL', bot:'LLLHLLLH' },
+        { top:'HLLLLHLL', bot:'LLHLLLLH' }, { top:'LLHLLLHL', bot:'HLLLHLLL' }],
+    actSep:'① 조각으로 잘린다', actSyn:'② 새 조각과 섞여 이어진다',
+    actSep2:'① 조각이 다시 잘린다', actSyn2:'② 다시 섞여 이어진다',
+    capSep:'어버이 분자가 조각조각 잘린다.|어느 가닥도 온전히 남지 않는다.',
+    capSyn:'잘린 조각이 새 ¹⁴N 조각과|섞여 다시 이어진다.',
+    capSep2:'조각이 다시 잘린다.',
+    capSyn2:'다시 이어져 ¹⁵N 이|절반으로 줄어든다.',
+    capG1:'두 분자 모두 ¹⁵N 이 절반이다.|중간 무게의 띠 하나가 생긴다.',
+    capG2:'네 분자의 조성이 모두 같다.|띠는 여전히 하나뿐이다.' }
+];
+function modelById(id){
+  for (var i = 0; i < MODELS.length; i++){ if (MODELS[i].id === id) return MODELS[i]; }
+  return null;
+}
+function molsOf(id, gen){
+  if (gen === 0) return MOL_P;
+  var m = modelById(id);
+  if (!m) return [];
+  return (gen === 1) ? m.G1 : m.G2;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   2. ★밀도 기계 — 이 활동의 심장
+      가닥의 ¹⁵N 칸 수 → 분자의 ¹⁵N 비율(f15) → 밀도 → 띠의 높이
+      띠의 굵기는 밀도가 아니라 **그 무게를 가진 분자의 분율**에서만 나온다.
+      (둘을 섞으면 「굵으면 무겁다」는 오개념이 앱 안에서 재생산된다.)
+   ══════════════════════════════════════════════════════════════ */
+function countH(s){
+  var n = 0;
+  for (var i = 0; i < s.length; i++){ if (s.charAt(i) === 'H') n++; }
+  return n;
+}
+function hOfMol(m){ return countH(m.top) + countH(m.bot); }   /* 0 ~ 16 */
+function f15Of(m){ return hOfMol(m) / 16; }
+
+/* 분자 목록 → 띠 목록. 같은 f15 끼리 묶고, 묶인 수를 전체로 나눈 것이 굵기가 된다. */
+function bandsOf(mols){
+  var keys = [], map = {};
+  for (var i = 0; i < mols.length; i++){
+    var f = f15Of(mols[i]);
+    var k = f.toFixed(4);
+    if (map[k] === undefined){ map[k] = 0; keys.push(k); }
+    map[k]++;
+  }
+  keys.sort(function(a, b){ return Number(a) - Number(b); });
+  var out = [];
+  for (var j = 0; j < keys.length; j++){
+    out.push({ f15:Number(keys[j]), ratio:map[keys[j]] / mols.length, n:map[keys[j]] });
+  }
+  return out;
+}
+/* 모델·세대의 예상 띠. 분산적 G2 만 위 스위치를 탄다(기본은 계산값 그대로). */
+function bandsFor(id, gen){
+  var b = bandsOf(molsOf(id, gen));
+  if (DISP_G2_AT_MIDDLE && id === 'disp' && gen === 2){
+    for (var i = 0; i < b.length; i++) b[i].f15 = 0.5;
+  }
+  return b;
+}
+/* 실제 실험 결과 — 교과서 46쪽 그림 Ⅰ-31 */
+/* ★n = 분자 개수. 어버이 DNA **1개**에서 출발했을 때의 수다(1 → 2 → 4).
+   굵기가 개수에 비례하므로 이 값이 없으면 띠를 제대로 그릴 수 없다. */
+var REAL_BANDS = {
+  0:[{ f15:1,   ratio:1,   n:1 }],
+  1:[{ f15:0.5, ratio:1,   n:2 }],
+  2:[{ f15:0.5, ratio:0.5, n:2 }, { f15:0, ratio:0.5, n:2 }]
+};
+
+/* 띠 이름 — f15 하나에서 나온다. 교과서가 정한 세 이름을 침범하지 않는다. */
+function bandName(f15){
+  if (f15 === 1)   return '무거운 DNA';
+  if (f15 === 0.5) return '중간 무게의 DNA';
+  if (f15 === 0)   return '가벼운 DNA';
+  return '중간보다 가벼운 DNA';
+}
+function molName(m){
+  var h = hOfMol(m);
+  if (h === 16) return '¹⁵N-¹⁵N';
+  if (h === 0)  return '¹⁴N-¹⁴N';
+  if (countH(m.top) === 8 || countH(m.bot) === 8) return '¹⁴N-¹⁵N';
+  return '섞임';
+}
+/* 표의 열쇠 — 분자 하나가 어느 칸에 들어가는가 */
+function molKind(m){
+  var h = hOfMol(m), a = countH(m.top), b = countH(m.bot);
+  if (h === 16) return 'HH';
+  if (h === 0)  return 'LL';
+  if ((a === 8 && b === 0) || (a === 0 && b === 8)) return 'HL';
+  return 'MIX';
+}
+
+/* 띠 좌표 — 튜브 로컬. y 는 아래로 갈수록 크다 = 무거울수록 아래. */
+function bandY(f15){ return 34 + 60 * f15; }
+/* ★굵기 = 그 무게를 가진 DNA **분자의 개수**. 개수에 그대로 비례한다.
+   ⚠ 2026-08-26 교사 지적으로 **분율에서 개수로 바꿨다.** 분율로 그리면
+     P 의 띠(분자 1개)가 G2 의 띠(분자 2개)보다 굵어진다 — 화면은 「굵기 = 양」이라
+     말하면서 정반대를 보여 주게 되어 **앱이 스스로 오개념을 심는다.**
+   개수에 비례시키면 세 가지가 한꺼번에 맞아떨어진다 —
+     · P 의 띠(1개)와 보존적 G2 의 무거운 띠(1개)가 **같은 굵기**다.
+     · 중간 무게의 띠는 세대가 지나도 **굵기가 그대로**다(늘 2개) — Q10 의 요점을 그림이 직접 말한다.
+     · 한 시험관의 **굵기 총합 = 그 세대의 분자 수**다(P 6 · G1 12 · G2 24).
+   ★비례이므로 「3배 많다 = 3배 굵다」가 참이 된다(옛 식은 바닥값 때문에 거짓이었다).
+   최대 26 은 시험관 아래 곡면(반지름 26)을 넘지 않는 한계다. */
+function bandT(n){ return Math.min(26, 6 * n); }
+/* 띠 색 — 두 질소 색 사이를 f15 로 섞는다.
+   ★칸으로 쪼개지 않는다. 쪼개 그리면 「이 띠 안에 무거운 것과 가벼운 것이 반반 있다」로 읽혀
+     최우선 오개념(M-01)을 앱이 스스로 심는다. 중간 무게의 DNA 는 분자 하나하나가 중간이다. */
+function hex2rgb(h){
+  return [parseInt(h.substr(1,2),16), parseInt(h.substr(3,2),16), parseInt(h.substr(5,2),16)];
+}
+function bandColor(f15){
+  var a = hex2rgb(C_N14), b = hex2rgb(C_N15), o = '#';
+  for (var i = 0; i < 3; i++){
+    var v = Math.round(a[i] + (b[i] - a[i]) * f15);
+    o += (v < 16 ? '0' : '') + v.toString(16);
+  }
+  return o;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   3. SVG 도형
+   ★무대(SVG) 문자열 안에서는 ¹⁵N·¹⁴N **유니코드 윗첨자**를 쓴다.
+     <sup>·<b> 를 <text> 안에 넣으면 HTML 파서의 「외래 콘텐츠 이탈」 규칙이
+     <text> 와 <svg> 를 통째로 닫아 **그림이 거기서 끊긴다**(1-4 에서 실제로 겪었다).
+     HTML 본문·표·문항에서는 <sup>15</sup>N 을 쓴다.
+   ══════════════════════════════════════════════════════════════ */
+function svgOpen(w, h, label){
+  return '<svg class="stage" viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" ' +
+         'role="img" aria-label="' + label + '">';
+}
+/* HTML 문구를 무대로 옮길 때의 안전망 (1-4 에서 그대로 가져왔다) */
+function svgText(html){
+  return String(html)
+    .replace(/<sup>([\s\S]*?)<\/sup>/g, '<tspan baseline-shift="super" font-size="0.7em">$1</tspan>')
+    .replace(/<sub>([\s\S]*?)<\/sub>/g, '<tspan baseline-shift="sub" font-size="0.7em">$1</tspan>')
+    .replace(/<b>([\s\S]*?)<\/b>/g,     '<tspan font-weight="bold">$1</tspan>')
+    .replace(/<strong>([\s\S]*?)<\/strong>/g, '<tspan font-weight="bold">$1</tspan>')
+    .replace(/<\/?(?:i|em|span|p|br\s*\/?)>/g, '');
+}
+function setHTML(id, html){
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+/* 무대 밑 캡션 — 「|」로 줄을 나눈다. 한 줄이 길면 viewBox 밖으로 잘린다. */
+function cap(x, y, lines){
+  var g = '', L = String(lines).split('|');
+  for (var i = 0; i < L.length; i++){
+    g += '<text x="' + x + '" y="' + (y + i * 20) + '" text-anchor="middle" font-size="14.5" fill="#555">' +
+         L[i] + '</text>';
+  }
+  return g;
+}
+
+/* ── 분자 ── */
+var CELL_W = 17, CELL_H = 9, N_CELL = 8, MOL_W = 136, STRAND_GAP = 6;
+function strandSvg(x, y, s, opt){
+  opt = opt || {};
+  var g = '';
+  for (var i = 0; i < N_CELL; i++){
+    var heavy = (s.charAt(i) === 'H');
+    var cx = x + i * CELL_W;
+    g += '<rect x="' + cx + '" y="' + y + '" width="' + CELL_W + '" height="' + CELL_H + '" ' +
+         'fill="' + (heavy ? C_N15 : C_N14) + '" stroke="#fff" stroke-width=".8"></rect>';
+    /* ★색만으로 구분시키지 않는다 — 무거운 칸에는 흰 점을 하나 찍는다(색각 이상·흑백 인쇄 대비) */
+    if (heavy){
+      g += '<circle cx="' + (cx + CELL_W / 2) + '" cy="' + (y + CELL_H / 2) + '" r="1.7" fill="#fff" opacity=".9"></circle>';
+    }
+    /* 조각 이음매 — 분산적에서 색이 바뀌는 경계에만 짙은 선을 긋는다 = 「이어 붙인 자국」 */
+    if (opt.seam && i > 0 && s.charAt(i) !== s.charAt(i - 1)){
+      g += '<line x1="' + cx + '" y1="' + y + '" x2="' + cx + '" y2="' + (y + CELL_H) + '" ' +
+           'stroke="#3A3F4A" stroke-width="1.4"></line>';
+    }
+  }
+  return g;
+}
+function molSvg(x, y, m, opt){
+  opt = opt || {};
+  var seam = !!opt.seam;
+  var g = '<g' + (opt.fade ? ' opacity="' + opt.fade + '"' : '') + '>';
+  var gap = (opt.split != null) ? opt.split : STRAND_GAP;
+  g += strandSvg(x, y, m.top, { seam:seam });
+  g += strandSvg(x, y + CELL_H + gap, m.bot, { seam:seam });
+  /* 염기쌍 — 두 가닥 사이 세로선. 벌어져 있으면 그리지 않는다(끊어진 것이다). */
+  if (gap <= STRAND_GAP){
+    for (var i = 0; i < N_CELL; i++){
+      var cx = x + i * CELL_W + CELL_W / 2;
+      g += '<line x1="' + cx + '" y1="' + (y + CELL_H) + '" x2="' + cx + '" y2="' + (y + CELL_H + gap) + '" ' +
+           'stroke="#9AA1AC" stroke-width="1"></line>';
+    }
+  }
+  g += '</g>';
+  if (opt.label){
+    var by = y + 2 * CELL_H + gap;
+    g += '<text x="' + (x + MOL_W / 2) + '" y="' + (by + 15) + '" text-anchor="middle" font-size="12.5" ' +
+         'font-weight="bold" fill="' + bandColor(f15Of(m)) + '">' + molName(m) + '</text>';
+    g += '<text x="' + (x + MOL_W / 2) + '" y="' + (by + 29) + '" text-anchor="middle" font-size="11.5" fill="#555">' +
+         '¹⁵N ' + hOfMol(m) + ' / 16 칸</text>';
+  }
+  return g;
+}
+
+/* ── 원심분리관 ──
+   로컬 좌표: 입구 중앙이 원점. 눈금 34(가벼운) / 64(중간) / 94(무거운). */
+function tubeSvg(x, y, sc, bands, opt){
+  opt = opt || {};
+  var g = '<g transform="translate(' + x + ',' + y + ') scale(' + sc + ')">';
+  var body = 'M-26,0 L26,0 L26,100 A26,26 0 0 1 -26,100 Z';
+  g += '<path d="' + body + '" fill="#F7FAFF" stroke="' + C_GEARD + '" stroke-width="2.4"></path>';
+  /* 눈금 — 세 자리는 언제나 보인다. 「어디가 무거운 자리인가」가 늘 보여야 한다. */
+  var ticks = [[34, '가벼운 DNA'], [64, '중간 무게의 DNA'], [94, '무거운 DNA']];
+  for (var t = 0; t < ticks.length; t++){
+    g += '<line x1="-26" y1="' + ticks[t][0] + '" x2="26" y2="' + ticks[t][0] + '" ' +
+         'stroke="' + C_GEAR + '" stroke-width="1" stroke-dasharray="3,3" opacity=".6"></line>';
+    if (opt.labelsLeft){
+      /* ★눈금 이름을 왼쪽에 둘 수도 있어야 한다 — 오른쪽에 띠의 개수를 적는 무대가 있다 */
+      g += '<text x="-34" y="' + (ticks[t][0] + 4) + '" text-anchor="end" font-size="12.5" fill="#555">' + ticks[t][1] + '</text>';
+    } else if (opt.labels){
+      g += '<text x="34" y="' + (ticks[t][0] + 4) + '" font-size="12.5" fill="#555">' + ticks[t][1] + '</text>';
+    }
+  }
+  if (opt.dots){
+    /* 원심분리 전 — DNA 가 관 전체에 고르게 흩어져 있다 (고정 좌표. 난수를 쓰지 않는다) */
+    var DOT = [[-14,20],[6,14],[-4,34],[16,28],[-18,46],[2,52],[14,60],[-10,66],
+               [8,78],[-16,84],[18,90],[-2,96],[10,104],[-14,110],[0,18],[20,44]];
+    for (var d = 0; d < DOT.length; d++){
+      var f = (bands.length === 1) ? bands[0].f15 : ((d % 2 === 0) ? bands[0].f15 : bands[1].f15);
+      g += '<circle cx="' + DOT[d][0] + '" cy="' + DOT[d][1] + '" r="4" fill="' + bandColor(f) + '" opacity=".75"></circle>';
+    }
+  } else {
+    for (var i = 0; i < bands.length; i++){
+      var b = bands[i], cy = bandY(b.f15), th = bandT(b.n != null ? b.n : 1);
+      g += '<rect x="-24" y="' + (cy - th / 2) + '" width="48" height="' + th + '" rx="2.5" ' +
+           'fill="' + bandColor(b.f15) + '" stroke="#2B2F38" stroke-width="1.1" opacity=".92"></rect>';
+    }
+  }
+  if (opt.tag){
+    g += '<circle cx="0" cy="-16" r="13" fill="' + (opt.tagColor || '#1255A0') + '"></circle>';
+    g += '<text x="0" y="-11" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">' + opt.tag + '</text>';
+  }
+  g += '</g>';
+  if (opt.caption){
+    g += '<text x="' + x + '" y="' + (y + 100 * sc + 46 * sc + 4) + '" text-anchor="middle" font-size="13" fill="#555">' +
+         opt.caption + '</text>';
+  }
+  return g;
+}
+
+/* ── 질소 범례 (HTML — 그림만 SVG, 글은 HTML) ──
+   ★1-4 에서 통 SVG 로 만들었다가 칸 폭을 따라 커져 아래 표를 밀어냈다. 그림은 104px 에서 멈춘다. */
+function nLegendHtml(){
+  function cell(cls, s, name, desc){
+    return '<div class="lgcell ' + cls + '">' +
+             '<svg viewBox="0 0 140 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + name + ' 모식도">' +
+               strandSvg(2, 7, s, {}) +
+             '</svg>' +
+             '<div class="lgtext"><span class="lgname">' + name + '</span>' +
+             '<span class="lgdesc">' + desc + '</span></div>' +
+           '</div>';
+  }
+  return '<div class="legend2">' +
+           cell('h', 'HHHHHHHH', '<sup>15</sup>N 가닥',
+                '<b>무거운 질소</b>로 만든 가닥<br>진한 색 · 칸마다 흰 점이 있다') +
+           cell('l', 'LLLLLLLL', '<sup>14</sup>N 가닥',
+                '<b>가벼운 질소</b>로 만든 가닥<br>연한 색 · 점이 없다') +
+         '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   4. 연출 엔진 (1-4 에서 계승)
+   ★1-4 의 ANI_LAST 는 **상수 4** 였다. 무대마다 국면 수가 달라졌으므로
+     함수 aniLast(st,id) 로 바꾼다 — 상수로 두면 국면 6개짜리 무대가
+     4에서 멈춰 마지막 두 장면을 영영 못 본다.
+   ★결과는 연출과 무관하게 즉시 확정된다. setTimeout 이 없는 환경(헤드리스 검사)에서는
+     ph 가 곧바로 마지막이 된다. 연출이 실패해도 수업이 멈추지 않는다.
+   ══════════════════════════════════════════════════════════════ */
+var ANI_STEPS = {
+  bal:['가닥을 고른다', '두 가닥을 맞붙인다', '저울에 올린다', '저울이 기운다', '원심분리한다', '띠의 자리가 정해진다'],
+  /* ★복제를 「① 분리 → ② 합성」 두 국면으로 나눈다 (2026-08-26 교사 지시).
+     한 국면에 두 사건을 넣으면 「갈라지는 것」과 「새로 만들어지는 것」이 뭉개진다. */
+  rep:['어버이 세대(P)', '¹⁴N 배지로 옮긴다', '(분리)', '(합성)', '1세대(G1) — 분자 2개',
+       '(다시 분리)', '(다시 합성)', '2세대(G2) — 분자 4개'],
+  cmp:['실제 실험 결과', '세 모델의 예상을 놓는다', '1세대 — 보존적이 어긋난다', '1세대만으로는 못 가른다',
+       '2세대 — 분산적이 어긋난다', '반보존적만 남는다']
+};
+/* 조건마다 이름이 달라지는 자리 — 1-4 의 av:none 선례 그대로 */
+var ANI_STEPS_BY_ID = { rep:{}, cmp:{ g1:ANI_STEPS.cmp.slice(0, 4) } };
+(function(){
+  for (var i = 0; i < MODELS.length; i++){
+    var m = MODELS[i], s = ANI_STEPS.rep.slice();
+    s[2] = m.actSep; s[3] = m.actSyn; s[5] = m.actSep2; s[6] = m.actSyn2;
+    ANI_STEPS_BY_ID.rep[m.id] = s;
+  }
+})();
+function aniSteps(st, id){
+  var byId = ANI_STEPS_BY_ID[st];
+  if (byId && byId[id]) return byId[id];
+  return ANI_STEPS[st] || [];
+}
+function aniLast(st, id){ return Math.max(0, aniSteps(st, id).length - 1); }
+
+/* 국면마다 머무는 시간이 다르다. 볼 것이 많은 국면은 느리게. */
+var ANI_MS = {
+  bal:900,
+  rep:[1000, 1100, 1700, 1700, 1500, 1700, 1700, 1500],
+  cmp:[1500, 1600, 2000, 2200, 2000, 1800]
+};
+function aniMs(st, ph){
+  var v = ANI_MS[st];
+  if (v == null) return 1000;
+  return (typeof v === 'number') ? v : (v[ph] != null ? v[ph] : 1000);
+}
+
+var ani = { st:null, id:null, ph:0, gen:0, auto:false, reveal:false };
+function aniPlaying(st, id){
+  return ani.reveal && ani.st === st && ani.id === id && ani.ph < aniLast(st, id);
+}
+function aniOf(st, id){
+  return (ani.st === st && ani.id === id) ? ani.ph : aniLast(st, id);
+}
+/* ★잡고 있던 무대를 놓는다 — 떠나는 무대를 완료 국면으로 되돌리고 다시 그린다.
+   이게 없으면 재생 도중 다른 무대를 건드렸을 때 떠난 무대가 중간 그림에 얼어붙고,
+   화면의 단계 번호와 실제 ph 가 어긋나 ◀ 이전이 앞으로 간다(1-4 검토에서 잡았다). */
+function aniRelease(st, id){
+  if (!ani.st) return;
+  if (ani.st === st && ani.id === id) return;
+  var prev = ani.st, prevId = ani.id;
+  ani = { st:prev, id:prevId, ph:aniLast(prev, prevId), gen:ani.gen + 1, auto:false, reveal:false };
+  renderStage(prev);
+}
+function aniStart(st, id, reveal, from){
+  aniRelease(st, id);
+  ani = { st:st, id:id, ph:(from || 0), gen:ani.gen + 1, auto:true, reveal:!!reveal };
+  if (typeof setTimeout === 'undefined'){ ani.ph = aniLast(st, id); ani.auto = false; return; }
+  aniStep();
+}
+function aniStep(){
+  if (!ani.auto || ani.ph >= aniLast(ani.st, ani.id)) return;
+  var gen = ani.gen;
+  setTimeout(function(){
+    /* ★손으로 단계를 넘겼으면 gen 이 달라져 여기서 조용히 끊긴다 */
+    if (gen !== ani.gen || !ani.auto || ani.ph >= aniLast(ani.st, ani.id)) return;
+    ani.ph++;
+    renderStage(ani.st);
+    aniStep();
+  }, aniMs(ani.st, ani.ph + 1));
+}
+function aniHold(st, id){
+  aniRelease(st, id);
+  if (ani.st !== st || ani.id !== id){
+    ani = { st:st, id:id, ph:aniLast(st, id), gen:ani.gen + 1, auto:false, reveal:false };
+  }
+  /* ★끝까지 간 뒤에 손으로 되돌아가는 것도 「다시 보기」다 — 이미 밝힌 결과를 도로 감추지 않는다 */
+  if (ani.ph >= aniLast(st, id)) ani.reveal = false;
+  ani.gen++;
+  ani.auto = false;
+}
+function aniSkip(st, id){
+  if (st){ aniHold(st, id); } else if (!ani.st){ return; } else { ani.gen++; ani.auto = false; }
+  ani.ph = aniLast(ani.st, ani.id);
+  renderStage(ani.st);
+}
+function aniReplay(st, id){
+  if (!st || !id) return;
+  aniStart(st, id, false);
+  renderStage(st);
+}
+function aniGo(st, id, delta){
+  if (!st || !id) return;
+  aniHold(st, id);
+  var p = ani.ph + delta, last = aniLast(st, id);
+  ani.ph = p < 0 ? 0 : (p > last ? last : p);
+  renderStage(st);
+}
+function aniBarHtml(st, id, cls){
+  if (!id) return '';
+  var steps = aniSteps(st, id), ph = aniOf(st, id), atEnd = (ph >= aniLast(st, id));
+  var q = function(a, b){ return "'" + a + "','" + b + "'"; };
+  function btn(label, on, act){
+    return '<button type="button" class="btn ' + cls + ' ghost"' + (on ? '' : ' disabled') +
+           ' onclick="' + act + '">' + label + '</button>';
+  }
+  return '<div class="anibar">' +
+    btn('⏮ 처음부터', true,  'aniReplay(' + q(st, id) + ')') +
+    btn('◀ 이전',    ph > 0, 'aniGo(' + q(st, id) + ',-1)') +
+    btn('▶ 다음',    !atEnd, 'aniGo(' + q(st, id) + ',1)') +
+    btn('⏩ 끝까지',  !atEnd, 'aniSkip(' + q(st, id) + ')') +
+    '<span class="anistep">' + (steps[ph] || '') + ' <b>' + (ph + 1) + ' / ' + steps.length + '</b></span>' +
+  '</div>';
+}
+function renderStage(st){
+  if (st === 'bal') renderBal();
+  else if (st === 'rep') renderRep();
+  else if (st === 'cmp') renderCmp();
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   5. ① 세 복제모델 도해 · 어버이 세대 그림
+   ══════════════════════════════════════════════════════════════ */
+/* 모델 하나를 「원래 분자 → 딸 분자 2개」 한 줄로 그린다. 색이 곧 설명이다. */
+function modelMiniSvg(id){
+  var W = 300, H = 132, g = svgOpen(W, H, modelById(id).name + ' 모식도');
+  var seam = (id === 'disp');
+  var sc = 0.62, w = MOL_W * sc;
+  g += '<g transform="translate(' + ((W - w) / 2) + ',6) scale(' + sc + ')">' +
+       molSvg(0, 0, MOL_P[0], { seam:false }) + '</g>';
+  g += '<path d="M' + (W / 2) + ',42 L' + (W / 2) + ',60" stroke="' + C_GEARD + '" stroke-width="2"></path>';
+  g += '<path d="M' + (W / 2 - 5) + ',56 L' + (W / 2) + ',64 L' + (W / 2 + 5) + ',56 Z" fill="' + C_GEARD + '"></path>';
+  var d = molsOf(id, 1), left = 8, right = W - w - 8;
+  for (var i = 0; i < 2; i++){
+    var x = (i === 0) ? left : right;
+    g += '<g transform="translate(' + x + ',72) scale(' + sc + ')">' + molSvg(0, 0, d[i], { seam:seam }) + '</g>';
+    g += '<text x="' + (x + w / 2) + '" y="' + 108 + '" text-anchor="middle" font-size="12.5" ' +
+         'font-weight="bold" fill="' + bandColor(f15Of(d[i])) + '">' + molName(d[i]) + '</text>';
+  }
+  g += '<text x="' + (W / 2) + '" y="126" text-anchor="middle" font-size="12" fill="#777">1세대(G1) 의 DNA 두 개</text>';
+  g += '</svg>';
+  return g;
+}
+function renderModelCards(){
+  var h = '<div class="modelrow">';
+  for (var i = 0; i < MODELS.length; i++){
+    var m = MODELS[i];
+    h += '<div class="mcard ' + m.cls + '">' +
+           '<div class="mname">' + m.name + '</div>' +
+           modelMiniSvg(m.id) +
+           '<div class="mdesc">' + m.desc + '</div>' +
+         '</div>';
+  }
+  h += '</div>';
+  h += '<p class="sub" style="margin-top:10px;font-size:14.5px;">' +
+       '※ 위 그림에서 <b>진한 칸</b>은 어버이에게서 온 가닥, <b>연한 칸</b>은 새로 만든 가닥이다. ' +
+       '이 활동에서는 어버이 가닥이 <sup>15</sup>N, 새 가닥이 <sup>14</sup>N 이 되도록 배지를 바꾼다.</p>';
+  setHTML('modelCards', h);
+}
+
+/* ② 머리말 — 어버이 세대(P)를 어떻게 만들었는가. 정적 그림 한 장. */
+function renderPIntro(){
+  var W = 460, H = 152, g = svgOpen(W, H, '어버이 세대 만들기');
+  /* 삼각플라스크 */
+  g += '<path d="M62,22 L78,22 L78,54 L104,116 A8,8 0 0 1 97,128 L43,128 A8,8 0 0 1 36,116 Z" ' +
+       'fill="#F7FAFF" stroke="' + C_GEARD + '" stroke-width="2.2"></path>';
+  g += '<path d="M48,90 L92,90 L104,116 A8,8 0 0 1 97,128 L43,128 A8,8 0 0 1 36,116 Z" fill="' + C_N15 + '" opacity=".16"></path>';
+  g += '<text x="70" y="16" text-anchor="middle" font-size="13" font-weight="bold" fill="' + C_N15 + '">¹⁵N 배지</text>';
+  for (var i = 0; i < 3; i++){
+    g += '<rect x="' + (50 + i * 15) + '" y="' + (102 + (i % 2) * 12) + '" width="12" height="7" rx="3.5" fill="' + C_GEAR + '"></rect>';
+  }
+  g += '<text x="70" y="146" text-anchor="middle" font-size="12.5" fill="#555">여러 세대 배양한다</text>';
+  g += '<path d="M118,76 L150,76" stroke="' + C_GEARD + '" stroke-width="2"></path>';
+  g += '<path d="M146,71 L156,76 L146,81 Z" fill="' + C_GEARD + '"></path>';
+  g += '<g transform="translate(174,62)">' + molSvg(0, 0, MOL_P[0], {}) + '</g>';
+  g += '<text x="242" y="50" text-anchor="middle" font-size="13" font-weight="bold" fill="' + C_N15 + '">두 가닥 모두 ¹⁵N</text>';
+  g += '<text x="242" y="116" text-anchor="middle" font-size="12.5" fill="#555">어버이 세대(P) 의 DNA</text>';
+  g += '<path d="M330,76 L358,76" stroke="' + C_GEARD + '" stroke-width="2"></path>';
+  g += '<path d="M354,71 L364,76 L354,81 Z" fill="' + C_GEARD + '"></path>';
+  g += tubeSvg(404, 24, 0.66, REAL_BANDS[0], {});
+  g += '<text x="404" y="132" text-anchor="middle" font-size="12.5" fill="#555">무거운 띠 하나</text>';
+  g += '</svg>';
+  setHTML('pIntro',
+    '<div class="stage-wrap" style="margin-bottom:10px;">' + g + '</div>' +
+    '<div class="msg info" style="margin-top:0;">' +
+      '<b>어버이 세대(P)는 이렇게 만들었다.</b> 질소원이 <sup>15</sup>N 뿐인 배지에서 대장균을 여러 세대 배양하면 ' +
+      'DNA 의 질소 자리가 <b>전부 <sup>15</sup>N</b> 이 된다. 이 DNA 를 뽑아 원심분리하면 <b>무거운 띠 하나</b>가 나타난다.<br>' +
+      '📌 <sup>15</sup>N 은 <b>방사성 동위원소가 아니다.</b> 방사선을 내지 않으며, 이 실험이 이용한 것은 오직 <b>무게 차이</b>이다. ' +
+      '앞 단원에서 다룬 허시·체이스 실험이 방사성 동위원소를 쓴 것과 구별된다.' +
+    '</div>');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   6. 무대 ② — 저울·조립 (밀도 규칙을 가르친다)
+   ══════════════════════════════════════════════════════════════ */
+var BAL_COMBOS = [
+  { id:'LL', top:'L', bot:'L' },
+  { id:'LH', top:'L', bot:'H' },
+  { id:'HL', top:'H', bot:'L' },
+  { id:'HH', top:'H', bot:'H' }
+];
+var balPick = { top:null, bot:null };       /* 화면 전용. 저장하지 않는다 */
+function balMol(c){
+  var rep = function(ch){ return ch === 'H' ? 'HHHHHHHH' : 'LLLLLLLL'; };
+  return { top:rep(c.top), bot:rep(c.bot) };
+}
+function balComboById(id){
+  for (var i = 0; i < BAL_COMBOS.length; i++){ if (BAL_COMBOS[i].id === id) return BAL_COMBOS[i]; }
+  return null;
+}
+function balStageSvg(c){
+  var W = 680, H = 330;
+  var g = svgOpen(W, H, '이중나선을 조립해 원심분리하는 무대');
+  if (!c){
+    g += '<text x="340" y="150" text-anchor="middle" font-size="16" fill="#98A0AC">' +
+         '위 가닥과 아래 가닥을 고른 뒤 실행하시오</text></svg>';
+    return g;
+  }
+  var ph = aniOf('bal', c.id);
+  var m = balMol(c), f = f15Of(m);
+  var nH = (c.top === 'H' ? 1 : 0) + (c.bot === 'H' ? 1 : 0);
+
+  if (ph === 0){
+    g += '<text x="150" y="46" text-anchor="middle" font-size="13.5" fill="#555">고른 가닥</text>';
+    g += '<g transform="translate(82,66)">' + strandSvg(0, 0, m.top, {}) + '</g>';
+    g += '<text x="150" y="100" text-anchor="middle" font-size="12.5" fill="#555">위 가닥 ' + (c.top === 'H' ? '¹⁵N' : '¹⁴N') + '</text>';
+    g += '<g transform="translate(82,126)">' + strandSvg(0, 0, m.bot, {}) + '</g>';
+    g += '<text x="150" y="160" text-anchor="middle" font-size="12.5" fill="#555">아래 가닥 ' + (c.bot === 'H' ? '¹⁵N' : '¹⁴N') + '</text>';
+  } else if (ph === 1){
+    g += '<g transform="translate(82,96)">' + molSvg(0, 0, m, { label:true }) + '</g>';
+    g += '<line x1="56" y1="188" x2="244" y2="188" stroke="' + C_GEAR + '" stroke-width="6" stroke-linecap="round"></line>';
+    g += '<text x="150" y="212" text-anchor="middle" font-size="12.5" fill="#555">조립대</text>';
+  }
+
+  if (ph === 2 || ph === 3){
+    var th = (ph === 3) ? (nH * 6) : 0;              /* 0도 / 6도 / 12도 */
+    var rad = th * Math.PI / 180, L = 100, cx = 300, cy = 120;
+    var lx = cx - L * Math.cos(rad), ly = cy + L * Math.sin(rad);
+    var rx = cx + L * Math.cos(rad), ry = cy - L * Math.sin(rad);
+    g += '<rect x="293" y="120" width="14" height="96" fill="' + C_GEAR + '"></rect>';
+    g += '<path d="M266,216 L334,216 L300,192 Z" fill="' + C_GEARD + '"></path>';
+    g += '<line x1="' + lx + '" y1="' + ly + '" x2="' + rx + '" y2="' + ry + '" stroke="' + C_GEARD + '" stroke-width="5" stroke-linecap="round"></line>';
+    /* ★접시는 기울지 않는다 — 회전한 빔의 끝점을 계산해 절대좌표로 그린다 */
+    var pan = function(px, py, mm, tag){
+      var s = '<line x1="' + px + '" y1="' + py + '" x2="' + px + '" y2="' + (py + 18) + '" stroke="' + C_GEARD + '" stroke-width="1.6"></line>';
+      s += '<path d="M' + (px - 36) + ',' + (py + 18) + ' L' + (px + 36) + ',' + (py + 18) + ' L' + (px + 26) + ',' + (py + 31) + ' L' + (px - 26) + ',' + (py + 31) + ' Z" fill="' + C_GEAR + '"></path>';
+      if (mm) s += '<g transform="translate(' + (px - 29) + ',' + (py - 14) + ') scale(0.42)">' + molSvg(0, 0, mm, {}) + '</g>';
+      s += '<text x="' + px + '" y="' + (py + 48) + '" text-anchor="middle" font-size="12" fill="#555">' + tag + '</text>';
+      return s;
+    };
+    g += pan(lx, ly, m, '만든 DNA');
+    g += pan(rx, ry, { top:'LLLLLLLL', bot:'LLLLLLLL' }, '¹⁴N-¹⁴N 기준');
+    g += '<text x="300" y="248" text-anchor="middle" font-size="13.5" fill="#555">¹⁵N 가닥 ' + nH + ' 개</text>';
+  }
+
+  if (ph === 4){
+    /* ★도는 <g> 와 자리 잡는 <g> 를 가른다 — CSS transform 이 SVG transform 속성을 통째로 덮어쓴다.
+       transform-box:fill-box 가 없으면 무대 한가운데를 축으로 크게 휘돈다(1-4 에서 실제로 겪었다). */
+    g += '<g transform="translate(300,140)">';
+    g += '<circle r="52" fill="none" stroke="#D5D8DE" stroke-width="1.6" stroke-dasharray="5,5"></circle>';
+    g += '<g class="spinning">';
+    g += '<rect x="-13" y="-66" width="26" height="42" rx="5" fill="#F7FAFF" stroke="' + C_GEARD + '" stroke-width="2"></rect>';
+    g += '<rect x="-13" y="24" width="26" height="42" rx="5" fill="#F7FAFF" stroke="' + C_GEARD + '" stroke-width="2"></rect>';
+    g += '<circle r="9" fill="' + C_GEARD + '"></circle>';
+    g += '</g></g>';
+  }
+
+  /* ★x 를 오른쪽으로 더 밀지 말 것 — 눈금 이름(「중간 무게의 DNA」)이 1.15배로 커져
+     무대 오른쪽 끝(680)을 넘어 잘린다(2026-08-26 눈 확인). 500 이 한계다. */
+  g += tubeSvg(500, 44, 1.15, (ph >= 5) ? [{ f15:f, ratio:1, n:1 }] : (ph === 4 ? [{ f15:f, ratio:1, n:1 }] : []),
+               { labels:true, dots:(ph === 4) });
+
+  var CAPS = {
+    0:'위 가닥과 아래 가닥을|각각 골랐다.',
+    1:'고른 두 가닥이 짝을 이루어|이중나선 DNA 가 되었다.',
+    2:'오른쪽 접시에는 ¹⁴N-¹⁴N|기준 분자가 놓여 있다.',
+    3:(nH === 0 ? '¹⁵N 가닥이 하나도 없다.|저울이 기울지 않는다.'
+       : nH === 1 ? '¹⁵N 가닥이 하나다.|저울이 한 칸 기운다.'
+                  : '¹⁵N 가닥이 둘이다.|저울이 두 칸 기운다.'),
+    4:'빠르게 돌린다. 밀도가 큰|DNA 일수록 아래로 간다.',
+    5:(f === 0 ? '가벼운 DNA 이다.|띠는 맨 위에 생긴다.'
+       : f === 1 ? '무거운 DNA 이다.|띠는 맨 아래에 생긴다.'
+                 : '중간 무게의 DNA 이다.|띠는 가운데에 생긴다.')
+  };
+  if (CAPS[ph]) g += cap(272, 292, CAPS[ph]);
+  g += '</svg>';
+  return g;
+}
+function renderBal(){
+  var c = state.balLast ? balComboById(state.balLast) : null;
+  setHTML('balStage', balStageSvg(c));
+  setHTML('balAni', c ? aniBarHtml('bal', c.id, '') : '');
+  setHTML('nLegend', nLegendHtml());
+
+  var chips = function(which, box){
+    var h = '';
+    for (var i = 0; i < 2; i++){
+      var v = (i === 0) ? 'L' : 'H';
+      var on = (balPick[which] === v);
+      h += '<button type="button" class="chip' + (on ? ' on' : '') + '" onclick="balPickSet(\'' + which + '\',\'' + v + '\')">' +
+           '<span class="dot" style="background:' + (v === 'H' ? C_N15 : C_N14) + '"></span>' +
+           '<span>' + (which === 'top' ? '위' : '아래') + ' 가닥 — <sup>' + (v === 'H' ? '15' : '14') + '</sup>N</span></button>';
+    }
+    setHTML(box, h);
+  };
+  chips('top', 'balChipsTop');
+  chips('bot', 'balChipsBot');
+
+  var slot = document.getElementById('balSlot');
+  if (slot){
+    if (balPick.top && balPick.bot){
+      slot.className = 'slotbox filled';
+      slot.innerHTML = '위 <sup>' + (balPick.top === 'H' ? '15' : '14') + '</sup>N · 아래 <sup>' +
+                       (balPick.bot === 'H' ? '15' : '14') + '</sup>N';
+    } else {
+      slot.className = 'slotbox';
+      slot.innerHTML = '아직 고르지 않았다';
+    }
+  }
+  var rb = document.getElementById('balRunBtn');
+  if (rb) rb.disabled = !(balPick.top && balPick.bot);
+
+  var rows = '';
+  for (var i = 0; i < BAL_COMBOS.length; i++){
+    var b = BAL_COMBOS[i], done = !!state.balRun[b.id];
+    var mm = balMol(b), nH2 = countH(mm.top) / 8 + countH(mm.bot) / 8;
+    rows += '<tr' + (state.balLast === b.id ? ' class="hl"' : '') + '>' +
+      '<td><b>' + (i + 1) + '</b></td>' +
+      '<td>' + (done ? '<sup>' + (b.top === 'H' ? '15' : '14') + '</sup>N' : '—') + '</td>' +
+      '<td>' + (done ? '<sup>' + (b.bot === 'H' ? '15' : '14') + '</sup>N' : '—') + '</td>' +
+      (done ? '<td><b>' + nH2 + ' 개</b></td><td><b style="color:' + bandColor(f15Of(mm)) + '">' + bandName(f15Of(mm)) + '</b></td>'
+            : '<td class="wait" colspan="2">아직 만들지 않았다</td>') +
+      '</tr>';
+  }
+  setHTML('balTbody', rows);
+
+  var t = document.getElementById('balProg');
+  if (t) t.textContent = '만들어 본 조합 ' + balDoneCount() + ' / 4';
+}
+function balDoneCount(){
+  var n = 0;
+  for (var i = 0; i < BAL_COMBOS.length; i++){ if (state.balRun[BAL_COMBOS[i].id]) n++; }
+  return n;
+}
+function balPickSet(which, v){
+  balPick[which] = v;
+  balFlash('', '');
+  renderBal();
+}
+function balFlash(kind, html){
+  var el = document.getElementById('balFb');
+  if (!el) return;
+  el.className = 'msg ' + (kind || 'warn') + (html ? '' : ' hide');
+  el.innerHTML = html || '';
+}
+function balRun(){
+  if (!(balPick.top && balPick.bot)) return;
+  var cid = balPick.top + balPick.bot;
+  var c = balComboById(cid);
+  if (!c) return;
+  var again = !!state.balRun[c.id];
+  state.balRun[c.id] = true;
+  state.balLast = c.id;
+  saveState();
+  aniStart('bal', c.id, !again);
+  renderBal();
+  updateAll();
+  if (balDoneCount() === 4){
+    balFlash('good', '🎉 네 조합을 모두 만들었다. <b>위·아래를 바꾸어도 띠는 같은 자리</b>에 생긴다 — ' +
+      '띠의 자리를 정하는 것은 <b><sup>15</sup>N 가닥이 몇 개인가</b>이지, 그것이 위에 있는지 아래에 있는지가 아니다.');
+  } else if (again){
+    balFlash('info', '이미 만들어 본 조합이다. 연출을 다시 보았다.');
+  } else {
+    balFlash('', '');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   7. 무대 ③ — 세 모델을 굴린다
+   ══════════════════════════════════════════════════════════════ */
+var REP_W = 680, REP_H = 344;
+var REP_ROW = { P:44, G1:126, G2:208 };
+/* ★G1 두 자리의 간격을 좁히지 말 것 — 오른쪽 그룹의 「주형」 라벨(왼쪽 정렬 끝)이
+   왼쪽 그룹의 마지막 칸을 덮는다. 192/352(간격 24px)에서 172/372(간격 64px)로 벌렸다. */
+var REP_X = { P:[272], G1:[172, 372], G2:[32, 192, 352, 512] };
+var DUPLEX_H = 2 * CELL_H + STRAND_GAP;          /* 24 — 이중나선 한 개의 높이 */
+var REP_LAST = 7;                                /* 마지막 국면 번호 — ANI_STEPS.rep 와 맞춰야 한다 */
+
+/* ══════════════════════════════════════════════════════════════
+   ★가닥 대본 — 「어느 가닥이 어느 자리로 가는가」
+   이 표가 이 무대의 전부다. 슬롯마다 [위 가닥 key, 아래 가닥 key] 를 적는다.
+   **key 가 세대를 건너 같으면 그 가닥은 사라졌다 다시 그려지는 것이 아니라 미끄러져 이동한다.**
+   (chromolab 의 방식 — 염색체마다 key 를 고정하고 위치만 애니메이션한다.)
+
+   그래서 학생이 눈으로 좇을 수 있다 —
+   · 반보존적: 어버이 가닥 A·B 가 **끝까지 살아남아** 서로 다른 딸 분자로 갈라져 들어간다.
+   · 보존적  : A·B 가 **한 번도 떨어지지 않고** 짝을 유지한 채 내려간다.
+   · 분산적  : 어버이 가닥이 **조각나 사라지고** 세대마다 새 가닥이 생긴다(key 가 이어지지 않는다).
+
+   ⚠ 칸(H/L)은 여기 적지 않는다 — `MODELS` 에서 읽는다(정본은 하나여야 한다).
+      검사가 「같은 key 는 세대가 바뀌어도 칸이 같다」를 문다.
+   ══════════════════════════════════════════════════════════════ */
+var REP_CAST = {
+  cons: { dup:'copy',
+    G0:[['A','B']],
+    G1:[['A','B'], ['n1','n2']],
+    G2:[['A','B'], ['n3','n4'], ['n1','n2'], ['n5','n6']] },
+  semi: { dup:'unzip',
+    G0:[['A','B']],
+    G1:[['A','n1'], ['n2','B']],
+    G2:[['A','n3'], ['n1','n4'], ['n5','B'], ['n2','n6']] },
+  disp: { dup:'shatter',
+    G0:[['A','B']],
+    G1:[['p1','p2'], ['p3','p4']],
+    G2:[['q1','q2'], ['q3','q4'], ['q5','q6'], ['q7','q8']] }
+};
+/* 복제 국면에서 어버이 자리에 겹쳐 놓는 두 딸 분자의 세로 어긋남 */
+var DUP_DY = { unzip:[-14, 26], copy:[0, 40], shatter:[-14, 26] };
+
+function repCast(id){ return REP_CAST[id]; }
+function repSlots(id, gen){ var c = repCast(id); return c ? c['G' + gen] : []; }
+/* key → 그 가닥의 칸. MODELS 에서 읽는다. 처음 나타나는 자리의 값이 그 가닥의 정체다. */
+function repCellsOf(id, key){
+  for (var gen = 0; gen <= 2; gen++){
+    var slots = repSlots(id, gen), mols = molsOf(id, gen);
+    for (var i = 0; i < slots.length; i++){
+      if (slots[i][0] === key) return mols[i].top;
+      if (slots[i][1] === key) return mols[i].bot;
+    }
+  }
+  return null;
+}
+function repKeys(id){
+  var seen = {}, out = [];
+  for (var gen = 0; gen <= 2; gen++){
+    var slots = repSlots(id, gen);
+    for (var i = 0; i < slots.length; i++){
+      for (var s = 0; s < 2; s++){
+        var k = slots[i][s];
+        if (!seen[k]){ seen[k] = 1; out.push(k); }
+      }
+    }
+  }
+  return out;
+}
+
+/* ══ 국면 → 화면에 놓인 이중나선 목록 ══
+   assembled = 조립된 분자(라벨을 붙인다) · forming = 복제 중(라벨을 붙이지 않는다)
+   ★복제 중인 두 딸 분자는 **어버이가 있던 x 에 겹쳐** 놓는다.
+     그래야 다음 국면에서 제자리로 미끄러질 때 「여기서 나왔다」가 보인다. */
+/* 국면표 — 0 P · 1 배지교체 · 2 분리 · 3 합성 · 4 G1 · 5 분리 · 6 합성 · 7 G2
+   ★「분리」와 「합성」을 가르는 것이 이 무대의 요지다(2026-08-26 교사 지시).
+     분리 국면에서는 **새 가닥을 아직 그리지 않는다** — 그래야 두 사건이 뭉개지지 않는다. */
+var REP_ASSEMBLED = { 0:0, 1:0, 4:1, 7:2 };      /* 국면 → 조립이 끝난 세대 */
+function repFrame(id, ph){
+  var c = repCast(id);
+  if (!c) return { duplexes:[], mode:'none', stage:'none', gen:0 };
+  var out = [], i, gen;
+  if (REP_ASSEMBLED[ph] !== undefined){
+    gen = REP_ASSEMBLED[ph];
+    var xs = (gen === 0) ? REP_X.P : (gen === 1 ? REP_X.G1 : REP_X.G2);
+    var y0 = (gen === 0) ? REP_ROW.P : (gen === 1 ? REP_ROW.G1 : REP_ROW.G2);
+    var sl = repSlots(id, gen);
+    for (i = 0; i < sl.length; i++) out.push({ slot:i, gen:gen, x:xs[i], y:y0, keys:sl[i] });
+    return { duplexes:out, mode:'assembled', stage:'assembled', gen:gen };
+  }
+  var first     = (ph <= 3);                       /* P → G1 인가 */
+  var childGen  = first ? 1 : 2;
+  var parentGen = first ? 0 : 1;
+  var parentX   = first ? REP_X.P : REP_X.G1;
+  var rowY      = first ? REP_ROW.P : REP_ROW.G1;
+  var stage     = (ph === 2 || ph === 5) ? 'separate' : 'synth';
+  /* ★분리 국면에 **무엇이 남는가**는 모델마다 다르다. 이것이 세 모델을 가르는 자리다.
+       · 반보존적(unzip)  — 어버이 가닥 둘이 **갈라져** 딸 자리로 벌어진다
+       · 보존적(copy)     — 어버이 분자가 **열리지 않고 제자리에** 그대로 있다
+       · 분산적(shatter)  — 어버이 분자가 **조각나 사라진다.** 남는 가닥이 하나도 없다
+     ⚠ 분산적에서 어버이 분자를 남겨 두면 온전한 분자 위에 조각 구름이 겹쳐 그려져
+       「이전 단계 그림이 남아 있는」 꼴이 된다(2026-08-26 교사 지적). 빈 목록을 돌려준다. */
+  if (stage === 'separate'){
+    if (c.dup === 'shatter'){
+      return { duplexes:[], mode:'forming', stage:'separate', gen:childGen, parentGen:parentGen };
+    }
+    if (c.dup === 'copy'){
+      var ps = repSlots(id, parentGen);
+      for (i = 0; i < ps.length; i++) out.push({ slot:i, gen:parentGen, x:parentX[i], y:rowY, keys:ps[i] });
+      return { duplexes:out, mode:'forming', stage:'separate', gen:childGen, parentGen:parentGen };
+    }
+  }
+  var kids = repSlots(id, childGen), dy = DUP_DY[c.dup];
+  for (i = 0; i < kids.length; i++){
+    out.push({ slot:i, gen:childGen, x:parentX[Math.floor(i / 2)], y:rowY + dy[i % 2],
+               keys:kids[i], forming:true });
+  }
+  return { duplexes:out, mode:'forming', stage:stage, gen:childGen, parentGen:parentGen };
+}
+/* 그 가닥이 이 세대에서 **새로 만들어진 것**인가 — 분리 국면에서는 아직 없어야 한다 */
+function repIsNewAt(id, key, gen){
+  if (gen <= 0) return false;
+  var prev = repSlots(id, gen - 1);
+  for (var i = 0; i < prev.length; i++) if (prev[i].indexOf(key) >= 0) return false;
+  return true;
+}
+
+/* ══ 가닥 하나의 국면별 자리 ══
+   놓이지 않는 국면에서는 **가장 가까운 놓이는 국면의 자리에 투명하게** 둔다.
+   그래야 「없는 데서 날아오는」 일 없이 제자리에서 스르르 나타나고 사라진다. */
+function repStrandPos(id, key, ph){
+  function at(p){
+    var f = repFrame(id, p);
+    /* ★분리 국면에는 그 세대의 **새 가닥이 아직 없다** */
+    if (f.stage === 'separate' && repIsNewAt(id, key, f.gen)) return null;
+    for (var i = 0; i < f.duplexes.length; i++){
+      var d = f.duplexes[i];
+      if (d.keys[0] === key) return { x:d.x, y:d.y };
+      if (d.keys[1] === key) return { x:d.x, y:d.y + CELL_H + STRAND_GAP };
+    }
+    return null;
+  }
+  var here = at(ph);
+  if (here) return { x:here.x, y:here.y, op:1 };
+  var p;
+  for (p = ph - 1; p >= 0; p--){ var b = at(p); if (b) return { x:b.x, y:b.y, op:0 }; }
+  for (p = ph + 1; p <= REP_LAST; p++){ var a = at(p); if (a) return { x:a.x, y:a.y, op:0 }; }
+  return { x:REP_X.P[0], y:REP_ROW.P, op:0 };
+}
+
+/* ══ 무대 전체의 국면 상태 — 순수 함수. 검사는 이것을 문다. ══ */
+function repLayout(id, ph){
+  var m = modelById(id);
+  if (!m) return null;
+  var f = repFrame(id, ph);
+  var strands = [], keys = repKeys(id), i;
+  for (i = 0; i < keys.length; i++){
+    var pos = repStrandPos(id, keys[i], ph);
+    strands.push({ key:keys[i], cells:repCellsOf(id, keys[i]), x:pos.x, y:pos.y, op:pos.op });
+  }
+  /* 라벨은 조립된 분자에만 붙인다 — 복제 중인 것에 「¹⁴N-¹⁵N」을 달면 거짓말이 된다 */
+  var labels = [];
+  for (i = 0; i < f.duplexes.length; i++){
+    var d = f.duplexes[i];
+    var mol = molsOf(id, d.gen)[d.slot];
+    labels.push({ slot:'g' + d.gen + '_' + d.slot, x:d.x + MOL_W / 2, y:d.y + DUPLEX_H,
+                  name:molName(mol), sub:'¹⁵N ' + hOfMol(mol) + ' / 16 칸',
+                  color:bandColor(f15Of(mol)), op:(f.mode === 'assembled') ? 1 : 0 });
+  }
+  /* ¹⁵N 칸 합계 — 어느 모델·어느 세대에서나 언제나 16 */
+  var shown = (ph >= 7) ? 2 : (ph >= 4 ? 1 : 0);
+  var mols = molsOf(id, shown), sum = 0;
+  for (i = 0; i < mols.length; i++) sum += hOfMol(mols[i]);
+  /* ★자취·혈통선·행 이름은 **조립이 끝난 국면에만** 보인다.
+     복제가 시작된 뒤에도 「1세대는 이렇다」가 남아 있으면 어색하다(2026-08-26 교사 지적). */
+  var done = (REP_ASSEMBLED[ph] !== undefined) ? REP_ASSEMBLED[ph] : -1;
+  return {
+    strands:strands, labels:labels, mode:f.mode, stage:f.stage, gen:f.gen, sum:sum,
+    med15:(ph === 0), anno:(f.mode === 'forming') ? ('a' + ph) : null,
+    rowP:(ph <= 1), rowG1:(done >= 1), rowG2:(done >= 2),
+    ghost0:(done >= 1), ghost1:(done >= 2),
+    cap:String(repCapOf(m, ph)).split('|')
+  };
+}
+function repCapOf(m, ph){
+  var CAPS = {
+    0:'¹⁵N 배지에서 만든 DNA 이다.|두 가닥 모두 ¹⁵N 이다.',
+    1:'배지를 ¹⁴N 으로 바꾼다. 이미 있는|DNA 는 그대로이다.',
+    2:m.capSep, 3:m.capSyn, 4:m.capG1, 5:m.capSep2, 6:m.capSyn2, 7:m.capG2
+  };
+  return CAPS[ph] || '';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   무대를 **한 번만** 짓는다. 국면이 바뀌면 transform·opacity 만 바꾼다.
+   ★국면마다 innerHTML 을 다시 넣으면 노드가 새로 생겨 CSS transition 이 걸리지 않는다
+     — 그래서 분자가 「튀어나왔다」(2026-08-26 교사 지적).
+   ══════════════════════════════════════════════════════════════ */
+function repStageSvg(id){
+  var g = svgOpen(REP_W, REP_H, id ? (modelById(id).name + ' 복제 과정 무대') : '복제 과정 무대');
+  if (!id){
+    g += '<text x="340" y="160" text-anchor="middle" font-size="16" fill="#98A0AC">' +
+         '모델을 하나 고르시오</text></svg>';
+    return g;
+  }
+  var seam = (id === 'disp');
+
+  /* 배지 띠 */
+  g += '<rect id="rs_med" x="0" y="0" width="' + REP_W + '" height="26" fill="' + C_N15 + '" opacity=".18"></rect>';
+  g += '<text id="rs_medtx" x="12" y="18" font-size="13" font-weight="bold" fill="' + C_N15 + '">¹⁵N 배지</text>';
+  g += '<text id="rs_sum" x="' + (REP_W - 12) + '" y="44" text-anchor="end" font-size="13" fill="' + C_N15 + '"></text>';
+
+  /* 행 이름 */
+  g += '<text id="rs_rowP" class="rfade" x="' + (REP_X.P[0] + MOL_W / 2) + '" y="' + (REP_ROW.P - 8) +
+       '" text-anchor="middle" font-size="12.5" fill="#777">어버이 세대(P)</text>';
+  g += '<text id="rs_rowG1" class="rfade" x="12" y="' + (REP_ROW.G1 + 16) + '" font-size="12.5" font-weight="bold" fill="#777">G1</text>';
+  g += '<text id="rs_rowG2" class="rfade" x="12" y="' + (REP_ROW.G2 + 16) + '" font-size="12.5" font-weight="bold" fill="#777">G2</text>';
+
+  /* 지나간 세대의 자취 + 혈통선 — 가닥보다 먼저 그려 뒤에 깔린다 */
+  g += repGhostSvg(id, 0) + repGhostSvg(id, 1);
+
+  /* 복제 국면 주석 — 국면마다 켜고 끈다 */
+  g += repAnnoSvg(id, 2) + repAnnoSvg(id, 3) + repAnnoSvg(id, 5) + repAnnoSvg(id, 6);
+
+  /* ★가닥 — key 마다 <g> 하나. 이 <g> 들은 다시 만들어지지 않는다. */
+  var keys = repKeys(id);
+  for (var i = 0; i < keys.length; i++){
+    g += '<g id="rs_s_' + keys[i] + '" class="rmove">' + strandSvg(0, 0, repCellsOf(id, keys[i]), { seam:seam }) + '</g>';
+  }
+  /* 분자 라벨 */
+  for (var gen = 0; gen <= 2; gen++){
+    var slots = repSlots(id, gen);
+    for (var s = 0; s < slots.length; s++){
+      g += '<g id="rs_l_g' + gen + '_' + s + '" class="rmove">' +
+             '<text class="ln" x="' + (MOL_W / 2) + '" y="15" text-anchor="middle" font-size="12.5" font-weight="bold"></text>' +
+             '<text class="ls" x="' + (MOL_W / 2) + '" y="29" text-anchor="middle" font-size="11.5" fill="#555"></text>' +
+           '</g>';
+    }
+  }
+  /* 무대 캡션 */
+  g += '<text id="rs_cap0" x="340" y="304" text-anchor="middle" font-size="14.5" fill="#555"></text>';
+  g += '<text id="rs_cap1" x="340" y="324" text-anchor="middle" font-size="14.5" fill="#555"></text>';
+  g += '</svg>';
+  return g;
+}
+
+/* ★지나간 세대의 자취와 혈통선 — 「이 분자가 저기서 나왔다」를 잇는다.
+   가닥은 아래 세대로 **이동해 버리므로** 윗줄이 텅 빈다. 흐린 자취를 남겨
+   가계도처럼 읽히게 한다(chromolab 의 방추사가 하던 일과 같은 몫이다). */
+function repGhostSvg(id, gen){
+  var px = (gen === 0) ? REP_X.P : REP_X.G1;
+  var cx = (gen === 0) ? REP_X.G1 : REP_X.G2;
+  var py = (gen === 0) ? REP_ROW.P : REP_ROW.G1;
+  var cy = (gen === 0) ? REP_ROW.G1 : REP_ROW.G2;
+  var mols = molsOf(id, gen), seam = (id === 'disp');
+  var s = '<g id="rs_ghost' + gen + '" class="rfade" opacity="0">';
+  for (var i = 0; i < mols.length; i++){
+    s += '<g transform="translate(' + px[i] + ',' + py + ')" opacity=".26">' +
+         molSvg(0, 0, mols[i], { seam:seam }) + '</g>';
+    for (var k = 0; k < 2; k++){
+      var c = 2 * i + k;
+      if (cx[c] === undefined) continue;
+      s += '<path d="M' + (px[i] + MOL_W / 2) + ',' + (py + DUPLEX_H + 3) +
+           ' L' + (cx[c] + MOL_W / 2) + ',' + (cy - 7) + '" stroke="' + C_GEAR +
+           '" stroke-width="1.4" stroke-dasharray="4,4" opacity=".65" fill="none"></path>';
+    }
+  }
+  return s + '</g>';
+}
+
+/* 복제 국면의 주석 — 모델마다 「무슨 일이 일어나는가」를 그림과 글로 말한다.
+   ★국면 2·5 = ① 분리 · 국면 3·6 = ② 합성. 두 국면의 주석이 달라야 두 사건이 갈린다.
+   ★글은 **국면마다 한 번만** 쓴다. 그룹마다 오른쪽에 붙였더니 2세대 국면(5·6)에서
+     왼쪽 그룹의 글이 오른쪽 분자를 덮었다(2026-08-26 눈 확인).
+     1세대 국면은 그룹이 하나뿐이라 **오른쪽**에, 2세대 국면은 어버이 줄이 비므로 **위쪽 가운데**에 둔다. */
+var REP_ANNO_TXT = {
+  unzip:{ sep:['① 갈라지기만 하였다', '아직 새 가닥은 없다'],
+          syn:['② 주형마다 새 ¹⁴N 가닥이', '하나씩 만들어졌다'] },
+  copy: { sep:['① 원본은 열리지 않는다', '두 가닥이 그대로 붙어 있다'],
+          syn:['② 두 가닥 모두 새것인 DNA 를', '따로 만든다'] },
+  shatter:{ sep:['① 조각으로 잘린다', '온전한 가닥이 하나도 없다'],
+            syn:['② 새 ¹⁴N 조각과 섞여', '다시 이어진다'] }
+};
+function repAnnoSvg(id, ph){
+  var c = repCast(id), first = (ph <= 3), sep = (ph === 2 || ph === 5);
+  var rowY = first ? REP_ROW.P : REP_ROW.G1;
+  var xs = first ? REP_X.P : REP_X.G1;
+  var dy = DUP_DY[c.dup], s = '<g id="rs_anno' + ph + '" class="rfade" opacity="0">';
+
+  /* ── 그룹마다 그리는 그림 ── */
+  for (var k = 0; k < xs.length; k++){
+    var x = xs[k];
+    if (c.dup === 'unzip'){
+      /* 갈라진 두 가닥에 「주형」을 붙인다. 분리 국면에는 벌어지는 곡선도 함께. */
+      s += '<text x="' + (x - 22) + '" y="' + (rowY + dy[0] + 6) + '" text-anchor="end" font-size="11.5" fill="#555">주형</text>';
+      s += '<text x="' + (x - 22) + '" y="' + (rowY + dy[1] + 26) + '" text-anchor="end" font-size="11.5" fill="#555">주형</text>';
+      if (sep){
+        s += '<path d="M' + (x - 16) + ',' + (rowY + dy[0] + 12) + ' Q' + (x - 32) + ',' + (rowY + 12) + ' ' +
+             (x - 16) + ',' + (rowY + dy[1] + 12) + '" fill="none" stroke="' + C_GEARD + '" stroke-width="1.6" stroke-dasharray="4,3"></path>';
+      } else {
+        /* 합성 국면 — 새로 붙은 가닥을 짧은 막대로 짚는다 */
+        s += '<path d="M' + (x + MOL_W + 4) + ',' + (rowY + dy[0] + 21) + ' l9,0" stroke="' + C_N14 + '" stroke-width="2.4"></path>';
+        s += '<path d="M' + (x + MOL_W + 4) + ',' + (rowY + dy[1] + 3) + ' l9,0" stroke="' + C_N14 + '" stroke-width="2.4"></path>';
+      }
+    } else if (c.dup === 'copy'){
+      if (sep){
+        /* 보존적에는 분리가 없다 — 그것이 이 모델의 요지다. 닫힌 채로 테를 두른다. */
+        s += '<rect x="' + (x - 8) + '" y="' + (rowY - 6) + '" width="' + (MOL_W + 16) + '" height="36" rx="8" ' +
+             'fill="none" stroke="' + C_GEARD + '" stroke-width="1.6" stroke-dasharray="5,4"></rect>';
+      } else {
+        s += '<path d="M' + (x - 14) + ',' + (rowY + 12) + ' L' + (x - 14) + ',' + (rowY + dy[1] + 12) + '" ' +
+             'fill="none" stroke="' + C_GEARD + '" stroke-width="1.6" stroke-dasharray="5,4"></path>';
+        s += '<path d="M' + (x - 19) + ',' + (rowY + dy[1] + 6) + ' L' + (x - 14) + ',' + (rowY + dy[1] + 14) + ' L' + (x - 9) + ',' + (rowY + dy[1] + 6) + ' Z" fill="' + C_GEARD + '"></path>';
+      }
+    } else {
+      /* ★조각 구름은 **분리 국면에만** 그린다.
+         합성 국면까지 남겨 두면 이어 붙은 분자 위에 조각이 겹쳐 「이전 그림이 남은」 꼴이 된다.
+         ★조각의 조성은 **어버이 분자에서 계산한다** — 어버이의 16칸이 그대로 흩어진 것이다.
+           그래서 P 를 자르면 16칸 모두 ¹⁵N, G1 을 자르면 8칸만 ¹⁵N 이다(칸 총합은 늘 16). */
+      if (sep){
+        var SC = [[-58,-16],[-34,-3],[-12,-19],[10,-7],[32,-21],[54,-9],[-46,13],[-24,23],
+                  [-2,11],[20,25],[42,13],[64,23],[-66,3],[-16,-31],[28,-33],[76,3]];
+        /* 무거운 조각을 구름에 고루 흩는다 (고정 차례. 난수를 쓰지 않는다) */
+        var HORD = [0,9,4,13,2,11,6,15,1,8,5,12,3,10,7,14];
+        var pMol = molsOf(id, (ph <= 3) ? 0 : 1)[k];
+        var nH = hOfMol(pMol);
+        var cx = x + MOL_W / 2, cy = rowY + 12;
+        for (var q = 0; q < SC.length; q++){
+          var heavy = (HORD.indexOf(q) < nH);
+          s += '<rect x="' + (cx + SC[q][0]) + '" y="' + (cy + SC[q][1]) + '" width="' + CELL_W + '" height="' + CELL_H + '" ' +
+               'fill="' + (heavy ? C_N15 : C_N14) + '" stroke="#fff" stroke-width=".8"></rect>';
+          if (heavy) s += '<circle cx="' + (cx + SC[q][0] + CELL_W / 2) + '" cy="' + (cy + SC[q][1] + CELL_H / 2) + '" r="1.7" fill="#fff" opacity=".9"></circle>';
+        }
+      } else {
+        /* 합성 국면 — 이어 붙는 자리를 짧은 막대로 짚기만 한다(조각은 이미 이어졌다) */
+        s += '<path d="M' + (x + MOL_W + 4) + ',' + (rowY + dy[0] + 12) + ' l9,0" stroke="' + C_N14 + '" stroke-width="2.4"></path>';
+        s += '<path d="M' + (x + MOL_W + 4) + ',' + (rowY + dy[1] + 12) + ' l9,0" stroke="' + C_N14 + '" stroke-width="2.4"></path>';
+      }
+    }
+  }
+
+  /* ── 글은 국면마다 한 번만 ── */
+  var lines = REP_ANNO_TXT[c.dup][sep ? 'sep' : 'syn'];
+  var fill = sep ? '#555' : C_N14;
+  for (var t = 0; t < lines.length; t++){
+    if (first){
+      /* ★조각 구름은 분자보다 옆으로 넓다(±76). 그만큼 더 밀어야 글이 조각에 깔리지 않는다. */
+      s += '<text x="' + (xs[0] + MOL_W + (c.dup === 'shatter' ? 48 : 20)) + '" y="' + (rowY + 14 + t * 15) + '" font-size="12" ' +
+           'font-weight="' + (sep ? '600' : 'bold') + '" fill="' + fill + '">' + lines[t] + '</text>';
+    } else {
+      s += '<text x="340" y="' + (rowY - 46 + t * 15) + '" text-anchor="middle" font-size="12" ' +
+           'font-weight="' + (sep ? '600' : 'bold') + '" fill="' + fill + '">' + lines[t] + '</text>';
+    }
+  }
+  return s + '</g>';
+}
+
+
+/* ══ 국면 적용 — 여기서는 **속성만** 바꾼다. 노드를 새로 만들지 않는다. ══ */
+function repApplyPhase(id){
+  if (!id) return;
+  var L = repLayout(id, aniOf('rep', id));
+  if (!L) return;
+  function el(i){ return document.getElementById(i); }
+  function put(node, x, y, op){
+    if (!node || !node.setAttribute) return;
+    node.setAttribute('transform', 'translate(' + x + ',' + y + ')');
+    node.setAttribute('opacity', String(op));
+  }
+  var i, n;
+  for (i = 0; i < L.strands.length; i++){
+    var st = L.strands[i];
+    put(el('rs_s_' + st.key), st.x, st.y, st.op);
+  }
+  for (i = 0; i < L.labels.length; i++){
+    var lb = L.labels[i];
+    n = el('rs_l_' + lb.slot);
+    put(n, lb.x - MOL_W / 2, lb.y, lb.op);
+    if (n && n.children){
+      for (var c = 0; c < n.children.length; c++){
+        var ch = n.children[c], cls = ch.getAttribute ? ch.getAttribute('class') : '';
+        if (cls === 'ln'){ ch.textContent = lb.name; if (ch.setAttribute) ch.setAttribute('fill', lb.color); }
+        else if (cls === 'ls'){ ch.textContent = lb.sub; }
+      }
+    }
+  }
+  /* 라벨이 없는 세대의 라벨 상자는 꺼 둔다 */
+  for (var gen = 0; gen <= 2; gen++){
+    var slots = repSlots(id, gen);
+    for (var s2 = 0; s2 < slots.length; s2++){
+      var key = 'g' + gen + '_' + s2, on = false;
+      for (var j = 0; j < L.labels.length; j++) if (L.labels[j].slot === key) on = true;
+      if (!on){ n = el('rs_l_' + key); if (n && n.setAttribute) n.setAttribute('opacity', '0'); }
+    }
+  }
+  n = el('rs_med');
+  if (n && n.setAttribute){
+    n.setAttribute('fill', L.med15 ? C_N15 : C_N14);
+    n.setAttribute('opacity', L.med15 ? '.18' : '.30');
+  }
+  n = el('rs_medtx');
+  if (n){
+    n.textContent = L.med15 ? '¹⁵N 배지' : '¹⁴N 배지 — 새로 만드는 가닥은 모두 ¹⁴N 이다';
+    if (n.setAttribute) n.setAttribute('fill', L.med15 ? C_N15 : '#2C6F66');
+  }
+  n = el('rs_sum'); if (n) n.textContent = '¹⁵N 칸 모두 ' + L.sum + ' 개 — 늘지 않는다';
+  n = el('rs_rowP');  if (n && n.setAttribute) n.setAttribute('opacity', L.rowP ? '1' : '0');
+  n = el('rs_rowG1'); if (n && n.setAttribute) n.setAttribute('opacity', L.rowG1 ? '1' : '0');
+  n = el('rs_rowG2'); if (n && n.setAttribute) n.setAttribute('opacity', L.rowG2 ? '1' : '0');
+  n = el('rs_ghost0'); if (n && n.setAttribute) n.setAttribute('opacity', L.ghost0 ? '1' : '0');
+  n = el('rs_ghost1'); if (n && n.setAttribute) n.setAttribute('opacity', L.ghost1 ? '1' : '0');
+  [2, 3, 5, 6].forEach(function(q){
+    var e2 = el('rs_anno' + q);
+    if (e2 && e2.setAttribute) e2.setAttribute('opacity', L.anno === ('a' + q) ? '1' : '0');
+  });
+  n = el('rs_cap0'); if (n) n.textContent = L.cap[0] || '';
+  n = el('rs_cap1'); if (n) n.textContent = L.cap[1] || '';
+}
+
+/* 이 모델이 예상하는 원심분리 결과 — 세 세대를 나란히. 띠는 위 분자에서 계산된 것이다. */
+function repTubesSvg(id){
+  var W = 680, H = 210;
+  var g = svgOpen(W, H, '이 모델이 예상하는 원심분리 결과');
+  if (!id){
+    g += '<text x="340" y="100" text-anchor="middle" font-size="15" fill="#98A0AC">모델을 굴리면 예상 띠가 그려진다</text></svg>';
+    return g;
+  }
+  var ph = aniOf('rep', id);
+  var seen = { P:true, G1:(ph >= 4), G2:(ph >= 7) };
+  var cols = [['P', 0, 170], ['G1', 1, 366], ['G2', 2, 562]];
+  for (var i = 0; i < cols.length; i++){
+    var key = cols[i][0], gen = cols[i][1], x = cols[i][2];
+    if (!seen[key]){
+      g += '<rect x="' + (x - 30) + '" y="26" width="60" height="126" rx="8" fill="none" stroke="#D5D8DE" stroke-width="1.6" stroke-dasharray="5,5"></rect>';
+      g += '<text x="' + x + '" y="96" text-anchor="middle" font-size="22" fill="#C0C6D0">?</text>';
+    } else {
+      var bs = (gen === 0) ? REAL_BANDS[0] : bandsFor(id, gen);
+      var total = molsOf(id, gen).length;
+      g += tubeSvg(x, 26, 1, bs, { labelsLeft:(i === 0) });
+      /* ★굵기가 무엇을 뜻하는지 글로도 적는다 — 굵기만으로는 몇 개인지 셀 수 없다 */
+      for (var b = 0; b < bs.length; b++){
+        var cy = 26 + bandY(bs[b].f15), n = bs[b].n;
+        /* ★개수는 관의 **오른쪽**, 눈금 이름은 첫 관의 **왼쪽**에 둔다.
+           둘 다 오른쪽에 두었더니 「무거운 DNA」 글자와 겹쳤다(2026-08-26 눈 확인). */
+        g += '<line x1="' + (x + 26) + '" y1="' + cy + '" x2="' + (x + 34) + '" y2="' + cy + '" stroke="' + C_GEAR + '" stroke-width="1"></line>';
+        g += '<text x="' + (x + 38) + '" y="' + (cy + 4) + '" font-size="12" font-weight="bold" fill="' + bandColor(bs[b].f15) + '">' +
+             '분자 ' + n + ' 개</text>';
+      }
+      g += '<text x="' + x + '" y="190" text-anchor="middle" font-size="12.5" fill="#555">띠 ' + bs.length + ' 개 · 분자 ' + total + ' 개</text>';
+    }
+    g += '<text x="' + x + '" y="18" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#3A3F4A">' +
+         (key === 'P' ? '어버이(P)' : (key === 'G1' ? '1세대(G1)' : '2세대(G2)')) + '</text>';
+  }
+  g += '</svg>';
+  return g;
+}
+
+/* ★무대에 올라가 있는 모델. 같은 모델이면 다시 짓지 않는다 —
+   다시 지으면 노드가 새로 생겨 애니메이션이 죽는다. */
+var repMounted = null;
+function renderRep(){
+  var id = state.repLast;
+  if (repMounted !== id){
+    setHTML('repStage', repStageSvg(id));
+    repMounted = id;
+  }
+  repApplyPhase(id);
+  setHTML('repAni', id ? aniBarHtml('rep', id, modelById(id).cls) : '');
+  setHTML('repTubes', repTubesSvg(id));
+  setHTML('nLegend2', nLegendHtml());
+
+  var h = '';
+  for (var i = 0; i < MODELS.length; i++){
+    var m = MODELS[i], done = !!state.repRun[m.id], on = (state.repLast === m.id);
+    h += '<button type="button" class="chip' + (on ? ' on' : '') + '" onclick="repRun(\'' + m.id + '\')">' +
+         '<span class="dot" style="background:var(--' + m.cls + ')"></span><span>' + m.name +
+         (done ? ' ✅' : '') + '</span></button>';
+  }
+  setHTML('repChips', h);
+
+  var rows = '';
+  var gens = [['P', 0], ['G1', 1], ['G2', 2]];
+  var COLS = ['HH', 'HL', 'LL', 'MIX'], CLS = ['n15', 'nmid', 'n14', 'nmix'];
+  for (var r = 0; r < gens.length; r++){
+    var key = gens[r][0], gen = gens[r][1];
+    var ph = id ? aniOf('rep', id) : -1;
+    var open = id && (gen === 0 || (gen === 1 && ph >= 4) || (gen === 2 && ph >= 7));
+    if (!open){
+      rows += '<tr><td><b>' + key + '</b></td><td class="wait" colspan="5">아직 굴리지 않았다</td></tr>';
+      continue;
+    }
+    var mm = molsOf(id, gen), cnt = { HH:0, HL:0, LL:0, MIX:0 };
+    for (var q = 0; q < mm.length; q++) cnt[molKind(mm[q])]++;
+    /* ★지금 무대에 떠 있는 세대를 노랑 테두리로 짚어 준다 — 표와 그림을 잇는다 */
+    var now = (gen === (ph >= 7 ? 2 : (ph >= 4 ? 1 : 0)));
+    rows += '<tr' + (now ? ' class="now"' : '') + '><td><b>' + key + '</b></td><td><b>' + mm.length + '</b></td>';
+    for (var cc = 0; cc < COLS.length; cc++){
+      var v = cnt[COLS[cc]];
+      rows += '<td class="' + (v ? 'has ' + CLS[cc] : 'zero') + '">' + (v ? v : '—') + '</td>';
+    }
+    rows += '</tr>';
+  }
+  setHTML('repTbody', rows);
+
+  var t = document.getElementById('repProg');
+  if (t) t.textContent = '굴려 본 모델 ' + repDoneCount() + ' / 3';
+}
+function repDoneCount(){
+  var n = 0;
+  for (var i = 0; i < MODELS.length; i++){ if (state.repRun[MODELS[i].id]) n++; }
+  return n;
+}
+function repRun(id){
+  if (!modelById(id)) return;
+  var again = !!state.repRun[id];
+  state.repRun[id] = true;
+  state.repLast = id;
+  saveState();
+  aniStart('rep', id, !again);
+  renderRep();
+  updateAll();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   8. 무대 ④ — 실제 결과와 대조 (배제 논리의 결승점)
+   ══════════════════════════════════════════════════════════════ */
+var CMP_COL = [
+  { key:'real', name:'실제 결과', x:150 },
+  { key:'cons', name:'보존적',   x:284 },
+  { key:'semi', name:'반보존적', x:418 },
+  { key:'disp', name:'분산적',   x:552 }
+];
+function cmpBands(key, gen){
+  return (key === 'real') ? REAL_BANDS[gen] : bandsFor(key, gen);
+}
+function cmpStageSvg(){
+  var W = 680, H = 430;
+  var g = svgOpen(W, H, '세 모델의 예상과 실제 결과를 맞추어 보는 무대');
+  var stage = state.cmpStage || 0;
+  if (stage === 0){
+    g += '<text x="340" y="180" text-anchor="middle" font-size="16" fill="#98A0AC">' +
+         '1세대 결과를 공개하면 대조가 시작된다</text></svg>';
+    return g;
+  }
+  var id = (stage >= 2) ? 'g2' : 'g1';
+  var ph = aniOf('cmp', id);
+  /* ★G2Y 와 판정 라벨 간격을 좀히지 말 것 — 「띄 N 개」(y+122) 와
+     판정 라벨(y+140) 이 8px 만 떨어져 서로 곹쳐 있었다(2026-08-26 브라우저 확인). */
+  var G1Y = 44, G2Y = 216, sc = 0.82;
+
+  g += '<text x="40" y="' + (G1Y + 56) + '" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">1세대</text>';
+  g += '<text x="40" y="' + (G1Y + 74) + '" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">(G1)</text>';
+  if (ph >= 4){
+    g += '<text x="40" y="' + (G2Y + 56) + '" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">2세대</text>';
+    g += '<text x="40" y="' + (G2Y + 74) + '" text-anchor="middle" font-size="13" font-weight="bold" fill="#555">(G2)</text>';
+  }
+
+  for (var i = 0; i < CMP_COL.length; i++){
+    var c = CMP_COL[i], isReal = (c.key === 'real');
+    var shownCol = isReal || (ph >= 1);
+    /* 흐리게 내리는 열 — 이미 지워진 모델 */
+    var dim = (!isReal && ((c.key === 'cons' && ph >= 3) || (c.key === 'disp' && ph >= 5)));
+    var grp = '<g' + (dim ? ' opacity=".38"' : '') + '>';
+    if (c.key === 'semi' && ph >= 5){
+      grp += '<rect x="' + (c.x - 62) + '" y="6" width="124" height="' + (H - 60) + '" rx="12" fill="' + C_OK + '" opacity=".08"></rect>';
+      grp += '<rect x="' + (c.x - 62) + '" y="6" width="124" height="' + (H - 60) + '" rx="12" fill="none" stroke="' + C_OK + '" stroke-width="2.5"></rect>';
+    }
+    if (isReal){
+      grp += '<rect x="' + (c.x - 62) + '" y="6" width="124" height="' + (H - 60) + '" rx="12" fill="#FBFCFE" stroke="#1A1A1A" stroke-width="2.5"></rect>';
+    }
+    grp += '<text x="' + c.x + '" y="26" text-anchor="middle" font-size="13.5" font-weight="bold" fill="' +
+           (isReal ? '#1A1A1A' : (c.key === 'cons' ? '#C2185B' : (c.key === 'semi' ? C_OK : '#7B4FB5'))) + '">' + c.name + '</text>';
+    if (!shownCol){
+      grp += '<rect x="' + (c.x - 26) + '" y="' + G1Y + '" width="52" height="104" rx="8" fill="none" stroke="#D5D8DE" stroke-width="1.6" stroke-dasharray="5,5"></rect>';
+      grp += '<text x="' + c.x + '" y="' + (G1Y + 62) + '" text-anchor="middle" font-size="22" fill="#C0C6D0">?</text>';
+    } else {
+      grp += tubeSvg(c.x, G1Y, sc, cmpBands(c.key, 1), { labels:false });
+      if (ph >= 4) grp += tubeSvg(c.x, G2Y, sc, cmpBands(c.key, 2), { labels:false });
+      /* 띠 개수 — 배제 근거는 언제나 개수다 */
+      grp += '<text x="' + c.x + '" y="' + (G1Y + 122) + '" text-anchor="middle" font-size="12.5" fill="#555">띠 ' + cmpBands(c.key, 1).length + ' 개</text>';
+      if (ph >= 4) grp += '<text x="' + c.x + '" y="' + (G2Y + 122) + '" text-anchor="middle" font-size="12.5" fill="#555">띠 ' + cmpBands(c.key, 2).length + ' 개</text>';
+    }
+    grp += '</g>';
+    g += grp;
+  }
+  /* 판정 배지 */
+  function mark(x, y, kind, label){
+    var col = (kind === 'no') ? C_NO : C_OK;
+    var s = '<rect x="' + (x - 30) + '" y="' + (y - 6) + '" width="60" height="116" rx="9" fill="none" stroke="' + col + '" ' +
+            'stroke-width="3" stroke-dasharray="' + (kind === 'no' ? '5,4' : '0') + '"></rect>';
+    s += '<circle cx="' + (x + 30) + '" cy="' + (y - 6) + '" r="12" fill="' + col + '"></circle>';
+    s += '<text x="' + (x + 30) + '" y="' + (y - 1) + '" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">' +
+         (kind === 'no' ? '✖' : '✔') + '</text>';
+    if (label) s += '<text x="' + x + '" y="' + (y + 140) + '" text-anchor="middle" font-size="12.5" font-weight="bold" fill="' + col + '">' + label + '</text>';
+    return s;
+  }
+  if (ph >= 2) g += mark(284, G1Y, 'no', '1세대에서 어긋난다');
+  if (ph >= 3){
+    g += mark(418, G1Y, 'ok', '');
+    g += mark(552, G1Y, 'ok', '');
+    /* ★시험관 위가 아니라 두 칸 아래에 둔다 — 위에 두면 띄와 녹색 테두리를 가린다 */
+    g += '<line x1="448" y1="' + (G1Y + 128) + '" x2="522" y2="' + (G1Y + 128) + '" stroke="' + C_OK + '" stroke-width="2"></line>';
+    g += '<text x="485" y="' + (G1Y + 146) + '" text-anchor="middle" font-size="12" font-weight="bold" fill="' + C_OK + '">예상이 똑같다</text>';
+  }
+  if (ph >= 4) g += mark(552, G2Y, 'no', '띠가 하나뿐이다');
+  if (ph >= 5) g += mark(418, G2Y, 'ok', '이것이다 🎉');
+
+  var CAPS = {
+    0:'1세대는 띠가 하나이다.|이것이 실제 결과이다.',
+    1:'세 모델의 예상을 나란히 놓았다.|실제와 같은지 맞추어 보시오.',
+    2:'보존적은 1세대에 무거운 띠와|가벼운 띠가 둘 다 나와야 한다.',
+    3:'반보존적과 분산적은 1세대 예상이|똑같다. 한 번으로는 못 가른다.',
+    4:'분산적은 2세대에도 띠가 하나여야|하지만, 실제로는 띠가 둘이다.',
+    5:'반보존적만 1세대·2세대 모두|실제와 같다. 🎉'
+  };
+  if (CAPS[ph]) g += cap(340, 396, CAPS[ph]);
+  g += '</svg>';
+  return g;
+}
+function renderCmp(){
+  setHTML('cmpStage', cmpStageSvg());
+  var stage = state.cmpStage || 0;
+  var id = (stage >= 2) ? 'g2' : 'g1';
+  setHTML('cmpAni', stage >= 1 ? aniBarHtml('cmp', id, 'ghost') : '');
+
+  var b1 = document.getElementById('cmpG1Btn'), b2 = document.getElementById('cmpG2Btn');
+  if (b1){ b1.disabled = (stage >= 1); b1.textContent = (stage >= 1) ? '✅ 1세대(G1) 공개함' : '▶ 1세대(G1) 결과 공개'; }
+  if (b2){
+    var canG2 = (stage >= 1) && (state.qPick['c1'] !== undefined);
+    b2.disabled = (stage >= 2) || !canG2;
+    b2.textContent = (stage >= 2) ? '✅ 2세대(G2) 공개함'
+                   : (canG2 ? '▶ 2세대(G2) 결과 공개' : '🔒 위 문항에 답해야 열린다');
+  }
+  /* 「아직 못 가른다」 배너 — 이 활동의 논리적 급소 */
+  var ho = document.getElementById('hoG1');
+  if (ho){
+    var open = (stage === 1) && (state.qPick['c1'] !== undefined);
+    ho.className = 'handoff' + (open ? '' : ' hide');
+    if (open){
+      ho.innerHTML = '<div class="hl">1세대가 답하지 못한 것</div>' +
+        '<div class="ht">반보존적과 분산적 가운데 어느 것인가?</div>' +
+        '<div class="hn">두 모델은 1세대 예상이 <b>똑같다</b> — 둘 다 <sup>15</sup>N 이 절반인 분자를 만들므로 ' +
+        '띠가 같은 자리에 하나 생긴다. 밀도는 <sup>15</sup>N 이 분자 안에 <b>어떻게 놓였는지</b>가 아니라 ' +
+        '<b>몇 개 들어 있는지</b>로만 정해지기 때문이다. 가르려면 <b>한 번 더 복제</b>해야 한다.</div>';
+    }
+  }
+  var note = document.getElementById('cmpNote');
+  if (note){
+    note.innerHTML = (stage >= 2 && !DISP_G2_AT_MIDDLE)
+      ? '<div class="msg info" style="font-size:14.5px;">💡 교과서 46쪽 <b>그림 설명</b>은 분산적 복제의 2세대 결과를 ' +
+        '「<b>중간 무게의 DNA 띠만</b> 나타나야 한다」고 서술하였다. 정확한 예상 위치는 중간 무게보다 <b>조금 가벼운 쪽</b>이다. ' +
+        '<sup>15</sup>N 이 절반씩 더 희석되기 때문이다. 어느 쪽이든 <b>띠가 하나뿐</b>이라는 점은 같으므로, ' +
+        '분산적 복제모델을 배제하는 근거는 달라지지 않는다.</div>'
+      : '';
+  }
+  var t = document.getElementById('cmpProg');
+  if (t) t.textContent = '공개한 세대 ' + Math.min(stage, 2) + ' / 2';
+
+  var dn = document.getElementById('cmpDone');
+  if (dn){
+    var fin = cmpDone();
+    dn.className = 'msg good' + (fin ? '' : ' hide');
+    if (fin){
+      dn.innerHTML = '🎉 <b>세 모델 가운데 반보존적 복제만 남았다.</b> ' +
+        '보존적 복제는 <b>1세대</b>에서, 분산적 복제는 <b>2세대</b>에서 실제 결과와 어긋나 지워졌다. ' +
+        '메셀슨과 스탈은 이렇게 DNA 가 <b>반보존적으로 복제된다</b>는 것을 밝혔다.';
+    }
+  }
+}
+function cmpReveal(n){
+  if (n === 1){
+    if ((state.cmpStage || 0) >= 1) return;
+    state.cmpStage = 1;
+    saveState();
+    aniStart('cmp', 'g1', true, 0);
+  } else {
+    if ((state.cmpStage || 0) >= 2 || state.qPick['c1'] === undefined) return;
+    state.cmpStage = 2;
+    saveState();
+    aniStart('cmp', 'g2', true, 4);   /* 앞 네 국면은 이미 보았다 — 새로 보여 줄 것부터 시작한다 */
+  }
+  renderCmp();
+  updateAll();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   9. 문항 — 정본은 `_설계재료_메셀슨/03_문항은행.md` 다
+   ★선택형 14문항(Q1~Q14) · 서술형 3 + 창의력 1 · 자기평가 3줄을 그대로 옮겼다.
+     문구를 고칠 일이 생기면 **문항 은행을 먼저 고치고** 여기로 옮긴다(두 벌이 어긋나면 은행을 따른다).
+   ★id 규칙 — 활동 전체에서 유일해야 한다.
+     in1 = 도입 · b1~b3 = ② 결론 · r1~r3 = ③ 결론 · c1~c4 = ④ 판단 · p1~p4 = 더 풀어 보기
+     ⚠ `pickStore()` 가 **id 가 'p' 로 시작하면 연습 문항으로 본다.** 다른 자리에 'p' 로 시작하는 id 를 쓰지 말 것.
+     ⚠ `c1` 은 ④ 의 G2 공개 단추를 여는 열쇠다(JS 2부 `renderCmp`·`cmpReveal` 가 이름으로 읽는다). 이름을 바꾸지 말 것.
+   ★구조 — no[i] = 그 선택지를 골랐을 때의 되돌림(정답 자리는 빈 문자열) · ex = 정답 풀이(정답·오답 모두에게 보인다)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 문항 안의 작은 원심분리관 — 「띠가 몇 개인가」를 글이 아니라 그림으로 묻게 한다 ── */
+function miniTubeSvg(bands){
+  return '<svg viewBox="-30 -8 60 142" xmlns="http://www.w3.org/2000/svg" role="img" ' +
+         'aria-label="원심분리 결과 모식도 — 띠 ' + bands.length + ' 개">' +
+         tubeSvg(0, 0, 1, bands, { labels:false }) + '</svg>';
+}
+function miniTube(bands, capHtml){
+  return '<div class="minitube">' + miniTubeSvg(bands) + '<div class="mt">' + capHtml + '</div></div>';
+}
+function figRow(inner){
+  return '<div style="display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:6px;">' + inner + '</div>';
+}
+
+/* ── 도입 ① — 세 모델이 무엇을 두고 갈리는가 ── */
+var Q_INTRO = [{
+  id:'in1', lv:'',
+  q:'세 복제모델은 「원래 DNA와 똑같은 DNA 두 개가 만들어진다」는 점에서 모두 같다. 그렇다면 세 모델이 서로 다른 점은 무엇인가?',
+  ch:['한 번 복제할 때 만들어지는 DNA 분자의 개수가 서로 다르다.',
+      '복제가 완전히 끝나기까지 걸리는 시간이 서로 다르다.',
+      '원래 있던 두 가닥이 딸 DNA에서 어떻게 되는지가 다르다.',
+      '복제로 만들어진 DNA의 염기 서열이 원래와 다르게 바뀐다.'],
+  a:2,
+  no:['옳지 않다. 세 모델 모두 한 번 복제하면 DNA가 두 개가 된다. 개수는 모델을 가르는 기준이 되지 못한다.',
+      '옳지 않다. 복제에 걸리는 시간은 세 모델의 주장에 들어 있지 않다. 세 모델이 갈리는 자리는 복제의 방식이다.',
+      '',
+      '옳지 않다. 세 모델 모두 원래 DNA와 <b>똑같은 서열</b>의 DNA가 만들어진다고 본다. 서열이 같으므로 서열로는 가릴 수 없다.'],
+  ex:'보존적 복제는 원래 두 가닥이 그대로 붙어 남는다고 보고, 반보존적 복제는 두 가닥이 갈라져 딸 DNA에 하나씩 들어간다고 보며, ' +
+     '분산적 복제는 원래 가닥이 조각나 딸 DNA에 흩어져 들어간다고 본다. <b>결과는 같고 과정만 다르다.</b> ' +
+     '그러므로 만들어진 DNA를 세는 것만으로는 가릴 수 없고, <b>원래 가닥에 표를 해 두어야</b> 한다. ' +
+     '메셀슨과 스탈이 표로 삼은 것이 <b>무거운 질소</b>이다. 🤔'
+}];
+
+/* ── ② 무게를 재는 법 — 결론 문항 (문항 은행 Q1·Q2·Q3) ── */
+var Q_BAL = [
+  { id:'b1', lv:'',
+    q:'메셀슨과 스탈이 배양액의 질소를 <sup>15</sup>N과 <sup>14</sup>N으로 나누어 쓴 까닭으로 가장 옳은 것은?',
+    ch:['<sup>15</sup>N이 방사선을 내어 DNA의 위치를 알려 주기 때문이다.',
+        '질소가 DNA 염기의 구성 원소여서 DNA의 밀도가 달라지기 때문이다.',
+        '<sup>15</sup>N이 DNA의 복제 속도를 늦추어 관찰이 쉬워지기 때문이다.',
+        '질소가 단백질에만 들어 있어 DNA와 단백질을 나눌 수 있기 때문이다.',
+        '<sup>15</sup>N이 DNA 이중나선을 두 가닥으로 풀어 주기 때문이다.'],
+    a:1,
+    no:['옳지 않다. 이 실험이 재는 것은 방사선이 아니라 <b>DNA의 밀도</b>이다. 원심분리관에서 띠가 갈라지는 까닭은 무게 차이이다.',
+        '',
+        '옳지 않다. 동위원소는 복제 속도를 바꾸지 않는다. <sup>15</sup>N은 DNA를 무겁게 만들 뿐이다.',
+        '옳지 않다. 질소는 단백질에도 있으나 <b>DNA의 염기에도 있다.</b> 이 실험이 표지하는 대상은 DNA이다.',
+        '옳지 않다. 이중나선을 푸는 것은 복제 과정이며 동위원소와 관계가 없다.'],
+    ex:'질소는 뉴클레오타이드의 <b>염기</b>를 이루는 원소이다. <sup>15</sup>N이 들어간 DNA는 밀도가 크고 ' +
+       '<sup>14</sup>N이 들어간 DNA는 밀도가 작아, 원심분리로 갈라 낼 수 있다. 💡' },
+
+  { id:'b2', lv:'',
+    q:'원심분리관에 나타난 띠에서 <b>위치</b>와 <b>굵기</b>가 각각 나타내는 것은?',
+    ch:['위치 — DNA의 밀도 / 굵기 — 그 밀도를 가진 DNA의 양',
+        '위치 — 그 위치에 있는 DNA의 양 / 굵기 — DNA의 밀도',
+        '위치 — DNA 가닥의 길이 / 굵기 — DNA의 밀도',
+        '위치 — DNA의 밀도 / 굵기 — DNA 가닥의 길이'],
+    a:0,
+    no:['',
+        '옳지 않다. 위치와 굵기가 뒤바뀌었다. 양이 많아져도 띠의 <b>위치</b>는 움직이지 않는다.',
+        '옳지 않다. 이 실험에서 DNA의 길이는 모두 같으며, 위치를 정하는 것은 밀도이다.',
+        '옳지 않다. 앞은 옳으나 뒤가 옳지 않다. 굵기가 나타내는 것은 길이가 아니라 그 위치에 있는 DNA의 <b>양</b>이다.'],
+    ex:'위치는 무게(밀도)를, 굵기는 그 무게를 가진 DNA가 얼마나 많은지를 나타낸다. ' +
+       '이 둘을 나누어 읽어야 세대별 결과를 해석할 수 있다. 📌' },
+
+  { id:'b3', lv:'',
+    q:'한쪽 가닥은 <sup>15</sup>N으로, 다른 쪽 가닥은 <sup>14</sup>N으로 이루어진 이중나선 DNA를 원심분리하면 띠는 어느 위치에 나타나는가?',
+    ch:['무거운 DNA의 위치',
+        '무거운 DNA와 가벼운 DNA의 위치에 반씩',
+        '중간 무게의 DNA의 위치',
+        '가벼운 DNA의 위치',
+        '세 위치 모두에 고르게'],
+    a:2,
+    no:['옳지 않다. 무거운 DNA는 두 가닥이 <b>모두</b> <sup>15</sup>N인 DNA이다. 한 가닥만 <sup>15</sup>N이면 그보다 가볍다.',
+        '옳지 않다. 원심분리는 이중나선을 두 가닥으로 풀지 않는다. 두 가닥이 붙은 채 <b>하나의 무게</b>로 가라앉는다.',
+        '',
+        '옳지 않다. 가벼운 DNA는 두 가닥이 <b>모두</b> <sup>14</sup>N인 DNA이다. <sup>15</sup>N 가닥이 하나 남아 있으면 더 무겁다.',
+        '옳지 않다. 조성이 같은 DNA는 한 위치에 모여 하나의 띠를 이룬다.'],
+    ex:'<sup>15</sup>N 가닥 하나와 <sup>14</sup>N 가닥 하나가 붙어 있으므로 무게는 그 중간이다. ' +
+       '이것이 <sup>14</sup>N-<sup>15</sup>N, 곧 중간 무게의 DNA이다. ✅' }
+];
+
+/* ── ③ 세 모델 굴리기 — 결론 문항 (문항 은행 Q4·Q5·Q6) ── */
+var Q_REP = [
+  { id:'r1', lv:'',
+    q:'DNA가 <b>보존적 복제</b>로 일어난다면 1세대(G1)의 원심분리 결과는 어떠해야 하는가?',
+    ch:['중간 무게의 DNA 띠 하나만 나타난다.',
+        '가벼운 DNA 띠 하나만 나타난다.',
+        '무거운 DNA 띠와 중간 무게의 DNA 띠가 1 : 1로 나타난다.',
+        '무거운 DNA 띠와 가벼운 DNA 띠가 1 : 1로 나타난다.'],
+    a:3,
+    no:['옳지 않다. 보존적 복제에서는 기존 두 가닥이 그대로 붙어 있고 새 DNA는 두 가닥 모두 새것이다. ' +
+        '<sup>15</sup>N과 <sup>14</sup>N이 한 DNA에 섞이지 않으므로 중간 무게의 DNA는 생기지 않는다.',
+        '옳지 않다. 어버이의 <sup>15</sup>N DNA가 그대로 보존되므로 무거운 DNA가 반드시 남는다.',
+        '옳지 않다. 보존적 복제에서는 중간 무게의 DNA가 생기지 않는다.',
+        ''],
+    ex:'어버이 DNA(<sup>15</sup>N-<sup>15</sup>N)가 그대로 남고 새 DNA(<sup>14</sup>N-<sup>14</sup>N)가 하나 만들어지므로, ' +
+       '두 띠가 <b>같은 두께</b>로 나타나야 한다. 실제 결과는 중간 무게의 띠 하나였다. 👆' },
+
+  { id:'r2', lv:'',
+    q:'DNA가 <b>분산적 복제</b>로 일어난다면 2세대(G2)의 원심분리 결과는 어떠해야 하는가?',
+    ch:['무거운 DNA 띠와 가벼운 DNA 띠가 1 : 1로 나타난다.',
+        '중간 무게 부근에 띠가 하나만 나타난다.',
+        '가벼운 DNA 띠와 중간 무게의 DNA 띠가 1 : 1로 나타난다.',
+        '무거운 DNA 띠 하나만 나타난다.'],
+    a:1,
+    no:['옳지 않다. 그것은 보존적 복제의 1세대 예측이다. 분산적 복제에서는 <sup>15</sup>N이 모든 DNA에 고르게 흩어진다.',
+        '',
+        '옳지 않다. 그것은 <b>반보존적</b> 복제의 2세대 예측이자 실제 실험 결과이다. 분산적 복제라면 이런 결과가 나올 수 없다.',
+        '옳지 않다. <sup>14</sup>N 배지에서 두 번 복제했으므로 <sup>14</sup>N이 이미 DNA에 들어가 있다. 어버이와 같은 무게로 남을 수 없다.'],
+    ex:'분산적 복제에서는 기존 가닥이 잘게 나뉘어 모든 DNA에 고르게 섞이므로, 모든 DNA의 무게가 같아 <b>띠가 하나</b>이다. ' +
+       '그 위치는 1세대의 중간 띠보다 조금 가벼운 쪽이다. 실제 결과는 띠가 둘이었다.' },
+
+  { id:'r3', lv:'',
+    q:'DNA가 <b>반보존적 복제</b>로 일어난다면 2세대(G2)에서 가벼운 DNA와 중간 무게의 DNA의 분자 수의 비는?',
+    ch:['3 : 1', '1 : 3', '2 : 1', '1 : 2', '1 : 1'],
+    a:4,
+    no:['옳지 않다. 그것은 <b>3세대(G3)</b>의 비이다. 2세대에서는 DNA가 모두 4개이다.',
+        '옳지 않다. 2세대에서 중간 무게의 DNA는 2개뿐이며, 가벼운 DNA보다 많지 않다.',
+        '옳지 않다. 2세대의 DNA 4개는 가벼운 것 2개와 중간 것 2개이다.',
+        '옳지 않다. 가벼운 DNA가 중간 무게의 DNA보다 적을 수는 없다. 수를 세어 확인하시오.',
+        ''],
+    ex:'1세대의 중간 무게 DNA 2개가 각각 갈라져, 2세대에는 가벼운 DNA 2개와 중간 무게의 DNA 2개, 모두 4개가 된다. ' +
+       '그래서 두 띠의 굵기가 비슷하게 보인다. ✅' }
+];
+
+/* ── ④ 실제 결과와 대조 — 판단 문항 (문항 은행 Q7·Q8·Q9·Q10) ──
+   ★c1 은 **G2 를 아직 공개하지 않은 상태**에서만 물어야 한다. G2 를 먼저 보면 「보존적 하나뿐」이라는 정답의 근거가 무너진다.
+     그래서 c2~c4 는 `cmpQList()` 가 G2 공개 뒤에야 내놓는다(문항 은행 §6 「Q7의 잠금 규칙」). */
+var Q_CMP = [
+  { id:'c1', lv:'',
+    q:'1세대(G1)에서 중간 무게의 DNA 띠 하나만 얻었다. <b>이 결과만으로</b> 배제할 수 있는 모델은?',
+    fig:'<b>[지금까지 공개된 실제 결과]</b>' +
+        figRow(miniTube(REAL_BANDS[0], '어버이(P)<br>띠 1개') + miniTube(REAL_BANDS[1], '1세대(G1)<br>띠 1개')),
+    ch:['보존적 복제 하나뿐이다.',
+        '분산적 복제 하나뿐이다.',
+        '보존적 복제와 분산적 복제 둘 다이다.',
+        '반보존적 복제 하나뿐이다.',
+        '세 모델 중 어느 것도 배제할 수 없다.'],
+    a:0,
+    no:['',
+        '옳지 않다. 분산적 복제도 1세대에서는 <sup>15</sup>N과 <sup>14</sup>N을 절반씩 가진 중간 무게의 DNA를 예측한다. ' +
+        '이 결과는 분산적 복제의 반례가 될 수 없다.',
+        '옳지 않다. 보존적 복제는 배제되지만 분산적 복제는 이 결과와 어긋나지 않는다. 분산적 복제를 지우려면 2세대 결과가 필요하다.',
+        '옳지 않다. 중간 무게의 DNA는 반보존적 복제가 예측한 그대로이다. 이 결과는 반보존적 복제의 반례가 될 수 없다.',
+        '옳지 않다. 보존적 복제는 두 개의 띠를 예측했으므로 이 결과 하나로 이미 배제된다.'],
+    ex:'보존적 복제라면 무거운 띠와 가벼운 띠가 같은 두께로 나와야 했으나 중간 띠 하나가 나왔다. ' +
+       '반면 반보존적과 분산적은 <b>둘 다</b> 중간 무게의 DNA를 예측하므로 아직 가릴 수 없다. 🔎' },
+
+  { id:'c2', lv:'',
+    q:'2세대(G2)에서 가벼운 DNA 띠와 중간 무게의 DNA 띠가 비슷한 굵기로 나타났다. 이 결과가 배제하는 모델은?',
+    fig:'<b>[실제 결과]</b>' +
+        figRow(miniTube(REAL_BANDS[0], '어버이(P)<br>띠 1개') +
+               miniTube(REAL_BANDS[1], '1세대(G1)<br>띠 1개') +
+               miniTube(REAL_BANDS[2], '2세대(G2)<br>띠 2개')),
+    ch:['반보존적 복제', '보존적 복제', '반보존적 복제와 분산적 복제', '분산적 복제'],
+    a:3,
+    no:['옳지 않다. 이 결과는 반보존적 복제가 예측한 1 : 1과 일치한다. 반례가 될 수 없다.',
+        '옳지 않다. 보존적 복제는 이미 <b>1세대</b> 결과로 배제되었다. 세대와 근거를 짝지어 기억하시오.',
+        '옳지 않다. 반보존적 복제는 이 결과와 어긋나지 않는다. 어긋나는 것은 분산적 복제뿐이다.',
+        ''],
+    ex:'분산적 복제라면 2세대에도 띠가 하나만 나와야 했다. 띠가 둘로 갈라졌으므로 분산적 복제는 배제되고, ' +
+       '남는 것은 반보존적 복제이다. 🎉' },
+
+  { id:'c3', lv:'',
+    q:'1회 복제(G1) 결과만으로는 반보존적 복제와 분산적 복제를 가릴 수 없다. 그 까닭은?',
+    ch:['1세대에는 DNA의 양이 적어 띠의 위치가 흐리게 보이기 때문이다.',
+        '두 모델 모두 1세대에서는 중간 무게의 DNA만 예측하기 때문이다.',
+        '1세대에는 <sup>14</sup>N이 아직 새 가닥에 들어가지 않기 때문이다.',
+        '두 모델 모두 1세대에서 두 개의 띠가 나온다고 예측하기 때문이다.'],
+    a:1,
+    no:['옳지 않다. 띠의 선명함이 아니라 <b>예측이 같다</b>는 것이 문제이다.',
+        '',
+        '옳지 않다. <sup>14</sup>N 배지에서 복제했으므로 새 가닥은 이미 <sup>14</sup>N으로 만들어졌다. 그래서 무게가 중간이 된 것이다.',
+        '옳지 않다. 두 모델이 1세대에서 예측하는 띠는 <b>하나</b>이다. 두 개의 띠를 예측한 것은 보존적 복제이다.'],
+    ex:'반보존적은 <sup>15</sup>N 가닥 1개 + <sup>14</sup>N 가닥 1개로, 분산적은 <sup>15</sup>N과 <sup>14</sup>N이 고르게 섞인 형태로 ' +
+       '중간 무게의 DNA를 예측한다. 예측이 같으면 결과로 가릴 수 없다. 📌' },
+
+  { id:'c4', lv:'',
+    q:'어버이 DNA 1개에서 출발하여 반보존적 복제가 일어날 때, 중간 무게의 DNA(<sup>14</sup>N-<sup>15</sup>N)의 <b>분자 수</b>는 세대가 지나면서 어떻게 변하는가?',
+    ch:['세대가 지날 때마다 2배로 늘어난다.',
+        '세대가 지날 때마다 절반으로 줄어든다.',
+        '세대와 관계없이 2개로 일정하다.',
+        '3세대부터는 0개가 되어 사라진다.',
+        '세대가 지날 때마다 2개씩 늘어난다.'],
+    a:2,
+    no:['옳지 않다. 2배로 늘어나는 것은 <b>전체</b> DNA 분자 수이다. <sup>15</sup>N 가닥은 새로 만들어지지 않는다.',
+        '옳지 않다. <sup>15</sup>N 가닥은 사라지거나 잘리지 않고 그대로 남는다. 줄어드는 것은 수가 아니라 전체에서 차지하는 비율이다.',
+        '',
+        '옳지 않다. <sup>15</sup>N 가닥이 없어질 까닭이 없다. 3세대에도 중간 무게의 DNA는 2개 있으며 비율만 25 %로 줄어든다.',
+        '옳지 않다. <sup>15</sup>N 가닥은 처음의 2가닥이 전부이며 더 생기지 않는다.'],
+    ex:'처음 어버이 DNA의 <sup>15</sup>N 가닥은 2가닥뿐이고, 반보존적 복제에서 이 가닥들은 잘리지 않은 채 각각 새 가닥과 짝을 이룬다. ' +
+       '그래서 중간 무게의 DNA는 G1·G2·G3 어디서나 2개이다. 다만 전체가 늘어나므로 띠는 점점 가늘어진다. 🤔' }
+];
+/* ★c1 을 답해야 G2 공개 단추가 열리고, G2 를 공개해야 c2~c4 가 나온다. 이 차례가 이 활동의 논리적 급소다. */
+function cmpQList(){
+  return ((state.cmpStage || 0) >= 2) ? Q_CMP : Q_CMP.slice(0, 1);
+}
+
+/* ── 💪 더 풀어 보기 (문항 은행 Q11~Q14) ──
+   ★id 가 'p' 로 시작해야 `pickStore()` 가 연습으로 분류한다. */
+var PRACTICE = [
+  { id:'p1', lv:'중',
+    q:'반보존적 복제에 따를 때 3세대(G3)에서 가벼운 DNA(<sup>14</sup>N-<sup>14</sup>N)가 차지하는 비율은?',
+    ch:['50 %', '25 %', '87.5 %', '33 %', '75 %'],
+    a:4,
+    no:['옳지 않다. 50 %는 <b>2세대</b>의 값이다. 3세대는 DNA가 8개로 늘어난다.',
+        '옳지 않다. 25 %는 3세대에서 <b>중간 무게의 DNA</b>가 차지하는 비율이다. 물은 것은 가벼운 DNA이다.',
+        '옳지 않다. 87.5 %는 DNA가 16개가 되는 <b>4세대</b>의 값이다.',
+        '옳지 않다. 반보존적 복제에서 DNA 분자 수는 2·4·8로 늘어나므로 3으로 나누어지는 비율은 나오지 않는다.',
+        ''],
+    ex:'3세대의 DNA는 모두 8개이고 그중 중간 무게의 DNA는 늘 2개이므로 가벼운 DNA는 6개이다. ' +
+       '6/8 = 75 %이며, 가벼운 DNA : 중간 무게의 DNA = 3 : 1이다. 🎉' },
+
+  { id:'p2', lv:'중',
+    q:'반보존적 복제에 따를 때, 1세대(G1)의 DNA 2개에는 어버이 세대에서 온 <sup>15</sup>N 가닥이 각각 몇 가닥씩 들어 있는가?',
+    ch:['0가닥', '1가닥', '2가닥', 'DNA마다 다르다.'],
+    a:1,
+    no:['옳지 않다. 0가닥이라면 두 DNA 모두 가벼운 DNA여야 한다. 실제 1세대는 중간 무게였다.',
+        '',
+        '옳지 않다. 2가닥이라면 어버이 DNA가 그대로 보존된 것이며 이는 보존적 복제이다.',
+        '옳지 않다. 반보존적 복제에서 두 DNA는 서로 같은 구성을 갖는다. 그래서 1세대의 띠는 하나이다.'],
+    ex:'어버이 DNA의 두 가닥이 각각 주형이 되어 새 가닥과 짝을 이루므로, ' +
+       '1세대의 DNA는 저마다 어버이 가닥 1개와 새 가닥 1개를 갖는다. ✅' },
+
+  { id:'p3', lv:'상',
+    q:'대장균을 <sup>14</sup>N 배지에서 여러 세대 배양한 뒤 <b><sup>15</sup>N 배지로 옮겨</b> 2회 분열시켰다. ' +
+      '반보존적 복제에 따를 때 2세대(G2)의 띠는 어떻게 나타나는가?',
+    ch:['중간 무게의 띠와 무거운 띠가 1 : 1로 나타난다.',
+        '중간 무게의 띠와 가벼운 띠가 1 : 1로 나타난다.',
+        '중간 무게의 띠 하나만 나타난다.',
+        '무거운 띠 하나만 나타난다.',
+        '가벼운 띠와 무거운 띠가 1 : 1로 나타난다.'],
+    a:0,
+    no:['',
+        '옳지 않다. 그것은 배지를 반대로 옮긴 원래 실험의 결과이다. 이번에는 새 가닥이 <b><sup>15</sup>N</b>으로 만들어진다.',
+        '옳지 않다. 그것은 <b>1세대</b>의 결과이다. 한 번 더 복제하면 띠가 둘로 갈라진다.',
+        '옳지 않다. 어버이의 <sup>14</sup>N 가닥 2개는 사라지지 않고 남아 중간 무게의 DNA를 만든다.',
+        '옳지 않다. 가벼운 띠와 무거운 띠가 1 : 1인 것은 보존적 복제의 <b>1세대</b> 예측이다. ' +
+        '보존적 복제라도 2세대에서는 어버이 DNA 1개만 그대로 남고 나머지 3개가 새 DNA이므로 가벼운 띠 : 무거운 띠 = 1 : 3이 된다. ' +
+        '또한 반보존적 복제에서는 두 가닥이 섞인 중간 무게의 DNA가 반드시 생기므로 중간 띠가 나타난다.'],
+    ex:'어버이가 <sup>14</sup>N-<sup>14</sup>N이므로 1세대는 모두 <sup>14</sup>N-<sup>15</sup>N(중간)이고, ' +
+       '2세대는 <sup>14</sup>N-<sup>15</sup>N 2개와 <sup>15</sup>N-<sup>15</sup>N 2개가 된다. ' +
+       '무거운 쪽으로 옮겨 간 점만 다를 뿐 논리는 같다. 💡',
+    hint:['②에서 익힌 규칙 하나만 쓰면 된다 — 띠의 자리는 <b><sup>15</sup>N 가닥이 몇 개인가</b>로 정해진다.',
+          '어버이 DNA의 두 가닥이 이번에는 <b><sup>14</sup>N</b>이다. 그 두 가닥은 잘리지 않고 남아 각각 새 <sup>15</sup>N 가닥과 짝을 이룬다. ' +
+          '2세대의 DNA 4개가 각각 <sup>15</sup>N 가닥을 몇 개 갖는지 세어 보시오.'] },
+
+  { id:'p4', lv:'상',
+    q:'어떤 생물에서 1세대(G1)에 무거운 DNA 띠와 가벼운 DNA 띠가 같은 굵기로 나타났다. ' +
+      '이 결과에 맞는 복제 방식을 따를 때 2세대(G2)의 분자 수의 비로 옳은 것은?',
+    fig:'<b>[관찰된 결과]</b>' +
+        figRow(miniTube([{ f15:0, ratio:0.5, n:1 }, { f15:1, ratio:0.5, n:1 }], '1세대(G1)<br>같은 굵기의 띠 2개')),
+    ch:['무거운 띠 : 가벼운 띠 = 1 : 1',
+        '무거운 띠 : 중간 무게의 띠 = 1 : 3',
+        '무거운 띠 : 가벼운 띠 = 1 : 3',
+        '중간 무게의 띠 : 가벼운 띠 = 1 : 3',
+        '가벼운 띠 : 무거운 띠 = 1 : 3'],
+    a:2,
+    no:['옳지 않다. 1 : 1은 <b>1세대</b>의 비이다. 어버이 DNA 1개는 그대로 남고 새 DNA만 늘어나므로 비가 달라진다.',
+        '옳지 않다. 이 결과가 가리키는 것은 보존적 복제이며, 보존적 복제에서는 가닥이 섞이지 않아 중간 무게의 DNA가 생기지 않는다.',
+        '',
+        '옳지 않다. 중간 무게의 DNA는 반보존적 복제에서 나타난다. 이 결과는 반보존적 복제와 맞지 않는다.',
+        '옳지 않다. 비가 뒤집혔다. 보존적 복제에서 어버이 DNA(<sup>15</sup>N-<sup>15</sup>N)는 끝까지 1개로 남고 나머지 3개가 ' +
+        '새로 만들어진 가벼운 DNA이므로, 무거운 띠 : 가벼운 띠 = 1 : 3이다. 어느 쪽이 1개인지 확인하시오.'],
+    ex:'1세대에서 두 띠가 같은 굵기로 나온 것은 보존적 복제의 예측이다. ' +
+       '보존적 복제에서 어버이 DNA(<sup>15</sup>N-<sup>15</sup>N)는 계속 1개로 남고 2세대의 DNA는 모두 4개이므로 1 : 3이 된다. 🎉',
+    hint:['먼저 <b>어느 모델인지</b>부터 정하시오. 1세대에 무거운 띠와 가벼운 띠가 같은 굵기로 나오는 모델은 ③에서 하나뿐이었다.',
+          '보존적 복제에서는 어버이 DNA가 <b>끝까지 1개</b> 그대로 남는다. 2세대의 DNA는 모두 4개이다. ' +
+          '남은 3개는 어떤 DNA인지 세어 보시오.'] }
+];
+
+/* ══════════════════ ⑤ 정리하기 — 서술 3 + 창의력 1 ══════════════════
+   문항 은행 S1 · S3 · S4 · C1. S2(세 모델의 G2 예상)는 ③ 무대에서 직접 굴려 확인하므로 옮기지 않았다. */
+var WRITEQ = [
+  { id:'w1', min:60,
+    q:'메셀슨과 스탈이 무거운 질소(<sup>15</sup>N)가 있는 배양액과 가벼운 질소(<sup>14</sup>N)가 있는 배양액을 ' +
+      '<b>함께</b> 사용한 까닭을 쓰시오.',
+    need:['질소가 DNA(염기)의 구성 원소라는 점',
+          '<sup>15</sup>N이 들어가면 밀도가 커진다는 점',
+          '원심분리로 갈라 낸다는 점',
+          '목적이 어버이 가닥과 새 가닥의 구분이라는 점'],
+    ans:'DNA의 염기에는 질소 원자가 들어 있다. 그래서 <sup>15</sup>N이 든 배양액에서 배양한 대장균의 DNA는 밀도가 커지고, ' +
+        '<sup>14</sup>N이 든 배양액에서 새로 합성된 가닥이 들어간 DNA는 밀도가 작아진다. 이 밀도 차이 때문에 원심분리하면 ' +
+        '무거운 DNA, 중간 무게의 DNA, 가벼운 DNA가 서로 다른 위치에 띠로 갈라진다. ' +
+        '즉 어버이에게서 물려받은 가닥과 새로 합성된 가닥을 눈으로 구분하기 위해 두 배양액을 쓴 것이다.' },
+
+  { id:'w2', min:80,
+    q:'메셀슨과 스탈의 실험 결과가 지지하는 복제모델은 무엇인지, <b>어느 세대의 결과가 어느 모델을 배제하는지</b> 밝혀 설명하시오.',
+    need:['결론이 반보존적 복제',
+          '1세대 → 보존적 배제, 근거는 「두 띠가 아니라 중간 띠 하나」',
+          '2세대 → 분산적 배제, 근거는 「띠 하나가 아니라 두 띠」',
+          '1회 복제만으로는 분산적을 지울 수 없다는 언급'],
+    ans:'실험 결과가 지지하는 것은 반보존적 복제이다. 1세대에서 중간 무게의 DNA 띠 하나가 나타났는데, 보존적 복제라면 ' +
+        '무거운 띠와 가벼운 띠가 같은 두께로 나와야 했으므로 이 결과로 보존적 복제가 배제된다. ' +
+        '그러나 이 시점에서 반보존적 복제와 분산적 복제는 예측이 같아 아직 가릴 수 없다. ' +
+        '2세대에서 가벼운 DNA 띠와 중간 무게의 DNA 띠가 비슷한 굵기로 나타났는데, 분산적 복제라면 띠가 하나만 나와야 했으므로 ' +
+        '이 결과로 분산적 복제가 배제된다. 두 세대의 결과와 모두 들어맞는 모델은 반보존적 복제뿐이다.' },
+
+  { id:'w3', min:60,
+    q:'반보존적 복제에 따를 때 3세대(G3)에서 가벼운 DNA(<sup>14</sup>N-<sup>14</sup>N)의 비율이 몇 %인지 쓰고, ' +
+      '그렇게 계산한 과정을 설명하시오.',
+    need:['답 75 %',
+          '전체 분자 수 8개',
+          '중간 무게의 DNA가 2개로 일정하다는 근거(<sup>15</sup>N 가닥이 2가닥뿐)',
+          '6/8 계산 또는 3 : 1 제시'],
+    ans:'3세대에서 가벼운 DNA의 비율은 75 %이다. 어버이 DNA 1개가 세 번 복제되면 DNA는 2개, 4개, 8개로 늘어난다. ' +
+        '처음에 <sup>15</sup>N으로만 이루어진 가닥은 2가닥뿐이고 이 가닥들은 복제 과정에서 잘리거나 사라지지 않으므로, ' +
+        '중간 무게의 DNA는 어느 세대에서나 2개로 일정하다. 따라서 3세대의 DNA 8개 중 2개가 중간 무게의 DNA이고 ' +
+        '나머지 6개가 가벼운 DNA이므로 6/8, 곧 75 %이다. 이때 가벼운 DNA와 중간 무게의 DNA의 비는 3 : 1이다.' },
+
+  { id:'w4', min:100, creative:true,
+    q:'<b>💪 창의력.</b> 반보존적 복제 방식이 보존적 복제나 분산적 복제보다 유리한 점은 무엇인지, ' +
+      '이 활동에서 확인한 <b>세 모델의 구조</b>를 근거로 삼아 쓰시오.',
+    need:['기존 가닥이 주형으로 남는다',
+          '상보적 염기쌍을 확인하며 복제 → 정확성',
+          '다른 두 모델과 비교하여 약점을 지적',
+          '유전정보의 안정적 전달 언급'],
+    ans:'반보존적 복제에서는 기존 DNA의 두 가닥이 각각 주형으로 남는다. 그래서 새 뉴클레오타이드를 붙일 때마다 ' +
+        '주형 가닥의 염기와 상보적으로 짝이 맞는지 확인하면서 복제할 수 있고, 그만큼 서열이 바뀌지 않게 정확히 복사하기 쉽다. ' +
+        '분산적 복제는 기존 가닥이 잘게 나뉘어 새 조각과 섞이므로 원래의 서열을 대조할 온전한 기준 가닥이 남지 않는다. ' +
+        '보존적 복제는 새로 만들어지는 이중나선의 두 가닥이 모두 새 가닥이어서 복제 도중 생긴 잘못을 원래 가닥과 맞대어 확인하기 어렵다. ' +
+        '또한 반보존적 복제에서는 어버이의 가닥이 그대로 다음 세대로 이어지므로 유전정보가 세대를 건너 안정적으로 전달된다.' }
+];
+
+var SELFCHECK = [
+  { id:'s1', k:'지식·이해', t:'1세대와 2세대의 원심분리 결과가 각각 어느 복제모델을 배제하는지 근거를 들어 설명할 수 있는가?' },
+  { id:'s2', k:'과정·기능', t:'세 복제모델의 예상 결과를 직접 만들어 본 뒤 실제 실험 결과와 대조하여 판단하였는가?' },
+  { id:'s3', k:'가치·태도', t:'한 번의 실험 결과만으로는 가설을 가려낼 수 없으며 추가 관찰이 필요하다는 점을 생각해 보았는가?' }
+];
+
+/* ══════════════════════════════════════════════════════════════
+   10. 공통 기계 — 상태 · 저장 · 잠금 · 문항 · 모범답안 (1-4 에서 계승)
+   ★이 활동은 「연습」이다 → 정오를 기록하지 않는다.
+     고른 답은 새로고침 복원용으로만 남는다.
+     (정책 정본: 작업노트/방법_활동기록_어디에남길것인가.md)
+   ══════════════════════════════════════════════════════════════ */
+var LS_KEY = 'meselson_sim_v1';
+
+var STEPS = [
+  { key:'bal', no:'②', name:'무게를 재는 법', sub:'밀도',  cls:'' },
+  { key:'rep', no:'③', name:'세 모델 굴리기', sub:'예상',  cls:'m2' },
+  { key:'cmp', no:'④', name:'실제 결과와 대조', sub:'배제', cls:'' }
+];
+
+function freshState(){
+  return {
+    balRun:{},         /* ② 만들어 본 조합 'LL','LH','HL','HH' */
+    balLast:null,      /* ② 마지막으로 실행한 조합 (무대 복원용) */
+    repRun:{},         /* ③ 굴려 본 모델 'cons','semi','disp' */
+    repLast:null,      /* ③ 마지막으로 고른 모델 */
+    cmpStage:0,        /* ④ 공개한 세대 0 / 1 / 2 */
+    qPick:{},          /* 도입 + ②·③·④ 결론 문항 */
+    pPick:{},          /* 💪 더 풀어 보기 */
+    ta:{},             /* ⑤ 서술형 */
+    self:{},           /* 자기평가 체크 */
+    teacherUnlock:false,
+    seq:0              /* ★저장할 때마다 하나씩 오른다 — 두 탭이 서로를 지우지 않게 하는 표다 */
+  };
+}
+var state = freshState();
+
+/* ★두 탭이 서로를 지우던 문제 (1-4 검토에서 재현됨)
+   state 를 통째로 한 칸에 저장하므로, 탭마다 state 는 「열 때 읽은 스냅숏」이다.
+   다른 탭이 그 뒤에 무엇을 썼는지 알 방법이 없어 마지막에 저장한 탭이 무조건 이겼다.
+   ★특히 나쁜 길: 새로 연 두 번째 탭은 ③④가 잠겨 있어도 ⑤ 정리하기는 처음부터 열려 있다.
+     그 칸에 한 글자만 쳐도 saveState 가 돌아 앞 탭의 결과가 통째로 지워졌다.
+   → 저장할 때마다 seq 를 올리고, **저장소의 seq 가 내 것보다 크면 덮어쓰지 않는다.** 대신 학생에게 알린다.
+   ★옛 저장분에는 seq 가 없다 — 그때는 그냥 저장한다(뒤로 호환). 무슨 예외가 나도 저장은 한다. */
+function saveState(){
+  try{
+    var ta = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) ta[w.id] = el.value;
+    });
+    state.ta = ta;
+
+    var mine = (typeof state.seq === 'number') ? state.seq : 0;
+    var newer = false;
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw){
+        var stored = JSON.parse(raw);
+        if (stored && typeof stored.seq === 'number' && stored.seq > mine) newer = true;
+      }
+    }catch(e2){ newer = false; }      /* 읽다 실패하면 막지 않는다 */
+
+    if (newer){ warnOtherTab(true); return; }
+
+    state.seq = mine + 1;
+
+    /* ★교사 해제는 저장하지 않는다 (교사 지시 2026-08-25).
+       학생이 진행 배지 5연타를 우연히 찾아 확인을 눌러도 **새로고침하면 도로 잠긴다.**
+       ★화면의 state 는 건드리지 않는다 — 지금 열어 둔 교사 화면이 갑자기 닫히면 안 된다. 저장분에서만 끈다. */
+    var toSave = {};
+    Object.keys(state).forEach(function(k){ toSave[k] = state[k]; });
+    toSave.teacherUnlock = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(toSave));
+  }catch(e){}
+}
+function warnOtherTab(on){
+  var el = document.getElementById('tabWarn');
+  if (!el) return;
+  el.className = 'msg bad' + (on ? '' : ' hide');
+  if (on){
+    el.innerHTML = '⚠ 이 활동이 <b>다른 탭에서도 열려 있다.</b> 이 탭에서 한 것은 저장되지 않는다.<br>' +
+                   '탭을 하나만 남기고 새로고침하시오.';
+  }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    return o;
+  }catch(e){ return null; }
+}
+
+/* ── 완료 판정 — 화면·잠금·레일이 전부 여기서만 파생된다 ── */
+function balDone(){
+  return balDoneCount() === BAL_COMBOS.length && answeredOf(Q_BAL, state.qPick) === Q_BAL.length;
+}
+function repDone(){
+  return repDoneCount() === MODELS.length && answeredOf(Q_REP, state.qPick) === Q_REP.length;
+}
+function cmpDone(){
+  return (state.cmpStage || 0) >= 2 && answeredOf(Q_CMP, state.qPick) === Q_CMP.length;
+}
+function stepDone(k){
+  if (k === 'bal') return balDone();
+  if (k === 'rep') return repDone();
+  if (k === 'cmp') return cmpDone();
+  return false;
+}
+/* 앞 단계를 마쳐야 다음이 열린다 — 배제의 차례를 밟게 하는 장치 */
+function stepOpen(k){
+  if (state.teacherUnlock) return true;
+  if (k === 'bal') return true;
+  if (k === 'rep') return balDone();
+  if (k === 'cmp') return repDone();
+  if (k === 'prac') return cmpDone();
+  return false;
+}
+function doneCount(){
+  var n = 0;
+  STEPS.forEach(function(s){ if (stepDone(s.key)) n++; });
+  return n;
+}
+
+/* ── 진행 레일 · 배지 ── */
+function updateRail(){
+  var h = '';
+  STEPS.forEach(function(s){
+    var cls = 'rstep';
+    if (stepDone(s.key)) cls += ' ok';
+    else if (stepOpen(s.key)) cls += ' on';
+    h += '<div class="' + cls + '">' + s.no + ' ' + s.name +
+         '<span class="rsub">' + s.sub + '</span></div>';
+  });
+  setHTML('rail', h);
+  var b = document.getElementById('progress');
+  if (b) b.textContent = '진행 ' + doneCount() + ' / ' + STEPS.length;
+}
+
+/* 잠긴 구역에 안내를 띄우고 본문을 감춘다 */
+function applyLock(key, lockId, bodyId, text){
+  var lock = document.getElementById(lockId);
+  var body = document.getElementById(bodyId);
+  var open = stepOpen(key);
+  if (lock){
+    lock.className = 'msg info' + (open ? ' hide' : '');
+    if (!open) lock.innerHTML = '🔒 ' + text;
+  }
+  if (body) body.style.display = open ? 'block' : 'none';
+}
+function updateLocks(){
+  applyLock('rep', 'repLock', 'repBody',
+            '②를 마친 뒤에 열린다. 네 조합을 모두 만들고 결론 문항 ' + Q_BAL.length + '개에 답하시오.');
+  applyLock('cmp', 'cmpLock', 'cmpBody',
+            '③을 마친 뒤에 열린다. 세 모델을 모두 굴리고 결론 문항 ' + Q_REP.length + '개에 답하시오.');
+  applyLock('prac', 'pracLock', 'pracBody',
+            '④를 마친 뒤에 열린다. 두 세대의 결과를 모두 공개하고 판단 문항에 답하시오.');
+}
+
+/* 무대 안의 결론 문항 잠금 — 무대를 다 돌려야 문항이 열린다 */
+function gateQ(open, lockId, wrapId){
+  var lock = document.getElementById(lockId);
+  var wrap = document.getElementById(wrapId);
+  if (lock) lock.className = 'msg info' + (open ? ' hide' : '');
+  if (wrap) wrap.style.display = open ? 'block' : 'none';
+}
+function updateQGates(){
+  var t = !!state.teacherUnlock;
+  gateQ(t || balDoneCount() === BAL_COMBOS.length, 'balQlock', 'balQwrap');
+  gateQ(t || repDoneCount() === MODELS.length,     'repQlock', 'repQwrap');
+  gateQ((state.cmpStage || 0) >= 1,                'cmpQlock', 'cmpQwrap');
+}
+
+/* ══════════════════ 선택형 문항 ══════════════════
+   ★도입·②·③·④·연습이 모두 같은 기계를 쓴다. id 는 전 활동에서 유일해야 한다. */
+var qEls = {};
+function ALLQ(){ return [].concat(Q_INTRO, Q_BAL, Q_REP, Q_CMP, PRACTICE); }
+function qById(id){
+  var L = ALLQ();
+  for (var i = 0; i < L.length; i++){ if (L[i].id === id) return L[i]; }
+  return null;
+}
+function pickStore(id){ return (id.indexOf('p') === 0) ? state.pPick : state.qPick; }
+function answeredOf(list, store){
+  var n = 0;
+  list.forEach(function(p){ if (store[p.id] !== undefined) n++; });
+  return n;
+}
+
+function renderQuizInto(list, boxId, colorCls){
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.innerHTML = '';
+  list.forEach(function(p, idx){
+    var card = document.createElement('div');
+    card.className = 'pq-card';
+
+    var q = document.createElement('div');
+    q.className = 'qtext';
+    q.innerHTML = '<span class="qno' + (colorCls ? ' ' + colorCls : '') + '">' + (idx + 1) + '</span>' +
+                  (p.lv ? '<span class="lv">' + p.lv + '</span>' : '') + p.q;
+    card.appendChild(q);
+
+    /* 그림 자료 — 작은 원심분리관. 「띠가 몇 개인가」를 글이 아니라 그림으로 보게 한다. */
+    if (p.fig){
+      var fg = document.createElement('div');
+      fg.className = 'datbox';
+      fg.innerHTML = p.fig;
+      card.appendChild(fg);
+    }
+    if (p.dat){
+      var dat = document.createElement('div');
+      dat.className = 'datbox';
+      dat.innerHTML = '<b>[자료]</b><ul><li>' + p.dat.join('</li><li>') + '</li></ul>';
+      card.appendChild(dat);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'choices';
+    var btns = [];
+    p.ch.forEach(function(label, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.innerHTML = label;
+      b.onclick = (function(pid, k){ return function(){ pickQ(pid, k); }; })(p.id, i);
+      wrap.appendChild(b);
+      btns.push(b);
+    });
+    card.appendChild(wrap);
+
+    /* 힌트 2단 — 1단(어디를 볼 것인가)을 연 뒤에 2단(판단 기준)이 열린다. 기록하지 않는다. */
+    if (p.hint && p.hint.length === 2){
+      var hw = document.createElement('div');
+      hw.className = 'hintwrap';
+      var hb1 = document.createElement('button');
+      hb1.type = 'button'; hb1.className = 'hintbtn'; hb1.textContent = '💡 힌트 보기';
+      var hx1 = document.createElement('div');
+      hx1.className = 'hintbox'; hx1.style.display = 'none';
+      hx1.innerHTML = '<b>힌트 ① 어디를 볼 것인가</b><br>' + p.hint[0];
+      var hb2 = document.createElement('button');
+      hb2.type = 'button'; hb2.className = 'hintbtn'; hb2.textContent = '💡 힌트를 하나 더 보기';
+      hb2.style.display = 'none';
+      var hx2 = document.createElement('div');
+      hx2.className = 'hintbox'; hx2.style.display = 'none';
+      hx2.innerHTML = '<b>힌트 ② 판단 기준</b><br>' + p.hint[1];
+      hb1.onclick = function(){
+        hx1.style.display = 'block'; hb1.style.display = 'none'; hb2.style.display = 'inline-block';
+      };
+      hb2.onclick = function(){ hx2.style.display = 'block'; hb2.style.display = 'none'; };
+      hw.appendChild(hb1); hw.appendChild(hx1); hw.appendChild(hb2); hw.appendChild(hx2);
+      card.appendChild(hw);
+    }
+
+    var ex = document.createElement('div');
+    ex.className = 'expl';
+    ex.style.display = 'none';
+    card.appendChild(ex);
+
+    box.appendChild(card);
+    qEls[p.id] = { choices:btns, expl:ex };
+    paintQ(p.id);
+  });
+}
+
+function paintQ(id){
+  var p = qById(id), els = qEls[id];
+  if (!p || !els) return;
+  var store = pickStore(id);
+  var picked = store[id];
+  els.choices.forEach(function(b, i){
+    var cls = 'choice';
+    if (picked === undefined){ b.className = cls; b.disabled = false; return; }
+    if (i === p.a) cls += ' right';
+    else if (i === picked) cls += ' picked';
+    else cls += ' dim';
+    b.className = cls;
+  });
+  if (picked === undefined){
+    els.expl.style.display = 'none';
+    els.expl.innerHTML = '';
+  } else {
+    var head = (picked === p.a)
+      ? '<b>✅ 옳다.</b> '
+      : '<b>❌ ' + (p.no && p.no[picked] ? p.no[picked] : '옳지 않다.') + '</b> ';
+    els.expl.style.display = 'block';
+    els.expl.innerHTML = head + p.ex;
+  }
+}
+
+function pickQ(id, i){
+  var store = pickStore(id);
+  store[id] = i;                 /* ★정오를 남기지 않는다 — 마지막 선택만 화면 복원용으로 저장한다 */
+  paintQ(id);
+  saveState();
+  afterAnswer(id);
+}
+
+/* 문항에 답한 뒤 열리는 것들 */
+function afterAnswer(id){
+  /* ★c1 에 답해야 ④ 의 G2 공개 단추가 열린다 — 무대를 다시 그려야 단추 상태가 바뀐다 */
+  if (id.indexOf('c') === 0) renderCmp();
+  updateAll();
+}
+
+/* 무대·문항 어느 쪽이 움직여도 화면 전체를 한 번에 맞춘다 */
+var cmpQShown = -1;
+function syncCmpQ(){
+  var list = cmpQList();
+  if (cmpQShown === list.length) return;      /* 바뀌지 않았으면 다시 그리지 않는다(힌트가 접히지 않게) */
+  cmpQShown = list.length;
+  renderQuizInto(list, 'cmpQ', '');
+}
+function updateAll(){
+  syncCmpQ();
+  updateRail();
+  updateLocks();
+  updateQGates();
+  updateProgTags();
+  refreshAnsGates();
+}
+
+function updateProgTags(){
+  var t1 = document.getElementById('pracProg');
+  if (t1) t1.textContent = '푼 문항 ' + answeredOf(PRACTICE, state.pPick) + ' / ' + PRACTICE.length;
+  var t2 = document.getElementById('writeProg');
+  if (t2){
+    var n = 0;
+    WRITEQ.forEach(function(w){
+      if (String((state.ta && state.ta[w.id]) || '').replace(/\s/g, '').length > 0) n++;
+    });
+    t2.textContent = '작성한 문항 ' + n + ' / ' + WRITEQ.length;
+  }
+}
+
+/* ══════════════════ ⑤ 서술형 그리기 ══════════════════
+   ★마크업을 손으로 적지 않는다 — WRITEQ 하나가 발문·요소·모범답안·저장 id를 모두 정한다. */
+function renderWrite(){
+  var box = document.getElementById('writeBox');
+  if (!box) return;
+  box.innerHTML = '';
+  WRITEQ.forEach(function(w, i){
+    var d = document.createElement('div');
+    d.className = 'qwrap';
+    var head = w.creative ? w.q : '<b>서술형 ' + (i + 1) + '.</b> ' + w.q;
+    d.innerHTML =
+      '<div class="qh">' + head + '</div>' +
+      '<div class="qk">답안에 반드시 들어가야 할 것 — ' + w.need.join(' · ') + '</div>' +
+      '<textarea id="ta_' + w.id + '" placeholder="여기에 서술하시오." oninput="onTa(\'' + w.id + '\')"></textarea>' +
+      '<div class="cnt"><span id="cnt_' + w.id + '">0자</span> · 모범답안은 ' + w.min + '자 이상 서술하면 열린다</div>' +
+      '<div class="btnrow"><button type="button" class="btn ghost" id="ansBtn_' + w.id + '" onclick="toggleAns(\'' + w.id + '\')">모범답안</button></div>' +
+      '<div class="ansbox" id="ans_' + w.id + '"><b>모범답안</b><br>' + w.ans + '</div>';
+    box.appendChild(d);
+  });
+
+  var sc = document.getElementById('selfBox');
+  if (sc){
+    var h = '<h3>스스로 평가하기</h3>';
+    SELFCHECK.forEach(function(s){
+      h += '<label><input type="checkbox" id="self_' + s.id + '" onchange="onSelf(\'' + s.id + '\')">' +
+           '<span><b>' + s.k + '</b> ' + s.t + '</span></label>';
+    });
+    sc.innerHTML = h;
+  }
+}
+
+/* ══════════════════ ⑤ 서술 · 모범답안 잠금 ══════════════════ */
+function ansGate(id){
+  if (state.teacherUnlock) return { open:true, reason:'' };
+  var w = null;
+  WRITEQ.forEach(function(x){ if (x.id === id) w = x; });
+  if (!w) return { open:false, reason:'' };
+  var len = String((state.ta && state.ta[id]) || '').replace(/\s/g, '').length;
+  if (len >= w.min) return { open:true, reason:'' };
+  return { open:false, reason:w.min + '자 이상 서술해야 열린다' };
+}
+function refreshAnsGates(){
+  WRITEQ.forEach(function(w){
+    var btn = document.getElementById('ansBtn_' + w.id);
+    var box = document.getElementById('ans_' + w.id);
+    if (!btn) return;
+    var g = ansGate(w.id);
+    if (!g.open){
+      btn.textContent = '🔒 ' + g.reason;
+      btn.disabled = true;
+      if (box) box.style.display = 'none';
+    } else {
+      btn.disabled = false;
+      btn.textContent = (box && box.style.display === 'block') ? '모범답안 닫기' : '모범답안';
+    }
+  });
+}
+function toggleAns(id){
+  var g = ansGate(id);
+  if (!g.open) return;
+  var box = document.getElementById('ans_' + id);
+  if (!box) return;
+  box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+  refreshAnsGates();
+}
+function onTa(id){
+  var el = document.getElementById('ta_' + id);
+  if (!el) return;
+  var len = String(el.value || '').replace(/\s/g, '').length;
+  var c = document.getElementById('cnt_' + id);
+  if (c) c.textContent = len + '자';
+  saveState();
+  refreshAnsGates();
+  updateProgTags();
+}
+function onSelf(k){
+  var el = document.getElementById('self_' + k);
+  if (!el) return;
+  state.self[k] = !!el.checked;
+  saveState();
+}
+
+/* ══════════════════ 교사용 해제 (진행 배지 5연타) ══════════════════ */
+var tapLog = [];
+function tapProgress(){
+  var t = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  tapLog.push(t);
+  if (tapLog.length > 5) tapLog.shift();
+  if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
+    tapLog = [];
+    if (confirm('교사용: 모든 잠금과 모범답안을 해제합니다.\n' +
+                '★이 화면에서만 풀린다 — 새로고침하면 도로 잠긴다.\n' +
+                '해제하시겠습니까?')){
+      state.teacherUnlock = true;   /* 이 화면에서만. 저장하지 않으므로 새로고침하면 도로 잠긴다 */
+      saveState();
+      restoreUI();
+    }
+  }
+}
+
+/* 미완성 잠금 해제 — 맞으면 이 기기에 기억해 교사가 다시 입력하지 않게 한다 */
+function unlockDraft(){
+  var el = document.getElementById('draftPass');
+  var err = document.getElementById('draftErr');
+  var v = (el && el.value ? el.value : '').trim();
+  if (v !== DRAFT_PASS){
+    if (err) err.textContent = '비밀번호가 옳지 않다.';
+    if (el){ el.value = ''; if (el.focus) el.focus(); }
+    return false;
+  }
+  try{ localStorage.setItem(DRAFT_KEY, 'y'); }catch(e){}
+  document.documentElement.className += ' unlocked';
+  var gate = document.getElementById('draftGate');
+  if (gate) gate.style.display = 'none';
+  if (err) err.textContent = '';
+  return true;
+}
+
+function resetAll(){
+  if (!confirm('지금까지의 실험 결과와 서술을 모두 지우고 처음부터 다시 하시겠습니까?')) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  /* ★메모리도 함께 비운다 — 새로고침이 끝나기 전에 무엇이든 한 번 누르면
+     saveState() 가 옛 state 를 그대로 다시 써 버려 지운 것이 되살아난다(1-4 검토에서 겪었다). */
+  state = freshState();
+  balPick = { top:null, bot:null };
+  cmpQShown = -1;
+  repMounted = null;              /* ★무대를 다시 짓게 한다 */
+  ani = { st:null, id:null, ph:0, gen:ani.gen + 1, auto:false, reveal:false };
+  if (typeof location !== 'undefined' && location.reload) location.reload();
+}
+
+/* ══════════════════ 시작 ══════════════════ */
+function restoreUI(){
+  renderModelCards();
+  renderPIntro();
+  renderBal();
+  renderRep();
+  renderCmp();
+  renderQuizInto(Q_INTRO, 'introQ', '');
+  renderQuizInto(Q_BAL, 'balQ', '');
+  renderQuizInto(Q_REP, 'repQ', 'm2');
+  cmpQShown = -1;
+  renderQuizInto(PRACTICE, 'pracBox', 'teal');
+  renderWrite();
+  WRITEQ.forEach(function(w){
+    var el = document.getElementById('ta_' + w.id);
+    if (el && state.ta && state.ta[w.id]) el.value = String(state.ta[w.id]);
+    var c = document.getElementById('cnt_' + w.id);
+    if (c && el) c.textContent = String(el.value || '').replace(/\s/g, '').length + '자';
+  });
+  Object.keys(state.self || {}).forEach(function(k){
+    var s = document.getElementById('self_' + k);
+    if (s) s.checked = !!state.self[k];
+  });
+  updateAll();
+}
+
+function init(){
+  var saved = loadState();
+  state = freshState();
+  if (saved){
+    /* ★freshState() 가 정의한 칸만 복원한다 —
+       옛 저장분에 딴 칸이 있어도 되살아나지 않고, 한 번 저장하면 저장소에서도 지워진다. */
+    Object.keys(state).forEach(function(k){
+      if (saved[k] === undefined || saved[k] === null) return;
+      if (typeof state[k] === 'object' && !Array.isArray(state[k])){
+        if (typeof saved[k] === 'object' && !Array.isArray(saved[k])) state[k] = saved[k];
+      } else {
+        state[k] = saved[k];
+      }
+    });
+  }
+  ['balRun','repRun','qPick','pPick','ta','self'].forEach(function(k){
+    if (!state[k] || typeof state[k] !== 'object' || Array.isArray(state[k])) state[k] = {};
+  });
+  /* ★balLast·repLast 는 문자열이라 위 병합을 그대로 탄다 — 다만 없는 이름이 들어오면 무대가 빈다. 걸러 낸다. */
+  if (!balComboById(state.balLast)) state.balLast = null;
+  if (!modelById(state.repLast))    state.repLast = null;
+  var cs = Number(state.cmpStage);
+  state.cmpStage = (cs === 1 || cs === 2) ? cs : 0;
+  /* ★저장분에 teacherUnlock 이 남아 있어도 켜지 않는다 — 새로고침하면 언제나 잠긴 채로 시작한다. */
+  state.teacherUnlock = false;
+  /* ★복원한 무대는 연출을 재생하지 않고 **완료 국면**에서 시작한다 —
+     새로고침했을 뿐인데 애니메이션이 처음부터 도는 것은 결과를 도로 감추는 일이다. */
+  if (state.balLast) ani = { st:'bal', id:state.balLast, ph:aniLast('bal', state.balLast), gen:ani.gen + 1, auto:false, reveal:false };
+  restoreUI();
+}
+
+if (typeof document !== 'undefined' && document.getElementById) init();
+</script>
+</body>
+</html>

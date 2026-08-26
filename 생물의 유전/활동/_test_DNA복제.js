@@ -187,7 +187,13 @@ const S = makeSandbox();
 // ══════════════════ [1] 정적 구조 무결성 ══════════════════
 console.log('[1] 정적 구조 무결성');
 eq(scriptTags.length, 1, 'script 블록 1개');
-ok(!/https?:\/\//.test(src), '외부 URL 참조 0건(오프라인 단일 파일)');
+{
+  /* ★외부 URL 은 **자매 활동 안내 링크 하나뿐**이어야 한다.
+     「더 해보기 — 메셀슨·스탈」 절을 별도 활동으로 옮기며 생긴 유일한 바깥 주소다(2026-08-26). */
+  const urls = src.match(/https?:\/\/[^"'\s)]+/g) || [];
+  ok(urls.length === 1 && urls[0].indexOf('geungschool-hub.github.io/meselson-sim') >= 0,
+     '★외부 URL 은 자매 활동 링크 하나뿐 (실제: ' + (urls.join(', ') || '없음') + ')');
+}
 ok(!/<link|@import|<img|<iframe/.test(src), '외부 자원 태그 없음');
 {
   const open = (src.match(/<div/g) || []).length, close = (src.match(/<\/div>/g) || []).length;
@@ -202,7 +208,7 @@ ok(!/<link|@import|<img|<iframe/.test(src), '외부 자원 태그 없음');
   const re = /on(?:click|input|change)="([A-Za-z_$][\w$]*)\(/g;
   const names = new Set(); let x;
   while ((x = re.exec(src))) names.add(x[1]);
-  ok(names.size >= 12, '핸들러 이름 ' + names.size + '개 추출');
+  ok(names.size >= 10, '핸들러 이름 ' + names.size + '개 추출');
   names.forEach(n => ok(typeof S[n] === 'function', 'onclick 핸들러 ' + n + '() 정의됨'));
 }
 {
@@ -231,10 +237,6 @@ ok(!/<link|@import|<img|<iframe/.test(src), '외부 자원 태그 없음');
 {
   // ── 교실 하드웨어(태블릿) 대응 ──
   ok(/@media\s*\(max-width/.test(src), '좁은 화면용 @media 분기 있음');
-  ok(cssRule('.tube-scroll').indexOf('overflow-x:auto') >= 0, '메셀슨 시험관 줄은 가로 스크롤 컨테이너 안에');
-  ok(/class="tube-scroll"/.test(src), 'renderMS 가 실제로 tube-scroll 로 감싼다');
-  eq(cssPx(cssRule('.tube-legend'), 'margin-top'), 0, '범례는 margin-top 보정이 아니라 바닥 정렬을 쓴다');
-  ok(/legendHTML[\s\S]{0,400}?tube-col/.test(src), '범례가 .tube-col 로 감싸져 .tube-set 안에 들어간다');
   ok(cssPx(cssRule('.cell.nt'), 'height') >= 44, '새 가닥 칸(탭 대상) 세로 44px 이상');
   ok(cssPx(cssRule('.btn.small'), 'font-size') >= 16, '.btn.small 폰트 16px 이상');
   ok(cssPx(cssRule('.cell'), 'font-size') >= 15, '무대 칸 글자 15px 이상');
@@ -248,9 +250,6 @@ ok(!/<link|@import|<img|<iframe/.test(src), '외부 자원 태그 없음');
   // 분기점·이음새 표시가 상태 클래스(openslot/target)의 border 단축 선언에 지워지지 않아야
   const iTarget = src.indexOf('.cell.nt.target'), iFork = src.indexOf('.cell.nt.forkcol'), iSeam = src.indexOf('.cell.nt.seam');
   ok(iFork > iTarget && iSeam > iTarget, '.cell.nt.forkcol/.seam 규칙이 .cell.nt.target 뒤에 선언됨');
-  // 색 단독 전달 금지 — 메셀슨 분자 도식에 질소 라벨
-  ok(/SB_LAB\s*=\s*\{[^}]*old:'¹⁵N'[^}]*new:'¹⁴N'/.test(src), '분자 도식 바에 ¹⁵N/¹⁴N 라벨을 넣는다');
-  ok(cssRule('.sb.old').indexOf('repeating-linear-gradient') >= 0, '원래 가닥 바에 빗금 무늬(색약 대응)');
 }
 {
   // 오답 흔들림은 updateStage 의 className 덮어쓰기 '뒤'에 붙어야 살아남는다
@@ -447,68 +446,34 @@ ok(S.strandName('top') !== S.strandName('bot'), 'strandName 구분');
   ok(S.targetHintText(30, 25, {strand:'top', idx:30}).indexOf('31번') > 0, 'targetHint: 선택 표시');
 }
 
-// ══════════════════ [4] 메셀슨·스탈 로직 ══════════════════
-console.log('[4] 메셀슨·스탈 로직');
+// ══════════════════ [4] 메셀슨·스탈 — 별도 활동으로 옮겼다 ══════════════════
+/* 교사 결정(2026-08-25): 「새 활동으로 옮기고 dna-sim 에는 안내만 남긴다」
+   → 2026-08-26 실행. 여기 있던 로직 검사 60여 건은 `_test_메셀슨.js` 가 이어받았다.
+   이 절은 **되살아나지 않는지 감시**한다. 두 활동에 같은 내용이 있으면 반드시 어긋난다. */
+console.log('[4] 메셀슨·스탈 — 옮겨 갔는가');
 {
-  const A1 = S.ACTUAL_BANDS[1], A2 = S.ACTUAL_BANDS[2];
-  eq(S.bandKeys(A1), 'mid', '실제 1회 = 중간 무게 1개');
-  eq(S.bandKeys(A2), 'light,mid', '실제 2회 = 가벼움 + 중간');
-  eq(S.bandKeys(S.predictBands('semi', 0)), 'heavy', '배양 전은 무거운 띠 1개');
-  eq(S.bandKeys(S.predictBands('conservative', 0)), 'heavy', '배양 전은 모델과 무관');
-  ok(S.compareBands(S.predictBands('semi',1), A1), '반보존 1회 일치');
-  ok(S.compareBands(S.predictBands('semi',2), A2), '반보존 2회 일치');
-  ok(!S.compareBands(S.predictBands('conservative',1), A1), '보존적 1회 불일치');
-  ok(!S.compareBands(S.predictBands('conservative',2), A2), '보존적 2회 불일치');
-  ok(S.compareBands(S.predictBands('dispersive',1), A1), '분산적 1회는 일치(역사적으로 구별 불가)');
-  ok(!S.compareBands(S.predictBands('dispersive',2), A2), '분산적 2회에서만 배제');
-  ok(S.bandKeys(S.predictBands('conservative',1)).indexOf('heavy') >= 0, '보존적은 무거운 띠가 남는다');
-  ok(S.bandKeys(S.predictBands('semi',1)).indexOf('heavy') < 0, '반보존 1회엔 무거운 띠가 없다');
-  eq(S.bandKeys(S.predictBands('dispersive',2)), 'lightmid', '분산적 2회 = 중간보다 가벼운 띠 1개');
-  eq(S.predictBands('bogus',1).length, 0, '모르는 모델 → 빈 예상');
-  // 세 모델 중 1·2회 모두 맞는 것은 하나뿐
-  const winners = ['conservative','semi','dispersive'].filter(k =>
-    S.compareBands(S.predictBands(k,1), A1) && S.compareBands(S.predictBands(k,2), A2));
-  eq(winners.join(','), 'semi', '1·2회 모두 일치하는 모델은 반보존적 하나뿐');
-  // 띠 위치는 위(가벼움) → 아래(무거움) 순
-  const order = ['light','lightmid','mid','heavy'];
-  for (let i = 1; i < order.length; i++)
-    ok(S.BAND_META[order[i]].top > S.BAND_META[order[i-1]].top, '띠 위치 순서 ' + order[i-1] + ' < ' + order[i]);
-  order.forEach(k => ok(!!S.BAND_META[k].name && !!S.BAND_META[k].sub, 'BAND_META ' + k + ' 이름/표기 있음'));
-  // 예상 띠에 쓰이는 위치 키는 모두 BAND_META 에 있어야(렌더 시 undefined 방지)
-  ['conservative','semi','dispersive'].forEach(k => {
-    [0,1,2].forEach(g => S.predictBands(k,g).forEach(bd => ok(!!S.BAND_META[bd.pos], 'BAND_META 키 존재: ' + k + ' gen' + g + ' ' + bd.pos)));
-    [1,2].forEach(g => {
-      const amt = S.predictBands(k,g).reduce((s,bd) => s + bd.amt, 0);
-      ok(Math.abs(amt - 1) < 1e-9, k + ' gen' + g + ' 띠 양의 합 = 1 (실제 ' + amt + ')');
-    });
-  });
-  // 분자 도식 ↔ 띠 예상 일관성
-  ['conservative','semi','dispersive'].forEach(k => {
-    eq(S.moleculesFor(k,1).length, 2, k + ': 1회 복제 후 분자 2개');
-    eq(S.moleculesFor(k,2).length, 4, k + ': 2회 복제 후 분자 4개');
-    S.moleculesFor(k,1).concat(S.moleculesFor(k,2)).forEach(mol => {
-      eq(mol.length, 2, k + ': 한 분자는 두 가닥');
-      mol.forEach(sd => ok(['old','new','mix','mix2'].indexOf(sd) >= 0, k + ': 가닥 종류 ' + sd));
-    });
-  });
-  eq(S.moleculesFor('semi',1).map(x=>x.join('+')).join(' '), 'old+new old+new', '반보존 1회 = 모두 옛1+새1');
-  eq(S.moleculesFor('semi',2).filter(x=>x.indexOf('old')>=0).length, 2, '반보존 2회 = 옛 가닥 든 분자 2개(=중간 띠)');
-  eq(S.moleculesFor('semi',2).filter(x=>x.join()==='new,new').length, 2, '반보존 2회 = 완전 새 분자 2개(=가벼운 띠)');
-  eq(S.moleculesFor('conservative',1).filter(x=>x.join()==='old,old').length, 1, '보존적 1회 = 원래 분자 1개 그대로');
-  eq(S.moleculesFor('conservative',2).filter(x=>x.join()==='old,old').length, 1, '보존적 2회에도 원래 분자 1개 = 무거운 띠');
-  ok(S.moleculesFor('dispersive',1).every(x=>x.join()==='mix,mix'), '분산적 = 섞인 가닥');
-  eq(S.moleculesFor('bogus',1).length, 0, '모르는 모델 → 분자 없음');
-  // 옛 가닥 총수 보존(질량 보존 확인)
-  ['conservative','semi'].forEach(k => {
-    const oldCount = g => S.moleculesFor(k,g).reduce((s,mol) => s + mol.filter(x=>x==='old').length, 0);
-    eq(oldCount(1), 2, k + ': 1회 후에도 옛 가닥 2개 보존');
-    eq(oldCount(2), 2, k + ': 2회 후에도 옛 가닥 2개 보존');
-  });
-  ok(S.modelVerdictText('semi').indexOf('반보존적 복제!') >= 0, '판정 문구: 반보존 ✅');
-  ok(S.modelVerdictText('conservative').indexOf('아니다') > 0, '판정 문구: 보존적 ❌');
-  ok(S.modelVerdictText('dispersive').indexOf('2회') > 0, '판정 문구: 분산적은 2회에서 배제');
-  Object.keys(S.MODEL_NAME).forEach(k => ok(!!S.MODEL_DESC[k], 'MODEL_DESC ' + k + ' 있음'));
-  eq(Object.keys(S.MODEL_NAME).length, 3, '모델 3종');
+  /* 로직·렌더·상태가 하나도 남아 있지 않다 */
+  ['predictBands', 'ACTUAL_BANDS', 'bandKeys', 'compareBands', 'moleculesFor',
+   'modelVerdictText', 'BAND_META', 'MODEL_NAME', 'MODEL_DESC', 'SB_LAB',
+   'tubeHTML', 'legendHTML', 'molHTML', 'pickModel', 'msTriedCount', 'renderMS'
+  ].forEach(n => ok(typeof S[n] === 'undefined', '★' + n + ' 이 남아 있지 않다'));
+
+  /* 화면 조각·CSS·상태 칸도 함께 걷어냈다 */
+  ['tube-scroll', 'tube-legend', 'tube-set', 'tube-col', 'mol-set', '.sb.old',
+   'msBody', 'msArea', 'msVerdict', 'msMol', 'fb_ms', 'ms_semi'
+  ].forEach(n => ok(src.indexOf(n) < 0, '★「' + n + '」 흔적이 없다'));
+  ok(typeof S.state.ms === 'undefined', '★state 에 ms 칸이 없다');
+  ok(JSON.stringify(S.mergeState({ ms:{ pick:'semi' } })).indexOf('"ms"') < 0,
+     '★옛 저장분에 ms 가 있어도 되살아나지 않는다');
+
+  /* 대신 안내가 있다 — 학생이 이어서 갈 자리를 잃으면 안 된다 */
+  ok(/이어서 할 활동 — 메셀슨과 스탈/.test(src), '★이어서 할 활동 안내가 있다');
+  ok(/geungschool-hub\.github\.io\/meselson-sim/.test(src), '★안내가 새 활동 주소를 가리킨다');
+  ok(/target="_blank"[\s\S]{0,40}rel="noopener"|rel="noopener"[\s\S]{0,40}target="_blank"/.test(src),
+     '새 탭으로 열되 rel="noopener" 를 붙였다');
+  /* 말투 — 옮기면서 옛 절의 친근체도 함께 사라졌다 */
+  ['골라 보자', '많다는 뜻이에요', '확인했어요'].forEach(w =>
+    ok(src.indexOf(w) < 0, '★옛 절의 친근체 「' + w + '」가 사라졌다'));
 }
 
 // ══════════════════ [5] 상태 저장·병합·손상 방어 ══════════════════
@@ -539,8 +504,6 @@ console.log('[5] 상태 저장·병합·손상 방어');
   eq(S.mergeState({wrong:7}).wrong, 7, '오답 수 복원');
   eq(S.mergeState({sel:{strand:'중간',idx:3}}).sel, null, '이상한 가닥 이름 sel 무시');
   eq(JSON.stringify(S.mergeState({sel:{strand:'top',idx:3}}).sel), '{"strand":"top","idx":3}', '정상 sel 복원');
-  eq(S.mergeState({ms:{pick:'bogus'}}).ms.pick, null, '모르는 모델 선택 무시');
-  eq(S.mergeState({ms:{pick:'semi'}}).ms.pick, 'semi', '모델 선택 복원');
   {
     // 완성된 가닥 + ligated + verified 는 살아남아야
     const good = S.emptyStrand().map((v,i) => COMP[S.BOT_TEMPLATE.charAt(i)]);
@@ -569,7 +532,6 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(botBars(M).length, 0, '시작 시 지연 가닥 조각 막대 0개');
   ok(html(M,'wrongEcho').indexOf('붙여 보지 않았어요') > 0, '시작 시 정리하기 3 에코 = 아직 시작 전 안내');
   eq(M._store['nb_A'].disabled, false, '시작 시 염기 단추 활성');
-  eq(M._store['msBody'].style.display, 'none', '메셀슨 영역 숨김');
   eq(cellCls(M,'newTop',31).indexOf('locked') > 0, true, '안 풀린 칸은 locked');
   eq(txt(M,'c_tmplTop_0'), M.TOP_TEMPLATE.charAt(0), '주형 칸에 염기 표시');
   eq(txt(M,'c_bond_0'), '‖', '안 풀린 자리에 결합 기호');
@@ -796,25 +758,6 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(M.state.ta.ta1, '두 딸 DNA는 같다', '서술 답 저장');
   eq(M.state.chk.chk2, true, '체크박스 저장');
 
-  // 메셀슨·스탈
-  M.pickModel('bogus');
-  eq(M.state.ms.pick, null, '모르는 모델은 무시');
-  M.pickModel('conservative');
-  eq(M._store['msBody'].style.display, 'block', 'MS 영역 공개');
-  ok(html(M,'fb_ms').indexOf('보존적 복제는 아니다') > 0, '보존적 판정 문구');
-  ok(html(M,'msArea').indexOf('불일치') > 0, '보존적은 불일치 표시');
-  eq((html(M,'msArea').match(/class="tube"/g) || []).length, 5, '시험관 5개(배양 전·예상1·실제1·예상2·실제2)');
-  eq((html(M,'msArea').match(/class="band"/g) || []).length, 1 + 2 + 1 + 2 + 2, '띠 개수 합');
-  ok(html(M,'msMol').indexOf('sb old') > 0, '분자 도식 렌더');
-  M.pickModel('dispersive');
-  ok(html(M,'fb_ms').indexOf('분산적 복제도 아니다') > 0, '분산적 판정 문구');
-  ok(html(M,'msArea').indexOf('일치') > 0, '분산적 1회는 일치 표시');
-  M.pickModel('semi');
-  eq(M.msTriedCount(), 3, '세 모델 모두 시도');
-  ok(html(M,'fb_ms').indexOf('반보존적 복제!') > 0, '반보존 판정');
-  ok(html(M,'fb_ms').indexOf('세 모델을 모두 확인') > 0, '3종 완주 마무리 문구');
-  ok(cls(M,'ms_semi').indexOf('sel') > 0 && cls(M,'ms_conservative').indexOf('done') > 0, '선택/시도 표시');
-
   // HTML에 없는 id를 만진 적이 없어야(오타 방지)
   eq(M._missing.filter(id => !/^(c_|frag_)/.test(id)).join(','), '', 'getElementById 오타 없음');
 
@@ -826,7 +769,7 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(saved.ligated, true, '저장값: 연결');
   eq(saved.verified, true, '저장값: 확인');
   eq(saved.wrong, 1, '저장값: 오답 수');
-  eq(saved.ms.pick, 'semi', '저장값: 모델 선택');
+  ok(!('ms' in saved), '★저장 blob 에 ms 칸이 없다 (메셀슨은 별도 활동으로 옮겼다)');
 
   const R = makeSandbox({ seed:{ 'dna_sim_v1': raw } });
   R.init();
@@ -844,9 +787,6 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(txt(R,'lab_newBot'), '새 가닥 ② (지연 가닥)', '복원: 지연 가닥 이름');
   eq(R._store['ta1'].value, '두 딸 DNA는 같다', '복원: 서술 답');
   eq(R._store['chk2'].checked, true, '복원: 체크박스');
-  eq(R.state.ms.pick, 'semi', '복원: 모델 선택');
-  eq(R.msTriedCount(), 3, '복원: 시도한 모델 수');
-  eq(R._store['msBody'].style.display, 'block', '복원: MS 영역');
   ok(html(R,'wrongEcho').indexOf('1회') > 0, '복원: 정리하기 3 오답 횟수');
   ok(html(R,'fb_stage').indexOf('이전에 하던 기록') > 0, '복원: 남의 기록을 이어받았을 수 있다는 안내 배너');
   ok(html(R,'fb_stage').indexOf('처음부터 다시 하기') > 0, '복원 배너: 리셋 안내 포함');

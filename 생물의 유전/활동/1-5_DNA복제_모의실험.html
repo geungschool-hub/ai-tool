@@ -193,52 +193,6 @@
   table.cmp th.p { background:var(--pink-bg); }
   table.cmp td.l { text-align:left; }
 
-  /* ── 메셀슨·스탈 ── */
-  .ms-area { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; margin-top:12px; }
-  /* 시험관 5개 + 범례는 고정 폭 → 좁은 화면에서 카드 밖으로 넘치지 않도록 가로 스크롤 */
-  .tube-scroll { overflow-x:auto; max-width:100%; padding-bottom:4px; }
-  .tube-set { display:flex; gap:8px; align-items:flex-end; }
-  .tube-col { flex:0 0 auto; text-align:center; }
-  .tube-cap { font-size:12.5px; font-weight:700; margin-bottom:4px; line-height:1.3; }
-  .tube-cap.pred { color:var(--blue); }
-  .tube-cap.real { color:var(--pink); }
-  .tube {
-    position:relative; width:62px; height:172px; border:2px solid #9DB4CC;
-    border-radius:8px 8px 26px 26px; overflow:hidden;
-    background:linear-gradient(#F8FBFF,#DCE6F2 55%,#BFCFE2);
-  }
-  .band { position:absolute; left:0; right:0; height:10px; margin-top:-5px; background:#243B53; border-radius:2px; }
-  /* ★범례는 .tube-set 안의 첫 칸으로 들어가 시험관과 같은 바닥 정렬을 쓴다
-     (예전처럼 margin-top 으로 맞추면 캡션 줄 수가 바뀔 때 라벨이 띠보다 위를 가리킨다) */
-  .tube-legend { position:relative; width:148px; height:172px; margin-top:0px; }
-  .tube-legend .lg {
-    position:absolute; right:2px; font-size:12.5px; font-weight:700; color:var(--sub);
-    transform:translateY(-50%); text-align:right; line-height:1.25; white-space:nowrap;
-  }
-  .tube-legend .lg::after {
-    content:''; position:absolute; right:-16px; top:50%; width:14px; height:0;
-    border-top:2px dotted #6B7280;
-  }
-  .verdict { border-radius:8px; padding:8px 12px; font-size:15.5px; font-weight:700; margin-top:8px; }
-  .verdict.ok { border-left:4px solid var(--green); background:var(--green-bg); color:var(--green); }
-  .verdict.no { border-left:4px solid var(--red);   background:var(--red-bg);   color:var(--red); }
-  .mol-set { display:flex; gap:10px; flex-wrap:wrap; }
-  .mol { text-align:center; }
-  /* ★가닥의 '출신'을 색만으로 알리면 색약 학생이 판정 근거를 읽을 수 없다
-     → 바 안에 ¹⁵N/¹⁴N 라벨을 넣고, 원래 가닥에는 빗금 무늬를 더한다 */
-  .mol .sb {
-    height:15px; line-height:15px; width:64px; border-radius:5px; margin-bottom:3px;
-    font-size:10.5px; font-weight:800; color:#fff; text-align:center;
-  }
-  .sb.old  { background:var(--old);
-             background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.38) 0 3px,transparent 3px 6px); }
-  .sb.new  { background:var(--green); }
-  .sb.mix  { background:repeating-linear-gradient(90deg,var(--old) 0 8px,var(--green) 8px 16px); }
-  .sb.mix2 { background:repeating-linear-gradient(90deg,var(--old) 0 4px,var(--green) 4px 16px); }
-  .mol .mlab { font-size:12.5px; color:var(--sub); }
-  .legend-inline { font-size:14px; color:var(--sub); margin-top:6px; }
-  .legend-inline i { display:inline-block; width:22px; height:8px; border-radius:4px; vertical-align:1px; }
-
   /* ── 정리하기 ── */
   .q { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:#FAFAFA; }
   .q .qt { font-weight:700; margin-bottom:6px; }
@@ -259,9 +213,6 @@
   @media (max-width:430px){
     body { padding:8px; }
     .card { padding:14px 12px; }
-    .tube { width:52px; height:156px; }
-    .tube-legend { width:132px; height:156px; }
-    .tube-set { gap:6px; }
   }
 </style>
 </head>
@@ -484,31 +435,23 @@
     </div>
   </section>
 
-  <!-- ── 💡 더 해보기 — 메셀슨·스탈 ── -->
+  <!-- ── 💡 이어서 할 활동 — 메셀슨·스탈 ── -->
+  <!-- ★이 자리에 있던 「더 해보기 — 메셀슨·스탈」 모의실험은 **별도 활동으로 옮겼다**
+       (교사 결정 2026-08-25). 여기에는 안내만 남긴다.
+       옮겨 간 곳: 생물의 유전/활동/1-5_메셀슨스탈_모의실험.html
+       ⚠ 이 절을 되살리지 말 것 — 두 활동에 같은 내용이 있으면 반드시 어긋난다. -->
   <section class="card">
-    <h2 class="green">💡 더 해보기 — 메셀슨·스탈 실험으로 복제 방식 가려내기</h2>
-    <p>무거운 질소(<sup>15</sup>N) 배양액에서 여러 세대 키운 대장균을 가벼운 질소(<sup>14</sup>N) 배양액으로 옮겨 키우면서
-      DNA의 <b>상대적 밀도</b>를 조사했다. 세 가지 이론적 복제 모델 중 하나를 골라 보자 —
-      그 모델이 맞다면 원심분리 시험관에 띠가 <b>어디에</b> 생겨야 할까?</p>
-    <div class="strandpick">
-      <button class="choice" id="ms_conservative" onclick="pickModel('conservative')">보존적 복제</button>
-      <button class="choice" id="ms_semi"         onclick="pickModel('semi')">반보존적 복제</button>
-      <button class="choice" id="ms_dispersive"   onclick="pickModel('dispersive')">분산적 복제</button>
+    <h2 class="green">💡 이어서 할 활동 — 메셀슨과 스탈</h2>
+    <p>이 활동은 복제가 <b>어떻게</b> 일어나는지(3′ 말단 규칙 · 선도 가닥 · 지연 가닥)를 다루었다.
+      그렇다면 <b>어느 방식으로</b> 복제되는지는 어떻게 알아냈는가?</p>
+    <p>보존적 · 반보존적 · 분산적 세 복제모델을 직접 굴려 보고,
+      질소의 <b>무게 차이가 만든 띠</b>로 어느 것이 지워지는지 가려내는 활동이 따로 있다.
+      1958년 메셀슨과 스탈이 한 일이다.</p>
+    <div class="btnrow" style="margin-top:12px;">
+      <a class="btn" href="https://geungschool-hub.github.io/meselson-sim/" target="_blank" rel="noopener"
+         style="text-decoration:none; display:inline-block;">⚖️ 메셀슨과 스탈 — DNA 복제 방식 가려내기</a>
     </div>
-    <div id="msDesc" class="note"></div>
-    <div id="msBody" style="display:none;">
-      <div class="ms-area" id="msArea"></div>
-      <div id="msVerdict"></div>
-      <div class="ptitle" style="margin-top:14px; font-size:16px; font-weight:700;">이 모델대로라면 DNA 분자는 이렇게 생긴다</div>
-      <div id="msMol"></div>
-      <div class="legend-inline">
-        <i class="sb old" style="width:22px;"></i> <b>빗금 · ¹⁵N</b> = 원래 가닥 &nbsp;·&nbsp;
-        <i class="sb new" style="width:22px;"></i> <b>민무늬 · ¹⁴N</b> = 새로 합성된 가닥 &nbsp;·&nbsp;
-        <i class="sb mix" style="width:22px;"></i> <b>세로 줄무늬</b> = 두 질소가 섞인 가닥
-        <br>시험관에서 <b>띠가 진할수록</b> 그 무게의 DNA가 <b>많다</b>는 뜻이에요.
-      </div>
-      <div class="fb" id="fb_ms"></div>
-    </div>
+    <p class="hint" style="margin-top:10px;">과학 허브에서도 찾을 수 있다 — 「생물의 유전」 갈래의 ⚖️ 카드이다.</p>
   </section>
 
   <footer>
@@ -669,80 +612,6 @@ function arrStr(arr){
   return s;
 }
 
-/* ── 메셀슨·스탈: 예상 띠 ── */
-var BAND_META = {
-  light:    { top:26, name:'가벼운 DNA',          sub:'¹⁴N–¹⁴N' },
-  lightmid: { top:38, name:'중간보다 가벼운 DNA', sub:'¹⁵N이 조금씩' },
-  mid:      { top:50, name:'중간 무게 DNA',       sub:'¹⁵N–¹⁴N' },
-  heavy:    { top:74, name:'무거운 DNA',          sub:'¹⁵N–¹⁵N' }
-};
-var MODEL_NAME = { conservative:'보존적 복제', semi:'반보존적 복제', dispersive:'분산적 복제' };
-var MODEL_DESC = {
-  conservative:'원래 이중나선은 두 가닥 그대로 남고, 완전히 새로운 이중나선이 따로 만들어진다.',
-  semi:'두 가닥이 풀려 각각 주형이 되고, 딸 DNA는 「원래 가닥 1개 + 새 가닥 1개」로 이루어진다.',
-  dispersive:'원래 DNA가 조각조각 나뉘고 새로 만들어진 부분과 섞여 딸 DNA를 이룬다.'
-};
-function predictBands(model, gen){
-  if (gen === 0) return [{ pos:'heavy', amt:1 }];
-  if (model === 'conservative'){
-    if (gen === 1) return [{ pos:'light', amt:0.5 }, { pos:'heavy', amt:0.5 }];
-    return [{ pos:'light', amt:0.75 }, { pos:'heavy', amt:0.25 }];
-  }
-  if (model === 'semi'){
-    if (gen === 1) return [{ pos:'mid', amt:1 }];
-    return [{ pos:'light', amt:0.5 }, { pos:'mid', amt:0.5 }];
-  }
-  if (model === 'dispersive'){
-    if (gen === 1) return [{ pos:'mid', amt:1 }];
-    return [{ pos:'lightmid', amt:1 }];
-  }
-  return [];
-}
-/* 실제 실험 결과: 1회 복제 후 중간 무게 띠 1개 / 2회 복제 후 가벼운 띠 + 중간 무게 띠 */
-var ACTUAL_BANDS = {
-  1: [{ pos:'mid', amt:1 }],
-  2: [{ pos:'light', amt:0.5 }, { pos:'mid', amt:0.5 }]
-};
-function bandKeys(bands){
-  var k = [];
-  for (var i = 0; i < bands.length; i++) k.push(bands[i].pos);
-  k.sort();
-  return k.join(',');
-}
-function compareBands(a, b){ return bandKeys(a) === bandKeys(b); }
-/* 모델별 DNA 분자 모습(가닥 구성): 'old' | 'new' | 'mix' | 'mix2' */
-function moleculesFor(model, gen){
-  if (model === 'conservative'){
-    if (gen === 1) return [['old','old'], ['new','new']];
-    return [['old','old'], ['new','new'], ['new','new'], ['new','new']];
-  }
-  if (model === 'semi'){
-    if (gen === 1) return [['old','new'], ['old','new']];
-    return [['old','new'], ['new','new'], ['old','new'], ['new','new']];
-  }
-  if (model === 'dispersive'){
-    if (gen === 1) return [['mix','mix'], ['mix','mix']];
-    return [['mix2','mix2'], ['mix2','mix2'], ['mix2','mix2'], ['mix2','mix2']];
-  }
-  return [];
-}
-function modelVerdictText(model, ok1, ok2){
-  if (model === 'conservative'){
-    return '❌ <b>보존적 복제는 아니다.</b> 보존적 복제라면 원래 분자가 그대로 남아 <b>무거운 띠</b>가 계속 보여야 한다. ' +
-           '그러나 실제로는 1회 복제 후 무거운 띠가 <b>사라지고</b> 중간 무게 띠만 나타났다.';
-  }
-  if (model === 'dispersive'){
-    return '❌ <b>분산적 복제도 아니다.</b> 1회 복제 후 결과(중간 무게 띠 1개)는 반보존적과 똑같아 구별할 수 없다. ' +
-           '그러나 분산적 복제라면 2회 복제 후 모든 DNA가 <sup>15</sup>N을 조금씩 나눠 가져 ' +
-           '<b>중간보다 가벼운 띠 1개</b>만 생겨야 한다. 실제로는 <b>가벼운 띠와 중간 무게 띠 2개</b>가 나타났다.';
-  }
-  if (model === 'semi'){
-    return '✅ <b>반보존적 복제!</b> 1회 복제 후 모든 DNA가 「원래 가닥 1개 + 새 가닥 1개」이므로 <b>중간 무게 띠 1개</b>, ' +
-           '2회 복제 후에는 그중 절반이 <sup>14</sup>N만 가지게 되어 <b>가벼운 띠 + 중간 무게 띠</b>가 나타난다 — ' +
-           '1회·2회 모두 실제 결과와 <b>일치</b>한다.';
-  }
-  return (ok1 && ok2) ? '일치' : '불일치';
-}
 function wrongEchoText(n, usedAuto, placed){
   /* 아직 붙인 것도, 틀린 것도 없을 때만 '시작 전' 안내 — 붙기 전에 오답을 낸 학생에게는 횟수를 알려야 한다 */
   if (placed === 0 && !(n > 0)){
@@ -810,7 +679,6 @@ function freshState(){
     ligated: false,
     verified: false,
     sel: null,
-    ms: { pick:null, tried:{} },
     ta: {}, chk: {}
   };
 }
@@ -844,10 +712,6 @@ function mergeState(saved){
   s.verified = !!saved.verified && s.ligated && strandComplete(s.newTop) &&
                daughterCheck(TOP_TEMPLATE, s.newTop).ok && daughterCheck(BOT_TEMPLATE, s.newBot).ok;
   if (saved.sel && (saved.sel.strand === 'top' || saved.sel.strand === 'bot')) s.sel = saved.sel;
-  if (saved.ms && typeof saved.ms === 'object'){
-    if (MODEL_NAME[saved.ms.pick]) s.ms.pick = saved.ms.pick;
-    if (saved.ms.tried && typeof saved.ms.tried === 'object') s.ms.tried = saved.ms.tried;
-  }
   if (saved.ta && typeof saved.ta === 'object') s.ta = saved.ta;
   if (saved.chk && typeof saved.chk === 'object') s.chk = saved.chk;
   return s;
@@ -1365,96 +1229,6 @@ function verifyDaughters(){
   updateStage(); updateProgress(); saveState();
 }
 
-/* ════════════ 💡 메셀슨·스탈 ════════════ */
-function tubeHTML(bands, cap, capCls){
-  var h = '<div class="tube-col"><div class="tube-cap ' + capCls + '">' + cap + '</div><div class="tube">';
-  for (var i = 0; i < bands.length; i++){
-    var m = BAND_META[bands[i].pos];
-    var op = 0.4 + 0.6 * bands[i].amt;
-    h += '<div class="band" style="top:' + m.top + '%; opacity:' + op.toFixed(2) + ';"></div>';
-  }
-  return h + '</div></div>';
-}
-/* 범례는 .tube-set 안의 첫 칸으로 들어간다 — 시험관과 같은 바닥 정렬을 써야
-   라벨 높이가 띠 높이와 정확히 맞는다(캡션과 같은 높이의 투명 자리를 위에 둔다) */
-function legendHTML(){
-  var order = ['light','lightmid','mid','heavy'];
-  var h = '<div class="tube-col"><div class="tube-cap" style="visibility:hidden;">범례<br>&nbsp;</div>' +
-          '<div class="tube-legend">';
-  for (var i = 0; i < order.length; i++){
-    var m = BAND_META[order[i]];
-    h += '<div class="lg" style="top:' + m.top + '%;">' + m.name + '<br>' + m.sub + '</div>';
-  }
-  return h + '</div></div>';
-}
-/* 가닥 종류를 색만으로 알리지 않도록 바 안에 질소 표기를 넣는다(색약 대응) */
-var SB_LAB = { old:'¹⁵N', new:'¹⁴N', mix:'½ ¹⁵N', mix2:'¼ ¹⁵N' };
-function molHTML(model, gen){
-  var mols = moleculesFor(model, gen), h = '<div class="mol-set">';
-  for (var i = 0; i < mols.length; i++){
-    h += '<div class="mol"><div class="sb ' + mols[i][0] + '">' + (SB_LAB[mols[i][0]] || '') + '</div>' +
-         '<div class="sb ' + mols[i][1] + '">' + (SB_LAB[mols[i][1]] || '') + '</div>' +
-         '<div class="mlab">' + (i + 1) + '</div></div>';
-  }
-  return h + '</div>';
-}
-function pickModel(model){
-  if (!MODEL_NAME[model]) return;
-  state.ms.pick = model;
-  state.ms.tried[model] = true;
-  renderMS();
-  saveState();
-}
-function msTriedCount(){
-  var n = 0;
-  ['conservative','semi','dispersive'].forEach(function(k){ if (state.ms.tried[k]) n++; });
-  return n;
-}
-function renderMS(){
-  ['conservative','semi','dispersive'].forEach(function(k){
-    setCls('ms_' + k, 'choice' + (state.ms.pick === k ? ' sel' : '') + (state.ms.tried[k] ? ' done' : ''), MODEL_NAME[k]);
-  });
-  var model = state.ms.pick;
-  var desc = document.getElementById('msDesc');
-  var body = document.getElementById('msBody');
-  if (!model){
-    if (desc) desc.innerHTML = '위 세 단추를 눌러 모델을 골라 보자. 고른 모델대로라면 나올 <b>예상 결과</b>를 시험관에 그려 줍니다.';
-    if (body) body.style.display = 'none';
-    return;
-  }
-  if (desc) desc.innerHTML = '<b>' + MODEL_NAME[model] + '</b> — ' + MODEL_DESC[model];
-  if (body) body.style.display = 'block';
-  var p1 = predictBands(model, 1), p2 = predictBands(model, 2);
-  var a1 = ACTUAL_BANDS[1], a2 = ACTUAL_BANDS[2];
-  var ok1 = compareBands(p1, a1), ok2 = compareBands(p2, a2);
-  var area = document.getElementById('msArea');
-  if (area){
-    area.innerHTML =
-      '<div><div class="tube-scroll"><div class="tube-set">' +
-        legendHTML() +
-        tubeHTML(predictBands(model, 0), '배양 전<br>(¹⁵N)', 'pred') +
-        tubeHTML(p1, '예상<br>1회 복제 후', 'pred') +
-        tubeHTML(a1, '실제<br>1회 복제 후', 'real') +
-        tubeHTML(p2, '예상<br>2회 복제 후', 'pred') +
-        tubeHTML(a2, '실제<br>2회 복제 후', 'real') +
-      '</div></div>' +
-      '<div class="verdict ' + (ok1 ? 'ok' : 'no') + '">1회 복제 후 — 예상과 실제가 ' + (ok1 ? '<b>일치</b> ✅' : '<b>불일치</b> ❌') + '</div>' +
-      '<div class="verdict ' + (ok2 ? 'ok' : 'no') + '">2회 복제 후 — 예상과 실제가 ' + (ok2 ? '<b>일치</b> ✅' : '<b>불일치</b> ❌') + '</div>' +
-      '</div>';
-  }
-  var mm = document.getElementById('msMol');
-  if (mm){
-    mm.innerHTML = '<div class="note" style="margin:6px 0 2px;">1회 복제 후</div>' + molHTML(model, 1) +
-                   '<div class="note" style="margin:8px 0 2px;">2회 복제 후</div>' + molHTML(model, 2);
-  }
-  var txt = modelVerdictText(model, ok1, ok2);
-  if (msTriedCount() >= 3){
-    txt += '<br><br>🏁 <b>세 모델을 모두 확인했어요.</b> 실제 결과와 1회·2회 모두 일치하는 것은 <b>반보존적 복제</b> 하나뿐 — ' +
-           '메셀슨과 스탈은 이렇게 DNA가 반보존적으로 복제된다는 것을 밝혔습니다.';
-  }
-  showFb('fb_ms', (ok1 && ok2) ? 'good' : 'warn', txt);
-}
-
 /* ════════════ 정리하기 · 복원 · 리셋 ════════════ */
 function toggleAns(ansId, btn){
   var ans = document.getElementById(ansId);
@@ -1493,7 +1267,6 @@ function restoreUI(){
     if (el2) el2.innerHTML = '🔎 자동 대조 완료 — 딸 DNA ①: <b>' + a.matched + ' / ' + a.total + '</b>쌍 ✅ · 딸 DNA ②: <b>' +
       b.matched + ' / ' + b.total + '</b>쌍 ✅ · 두 딸 DNA는 서로 같고 원래 DNA와도 같다 ✅';
   }
-  renderMS();
   if (!SELF_CHECK.ok){
     showFb('fb_stage', 'bad', '⚠️ 주형 서열 자기검사 실패 — 상보적이지 않은 자리: ' + SELF_CHECK.bad.join(', '));
   }

@@ -121,7 +121,13 @@ console.log('[1] 정적 구조');
   ok(/min-height:44px/.test(src), '버튼 최소 높이 44px 규약');
   ok(/font-size:16px/.test(src), '기준 폰트 16px');
   ok(/prefers-reduced-motion/.test(src), '움직임 줄이기 설정 대응');
-  ok(/var DRAFT_PASS/.test(src) && /id="draftGate"/.test(src), '미완성 잠금 장치가 있다');
+  /* ★2026-08-26 교사 검토 통과 — 학생에게 열었다.
+     다시 닫으려면 DRAFT_MODE 를 true 로 바꾸고 **아래 세 단언도 함께 뒤집을 것.** */
+  ok(/DRAFT_MODE = false/.test(src), '★잠금이 풀려 있다 — 학생이 바로 들어온다');
+  ok(S.document.documentElement.className.indexOf('unlocked') >= 0,
+     '★빈 저장소로 들어와도 잠금 화면이 뜨지 않는다');
+  ok(/var DRAFT_PASS/.test(src) && /id="draftGate"/.test(src),
+     '★잠금 장치 자체는 남아 있다 — 다시 닫을 때와 다음 활동이 그대로 복제해 쓴다');
   /* ★비밀번호는 **교사 지정 7856** 이다 (작업노트/git백업_커밋정책.md · 2026-08-18 지시).
      활동마다 다른 값을 쓰면 교사가 반마다 다른 번호를 외워야 한다.
      실제로 이 활동이 한때 '5815' 로 배포된 적이 있어(2026-08-26) 여기서 못 박는다. */
@@ -130,14 +136,20 @@ console.log('[1] 정적 구조');
   /* ★geungschool-hub.github.io 는 **모든 활동이 한 origin 을 쓴다** — localStorage 가 공유된다.
      그래서 잠금 키·상태 키에 활동 이름을 붙여야 서로 지우지 않는다. */
   ok(S.LS_KEY === 'meselson_sim_v1' && S.LS_KEY !== S.DRAFT_KEY, '상태 키도 이 활동 고유값이다');
-  /* ★처음 들어온 사람은 **잠겨 있어야 한다**(fail-closed).
-     빈 저장소로 시작한 S 는 잠금 스크립트를 돌린 뒤에도 unlocked 가 붙지 않아야 한다 —
-     이것이 「학생이 미완성본을 우연히 여는 것」을 실제로 막는 유일한 장치다. */
-  ok(S.document.documentElement.className.indexOf('unlocked') < 0,
-     '★DRAFT_MODE=true 이면 처음 들어온 사람에게 잠금 화면이 뜬다');
+  /* ★잠금을 다시 켰을 때 fail-closed 인지 — 장치 자체를 검사한다.
+     지금은 DRAFT_MODE=false 라 gate 스크립트를 직접 돌려 확인한다. */
   {
-    const U = makeSandbox({ 'meselson_sim_draft_ok': 'y' });
-    ok(U.document.documentElement.className.indexOf('unlocked') >= 0,
+    const vm2 = require('vm');
+    const box = { localStorage:{ getItem:() => null }, document:{ documentElement:{ className:'' } } };
+    vm2.createContext(box);
+    vm2.runInContext(gateJs.replace('DRAFT_MODE = false', 'DRAFT_MODE = true'), box);
+    ok(box.document.documentElement.className.indexOf('unlocked') < 0,
+       '★다시 잠그면 처음 들어온 사람에게 잠금 화면이 뜬다 (fail-closed)');
+    const box2 = { localStorage:{ getItem:k => (k === 'meselson_sim_draft_ok' ? 'y' : null) },
+                   document:{ documentElement:{ className:'' } } };
+    vm2.createContext(box2);
+    vm2.runInContext(gateJs.replace('DRAFT_MODE = false', 'DRAFT_MODE = true'), box2);
+    ok(box2.document.documentElement.className.indexOf('unlocked') >= 0,
        '한 번 푼 기기는 다시 묻지 않는다 (교사가 번호를 반복 입력하지 않게)');
   }
   ok(src.indexOf('🔄 처음부터 다시 하기') > 0, '다시 하기 버튼');

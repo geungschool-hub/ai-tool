@@ -1298,24 +1298,22 @@ var FK_STEPS = [
   '⑧ 아래쪽 중합효소는 되돌아와 새 프라이머에 붙는다',
   '⑨ 되돌아온 중합효소가 또 하나의 조각을 만든다',
   '⑩ 끝까지 되풀이한다',
-  '⑪ DNA 연결효소가 조각을 잇는다',
-  '⑫ 딸 DNA 2개 — 이름이 정해진다'
+  '⑪ DNA 연결효소가 조각을 잇는다'
 ];
 /* 국면 → 아직 붙어 있는 칸 수(=풀린 곳의 자리 번호). 단조 비증가 */
-var FK_FORK = [32, 24, 24, 24, 24, 24, 24, 16, 16, 16, 0, 0, 0];
+var FK_FORK = [32, 24, 24, 24, 24, 24, 24, 16, 16, 16, 0, 0];
 /* 국면 → 위쪽 새 가닥이 덮은 칸 [왼끝, 오른끝]. null 이면 없다 */
 var FK_NT = [null, null, null, null, null, [24,28], [24,28], [16,28], [16,28], [16,28],
-             [0,28], [0,28], [0,28]];
+             [0,28], [0,28]];
 /* 국면 → 아래쪽 작은 조각들 [[왼끝,오른끝], …] */
 var FK_NB = [[], [], [], [], [], [], [[27,31]], [[27,31]], [[27,31]], [[19,23],[27,31]],
-             [[3,7],[11,15],[19,23],[27,31]], [[3,7],[11,15],[19,23],[27,31]],
-             [[3,7],[11,15],[19,23],[27,31]]];
+             [[3,7],[11,15],[19,23],[27,31]], [[3,7],[11,15],[19,23],[27,31]]];
 /* 국면 → 중합효소가 있는 칸. -1 이면 무대에 없다
    ★★중합효소는 **늘 자기 가닥의 3′ 말단**에 있다 — 아직 아무것도 안 만들었으면 프라이머의 3′ 말단,
      만들고 있으면 그 조각의 3′ 말단. 「붙는다(④⑧) → 이동하며 만든다(⑤⑥⑨)」가 국면으로 갈려 있다.
    ★polT 는 한 번도 커지지 않고(연속), polB 는 ⑦에서 제자리에 머물다 ⑧에서 되돌아온다(불연속). */
-var FK_POLT = [-1, -1, -1, -1, 29, 24, 24, 16, 16, 16, 0, 0, 0];
-var FK_POLB = [-1, -1, -1, -1, 26, 26, 31, 31, 18, 23, 7, 7, 7];
+var FK_POLT = [-1, -1, -1, -1, 29, 24, 24, 16, 16, 16, 0, 0];
+var FK_POLB = [-1, -1, -1, -1, 26, 26, 31, 31, 18, 23, 7, 7];
 /* 프라이머가 나타나는 국면 (위 1개 · 아래 4개 — 교과서 49쪽 1-(3)) */
 var FK_PMR_TOP = 3;
 var FK_PMR_BOT = [3, 8, 10, 10];
@@ -1323,8 +1321,10 @@ var FK_ATTACH_PH = 4;   // ④ 중합효소가 프라이머에 붙기만 하는 
 var FK_FOLLOW_PH = 7;   // ⑦ 위쪽만 따라가는 국면
 var FK_RETURN_PH = 8;   // ⑧ 아래쪽이 되돌아와 새 프라이머에 붙는 국면 (새 가닥 0칸)
 var FK_REPEAT_PH = 10;  // ⑩ 남은 조각을 한꺼번에 되풀이하는 국면
-var FK_LIG_PH  = 11;    // DNA 연결효소가 이음매를 잇는 국면
-var FK_NAME_PH = 12;    // 선도 가닥 · 지연 가닥 이름이 공개되는 국면
+var FK_LIG_PH  = 11;    // DNA 연결효소가 이음매를 잇는 국면 (= 마지막 국면)
+/* ★2026-09-01 교사 지시로 「⑫ 딸 DNA 2개 — 이름이 정해진다」 국면을 통째로 뺐다.
+   무대에서는 선도/지연이라는 **이름을 주지 않는다** — 이름은 격자(③)의 가닥 이름표와
+   ④·⑤ 정리하기에서만 나온다. 검사 [11]이 무대에 그 두 낱말이 없음을 문다. */
 
 var FK_CAP = [
   '두 가닥이 염기쌍으로 붙어 있다. 실제 DNA는 꼬여 있으나, 두 가닥의 <b>방향</b>을 보기 쉽도록 사다리 모양으로 폈다. 이 상태에서는 안쪽의 염기가 드러나지 않아 새 가닥을 만들 수 없다.',
@@ -1338,16 +1338,17 @@ var FK_CAP = [
   '아래쪽 중합효소는 <b>풀린 곳으로 되돌아와</b> 새로 놓인 프라이머에 붙는다. 앞서 만들던 조각은 그 자리에 남는다.',
   '되돌아온 중합효소가 다시 오른쪽으로 이동하며 <b>또 하나의 조각</b>을 만든다.',
   '끝까지 되풀이했다. 프라이머가 <b>위쪽 1개 · 아래쪽 4개</b>로 다르다 — 아래쪽은 조각마다 새로 시작했기 때문이다.',
-  '<b>DNA 연결효소</b>가 조각 사이의 이음매를 이어 하나의 긴 가닥으로 만든다.',
-  '끊김 없이 이어진 쪽이 <b>선도 가닥</b>, 조각으로 만들어진 뒤 이어 붙인 쪽이 <b>지연 가닥</b>이다.'
+  '<b>DNA 연결효소</b>가 조각 사이의 이음매를 이어 하나의 긴 가닥으로 만든다. 이로써 <b>딸 DNA 2개</b>가 완성되었다.'
 ];
 
 function aniLast(){ return FK_STEPS.length - 1; }   /* ★상수가 아니라 함수 */
 
-/* ★볼 수 있는 마지막 국면 — 이름 공개 국면(⑩)만 잠근다.
-   제작 표준: 「용어를 미리 주지 않는다 — 선도/지연은 조작이 끝난 뒤 공개」.
-   ③에서 조각을 이어야 열리며, 그 시점은 격자의 「(지연 가닥)」 이름표가 뜨는 때와 정확히 같다.
-   ⑨까지는 처음부터 열려 있다 — 갈라짐·프라이머·두 방향의 합성은 이름 없이도 다 보인다. */
+/* ★볼 수 있는 마지막 국면 — 마지막 국면(⑪ 연결효소)만 잠근다.
+   제작 표준: 「직접 해 본 뒤에 본다」. ③에서 🔗 조각을 이어야 열리며,
+   그 시점은 격자에 「(지연 가닥)」 이름표가 뜨는 때와 정확히 같다.
+   ⑩까지는 처음부터 열려 있다 — 갈라짐·프라이머·두 방향의 합성은 다 보인다.
+   ★2026-09-01: 예전에는 이 잠금이 「선도/지연 이름 공개」를 막는 것이었으나,
+     그 국면을 뺐으므로 이제는 마지막 국면 자체를 막는다. */
 function fkCap(){
   if (teacherOpen || state.ligated) return aniLast();
   return aniLast() - 1;
@@ -1368,8 +1369,7 @@ function fkFrame(ph){
     polB: FK_POLB[p],
     pmrTop: p >= FK_PMR_TOP,
     pmrBot: pmrBot,
-    ligated: p >= FK_LIG_PH,
-    named: p >= FK_NAME_PH
+    ligated: p >= FK_LIG_PH
   };
 }
 
@@ -1443,9 +1443,7 @@ function fkLayout(ph){
       pol:   (f.polT >= 0 || f.polB >= 0) ? 1 : 0,
       frag:  f.nbRanges.length > 0 ? 1 : 0,
       count: f.ph >= 8 ? 1 : 0,
-      lig:   f.ligated ? 1 : 0,
-      lead:  f.named ? 1 : 0,
-      lag:   f.named ? 1 : 0
+      lig:   f.ligated ? 1 : 0
     },
     count: { pmrTop: f.pmrTop ? 1 : 0, pmrBot: f.pmrBot.length },
     step: FK_STEPS[f.ph],
@@ -1588,11 +1586,6 @@ function fkFade(id, op){
   var el = document.getElementById(id);
   if (el) el.setAttribute('opacity', String(op));
 }
-function setTxt(id, t){
-  var el = document.getElementById(id);
-  if (el && el.textContent !== t) el.textContent = t;
-}
-
 function fkApplyPhase(ph, prev){
   var L = fkLayout(ph), i, k;
   var stg = fkStagger(ph, prev);
@@ -1631,8 +1624,6 @@ function fkApplyPhase(ph, prev){
   fkFade('fk_lb_nT', L.labels.newT ? 1 : 0);
   fkFade('fk_lb_nB', L.labels.frag ? 1 : 0);
   /* ★이름 공개는 자리를 새로 만들지 않고 있던 이름표의 글자를 바꾼다 */
-  setTxt('fk_lb_nT', L.labels.lead ? '선도 가닥' : '새 가닥');
-  setTxt('fk_lb_nB', L.labels.lag  ? '지연 가닥' : '새 가닥');
   fkFade('fk_lb_pmr', L.labels.pmr);   fkFade('fk_lg_pmr',  L.labels.pmr);
   fkFade('fk_lb_pol', L.labels.pol);   fkFade('fk_lg_pol',  L.labels.pol);
   fkFade('fk_lb_frag', L.labels.frag); fkFade('fk_lg_frag', L.labels.frag);
@@ -1651,7 +1642,7 @@ function fkApplyPhase(ph, prev){
   setDisabled('ani_last',  L.ph >= fkCap());
   var gl = document.getElementById('ani_gate');
   if (gl) gl.innerHTML = (fkCap() < aniLast() && L.ph >= fkCap())
-    ? '🔒 마지막 단계에서 <b>두 가닥의 이름</b>이 정해진다 — ③에서 <b>🔗 조각을 이은 뒤</b>에 열린다.' : '';
+    ? '🔒 마지막 단계는 <b>③에서 🔗 조각을 이은 뒤</b>에 열린다.' : '';
 }
 
 function fkRender(){

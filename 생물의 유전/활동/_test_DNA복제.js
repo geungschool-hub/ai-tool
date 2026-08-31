@@ -1138,7 +1138,7 @@ console.log('[10] 연결 순서 가드');
 console.log('[11] 연출 무대 대본');
 {
   const n = S.FK_STEPS.length;
-  eq(n, 13, '국면 13개');
+  eq(n, 12, '국면 12개');
   eq(S.FK_CAP.length, n, '국면마다 캡션이 하나씩');
   eq(S.FK_FORK.length, n, 'FK_FORK 길이');
   eq(S.FK_NT.length, n, 'FK_NT 길이');
@@ -1146,7 +1146,7 @@ console.log('[11] 연출 무대 대본');
   eq(S.FK_POLT.length, n, 'FK_POLT 길이');
   eq(S.FK_POLB.length, n, 'FK_POLB 길이');
   eq(typeof S.aniLast, 'function', '★aniLast 는 상수가 아니라 함수');
-  eq(S.aniLast(), n - 1, 'aniLast() = 12');
+  eq(S.aniLast(), n - 1, 'aniLast() = 11');
   {
     let mono = true, mult = true;
     for (let i = 0; i < n; i++){
@@ -1193,16 +1193,19 @@ console.log('[11] 연출 무대 대본');
   for (let k = 1; k < S.SEG_COUNT; k++){
     ok(S.FK_PMR_BOT[k] >= S.FK_PMR_BOT[k-1], '조각 ' + (k+1) + ' 은 조각 ' + k + ' 보다 늦게 시작한다');
   }
-  eq(S.FK_NAME_PH, n - 1, '선도/지연 이름은 마지막 국면에서만 공개');
-  ok(S.FK_LIG_PH < S.FK_NAME_PH, '연결효소가 이름보다 먼저 나온다');
-  // ★국면 이름·캡션에 「선도/지연」이 미리 새어 나오지 않는가
-  for (let ph = 0; ph < S.FK_NAME_PH; ph++){
+  /* ★2026-09-01 교사 지시 — 「⑫ 딸 DNA 2개 — 이름이 정해진다」 국면을 통째로 뺐다.
+     무대는 **끝까지 선도/지연이라는 이름을 주지 않는다.** 되살아나면 여기서 잡힌다. */
+  eq(S.FK_NAME_PH, undefined, '★이름 공개 국면 상수가 없다 (국면 자체가 사라졌다)');
+  eq(S.FK_LIG_PH, n - 1, '연결효소 국면이 곧 마지막 국면이다');
+  ok(!/이름이 정해진다|이름이 붙는다|이름을 붙인다/.test(S.FK_STEPS.join(' ')),
+     '★국면 이름에 「이름이 정해진다」류 표현이 없다');
+  for (let ph = 0; ph <= S.aniLast(); ph++){
     ok(S.FK_STEPS[ph].indexOf('선도') < 0 && S.FK_STEPS[ph].indexOf('지연') < 0,
        'ph' + ph + ' 국면 이름에 선도/지연 없음');
     ok(S.FK_CAP[ph].indexOf('선도') < 0 && S.FK_CAP[ph].indexOf('지연') < 0,
        'ph' + ph + ' 캡션에 선도/지연 없음');
   }
-  ok(S.FK_CAP[S.FK_NAME_PH].indexOf('선도 가닥') > 0, '마지막 국면 캡션에서 비로소 이름을 준다');
+  ok(S.FK_CAP[S.aniLast()].indexOf('딸 DNA 2개') > 0, '마지막 캡션이 딸 DNA 2개 완성으로 맺는다');
   /* ★예외 없이 「~다」 — 사다리로 바꾸며 '감긴 이중나선'이 사라져 /선$/ 특례도 걷어냈다 */
   ok(S.FK_STEPS.every(t => /다$/.test(t.trim())), '국면 이름이 모두 설명체로 끝난다');
 }
@@ -1386,12 +1389,27 @@ console.log('[12] 연출 무대 레이아웃');
     ok(l.lig.every(o => o.y > l.polT.y), '★연결효소는 아래쪽(지연) 대역에만 나온다');
     eq(l.lig.map(o => o.col).sort((x,y) => x - y).join(','), '8,16,24', '이음매 자리 = 8·16·24번');
   }
-  for (let ph = 0; ph < S.FK_NAME_PH; ph++){
-    eq(L(ph).labels.lead, 0, 'ph' + ph + ' 선도 이름 비공개');
-    eq(L(ph).labels.lag, 0, 'ph' + ph + ' 지연 이름 비공개');
+  /* ★무대는 어느 국면에서도 선도/지연 이름을 주지 않는다 (2026-09-01 교사 지시) */
+  for (let ph = 0; ph <= last; ph++){
+    eq(L(ph).labels.lead, undefined, 'ph' + ph + ' 선도 이름표 자체가 없다');
+    eq(L(ph).labels.lag, undefined, 'ph' + ph + ' 지연 이름표 자체가 없다');
   }
-  eq(L(S.FK_NAME_PH).labels.lead, 1, '마지막 국면에 선도 이름 공개');
-  eq(L(S.FK_NAME_PH).labels.lag, 1, '마지막 국면에 지연 이름 공개');
+  /* ★grep 이 아니라 실제로 그려 보고 문다 — 어느 함수에서 이름을 넣든 걸린다 */
+  {
+    const W = makeSandbox(); W.init();
+    for (let i = 0; i < 5; i++) W.badgeTap();      // 잠금까지 풀어 전 국면을 그린다
+    let leaked = [];
+    for (let ph = 0; ph <= W.aniLast(); ph++){
+      W.fkApplyPhase(ph, ph - 1);
+      ['fk_lb_nT','fk_lb_nB','fk_lb_tT','fk_lb_tB','ani_cap','ani_step'].forEach(id => {
+        const e = W._store[id];
+        if (!e) return;
+        const t = String(e.textContent || '') + String(e.innerHTML || '');
+        if (t.indexOf('선도') >= 0 || t.indexOf('지연') >= 0) leaked.push('ph' + ph + ':' + id);
+      });
+    }
+    eq(leaked.join(','), '', '★무대를 실제로 그려도 선도/지연 이름이 한 번도 안 나온다');
+  }
   eq(L(0).labels.tmpl, 0, 'ph0 에는 주형 이름표도 없다');
   eq(L(2).labels.tmpl, 1, 'ph2 에서 주형 이름표가 붙는다');
   eq(S.fkLayout(-5).ph, 0, '음수 국면은 0 으로');
@@ -1431,15 +1449,15 @@ console.log('[13] 연출 무대 SVG · 잠금');
     eq(open, close, 'SVG g 여닫기 균형 (' + open + ')');
   }
   ok(/id="fkStage"[\s\S]{0,200}aria-label="/.test(src), '무대에 aria-label 이 있다');
-  // ★이름 공개 국면 잠금 — 격자와 시점이 같다
+  // ★마지막 국면 잠금 — 격자의 「(지연 가닥)」 이름표와 열리는 시점이 같다
   {
     const T = makeSandbox(); T.init();
-    eq(T.fkCap(), T.aniLast() - 1, '처음에는 마지막(이름 공개) 국면이 잠겨 있다');
+    eq(T.fkCap(), T.aniLast() - 1, '처음에는 마지막 국면이 잠겨 있다');
     T.aniGo(99);
     eq(T.ani.ph, T.aniLast() - 1, '끝까지 단추는 잠긴 국면 앞에서 멈춘다');
     T.aniGo(1);
     eq(T.ani.ph, T.aniLast() - 1, '다음 단추도 잠금을 넘지 못한다');
-    eq(T.fkLayout(T.ani.ph).labels.lead, 0, '잠긴 동안에는 선도 이름이 안 뜬다');
+    ok(T.FK_STEPS[T.ani.ph].indexOf('연결효소') < 0, '잠긴 동안에는 연결효소 국면에 닿지 못한다');
     ok(html(T,'ani_gate').indexOf('이은 뒤') > 0, '잠금 안내가 뜬다');
     T.aniGo(-99);
     eq(T.ani.ph, 0, '처음부터 단추');
@@ -1451,7 +1469,8 @@ console.log('[13] 연출 무대 SVG · 잠금');
     ok(txt(U,'lab_newBot').indexOf('지연 가닥') > 0, '★같은 시점에 격자에도 지연 가닥 이름이 뜬다');
     U.aniGo(99);
     eq(U.ani.ph, U.aniLast(), '마지막 국면까지 간다');
-    eq(U.fkLayout(U.ani.ph).labels.lead, 1, '마지막 국면에서 선도 이름 공개');
+    ok(U.FK_STEPS[U.ani.ph].indexOf('연결효소') > 0, '열린 마지막 국면이 연결효소 국면이다');
+    ok(U.FK_CAP[U.ani.ph].indexOf('딸 DNA 2개') > 0, '마지막 캡션이 딸 DNA 2개로 맺는다');
     eq(U._store['ani_next'].disabled, true, '마지막 국면에서 다음 단추 비활성');
     eq(html(U,'ani_gate'), '', '열린 뒤에는 잠금 안내가 사라진다');
     const V = makeSandbox(); V.init();

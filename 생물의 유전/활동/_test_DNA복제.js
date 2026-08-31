@@ -14,9 +14,12 @@ const path = require('path');
 const HTML = path.join(__dirname, '1-5_DNA복제_모의실험.html');  // ★USB 드라이브 문자는 PC마다 다르다 — 경로를 박지 말 것
 const src = fs.readFileSync(HTML, 'utf8');
 const scriptTags = src.match(/<script[\s>]/g) || [];
-const m = src.match(/<script>([\s\S]*?)<\/script>\s*<\/body>/);
-if (!m) { console.error('FAIL: script 블록을 못 찾음'); process.exit(1); }
-const js = m[1].replace(/^\s*'use strict';/, '');
+/* ★<script> 블록이 2개다 — 앞은 <head> 의 미완성 잠금, 뒤가 본체.
+   본체만 vm 에 올린다(맨 앞 'use strict'; 를 벗겨야 최상위 var/function 이 전역으로 노출된다). */
+const BLOCKS = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x => x[1]);
+if (BLOCKS.length !== 2) { console.error('FAIL: script 블록이 2개가 아니다 (' + BLOCKS.length + ')'); process.exit(1); }
+const gateJs = BLOCKS[0];
+const js = BLOCKS[1].replace(/^\s*'use strict';/, '');
 
 let pass = 0, fail = 0;
 function ok(cond, name){ if (cond) { pass++; } else { fail++; console.error('  X FAIL: ' + name); } }
@@ -97,6 +100,7 @@ function makeSandbox(opt){
   const sb = {
     console, Math, JSON, Object, Array, String, Number, Boolean, isNaN, parseInt, parseFloat,
     document:{
+      documentElement:{ className:'unlocked' },
       getElementById(id){
         if (store[id]) return store[id];
         missing.push(id);                       // HTML에 없는 id를 찾았다 = 오타 가능
@@ -113,7 +117,9 @@ function makeSandbox(opt){
       _mem:mem
     },
     confirm(){ rec.confirms++; return rec.confirmRet; },
-    location:{ reload(){ rec.reloads++; } }
+    location:{ reload(){ rec.reloads++; } },
+    /* <head> 잠금 스크립트가 정의하는 전역 — 본체가 참조하므로 미리 넣어 준다 */
+    DRAFT_MODE:false, DRAFT_PASS:'7856', DRAFT_KEY:'dna_sim_draft_ok'
   };
   sb.window = sb;
   vm.createContext(sb);
@@ -158,11 +164,17 @@ function emptyUnderBotBars(S){
   botBars(S).forEach(b => { for (let i = b.from; i <= b.to; i++) if (!arr[i]) empty.push(i); });
   return empty.join(',');
 }
+// 지금 필요한 프라이머를 모두 놓는다(교과서 47쪽: 3′ 말단이 없으면 시작하지 못한다)
+function ensurePrimers(S){
+  let g = 0;
+  while (S.primerNeed(S.state.unwound, S.state.prim) && g++ < 10) S.placePrimer();
+}
 function fillOne(S, strand){
   const arr = (strand === 'top') ? S.state.newTop : S.state.newBot;
   const tmpl = (strand === 'top') ? S.TOP_TEMPLATE : S.BOT_TEMPLATE;
   const i = S.nextIndexFor(strand, arr, S.state.unwound);
   if (i < 0) return -1;
+  if (!S.primerCheck(strand, i, S.state.prim).ok) ensurePrimers(S);
   S.selectStrand(strand);
   S.placeBase(COMP[tmpl.charAt(i)]);           // 테스트가 계산한 정답 염기
   return i;
@@ -171,6 +183,8 @@ function fillOne(S, strand){
 function playManual(S){
   let guard = 0;
   while (guard++ < 400){
+    /* ★프라이머가 없으면 어느 칸에도 붙지 않는다 — 교과서 47쪽 */
+    if (S.primerNeed(S.state.unwound, S.state.prim)){ S.placePrimer(); continue; }
     const t = S.nextTopIndex(S.state.newTop, S.state.unwound);
     const b = S.nextBotIndex(S.state.newBot, S.state.unwound);
     if (t < 0 && b < 0){
@@ -186,13 +200,14 @@ const S = makeSandbox();
 
 // ══════════════════ [1] 정적 구조 무결성 ══════════════════
 console.log('[1] 정적 구조 무결성');
-eq(scriptTags.length, 1, 'script 블록 1개');
+eq(scriptTags.length, 2, 'script 블록 2개(미완성 잠금 + 본체)');
+ok(/DRAFT_MODE/.test(gateJs) && /DRAFT_PASS\s*=\s*'7856'/.test(gateJs), '잠금 비밀번호는 7856(교사 지정 공통값)');
+ok(/DRAFT_KEY\s*=\s*'dna_sim_draft_ok'/.test(gateJs), '★잠금 키에 활동 이름이 붙어 있다(허브는 한 origin)');
+ok(/localStorage/.test(gateJs) && /unlocked/.test(gateJs), '잠금 해제 표시는 <html> class 로 건다');
 {
-  /* ★외부 URL 은 **자매 활동 안내 링크 하나뿐**이어야 한다.
-     「더 해보기 — 메셀슨·스탈」 절을 별도 활동으로 옮기며 생긴 유일한 바깥 주소다(2026-08-26). */
+  /* ★외부 URL 이 **하나도 없어야** 한다 — 안내 카드를 지우며 마지막 바깥 주소도 사라졌다(2026-08-31) */
   const urls = src.match(/https?:\/\/[^"'\s)]+/g) || [];
-  ok(urls.length === 1 && urls[0].indexOf('geungschool-hub.github.io/meselson-sim') >= 0,
-     '★외부 URL 은 자매 활동 링크 하나뿐 (실제: ' + (urls.join(', ') || '없음') + ')');
+  eq(urls.length, 0, '★외부 URL 없음 (실제: ' + (urls.join(', ') || '없음') + ')');
 }
 ok(!/<link|@import|<img|<iframe/.test(src), '외부 자원 태그 없음');
 {
@@ -436,7 +451,7 @@ ok(S.strandName('top') !== S.strandName('bot'), 'strandName 구분');
   ok(S.wrongEchoText(3, false, 20).indexOf('3회') > 0, 'wrongEcho: 오답 횟수 반영');
   ok(S.wrongEchoText(0, false, 20).indexOf('0회') > 0, 'wrongEcho: 0회 별도 문구');
   ok(S.wrongEchoText(0, false, 20).indexOf('무엇을 기준') > 0, 'wrongEcho: 0회면 생각거리 제시');
-  ok(S.wrongEchoText(0, false, 0).indexOf('붙여 보지 않았어요') > 0, 'wrongEcho: 시작 전에는 별도 안내');
+  ok(S.wrongEchoText(0, false, 0).indexOf('붙여 보지 않았다') > 0, 'wrongEcho: 시작 전에는 별도 안내');
   ok(S.wrongEchoText(0, false, 0).indexOf('0회') < 0, 'wrongEcho: 시작 전에 「0회 — 완벽」이라 하지 않음');
   ok(S.wrongEchoText(1, false, 0).indexOf('1회') > 0, 'wrongEcho: 붙기 전에 틀린 경우도 횟수를 알린다');
   ok(S.wrongEchoText(0, true, 64).indexOf('자동 합성') > 0, 'wrongEcho: 자동 합성 사용을 실제로 안내(죽은 코드 제거)');
@@ -466,11 +481,12 @@ console.log('[4] 메셀슨·스탈 — 옮겨 갔는가');
   ok(JSON.stringify(S.mergeState({ ms:{ pick:'semi' } })).indexOf('"ms"') < 0,
      '★옛 저장분에 ms 가 있어도 되살아나지 않는다');
 
-  /* 대신 안내가 있다 — 학생이 이어서 갈 자리를 잃으면 안 된다 */
-  ok(/이어서 할 활동 — 메셀슨과 스탈/.test(src), '★이어서 할 활동 안내가 있다');
-  ok(/geungschool-hub\.github\.io\/meselson-sim/.test(src), '★안내가 새 활동 주소를 가리킨다');
-  ok(/target="_blank"[\s\S]{0,40}rel="noopener"|rel="noopener"[\s\S]{0,40}target="_blank"/.test(src),
-     '새 탭으로 열되 rel="noopener" 를 붙였다');
+  /* ★안내 카드도 지웠다(교사 지시 2026-08-31) — 메셀슨·스탈은 이 활동보다 **먼저** 오므로
+     「이어서 할 활동」으로 걸면 배우는 차례가 거꾸로 안내된다. 링크·본문이 통째로 없어야 한다. */
+  const srcVisible = src.replace(/<!--[\s\S]*?-->/g, '');   // 되살리지 말라는 경고 주석은 남겨 둔다
+  ['이어서 할 활동', '메셀슨', 'meselson', '스탈'].forEach(w =>
+    ok(srcVisible.indexOf(w) < 0, '★「' + w + '」 이 본문에 없다'));
+  ok(!/<a/.test(src), '★바깥으로 나가는 <a> 태그가 없다');
   /* 말투 — 옮기면서 옛 절의 친근체도 함께 사라졌다 */
   ['골라 보자', '많다는 뜻이에요', '확인했어요'].forEach(w =>
     ok(src.indexOf(w) < 0, '★옛 절의 친근체 「' + w + '」가 사라졌다'));
@@ -523,14 +539,30 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   const M = makeSandbox();
   M.init();
   eq(M.stepDone(), 0, '초기 진행 0');
-  eq(txt(M, 'progress'), '진행 0 / 4', '배지 0 / 4');
+  eq(txt(M, 'progress'), '진행 0 / 5', '배지 0 / 5');
+  /* ★카드 ③ 은 카드 ②의 결론 문항에 답해야 열린다 */
+  eq(M.card3Open(), false, '시작 시 ③ 조작 카드 잠김');
+  eq(M._store['lock3'].style.display, 'block', '③ 잠금 안내 표시');
+  M.pickQ('d1', M.QDEF.d1.a);
+  eq(M.card3Open(), true, 'd1 정답 → ③ 열림');
+  /* ★★applyLocks 는 잠겼을 때 한 방향으로만 끈다 — 열린 뒤 되살려 주지 않으면 단추가 죽은 채로 남는다.
+     실제로 pick_top·pick_bot 이 그랬다(교사 신고 2026-08-31). 열린 직후 꺼져 있어도 되는 단추를
+     **이름으로 못박는다** — 여기 없는 단추가 꺼져 있으면 되살리는 곳을 빠뜨린 것이다. */
+  {
+    const GATED = ['btnUnwind','btnUnwindAll','btnPrimer','nb_A','nb_T','nb_G','nb_C',
+                   'btnRemove','btnAuto','btnLigate','pick_top','pick_bot'];
+    const off = GATED.filter(id => M._store[id] && M._store[id].disabled);
+    eq(off.sort().join(','), ['btnAuto','btnLigate','btnPrimer'].sort().join(','),
+       '★열린 직후 꺼져 있어도 되는 단추는 셋뿐 (실제: ' + (off.join(',') || '없음') + ')');
+  }
+  eq(M.stepDone(), 1, 'd1 정답으로 진행 1');
   eq(M._store['btnVerify'].disabled, true, '시작 시 딸 DNA 확인 버튼 잠김');
   eq(M._store['btnLigate'].disabled, true, '시작 시 연결효소 버튼 잠김');
   eq(M._store['btnAuto'].disabled, true, '시작 시 자동 합성 잠김');
   eq(M._store['resultLocked'].style.display, 'block', '③ 잠금 안내 표시');
   eq(M._store['arrowTop'].style.display, 'none', '화살표 막대 숨김');
   eq(botBars(M).length, 0, '시작 시 지연 가닥 조각 막대 0개');
-  ok(html(M,'wrongEcho').indexOf('붙여 보지 않았어요') > 0, '시작 시 정리하기 3 에코 = 아직 시작 전 안내');
+  ok(html(M,'wrongEcho').indexOf('붙여 보지 않았다') > 0, '시작 시 정리하기 3 에코 = 아직 시작 전 안내');
   eq(M._store['nb_A'].disabled, false, '시작 시 염기 단추 활성');
   eq(cellCls(M,'newTop',31).indexOf('locked') > 0, true, '안 풀린 칸은 locked');
   eq(txt(M,'c_tmplTop_0'), M.TOP_TEMPLATE.charAt(0), '주형 칸에 염기 표시');
@@ -552,11 +584,31 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   M.unwind();
   eq(M.state.unwound, 8, '풀기 8칸');
   eq(M.openedSegments(M.state.unwound), 1, '열린 조각 1');
-  eq(txt(M,'c_bond_31'), '', '열린 자리에서 결합 해제');
-  eq(txt(M,'c_bond_23'), '‖', '아직 감긴 자리는 결합 유지');
+  ok(cls(M,'c_bond_31').indexOf('cut') > 0, '열린 자리에서 결합 해제(cut)');
+  ok(cls(M,'c_bond_23').indexOf('cut') < 0, '아직 감긴 자리는 결합 유지');
+  eq(txt(M,'c_bond_23'), '‖', '감긴 자리에 결합 기호');
+  /* ★열린 칸은 위아래로 벌어진다 — 「단일가닥으로 나뉜다」가 격자에서도 보인다 */
+  eq(M._store['c_tmplTop_31'].style.top, '-10px', '풀린 끝 칸의 위 주형이 10px 올라간다');
+  eq(M._store['c_tmplBot_31'].style.top, '10px',  '풀린 끝 칸의 아래 주형이 10px 내려간다');
+  eq(M._store['c_tmplTop_0'].style.top, '0px',    '감긴 칸은 벌어지지 않는다');
   ok(cellCls(M,'newTop',31).indexOf('openslot') > 0, '31번은 빈 자리로 열림');
   ok(cellCls(M,'newTop',23).indexOf('locked') > 0, '23번은 아직 잠김');
   ok(M.state.sel && sel(M).strand === 'top' && sel(M).idx === 31, '자동 선택 = 위 31번');
+  /* ★프라이머 규칙 — 3′ 말단을 내어 주는 것이 없으면 중합효소는 시작하지 못한다 (교과서 47쪽) */
+  {
+    eq(M.primerCounts(M.state.prim).top, 0, '아직 프라이머 0개');
+    eq(M.primerCheck('top', 31, M.state.prim).reason, 'noprimer', '프라이머 없는 자리 = noprimer');
+    M.placeBase(COMP[M.TOP_TEMPLATE.charAt(31)]);
+    eq(M.state.newTop[31], null, '★프라이머 없이는 옳은 염기도 붙지 않는다');
+    eq(M.state.wrong, 0, '프라이머 문제는 오답 카운트가 아니다');
+    ok(html(M,'fb_stage').indexOf('프라이머') > 0, '안내: 프라이머를 먼저 놓으시오');
+    M.placePrimer();
+    eq(M.primerCounts(M.state.prim).top, 1, '위 가닥 프라이머 1개');
+    eq(M._store['pmr_top'].style.display, 'flex', '프라이머 캡슐 표시');
+    eq(M._store['pmr_top'].style.left, (M.primerSlotTop() * M.CELL_W) + 'px', '프라이머 캡슐 자리 = 29번 칸');
+    eq(M.primerCheck('top', 31, M.state.prim).ok, true, '프라이머를 놓으면 붙일 수 있다');
+    ok(html(M,'primerCount').indexOf('위쪽 새 가닥 <b>1개</b>') > 0, '프라이머 개수 표시');
+  }
   eq(html(M,'frag_0').length >= 0, true, '조각1 라벨 생성');
   eq(txt(M,'frag_0'), '조각 1', '열린 조각 라벨 표시');
   eq(txt(M,'frag_1'), '', '아직 열리지 않은 조각은 빈 라벨');
@@ -588,6 +640,8 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   ok(html(M,'fb_stage').indexOf('3′ 말단') > 0, '거부 안내: 3′ 말단 규칙');
   ok(html(M,'fb_stage').indexOf('31번') > 0, '거부 안내: 붙을 수 있는 자리 제시');
   // 오답 경로 ④ — 아래 가닥을 오른쪽 끝부터 시도
+  M.placePrimer();     /* 아래 조각 1의 프라이머 */
+  eq(M.primerCounts(M.state.prim).bot, 1, '아래 조각1 프라이머 1개');
   M.tapCell('bot', 31);
   ok(!(sel(M).strand === 'bot' && sel(M).idx === 31), '아래 가닥 31번 거부');
   ok(html(M,'fb_stage').indexOf('25번') > 0, '아래 가닥은 24번(=25번 자리)부터');
@@ -649,8 +703,15 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(M.arrStr(M.state.newTop), M.BOT_TEMPLATE, '수동 결과: 새 가닥① = 아래 주형 서열');
   eq(M.arrStr(M.state.newBot), M.TOP_TEMPLATE, '수동 결과: 새 가닥② = 위 주형 서열');
   eq(M.fragmentsDoneCount(M.state.newBot), 4, '조각 4개 완성');
-  eq(M.stepDone(), 2, '진행 2 (끝까지 풀기 + 위 가닥 완성)');
-  eq(txt(M,'progress'), '진행 2 / 4', '배지 2 / 4');
+  eq(M.stepDone(), 2, '진행 2 (d1 + 끝까지 풀기)');
+  eq(txt(M,'progress'), '진행 2 / 5', '배지 2 / 5');
+  /* ★프라이머는 선도 1개 · 지연 4개 — 교과서 49쪽 1-(3) */
+  eq(M.primerCounts(M.state.prim).top, 1, '★선도 가닥 프라이머 1개');
+  eq(M.primerCounts(M.state.prim).bot, 4, '★지연 가닥 프라이머 4개');
+  ok(html(M,'primerCount').indexOf('조각마다') > 0, '개수가 다른 까닭을 글로도 적는다');
+  for (let k = 0; k < M.SEG_COUNT; k++){
+    eq(M._store['pmr_bot_' + k].style.left, (M.primerSlotBot(k) * M.CELL_W) + 'px', '아래 프라이머 ' + (k+1) + ' 자리');
+  }
   eq(txt(M,'lab_newTop'), '새 가닥 ① (선도 가닥)', '위 가닥 완성 → 선도 가닥 이름 공개');
   eq(txt(M,'lab_newBot'), '새 가닥 ②', '연결 전에는 지연 가닥 이름 비공개');
   ok(cellCls(M,'newBot',24).indexOf('seam') > 0, '연결 전 이음새 표시');
@@ -685,7 +746,10 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   M.ligate();
   eq(M.state.ligated, true, '연결효소 작동');
   eq(M.stepDone(), 3, '진행 3');
-  eq(txt(M,'progress'), '진행 3 / 4', '배지 3 / 4');
+  eq(txt(M,'progress'), '진행 3 / 5', '배지 3 / 5');
+  for (let k = 0; k < M.SEG_COUNT - 1; k++){
+    eq(M._store['lig_' + k].style.display, 'block', 'DNA 연결효소 마름모 ' + (k+1) + ' 표시');
+  }
   eq(txt(M,'lab_newBot'), '새 가닥 ② (지연 가닥)', '연결 후 지연 가닥 이름 공개');
   ok(cellCls(M,'newBot',24).indexOf('joined') > 0, '이음새 → 연결 표시로 전환');
   ok(cellCls(M,'newBot',24).indexOf('seam') < 0, '이음새 클래스 제거');
@@ -711,8 +775,14 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   // 딸 DNA 확인
   M.verifyDaughters();
   eq(M.state.verified, true, '딸 DNA 확인 성공');
-  eq(M.stepDone(), 4, '진행 4');
-  eq(txt(M,'progress'), '진행 4 / 4', '배지 4 / 4');
+  eq(M.stepDone(), 3, '확인만으로는 진행이 오르지 않는다(결론 문항이 남아 있다)');
+  M.pickQ('d2', M.QDEF.d2.a);
+  eq(M.stepDone(), 4, '진행 4 (d2)');
+  eq(M.card5Open(), false, 'd3 전에는 💪 잠김');
+  M.pickQ('d3', M.QDEF.d3.a);
+  eq(M.stepDone(), 5, '진행 5 / 5');
+  eq(txt(M,'progress'), '진행 5 / 5', '배지 5 / 5');
+  eq(M.card5Open(), true, 'd3 정답 → 💪 열림');
   eq(M._store['resultBody'].style.display, 'block', '결과 영역 공개');
   ok(html(M,'dgtCheck').indexOf('32 / 32') > 0, '자동 대조 32/32');
   ok(html(M,'dgtCheck').indexOf('같다 ✅') > 0, '두 딸 DNA가 같다는 판정');
@@ -759,10 +829,10 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(M.state.chk.chk2, true, '체크박스 저장');
 
   // HTML에 없는 id를 만진 적이 없어야(오타 방지)
-  eq(M._missing.filter(id => !/^(c_|frag_)/.test(id)).join(','), '', 'getElementById 오타 없음');
+  eq(M._missing.filter(id => !/^(c_|frag_|pmr_|lig_|fk_)/.test(id)).join(','), '', 'getElementById 오타 없음');
 
   // ── localStorage 저장 → 새 컨텍스트 복원 ──
-  const raw = M.localStorage._mem['dna_sim_v1'];
+  const raw = M.localStorage._mem['dna_sim_v2'];
   ok(!!raw, 'localStorage 저장됨');
   const saved = JSON.parse(raw);
   eq(saved.unwound, 32, '저장값: 풀린 길이');
@@ -771,7 +841,7 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(saved.wrong, 1, '저장값: 오답 수');
   ok(!('ms' in saved), '★저장 blob 에 ms 칸이 없다 (메셀슨은 별도 활동으로 옮겼다)');
 
-  const R = makeSandbox({ seed:{ 'dna_sim_v1': raw } });
+  const R = makeSandbox({ seed:{ 'dna_sim_v2': raw } });
   R.init();
   eq(R.state.unwound, 32, '복원: 풀린 길이');
   eq(R.arrStr(R.state.newTop), R.BOT_TEMPLATE, '복원: 새 가닥①');
@@ -779,8 +849,10 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(R.state.ligated, true, '복원: 연결 상태');
   eq(R.state.verified, true, '복원: 확인 상태');
   eq(R.state.wrong, 1, '복원: 오답 수');
-  eq(R.stepDone(), 4, '복원: 진행 4');
-  eq(txt(R,'progress'), '진행 4 / 4', '복원: 배지 4 / 4');
+  eq(R.stepDone(), 5, '복원: 진행 5');
+  eq(txt(R,'progress'), '진행 5 / 5', '복원: 배지 5 / 5');
+  eq(R.primerCounts(R.state.prim).top, 1, '복원: 선도 프라이머 1개');
+  eq(R.primerCounts(R.state.prim).bot, 4, '복원: 지연 프라이머 4개');
   eq(R._store['resultBody'].style.display, 'block', '복원: 결과 영역 공개');
   eq(R._store['resultLocked'].style.display, 'none', '복원: 잠금 해제');
   eq(txt(R,'lab_newTop'), '새 가닥 ① (선도 가닥)', '복원: 선도 가닥 이름');
@@ -792,7 +864,7 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   ok(html(R,'fb_stage').indexOf('처음부터 다시 하기') > 0, '복원 배너: 리셋 안내 포함');
   ok(html(R,'dgtCheck').indexOf('32 / 32') > 0, '복원: 자동 대조 결과');
   eq(R._store['btnVerify'].disabled, false, '복원: 확인 버튼 상태');
-  eq(R._missing.filter(id => !/^(c_|frag_)/.test(id)).join(','), '', '복원 경로도 id 오타 없음');
+  eq(R._missing.filter(id => !/^(c_|frag_|pmr_|lig_|fk_)/.test(id)).join(','), '', '복원 경로도 id 오타 없음');
 }
 
 // ══════════════════ [7] 자동 합성 = 수동 결과와 같은가 ══════════════════
@@ -800,7 +872,9 @@ console.log('[7] 자동 합성 결과 대조');
 {
   const A = makeSandbox();
   A.init();
+  A.pickQ('d1', A.QDEF.d1.a);
   A.unwind();
+  ensurePrimers(A);
   for (let i = 0; i < A.MANUAL_MIN; i++) fillOne(A, 'top');
   eq(A.state.manualTop, A.MANUAL_MIN, '위 가닥 6개 직접');
   ok(!A.autoAvailable(), '아래 가닥 0개면 아직 잠김(조각 규칙 경험 강제)');
@@ -820,9 +894,12 @@ console.log('[7] 자동 합성 결과 대조');
   eq(A.arrStr(A.state.newBot), B.arrStr(B.state.newBot), '자동 = 수동 (새 가닥②)');
   eq(A.arrStr(A.state.newTop), compStr(A.TOP_TEMPLATE), '자동 결과가 독립 계산과 일치(①)');
   eq(A.arrStr(A.state.newBot), compStr(A.BOT_TEMPLATE), '자동 결과가 독립 계산과 일치(②)');
+  eq(A.primerCounts(A.state.prim).top, 1, '자동 경로도 선도 프라이머 1개');
+  eq(A.primerCounts(A.state.prim).bot, 4, '자동 경로도 지연 프라이머 4개');
   A.ligate(); A.verifyDaughters();
   eq(A.state.verified, true, '자동 경로로도 완료 도달');
-  eq(A.stepDone(), 4, '자동 경로 진행 4');
+  A.pickQ('d2', A.QDEF.d2.a); A.pickQ('d3', A.QDEF.d3.a);
+  eq(A.stepDone(), 5, '자동 경로 진행 5');
   ok(html(A,'counters').indexOf('자동 합성 사용') > 0, '카운터에 자동 사용 표시');
   A.autoFill();
   ok(html(A,'fb_stage').indexOf('이미 완성') > 0, '완성 후 자동 합성 안내');
@@ -833,24 +910,24 @@ console.log('[8] 리셋');
 {
   const D = makeSandbox();
   D.init(); D.unwindAll(); fillOne(D, 'top'); D.saveState();
-  ok(!!D.localStorage._mem['dna_sim_v1'], '리셋 전 저장값 있음');
+  ok(!!D.localStorage._mem['dna_sim_v2'], '리셋 전 저장값 있음');
   D._rec.confirmRet = false;
   D.resetAll();
   eq(D._rec.confirms, 1, 'confirm 호출');
-  ok(!!D.localStorage._mem['dna_sim_v1'], 'confirm 취소 → 저장값 유지');
+  ok(!!D.localStorage._mem['dna_sim_v2'], 'confirm 취소 → 저장값 유지');
   eq(D._rec.reloads, 0, 'confirm 취소 → 새로고침 없음');
   D._rec.confirmRet = true;
   D.resetAll();
-  eq(D.localStorage._mem['dna_sim_v1'], undefined, 'confirm 확인 → 저장값 삭제');
+  eq(D.localStorage._mem['dna_sim_v2'], undefined, 'confirm 확인 → 저장값 삭제');
   eq(D._rec.reloads, 1, '새로고침 호출');
   const E = makeSandbox({ seed:D.localStorage._mem });
   E.init();
   eq(E.stepDone(), 0, '리셋 후 새로 열면 진행 0');
   eq(E.state.unwound, 0, '리셋 후 풀린 길이 0');
   eq(E.filledCount(E.state.newTop) + E.filledCount(E.state.newBot), 0, '리셋 후 붙은 뉴클레오타이드 0');
-  eq(txt(E,'progress'), '진행 0 / 4', '리셋 후 배지 0 / 4');
+  eq(txt(E,'progress'), '진행 0 / 5', '리셋 후 배지 0 / 5');
   eq(cls(E,'fb_stage'), '', '리셋 후 새로 열면 「기록 불러옴」 배너 없음');
-  ok(html(E,'wrongEcho').indexOf('붙여 보지 않았어요') > 0, '리셋 후 정리하기 3 에코도 초기 안내로');
+  ok(html(E,'wrongEcho').indexOf('붙여 보지 않았다') > 0, '리셋 후 정리하기 3 에코도 초기 안내로');
 }
 
 // ══════════════════ [9] 무대 렌더 — 막대·조각·이음새 ══════════════════
@@ -859,6 +936,7 @@ console.log('[9] 무대 렌더');
   const P = makeSandbox();
   P.init();
   P.unwind();                                     // 24~31 열림
+  ensurePrimers(P);
   // 위 가닥 한 칸
   fillOne(P, 'top');
   {
@@ -886,6 +964,7 @@ console.log('[9] 무대 렌더');
   }
   // 조각2를 '중간까지만' — 예전 단일 막대가 빈 칸을 덮던 바로 그 상태
   P.unwind();
+  ensurePrimers(P);
   P.selectStrand('bot');
   for (let i = 16; i <= 17; i++) P.placeBase(COMP[P.BOT_TEMPLATE.charAt(i)]);
   {
@@ -923,6 +1002,8 @@ console.log('[10] 연결 순서 가드');
 {
   const G = makeSandbox();
   G.init(); G.unwindAll();
+  ensurePrimers(G);
+  eq(G.primerCounts(G.state.prim).bot, 4, '끝까지 풀면 아래 조각 4개 모두 프라이머가 필요하다');
   G.selectStrand('bot');
   for (let k = 0; k < G.SEG_COUNT; k++){
     const r = G.segRange(k);
@@ -941,6 +1022,563 @@ console.log('[10] 연결 순서 가드');
   G.ligate();
   eq(G.state.ligated, true, '두 가닥 완성 후에는 연결 성공');
   eq(txt(G,'lab_newBot'), '새 가닥 ② (지연 가닥)', '연결 후 지연 가닥 이름 공개');
+}
+
+
+// ══════════════════ [11] 연출 무대 대본 — FK_* 무결성 ══════════════════
+console.log('[11] 연출 무대 대본');
+{
+  const n = S.FK_STEPS.length;
+  eq(n, 13, '국면 13개');
+  eq(S.FK_CAP.length, n, '국면마다 캡션이 하나씩');
+  eq(S.FK_FORK.length, n, 'FK_FORK 길이');
+  eq(S.FK_NT.length, n, 'FK_NT 길이');
+  eq(S.FK_NB.length, n, 'FK_NB 길이');
+  eq(S.FK_POLT.length, n, 'FK_POLT 길이');
+  eq(S.FK_POLB.length, n, 'FK_POLB 길이');
+  eq(typeof S.aniLast, 'function', '★aniLast 는 상수가 아니라 함수');
+  eq(S.aniLast(), n - 1, 'aniLast() = 12');
+  {
+    let mono = true, mult = true;
+    for (let i = 0; i < n; i++){
+      if (S.FK_FORK[i] % S.SEG !== 0) mult = false;
+      if (i && S.FK_FORK[i] > S.FK_FORK[i-1]) mono = false;
+    }
+    ok(mono, 'fork 는 한 번도 되돌아가지 않는다(단조 비증가)');
+    ok(mult, 'fork 는 모두 SEG 의 배수');
+    eq(S.FK_FORK[0], S.N, 'ph0 = 전부 감김');
+    eq(S.FK_FORK[n-1], 0, '마지막 국면 = 전부 풀림');
+    eq(S.FK_FORK[1], S.N - S.SEG, 'ph1 의 풀린 양 = 격자의 풀기 1회와 같다');
+  }
+  // ★분리 국면(0~2)에는 그 단계의 새 물체를 아예 그리지 않는다 (제작 표준 §4)
+  for (let ph = 0; ph <= 2; ph++){
+    eq(S.FK_NT[ph], null, 'ph' + ph + ': 위 새 가닥 없음');
+    eq(S.FK_NB[ph].length, 0, 'ph' + ph + ': 아래 조각 없음');
+    eq(S.FK_POLT[ph], -1, 'ph' + ph + ': 중합효소 없음(위)');
+    eq(S.FK_POLB[ph], -1, 'ph' + ph + ': 중합효소 없음(아래)');
+    ok(ph < S.FK_PMR_TOP, 'ph' + ph + ': 프라이머 없음');
+  }
+  eq(typeof S.FK_PMR_TOP, 'number', '위 프라이머는 하나뿐이므로 국면 번호 하나로 적는다');
+  eq(S.FK_PMR_BOT.length, S.SEG_COUNT, '아래 프라이머는 조각 수만큼');
+  {
+    let mono = true;
+    for (let k = 1; k < S.FK_PMR_BOT.length; k++) if (S.FK_PMR_BOT[k] < S.FK_PMR_BOT[k-1]) mono = false;
+    ok(mono, '아래 프라이머는 조각이 열리는 차례대로 놓인다');
+  }
+  /* ★★감긴 구간에서는 아무 일도 일어나지 않는다 — 주형이 드러나야 붙는다(교과서 47쪽).
+     국면마다 「그 물체가 놓인 칸이 그 국면에 이미 풀려 있는가」를 전수로 문다. */
+  for (let ph = 0; ph < n; ph++){
+    const fork = S.FK_FORK[ph];
+    if (S.FK_NT[ph]) ok(S.FK_NT[ph][0] >= fork, 'ph' + ph + ': 위 새 가닥이 감긴 구간을 침범하지 않는다');
+    S.FK_NB[ph].forEach(r => ok(r[0] >= fork, 'ph' + ph + ': 아래 조각이 감긴 구간을 침범하지 않는다'));
+    if (S.FK_POLT[ph] >= 0) ok(S.FK_POLT[ph] >= fork, 'ph' + ph + ': 위 중합효소가 풀린 구간 안에 있다');
+    if (S.FK_POLB[ph] >= 0) ok(S.FK_POLB[ph] >= fork, 'ph' + ph + ': 아래 중합효소가 풀린 구간 안에 있다');
+  }
+  ok(S.FK_FORK[S.FK_PMR_TOP] <= S.primerSlotTop(),
+     '★위 프라이머는 그 자리가 풀린 뒤에 놓인다');
+  for (let k = 0; k < S.SEG_COUNT; k++){
+    ok(S.FK_FORK[S.FK_PMR_BOT[k]] <= S.segRange(k).start,
+       '★아래 프라이머 ' + (k+1) + ' 은 그 조각이 풀린 뒤에 놓인다');
+  }
+  /* 조각은 열리는 차례대로 만들어진다 — 왼쪽 조각이 오른쪽보다 먼저 생기면 안 된다 */
+  for (let k = 1; k < S.SEG_COUNT; k++){
+    ok(S.FK_PMR_BOT[k] >= S.FK_PMR_BOT[k-1], '조각 ' + (k+1) + ' 은 조각 ' + k + ' 보다 늦게 시작한다');
+  }
+  eq(S.FK_NAME_PH, n - 1, '선도/지연 이름은 마지막 국면에서만 공개');
+  ok(S.FK_LIG_PH < S.FK_NAME_PH, '연결효소가 이름보다 먼저 나온다');
+  // ★국면 이름·캡션에 「선도/지연」이 미리 새어 나오지 않는가
+  for (let ph = 0; ph < S.FK_NAME_PH; ph++){
+    ok(S.FK_STEPS[ph].indexOf('선도') < 0 && S.FK_STEPS[ph].indexOf('지연') < 0,
+       'ph' + ph + ' 국면 이름에 선도/지연 없음');
+    ok(S.FK_CAP[ph].indexOf('선도') < 0 && S.FK_CAP[ph].indexOf('지연') < 0,
+       'ph' + ph + ' 캡션에 선도/지연 없음');
+  }
+  ok(S.FK_CAP[S.FK_NAME_PH].indexOf('선도 가닥') > 0, '마지막 국면 캡션에서 비로소 이름을 준다');
+  /* ★예외 없이 「~다」 — 사다리로 바꾸며 '감긴 이중나선'이 사라져 /선$/ 특례도 걷어냈다 */
+  ok(S.FK_STEPS.every(t => /다$/.test(t.trim())), '국면 이름이 모두 설명체로 끝난다');
+}
+
+// ══════════════════ [12] fkLayout — 레이아웃 함수를 직접 문다 ══════════════════
+console.log('[12] 연출 무대 레이아웃');
+{
+  const L = ph => S.fkLayout(ph), last = S.aniLast();
+  for (let ph = 0; ph <= last; ph++){
+    const l = L(ph);
+    eq(l.ph, ph, 'ph' + ph + ' 그대로 돌려준다');
+    eq(l.fork, S.FK_FORK[ph], 'ph' + ph + ' fork 일치');
+    const objs = [].concat(l.tmplTop, l.tmplBot, l.bond, l.newTop, l.newBot, l.pmrBot, l.lig,
+                           [l.pmrTop, l.polT, l.polB]);
+    ok(objs.every(o => isFinite(o.x) && isFinite(o.y)), 'ph' + ph + ' NaN 없음');
+    ok(objs.every(o => o.x >= 100 && o.x <= 660), 'ph' + ph + ' x 가 무대 안(100~660)');
+    ok(objs.every(o => o.y >= 60 && o.y <= 245), 'ph' + ph + ' y 가 무대 안(60~245)');
+    ok(objs.every(o => o.op === 0 || o.op === 1), 'ph' + ph + ' opacity 는 0 또는 1');
+  }
+  for (let ph = 0; ph <= 2; ph++){
+    const l = L(ph);
+    eq(l.newTop.filter(o => o.op > 0).length, 0, 'ph' + ph + ' 위 새 가닥 안 보임');
+    eq(l.newBot.filter(o => o.op > 0).length, 0, 'ph' + ph + ' 아래 새 가닥 안 보임');
+    eq(l.pmrTop.op, 0, 'ph' + ph + ' 프라이머 안 보임');
+    eq(l.pmrBot.filter(o => o.op > 0).length, 0, 'ph' + ph + ' 아래 프라이머 안 보임');
+    eq(l.polT.op + l.polB.op, 0, 'ph' + ph + ' 중합효소 안 보임');
+    eq(l.lig.filter(o => o.op > 0).length, 0, 'ph' + ph + ' 연결효소 안 보임');
+  }
+  // ★갈라짐이 실제로 일어나는가 — 교사의 1번 지적이 걸린 자리
+  {
+    const l0 = L(0), l1 = L(1);
+    const gap0 = l0.tmplBot[31].y - l0.tmplTop[31].y;
+    const gap1 = l1.tmplBot[31].y - l1.tmplTop[31].y;
+    eq(gap0, 2 * S.FK_LAD, 'ph0 오른쪽 끝은 두 가닥이 붙어 있다 (간격 = 사다리 폭)');
+    ok(gap1 > 70, '★ph1 오른쪽 끝은 두 가닥이 벌어졌다 (간격 ' + gap1.toFixed(1) + ')');
+    eq(l1.tmplBot[0].y - l1.tmplTop[0].y, 2 * S.FK_LAD, 'ph1 왼쪽 끝(아직 붙은 구간)은 사다리 폭 그대로');
+    eq(l0.bond[31].op, 1, 'ph0 오른쪽 끝에 결합 표시');
+    eq(l1.bond[31].op, 0, 'ph1 오른쪽 끝은 결합이 풀렸다');
+    eq(l1.bond[0].op, 1, 'ph1 왼쪽 끝은 결합 유지');
+  }
+  /* ★사다리 모양인가 — 꼬아 그리지 말라는 2026-08-31 교사 지시가 걸린 자리.
+     꼬면 두 가닥이 교차해 자리를 바꾸고, 뒤이어 다루는 5′·3′ 방향이 헷갈린다.
+     ① 전 국면·전 칸에서 위 주형이 늘 위에 있다  ② 아직 붙은 구간의 간격은 흔들리지 않는다 */
+  {
+    ok(S.FK_LAD > 0, '사다리 반간격이 양수');
+    ok(2 * S.FK_LAD < S.FK_Y.open_tb - S.FK_Y.open_tt, '붙은 간격이 벌어진 간격보다 좁다');
+    ok(typeof S.FK_AMP === 'undefined' && typeof S.fkWave === 'undefined',
+       '꼬임 진폭·사인파 함수가 남아 있지 않다');
+    for (let ph = 0; ph <= last; ph++){
+      const l = L(ph);
+      let crossed = 0, wobble = 0;
+      for (let i = 0; i < 32; i++){
+        if (l.tmplTop[i].y >= l.tmplBot[i].y) crossed++;
+        if (i < l.fork && Math.abs((l.tmplBot[i].y - l.tmplTop[i].y) - 2 * S.FK_LAD) > 1e-9) wobble++;
+      }
+      eq(crossed, 0, '★ph' + ph + ' 위 주형이 끝까지 위에 있다 — 교차 0');
+      eq(wobble, 0, '★ph' + ph + ' 아직 붙은 구간은 사다리 — 간격이 일정하다');
+      let newCrossed = 0;
+      for (let i = 0; i < 32; i++) if (l.newTop[i].y >= l.newBot[i].y) newCrossed++;
+      eq(newCrossed, 0, 'ph' + ph + ' 새 가닥 대역도 위아래가 뒤집히지 않는다');
+    }
+    /* 가로대는 아직 붙은 칸에만, 벌어진 칸에는 없다 */
+    for (let ph = 0; ph <= last; ph++){
+      const l = L(ph);
+      let bad = 0;
+      for (let i = 0; i < 32; i++){
+        const paired = i < l.fork;
+        if ((l.bond[i].op === 1) !== paired) bad++;
+      }
+      eq(bad, 0, 'ph' + ph + ' 가로대는 아직 붙은 칸에만 있다');
+    }
+  }
+  // ★★이 무대의 심장 — ⑦에서 위쪽만 따라가고, ⑧에서 아래쪽만 되돌아온다
+  {
+    const F = S.FK_FOLLOW_PH, R = S.FK_RETURN_PH;
+    eq(R, F + 1, '되돌아옴은 따라감 바로 다음 국면');
+    const a = L(F - 1), b = L(F), c = L(R);
+    ok(b.polT.col !== a.polT.col, '⑦ 위쪽 중합효소는 풀린 곳을 따라 움직인다');
+    eq(b.polB.col, a.polB.col, '★⑦ 아래쪽 중합효소는 따라가지 못하고 제자리이다');
+    eq(c.polT.col, b.polT.col, '⑧ 위쪽은 제자리');
+    ok(c.polB.col !== b.polB.col, '★⑧ 아래쪽만 되돌아와 다시 시작한다');
+    ok(c.polB.col < b.polB.col, '되돌아오는 방향은 왼쪽(풀린 곳 쪽)이다');
+  }
+  {
+    let incT = 0, prevT = null;
+    for (let ph = 4; ph <= S.aniLast(); ph++){
+      const t = L(ph).polT.col;
+      if (prevT !== null && t > prevT) incT++;
+      prevT = t;
+    }
+    eq(incT, 0, '★위쪽 중합효소는 한 번도 되돌아가지 않는다 = 연속 합성');
+    ok(L(S.FK_RETURN_PH).polB.col < L(S.FK_FOLLOW_PH).polB.col,
+       '★아래쪽 중합효소는 되돌아간다 = 불연속 합성');
+  }
+  {
+    const l = L(S.FK_REPEAT_PH);
+    const runs = arr => { let r = 0, on = false; arr.forEach(o => { if (o.op > 0 && !on) r++; on = o.op > 0; }); return r; };
+    eq(runs(l.newTop), 1, '★위 새 가닥은 끊긴 데 없이 한 덩어리');
+    eq(runs(l.newBot), S.SEG_COUNT, '★아래 새 가닥은 조각 4개로 나뉜다');
+  }
+  /* ★★★교사 지시(2026-08-31): 「중합효소가 붙고 이동하면서 중합되는 식으로」.
+     ①늘 3′ 말단에 있고  ②붙기만 하는 국면이 따로 있고  ③지나간 자리에만 새 가닥이 생긴다. */
+  {
+    const attachTop = S.primerSlotTop();                          // 위 프라이머의 3′ 말단 = 왼쪽 끝 칸
+    const attachBot = [];                                          // 아래 프라이머들의 3′ 말단 = 오른쪽 끝 칸
+    for (let k = 0; k < S.SEG_COUNT; k++) attachBot.push(S.segRange(k).start + S.PMR_LEN - 1);
+    for (let ph = 0; ph <= last; ph++){
+      const l = L(ph), f = S.FK_NT[ph], nb = S.FK_NB[ph];
+      if (l.polT.op){
+        eq(l.polT.col, f ? f[0] : attachTop,
+           '★ph' + ph + ' 위 중합효소는 새 가닥(없으면 프라이머)의 3′ 말단에 있다');
+      }
+      if (l.polB.op){
+        const ends = nb.map(r => r[1]);
+        ok(ends.indexOf(l.polB.col) >= 0 || attachBot.indexOf(l.polB.col) >= 0,
+           '★ph' + ph + ' 아래 중합효소는 조각(없으면 프라이머)의 3′ 말단에 있다');
+      }
+      // 중합효소 없이 새 가닥이 생기지 않는다
+      if (l.newTop.some(o => o.op > 0)) eq(l.polT.op, 1, 'ph' + ph + ' 위 새 가닥이 있으면 중합효소도 있다');
+      if (l.newBot.some(o => o.op > 0)) eq(l.polB.op, 1, 'ph' + ph + ' 아래 새 가닥이 있으면 중합효소도 있다');
+    }
+    // ★붙기만 하는 국면 — 중합효소는 보이는데 새 가닥은 0칸이다
+    [S.FK_ATTACH_PH, S.FK_RETURN_PH].forEach(ph => {
+      const l = L(ph), pv = L(ph - 1);
+      eq(l.polT.op + l.polB.op, 2, 'ph' + ph + ' 두 중합효소가 모두 무대에 있다');
+      eq(l.newTop.filter((o,i) => o.op > 0 && pv.newTop[i].op === 0).length, 0,
+         '★ph' + ph + ' 붙기만 한다 — 위 새 가닥은 한 칸도 늘지 않는다');
+      eq(l.newBot.filter((o,i) => o.op > 0 && pv.newBot[i].op === 0).length, 0,
+         '★ph' + ph + ' 붙기만 한다 — 아래 새 가닥은 한 칸도 늘지 않는다');
+    });
+    eq(L(S.FK_ATTACH_PH).labels.newT, 0, '④ 에는 「새 가닥」 이름표가 아직 안 붙는다');
+    // ★새 가닥은 중합효소가 지나간 자리에만 생긴다
+    for (let ph = 1; ph <= last; ph++){
+      const a = L(ph - 1), b = L(ph);
+      const walked = (from, to, ca, cb, who, skip) => {
+        const lo = Math.min(ca, cb), hi = Math.max(ca, cb);
+        let out = 0;
+        for (let i = 0; i < 32; i++) if (to[i].op > 0 && from[i].op === 0 && (i < lo || i > hi)) out++;
+        if (!skip) eq(out, 0, '★ph' + ph + ' ' + who + ' 새 가닥은 중합효소가 지나간 자리에만 생긴다');
+      };
+      walked(a.newTop, b.newTop, a.polT.col, b.polT.col, '위', false);
+      // ⑩ 만 예외 — 남은 조각 2개를 한꺼번에 되풀이하므로 한 구간으로 묶이지 않는다
+      walked(a.newBot, b.newBot, a.polB.col, b.polB.col, '아래', ph === S.FK_REPEAT_PH);
+    }
+  }
+  // ★전이 지연 — 이동하는 동안 칸이 차례로 나타난다
+  {
+    const st = S.fkStagger(S.FK_REPEAT_PH, S.FK_REPEAT_PH - 1);
+    ok(st.top.some(d => d > 0), '⑩ 위 새 가닥 칸에 지연이 걸린다');
+    ok(st.top.every(d => d >= 0 && d <= S.FK_MOVE), '지연은 0 ~ FK_MOVE 사이');
+    const far = S.fkStagger(S.FK_REPEAT_PH, 0);
+    eq(far.top.filter(d => d > 0).length, 0, '★한 걸음이 아니면 지연 없음(되감기·건너뛰기)');
+    const back = S.fkStagger(3, 4);
+    eq(back.top.filter(d => d > 0).length + back.bot.filter(d => d > 0).length, 0, '★뒤로 갈 때 지연 없음');
+    const at = S.fkStagger(S.FK_ATTACH_PH, S.FK_ATTACH_PH - 1);
+    eq(at.top.filter(d => d > 0).length + at.bot.filter(d => d > 0).length, 0,
+       '★붙기만 하는 국면에는 깔릴 칸이 없다');
+    const ret = S.fkStagger(S.FK_RETURN_PH, S.FK_RETURN_PH - 1);
+    eq(ret.polB, S.FK_PMR_LEAD, '★프라이머가 새로 놓인 국면에서는 중합효소가 늦게 붙는다');
+    const syn = S.fkStagger(S.FK_RETURN_PH + 1, S.FK_RETURN_PH);
+    eq(syn.polB, 0, '프라이머가 안 놓인 국면에서는 중합효소가 곧바로 움직인다');
+    ok(syn.bot.filter(d => d > 0).length === 5, '⑨ 조각 5칸이 차례로 깔린다');
+  }
+  // 프라이머 개수 — 화면에서 세어진다 (교과서 49쪽 1-(3))
+  {
+    eq(L(0).count.pmrTop + L(0).count.pmrBot, 0, 'ph0 프라이머 0개');
+    eq(L(S.aniLast()).count.pmrTop, 1, '★끝에서 위쪽 프라이머 1개');
+    eq(L(S.aniLast()).count.pmrBot, S.SEG_COUNT, '★끝에서 아래쪽 프라이머 4개');
+    let mono = true, prev = 0;
+    for (let ph = 0; ph <= S.aniLast(); ph++){ const c = L(ph).count.pmrBot; if (c < prev) mono = false; prev = c; }
+    ok(mono, '프라이머 개수는 줄어들지 않는다');
+    for (let ph = 0; ph <= S.aniLast(); ph++) ok(L(ph).count.pmrTop <= 1, 'ph' + ph + ' 위 프라이머는 1개를 넘지 않는다');
+    const xs = L(S.aniLast()).pmrBot.map(o => o.x).sort((a,b) => a-b);
+    ok(xs.every((x,i) => i === 0 || x - xs[i-1] >= S.FK_P * S.PMR_LEN), '아래 프라이머 4개가 서로 겹치지 않는다');
+  }
+  {
+    for (let ph = 0; ph < S.FK_LIG_PH; ph++) eq(L(ph).lig.filter(o => o.op > 0).length, 0, 'ph' + ph + ' 연결효소 없음');
+    const l = L(S.FK_LIG_PH);
+    eq(l.lig.length, S.SEG_COUNT - 1, '이음매는 조각 수 - 1 곳');
+    eq(l.lig.filter(o => o.op > 0).length, S.SEG_COUNT - 1, '이은 뒤 이음매 전부 표시');
+    ok(l.lig.every(o => o.y > l.polT.y), '★연결효소는 아래쪽(지연) 대역에만 나온다');
+    eq(l.lig.map(o => o.col).sort((x,y) => x - y).join(','), '8,16,24', '이음매 자리 = 8·16·24번');
+  }
+  for (let ph = 0; ph < S.FK_NAME_PH; ph++){
+    eq(L(ph).labels.lead, 0, 'ph' + ph + ' 선도 이름 비공개');
+    eq(L(ph).labels.lag, 0, 'ph' + ph + ' 지연 이름 비공개');
+  }
+  eq(L(S.FK_NAME_PH).labels.lead, 1, '마지막 국면에 선도 이름 공개');
+  eq(L(S.FK_NAME_PH).labels.lag, 1, '마지막 국면에 지연 이름 공개');
+  eq(L(0).labels.tmpl, 0, 'ph0 에는 주형 이름표도 없다');
+  eq(L(2).labels.tmpl, 1, 'ph2 에서 주형 이름표가 붙는다');
+  eq(S.fkLayout(-5).ph, 0, '음수 국면은 0 으로');
+  eq(S.fkLayout(999).ph, S.aniLast(), '큰 국면은 마지막으로');
+}
+
+// ══════════════════ [13] 연출 무대 SVG · 잠금 · 제어 막대 ══════════════════
+console.log('[13] 연출 무대 SVG · 잠금');
+{
+  const svg = S.fkStageSvg();
+  ok(svg.indexOf('<sup') < 0, '★<text> 안에 <sup> 없음 (유니코드 윗첨자만 쓴다)');
+  ok(svg.indexOf('5′') >= 0 && svg.indexOf('3′') >= 0, '유니코드 프라임으로 5/3 말단 표시');
+  ok(!/>[ATGC]<\/text>/.test(svg), '★연출 무대에는 염기 글자가 없다');
+  {
+    const ids = [...svg.matchAll(/id="([^"]+)"/g)].map(m => m[1]);
+    eq(new Set(ids).size, ids.length, 'SVG id 중복 없음 (' + ids.length + '개)');
+    ok(ids.every(id => /^fk/.test(id)), '연출 무대의 id 는 모두 fk 로 시작한다');
+    /* ★fkApplyPhase 가 만지는 id 가 fkStageSvg 가 지은 id 안에 다 있는가.
+       (DOM 스텁은 innerHTML 을 파싱하지 않으므로 _missing 이 '만진 id 목록'이 된다) */
+    const A2 = makeSandbox(); A2.init();
+    for (let ph = 0; ph <= A2.aniLast(); ph++) A2.fkApplyPhase(ph);
+    const built = new Set(ids);
+    const touched = [...new Set(A2._missing)].filter(id => /^fk/.test(id));
+    ok(touched.length > 100, '연출 무대의 물체를 ' + touched.length + '개 만진다');
+    eq(touched.filter(id => !built.has(id)).join(','), '',
+       '★fkApplyPhase 가 만지는 id 는 모두 fkStageSvg 가 지은 것이다');
+    /* 지어 놓고 한 번도 쓰지 않는 물체가 없는가.
+       ★칸마다 도는 물체는 id 를 이어 붙여 만들므로 _missing 에 잡히고(touched),
+         이름표처럼 id 를 글자 그대로 쓴 물체는 스크립트 안에 'id' 로 나타난다. */
+    const tset = new Set(touched);
+    const unused = ids.filter(id => !tset.has(id) && js.indexOf("'" + id + "'") < 0);
+    eq(unused.filter(id => id !== 'fkPmrHatch').join(','), '',
+       '★지어 놓고 한 번도 만지지 않는 물체가 없다');
+  }
+  {
+    const open = (svg.match(/<g[\s>]/g) || []).length, close = (svg.match(/<\/g>/g) || []).length;
+    eq(open, close, 'SVG g 여닫기 균형 (' + open + ')');
+  }
+  ok(/id="fkStage"[\s\S]{0,200}aria-label="/.test(src), '무대에 aria-label 이 있다');
+  // ★이름 공개 국면 잠금 — 격자와 시점이 같다
+  {
+    const T = makeSandbox(); T.init();
+    eq(T.fkCap(), T.aniLast() - 1, '처음에는 마지막(이름 공개) 국면이 잠겨 있다');
+    T.aniGo(99);
+    eq(T.ani.ph, T.aniLast() - 1, '끝까지 단추는 잠긴 국면 앞에서 멈춘다');
+    T.aniGo(1);
+    eq(T.ani.ph, T.aniLast() - 1, '다음 단추도 잠금을 넘지 못한다');
+    eq(T.fkLayout(T.ani.ph).labels.lead, 0, '잠긴 동안에는 선도 이름이 안 뜬다');
+    ok(html(T,'ani_gate').indexOf('이은 뒤') > 0, '잠금 안내가 뜬다');
+    T.aniGo(-99);
+    eq(T.ani.ph, 0, '처음부터 단추');
+    eq(T._store['ani_prev'].disabled, true, '첫 국면에서 이전 단추 비활성');
+    eq(T._store['ani_next'].disabled, false, '첫 국면에서 다음 단추 활성');
+    ok(txt(T,'ani_step').indexOf('1 / ' + (T.aniLast() + 1)) > 0, '단계 표시 n / N');
+    const U = makeSandbox(); U.init(); U.pickQ('d1', U.QDEF.d1.a); playManual(U); U.ligate();
+    eq(U.fkCap(), U.aniLast(), '조각을 이으면 마지막 국면이 열린다');
+    ok(txt(U,'lab_newBot').indexOf('지연 가닥') > 0, '★같은 시점에 격자에도 지연 가닥 이름이 뜬다');
+    U.aniGo(99);
+    eq(U.ani.ph, U.aniLast(), '마지막 국면까지 간다');
+    eq(U.fkLayout(U.ani.ph).labels.lead, 1, '마지막 국면에서 선도 이름 공개');
+    eq(U._store['ani_next'].disabled, true, '마지막 국면에서 다음 단추 비활성');
+    eq(html(U,'ani_gate'), '', '열린 뒤에는 잠금 안내가 사라진다');
+    const V = makeSandbox(); V.init();
+    for (let i = 0; i < 5; i++) V.badgeTap();
+    eq(V.fkCap(), V.aniLast(), '교사용 해제로도 마지막 국면까지 열림');
+    ok(!V.localStorage._mem[V.LS_KEY] || JSON.parse(V.localStorage._mem[V.LS_KEY]).teacherOpen === undefined,
+       '★교사용 해제는 저장되지 않는다');
+    eq(V.card3Open(), true, '교사용 해제로 조작 카드도 열린다');
+  }
+  ok(!/setTimeout|setInterval|requestAnimationFrame/.test(js), '★연출에 setTimeout 을 쓰지 않는다');
+  ok(/prefers-reduced-motion/.test(src), 'prefers-reduced-motion 에서 전환을 끈다');
+  ok(/\.rmove[\s\S]{0,80}transition/.test(src), '.rmove 에 transition 이 걸려 있다');
+}
+
+// ══════════════════ [14] ★말투 — 시험지 문체 ══════════════════
+console.log('[14] 말투 — 시험지 문체');
+{
+  const BANNED = ['해 보자','보자.','보자!','하자.','하자!','가자.','가자!','좋아','맞아.','맞아!',
+                  '했어','됐어','왔어','찾았어','거야','이야.','이야!','일까','할까','올까','줄까',
+                  '나와.','너의','네가','우리가'];
+  // ★이모지는 금지 대상이 아니다 (2026-08-18 교사 정정)
+  const body = src.slice(src.indexOf('<body>'), src.indexOf('<script>\n\'use strict\''));
+  ok(body.length > 5000, '본문 마크업 슬라이스가 유효하다 (' + body.length + '자)');
+  const code = js.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  eq(BANNED.filter(w => body.indexOf(w) >= 0).join(','), '', '본문 마크업에 친근체/추임새 0건');
+  eq(BANNED.filter(w => code.indexOf(w) >= 0).join(','), '', '런타임 문구에 친근체/추임새 0건');
+  const qblob = JSON.stringify(S.QDEF) + JSON.stringify(S.FK_STEPS) + JSON.stringify(S.FK_CAP);
+  eq(BANNED.filter(w => qblob.indexOf(w) >= 0).join(','), '', '문항·국면 문안에 친근체/추임새 0건');
+  {
+    const qs = Object.keys(S.QDEF).map(k => S.QDEF[k].q);
+    ok(qs.length >= 8, '문항 ' + qs.length + '개');
+    ok(qs.every(t => /[?？]$/.test(t.trim())), '선택형 발문 전부 물음표로 끝난다');
+  }
+  {
+    const qts = [...body.matchAll(/<div class="qt">([\s\S]*?)<\/div>/g)].map(m => m[1].replace(/<[^>]+>/g,'').trim());
+    const num = qts.filter(t => /^[1-4]\./.test(t));
+    eq(num.length, 4, '정리하기 서술형 4문항');
+    ok(num.every(t => /하시오\.?$/.test(t.replace(/\s*\([^)]*\)\s*$/, '').trim())), '서술형 발문이 모두 하시오로 끝난다');
+  }
+  ok(/하시겠습니까\?/.test(code), '★교사 확인 대화상자는 하시겠습니까');
+  ok(!/할까요|하시겠어요/.test(code), '대화상자에 친근체 없음');
+  eq((body.match(/답안에 반드시 들어가야 할 것/g) || []).length, 4, '서술형 4문항에 반드시 들어가야 할 것이 붙어 있다');
+  ok(/지식·이해/.test(body) && /과정·기능/.test(body) && /가치·태도/.test(body), '스스로 평가하기 3줄');
+}
+
+// ══════════════════ [15] 활동의 경계 — 교과서 범위 ══════════════════
+console.log('[15] 교과서 범위 경계');
+{
+  // 교육과정 해설: 01-07 은 효소·프라이머를 용어 수준까지만 다룬다(기작 상세 금지)
+  const OUT = ['헬리케이스','헬리카제','나선풀림효소','풀림효소','SSB','단일가닥결합단백질',
+               '위상이성질화효소','토포아이소머레이스','RNase','프라이메이스','프리마제',
+               '텔로머레이스','텔로미어','복제 원점','복제 기점','핵산말단가수분해효소',
+               '라이게이스','폴리메레이스','폴리머레이스','인산다이에스터'];
+  eq(OUT.filter(w => src.indexOf(w) >= 0).join(','), '', '★범위 밖 용어 0건');
+  ['DNA 중합효소','프라이머','프라이머 합성효소','DNA 연결효소'].forEach(w => {
+    ok(src.indexOf(w) >= 0, '교과서 용어 ' + w + ' 사용');
+  });
+  ok(src.indexOf('선도 가닥') > 0 && src.indexOf('지연 가닥') > 0, '선도·지연 가닥');
+  ok(S.fkStageSvg().indexOf('프라이머 합성효소') < 0, '★무대 이름표에는 프라이머 합성효소를 올리지 않는다');
+  ok(S.FK_STEPS.every(t => t.indexOf('프라이머 합성효소') < 0), '국면 이름에도 올리지 않는다');
+  eq(S.QDEF.p2.ch[S.QDEF.p2.a].indexOf('프라이머 합성효소'), 0, '연습 문항에서 작용 차례로 묻는다(교과서 49쪽 문항 2)');
+  eq((src.match(/오카자키/g) || []).length, 1, '오카자키는 정확히 1회(도움말 안)');
+  ok(S.FK_STEPS.every(t => t.indexOf('오카자키') < 0) && JSON.stringify(S.QDEF).indexOf('오카자키') < 0,
+     '국면 이름·문항에는 오카자키가 없다');
+  ok(src.indexOf('작은 조각의 DNA') > 0, '교과서 표현 작은 조각의 DNA 를 쓴다');
+  eq((src.match(/복제 분기점/g) || []).length, 0, '★복제 분기점은 교과서에 없는 말이므로 쓰지 않는다');
+  ok(src.indexOf('DNA가 풀리는 방향') > 0, '교과서 그림의 이름표 DNA가 풀리는 방향 을 쓴다');
+  ok(src.indexOf('12유전01-07') > 0, '성취기준 코드 표기');
+  ok(/46~49쪽/.test(src), '교과서 쪽 근거 표기');
+}
+
+// ══════════════════ [16] 색 규약 — CSS ↔ JS 짝 ══════════════════
+console.log('[16] 색 규약');
+{
+  /* ★★염기 타일이 회색으로 나오던 회귀 — `.cell` 이 `.b-A~.b-C` 보다 뒤에 있어
+     color/border 를 덮었다(교사 지적 2026-08-31: 「주형 가닥이 너무 연해서 안 보여」).
+     2-클래스 규칙이 살아 있는지, 네 색이 정확히 짝지어졌는지 문다. */
+  {
+    [['A','--red'],['T','--blue'],['G','--green'],['C','--yellow']].forEach(([b, tok]) => {
+      const r = cssRule('.cell.b-' + b);
+      ok(r.length > 0, '★.cell.b-' + b + ' 규칙이 있다');
+      ok(r.indexOf('color:var(' + tok + ')') >= 0, '★.cell.b-' + b + ' 의 글자색 = ' + tok);
+      ok(r.indexOf('border-color:var(' + tok + ')') >= 0, '★.cell.b-' + b + ' 의 테두리색 = ' + tok);
+    });
+    const dim = cssRule('.cell.tmpl.closed').match(/opacity\s*:\s*([0-9.]+)/);
+    ok(!!dim && parseFloat(dim[1]) >= 0.8,
+       '★안 풀린 주형 칸도 읽을 만큼은 진하다 (opacity ' + (dim ? dim[1] : '?') + ' ≥ .8)');
+  }
+  /* ★무대와 A·T·G·C 단추가 붙어 있는가 — 「염기가 그림 바로 아래에 있어야」(교사 지시 2026-08-31).
+     동시에 1~4단계 패널 차례는 그대로여야 한다(교과서 49쪽 문항 2의 정답이 이 차례다). */
+  {
+    const at = t => src.indexOf(t);
+    const p1 = at('🔓 1단계'), p2 = at('🧬 2단계'), st = at('class="dna-outer"'),
+          uw = at('id="unwindInfo"'), p3 = at('🧩 3단계'), p4 = at('🔗 4단계');
+    ok([p1,p2,st,uw,p3,p4].every(i => i > 0), '무대·1~4단계 표지가 모두 있다');
+    ok(p1 < p2, '1단계가 2단계보다 앞');
+    ok(p2 < st, '★무대는 1·2단계 단추 아래에 온다');
+    ok(st < uw && uw < p3, '★무대 다음이 곧 3단계(염기 단추)다');
+    ok(p3 < p4, '3단계가 4단계보다 앞 — 49쪽 문항 2의 차례');
+    ok(p3 - uw < 600, '★무대와 염기 단추 사이에 다른 것이 끼지 않는다 (' + (p3 - uw) + '자)');
+  }
+  /* ★CSS 와 손으로 맞추는 시간 상수 — 어긋나면 새 가닥이 중합효소보다 먼저·나중에 깔린다 */
+  {
+    const mv = cssRule('.rmove').match(/transform\s+([0-9.]+)s/);
+    ok(!!mv, '.rmove 에 transform 전이 시간이 있다');
+    eq(parseFloat(mv[1]), S.FK_MOVE, '★.rmove 의 transform 시간 = FK_MOVE');
+    ok(S.FK_PMR_LEAD > 0 && S.FK_PMR_LEAD < S.FK_MOVE, '프라이머 선행 틈은 이동 시간보다 짧다');
+  }
+  function cssVar(name){
+    const m = src.match(new RegExp('--' + name + ':\\s*(#[0-9A-Fa-f]{6})'));
+    return m ? m[1].toUpperCase() : null;
+  }
+  function sat(hex){
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return Math.max(r,g,b) - Math.min(r,g,b);
+  }
+  const PMR = cssVar('pmr'), POL = cssVar('pol'), LIG = cssVar('lig');
+  ok(!!PMR && !!POL && !!LIG, '요소 3색이 CSS 변수로 선언되어 있다');
+  // ★2026-08-26 교사 지시: 연하게 하지 말 것. 채도가 높은 색으로
+  ok(sat(PMR) >= 120, '프라이머 색 채도 ' + sat(PMR) + ' >= 120');
+  ok(sat(POL) >= 120, '중합효소 색 채도 ' + sat(POL) + ' >= 120');
+  ok(sat(LIG) >= 120, '연결효소 색 채도 ' + sat(LIG) + ' >= 120');
+  eq(new Set([PMR,POL,LIG]).size, 3, '세 색이 서로 다르다');
+  ['blue','green','red','amber','yellow'].forEach(k => {
+    const v = cssVar(k);
+    ok(v && [PMR,POL,LIG].indexOf(v) < 0, '요소 색이 UI 색(' + k + ')과 겹치지 않는다');
+  });
+  // ★CSS 변수와 SVG 안의 색값이 어긋나지 않는가
+  const svg = S.fkStageSvg().toUpperCase();
+  [['프라이머',PMR],['중합효소',POL],['연결효소',LIG],['주형',cssVar('old')],['새 가닥',cssVar('green')]].forEach(pair => {
+    ok(svg.indexOf(pair[1]) >= 0, 'SVG 가 ' + pair[0] + ' 색 ' + pair[1] + ' 를 그대로 쓴다');
+  });
+  // ★색만으로 구분시키지 않는다
+  const raw = S.fkStageSvg();
+  ok(/pattern id="fkPmrHatch"/.test(raw), '프라이머는 빗금 무늬로도 갈린다');
+  ok(/<circle[^>]*fill="#FFFFFF"/.test(raw), '중합효소에 흰 점을 찍는다(색각 이상·흑백 인쇄 대비)');
+  ok(/rotate\(45\)/.test(raw), '연결효소는 마름모 모양으로 갈린다');
+  // ★JS 가 쓰는 class 가 CSS 에 다 있는가
+  ['pmr-cap','ez-pol','ez-lig','primerrow','anibar','anibtn','anistep','anicap','qbox','qopt','qfb','qhint',
+   'stage-wrap','rmove','rfade','lockmsg','panes','pane-l','pane-r','pr-do','pr-q','orderband','tbl-outer',
+   'elg','e-mark','e-pmr','e-pol','e-lig','lockable'].forEach(c => {
+    ok(src.indexOf('.' + c) >= 0, 'CSS 에 .' + c + ' 가 선언되어 있다');
+  });
+  ['right','wrong','cut','joined','seam','forkcol','locked','blank','done'].forEach(c => {
+    ok(src.indexOf('.' + c) >= 0, 'CSS 에 상태 클래스 .' + c + ' 가 있다');
+  });
+  ok(/@media \(min-width:1180px\)/.test(src), '★2단 배치 경계는 1180px');
+  ok(/@media \(max-width:1179\.98px\)/.test(src), '좁은 화면은 1179.98px 로 끊는다(정수로 끊지 않는다)');
+}
+
+// ══════════════════ [17] 문항 ══════════════════
+console.log('[17] 문항');
+{
+  const ids = Object.keys(S.QDEF);
+  eq(ids.length, 8, '문항 8개 (결론 4 + 연습 4)');
+  eq(S.Q_MAIN.length, 4, '결론 문항 4개');
+  eq(S.Q_PRAC.length, 4, '연습 문항 4개');
+  ok(S.Q_PRAC.every(id => S.qIsPractice(id)), '★연습 문항 id 는 p 로 시작한다');
+  ok(S.Q_MAIN.every(id => !S.qIsPractice(id)), '결론 문항은 p 로 시작하지 않는다');
+  ids.forEach(id => {
+    const d = S.QDEF[id];
+    eq(d.id, id, id + ': id 일치');
+    eq(d.ch.length, 4, id + ': 선택지 4개');
+    eq(d.no.length, 4, id + ': 오답 해설 4칸');
+    ok(d.a >= 0 && d.a < d.ch.length, id + ': 정답 번호가 범위 안');
+    eq(d.no[d.a], '', '★' + id + ': 정답 자리의 오답 해설은 비어 있다');
+    ok(d.no.filter((t,i) => i !== d.a).every(t => t.length > 0), id + ': 오답마다 해설이 있다');
+    ok(d.ex && d.ex.length > 20, id + ': 해설이 있다');
+    eq(new Set(d.ch).size, 4, id + ': 선택지 중복 없음');
+    const len = d.ch.map(t => t.length);
+    const sorted = len.slice().sort((x,y) => y - x);
+    ok(!(len[d.a] === sorted[0] && sorted[0] - sorted[1] > 14),
+       '★' + id + ': 정답이 단독으로 크게 길지 않다');
+  });
+  {
+    const pos = ids.map(id => S.QDEF[id].a);
+    ok(new Set(pos).size >= 1, '정답 위치 분포: ' + pos.join(''));
+  }
+  {
+    const hi = ids.filter(id => S.QDEF[id].lv === '상');
+    eq(hi.length, 2, '상 난도 2문항');
+    ok(hi.every(id => S.QDEF[id].hint && S.QDEF[id].hint.length === 2), '★상 문항에는 2단 힌트');
+    eq(ids.filter(id => S.QDEF[id].lv === '중').length, 2, '중 난도 2문항');
+    ok(S.Q_MAIN.every(id => !S.QDEF[id].lv), '결론 문항에는 난도 표시가 없다');
+  }
+  {
+    const Q = makeSandbox(); Q.init();
+    eq(Q.qCorrect('d1', undefined), false, '안 풀면 정답 아님');
+    Q.pickQ('d1', (Q.QDEF.d1.a + 1) % 4);
+    eq(Q.qCorrect('d1', Q.state.qa.d1), false, '오답 기록');
+    /* ★★잠금은 「정답」이 아니라 「답했는가」로 연다 (교사 결정 2026-08-31).
+       전에는 한 번 틀리면 ③ 이 영영 안 열려 「처음부터 다시 하기」밖에 길이 없었다. */
+    eq(Q.card3Open(), true, '★오답이어도 답했으면 조작 카드가 열린다');
+    ok(html(Q,'qh_d1').indexOf('wrong') > 0, '오답 표시');
+    ok(html(Q,'qh_d1').indexOf('right') > 0, '정답도 함께 보인다');
+    ok(html(Q,'qh_d1').indexOf(Q.QDEF.d1.ex.slice(0,10)) > 0, '해설은 정답·오답 모두에게 보인다');
+    ok(html(Q,'qh_d1').indexOf('disabled') < 0, '★답한 뒤에도 선택지를 다시 누를 수 있다');
+    Q.pickQ('d1', Q.QDEF.d1.a);
+    eq(Q.state.qa.d1, Q.QDEF.d1.a, '★답을 고칠 수 있다');
+    ok(html(Q,'qh_d1').indexOf('wrong') < 0, '고쳐서 맞히면 오답 표시가 사라진다');
+    eq(Q.card3Open(), true, '고친 뒤에도 열린 채로 있다');
+    /* 되돌리기 — 다시 오답으로 고쳐도 잠기지 않는다(한 번 연 문은 닫지 않는다) */
+    Q.pickQ('d1', (Q.QDEF.d1.a + 2) % 4);
+    eq(Q.card3Open(), true, '다시 오답으로 고쳐도 잠기지 않는다');
+    Q.pickQ('d1', Q.QDEF.d1.a);
+    const raw = Q.localStorage._mem[Q.LS_KEY];
+    const Q2 = makeSandbox({ seed:{ 'dna_sim_v2': raw } }); Q2.init();
+    eq(Q2.state.qa.d1, Q.state.qa.d1, '문항 답이 복원된다');
+    const Q3 = makeSandbox({ seed:{ 'dna_sim_v2': '{"qa":{"d1":99,"zzz":1}}' } }); Q3.init();
+    eq(Q3.state.qa.d1, undefined, '범위 밖 답은 복원하지 않는다');
+    eq(Q3.state.qa.zzz, undefined, '없는 문항 id 는 복원하지 않는다');
+  }
+  {
+    const W = makeSandbox(); W.init(); W.pickQ('d1', W.QDEF.d1.a); playManual(W); W.ligate(); W.verifyDaughters();
+    W.pickQ('d2', W.QDEF.d2.a); W.pickQ('d3', W.QDEF.d3.a);
+    const before = W.stepDone();
+    eq(before, 5, '본 활동만으로 5 / 5 완료');
+    S.Q_PRAC.forEach(id => W.pickQ(id, (W.QDEF[id].a + 1) % 4));
+    eq(W.stepDone(), before, '★연습 문항을 틀려도 진행도가 줄지 않는다');
+  }
+}
+
+// ══════════════════ [18] 두 탭 · 저장 순번 ══════════════════
+console.log('[18] 저장 순번');
+{
+  const T = makeSandbox(); T.init();
+  T.pickQ('d1', T.QDEF.d1.a);
+  T.unwind();
+  const seq1 = JSON.parse(T.localStorage._mem[T.LS_KEY]).seq;
+  ok(seq1 > 0, '저장할 때마다 순번이 오른다 (' + seq1 + ')');
+  const ahead = JSON.parse(T.localStorage._mem[T.LS_KEY]);
+  ahead.seq = seq1 + 50;
+  ahead.unwound = 32;
+  T.localStorage._mem[T.LS_KEY] = JSON.stringify(ahead);
+  T.unwind();
+  eq(JSON.parse(T.localStorage._mem[T.LS_KEY]).unwound, 32, '★저장소의 seq 가 더 크면 덮어쓰지 않는다');
 }
 
 console.log('');

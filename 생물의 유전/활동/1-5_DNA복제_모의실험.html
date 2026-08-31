@@ -182,6 +182,11 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
   .cell.joined { border-bottom:3px solid var(--lig); }
   .cell.shake { animation:shake .4s; }
   @keyframes shake { 0%,100%{margin-left:1px;} 25%{margin-left:-4px;} 75%{margin-left:6px;} }
+  /* ⚡ 자동 합성 — 합성 방향대로 한 칸씩 채워지게 (교사 지시 2026-09-01).
+     ★타이머를 쓰지 않는다(제작 표준 §4) — 칸마다 animation-delay 만 다르게 준다.
+     시작값을 0 이 아니라 .12 로 두는 것은, 0 이면 격자에 잠깐 구멍이 뚫려 보이기 때문이다. */
+  .cell.nt.pour { animation:pourIn .24s ease-out both; }
+  @keyframes pourIn { from { opacity:.12; } to { opacity:1; } }
 
   .arrowrow { position:relative; height:22px; width:832px; }  /* 32 × 26px */
   .arrow-bar {
@@ -235,7 +240,7 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
   .rfade { transition:opacity .45s ease; }
   @media (prefers-reduced-motion:reduce){
     .rmove, .rfade, .cell, .cell.bondc { transition:none !important; }
-    .cell.nt.target { animation:none; }
+    .cell.nt.target, .cell.nt.pour { animation:none; }
   }
   /* 연출 제어 막대 (제작 표준 §4) */
   .anibar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
@@ -746,6 +751,8 @@ var SEG_COUNT = 4;     // N / SEG
 var CELL_W = 26;       // 한 칸의 간격(px) — ★CSS .cell(24px+여백2px) / .arrowrow(832) / .fragbox(208) 와 일치
 var PMR_LEN = 3;       // 프라이머 캡슐 길이(칸) — CSS .pmr-cap width 78px = 3 × 26
 var MANUAL_MIN = 6;    // 자동 합성 개방 기준(각 가닥 직접 붙인 수)
+var AUTO_STEP = .055;  // ⚡자동 합성에서 한 칸이 채워지는 간격(초)
+var AUTO_SPAN = 2.4;   // 전체가 다 채워지기까지의 상한(초). 칸이 많으면 간격을 줄인다
 var LS_KEY = 'dna_sim_v2';
 
 var COMPLEMENT = { A:'T', T:'A', G:'C', C:'G' };
@@ -2155,6 +2162,33 @@ function removeLast(){
   updateStage(); updateProgress(); saveState();
 }
 
+/* ⚡ 자동 합성을 「합성 방향대로 한 칸씩」 보이게 한다 (교사 지시 2026-09-01)
+   ★타이머를 쓰지 않는다 — 결과는 이미 확정돼 있고, 칸마다 animation-delay 만 다르게 준다.
+     연출이 없는 환경(헤드리스 검사)에서도 결과는 그대로 난다(제작 표준 §4).
+   ★위·아래를 동시에 흘린다 — 위는 오른쪽→왼쪽 한 줄로, 아래는 조각마다 왼쪽→오른쪽으로
+     흐르는 것이 같은 화면에서 맞대어져야 「선도 ↔ 지연」의 뜻이 선다. */
+function autoStep(n){ return n > 0 ? Math.min(AUTO_STEP, AUTO_SPAN / n) : 0; }
+function autoPour(prefix, seq, step){
+  for (var r = 0; r < seq.length; r++){
+    var el = document.getElementById(prefix + seq[r]);
+    if (!el) continue;
+    el.style.animationDelay = (r * step).toFixed(3) + 's';
+    el.className = el.className + ' pour';
+  }
+}
+function autoSweep(seqTop, seqBot){
+  var i, a, b;
+  for (i = 0; i < N; i++){                    /* 지난 회차의 지연이 남지 않게 먼저 지운다 */
+    a = document.getElementById('c_newTop_' + i);
+    b = document.getElementById('c_newBot_' + i);
+    if (a) a.style.animationDelay = '';
+    if (b) b.style.animationDelay = '';
+  }
+  var step = autoStep(Math.max(seqTop.length, seqBot.length));
+  autoPour('c_newTop_', seqTop, step);
+  autoPour('c_newBot_', seqBot, step);
+}
+
 /* ⚡ 나머지 자동 합성 */
 function autoAvailable(){
   if (strandComplete(state.newTop) && strandComplete(state.newBot)) return false;
@@ -2176,23 +2210,31 @@ function autoFill(){
   /* 자동으로 채울 때에도 프라이머가 먼저 놓여야 한다 — 규칙을 건너뛰지 않는다 */
   state.prim.top = true;
   for (var k = 0; k < SEG_COUNT; k++) state.prim.bot[k] = true;
-  var i, guard = 0;
+  /* ★채우는 차례를 그대로 적어 둔다 — 이 차례가 곧 합성 방향이다.
+     nextTopIndex/nextBotIndex 는 학생이 손으로 붙일 때 쓰는 바로 그 규칙이므로,
+     자동 합성이 수동과 다른 차례로 채워질 수가 없다. */
+  var i, guard = 0, seqTop = [], seqBot = [];
   while (guard++ < 200){
     i = nextTopIndex(state.newTop, state.unwound);
     if (i < 0) break;
     state.newTop[i] = complementOf(TOP_TEMPLATE.charAt(i));
+    seqTop.push(i);
   }
   guard = 0;
   while (guard++ < 200){
     i = nextBotIndex(state.newBot, state.unwound);
     if (i < 0) break;
     state.newBot[i] = complementOf(BOT_TEMPLATE.charAt(i));
+    seqBot.push(i);
   }
   state.sel = null;
-  showFb('fb_stage', 'good', '⚡ 나머지를 같은 규칙으로 자동 합성했다 — <b>위 가닥은 오른쪽→왼쪽 한 줄로</b>, ' +
-    '<b>아래 가닥은 조각마다 왼쪽→오른쪽으로</b> 채워진 것을 확인하시오. 프라이머는 <b>위 1개 · 아래 4개</b>가 되었다. ' +
+  showFb('fb_stage', 'good', '⚡ 나머지를 같은 규칙으로 <b>합성 방향대로 한 칸씩</b> 채웠다 — ' +
+    '<b>위 가닥은 오른쪽→왼쪽 한 줄로</b>, <b>아래 가닥은 조각마다 왼쪽→오른쪽으로</b> ' +
+    '채워지는 차례를 확인하시오. 프라이머는 <b>위 1개 · 아래 4개</b>가 되었다. ' +
     '다음은 <b>🔗 DNA 연결효소로 잇기</b>이다.');
-  updateStage(); updateProgress(); saveState();
+  updateStage();
+  autoSweep(seqTop, seqBot);   /* ★updateStage 가 className 을 새로 쓰므로 반드시 그 뒤에 부른다 */
+  updateProgress(); saveState();
 }
 
 /* 🔗 DNA 연결효소 */

@@ -905,6 +905,115 @@ console.log('[7] 자동 합성 결과 대조');
   ok(html(A,'fb_stage').indexOf('이미 완성') > 0, '완성 후 자동 합성 안내');
 }
 
+// ── [7-2] ★자동 합성도 「합성 방향대로 한 칸씩」 채워진다 (교사 지시 2026-09-01) ──
+{
+  const P = makeSandbox();
+  P.init();
+  P.pickQ('d1', P.QDEF.d1.a);
+  P.unwind();
+  ensurePrimers(P);
+  const beforeT = P.arrStr(P.state.newTop), beforeB = P.arrStr(P.state.newBot);
+  for (let i = 0; i < P.MANUAL_MIN; i++) fillOne(P, 'top');
+  for (let i = 0; i < P.MANUAL_MIN; i++) fillOne(P, 'bot');
+  const handT = P.arrStr(P.state.newTop), handB = P.arrStr(P.state.newBot);
+  P.autoFill();
+
+  /* 지연이 붙은 칸을 지연 오름차순으로 = 화면에 채워지는 차례 */
+  const pourSeq = (prefix) => {
+    const rows = [];
+    for (let i = 0; i < P.N; i++){
+      const e = P._store[prefix + i];
+      if (!e || !e.style.animationDelay) continue;
+      rows.push({ i, d: parseFloat(e.style.animationDelay), on: /(^| )pour( |$)/.test(e.className) });
+    }
+    return rows.sort((a, b) => a.d - b.d);
+  };
+  const seqT = pourSeq('c_newTop_'), seqB = pourSeq('c_newBot_');
+
+  ok(seqT.length > 0 && seqB.length > 0, '★자동 합성이 칸마다 지연을 준다 (한꺼번에 나타나지 않는다)');
+  eq(seqT.filter(x => x.on).length, seqT.length, '지연이 붙은 위 칸은 모두 pour 클래스를 갖는다');
+  eq(seqB.filter(x => x.on).length, seqB.length, '지연이 붙은 아래 칸은 모두 pour 클래스를 갖는다');
+  /* ★지연이 하나도 없을 때 검사가 터지지 않고 FAIL 로 떨어지게 한다 */
+  const dAt = (seq, r) => (seq[r] ? seq[r].d : -1);
+  const dLast = (seq) => dAt(seq, seq.length - 1);
+  eq(dAt(seqT, 0), 0, '위 가닥 첫 칸의 지연은 0');
+  eq(dAt(seqB, 0), 0, '아래 가닥 첫 칸의 지연은 0');
+
+  /* 지연은 균등 증가한다(한 칸씩 = 같은 간격) */
+  const evenly = (seq) => seq.every((x, r) => r === 0 || Math.abs((x.d - seq[r-1].d) - (seq[1].d - seq[0].d)) < 1e-6);
+  ok(seqT.length > 1 && evenly(seqT), '위 가닥 지연이 같은 간격으로 는다');
+  ok(seqB.length > 1 && evenly(seqB), '아래 가닥 지연이 같은 간격으로 는다');
+  /* ★간격이 0 이면 「한 칸씩」이 아니라 한꺼번에다 — 균등 검사만으로는 못 잡는다 */
+  ok(dLast(seqT) > 0, '★위 가닥 마지막 칸은 첫 칸보다 늦게 채워진다');
+  ok(dLast(seqB) > 0, '★아래 가닥 마지막 칸은 첫 칸보다 늦게 채워진다');
+  ok(seqT.every((x, r) => r === 0 || x.d > seqT[r-1].d), '위 가닥 지연이 단조 증가한다');
+  ok(seqB.every((x, r) => r === 0 || x.d > seqB[r-1].d), '아래 가닥 지연이 단조 증가한다');
+  ok(dLast(seqT) >= 0 && dLast(seqT) <= P.AUTO_SPAN + 1e-9, '★전체 연출이 상한(AUTO_SPAN) 안에 든다');
+  ok(seqT.length > 1 && dAt(seqT,1) - dAt(seqT,0) <= P.AUTO_STEP + 1e-9, '한 칸 간격이 AUTO_STEP 을 넘지 않는다');
+
+  /* ★차례가 곧 합성 방향이다 — 앱의 규칙(nextTopIndex/nextBotIndex)이 내는 차례와 같아야 한다 */
+  const Q = makeSandbox(); Q.init(); Q.pickQ('d1', Q.QDEF.d1.a); Q.unwind(); ensurePrimers(Q);
+  for (let i = 0; i < Q.MANUAL_MIN; i++) fillOne(Q, 'top');
+  for (let i = 0; i < Q.MANUAL_MIN; i++) fillOne(Q, 'bot');
+  Q.state.unwound = Q.N;
+  Q.state.prim.top = true;
+  for (let k = 0; k < Q.SEG_COUNT; k++) Q.state.prim.bot[k] = true;
+  const ruleSeq = (strand) => {
+    const arr = (strand === 'top' ? Q.state.newTop : Q.state.newBot).slice();
+    const tmpl = strand === 'top' ? Q.TOP_TEMPLATE : Q.BOT_TEMPLATE;
+    const out = [];
+    for (let g = 0; g < 200; g++){
+      const i = strand === 'top' ? Q.nextTopIndex(arr, Q.N) : Q.nextBotIndex(arr, Q.N);
+      if (i < 0) break;
+      arr[i] = Q.complementOf(tmpl.charAt(i)); out.push(i);
+    }
+    return out;
+  };
+  eq(seqT.map(x => x.i).join(' '), ruleSeq('top').join(' '),
+     '★위 가닥이 채워지는 차례 = 손으로 붙일 때의 규칙이 내는 차례');
+  eq(seqB.map(x => x.i).join(' '), ruleSeq('bot').join(' '),
+     '★아래 가닥이 채워지는 차례 = 손으로 붙일 때의 규칙이 내는 차례');
+
+  /* 방향 자체를 따로 문다 — 규칙이 바뀌어 같이 틀어져도 여기서 잡힌다 */
+  const idxT = seqT.map(x => x.i);
+  ok(idxT.length > 1 && idxT.every((v, r) => r === 0 || v === idxT[r-1] - 1),
+     '★위(선도)는 오른쪽→왼쪽으로 한 칸씩 끊김 없이 간다');
+  const idxB = seqB.map(x => x.i);
+  const segOf = (i) => P.segmentOf(i);
+  let jumps = 0;
+  for (let r = 1; r < idxB.length; r++){
+    if (idxB[r] === idxB[r-1] + 1) continue;              // 조각 안에서는 왼쪽→오른쪽
+    jumps++;
+    /* segmentOf 는 오른쪽 끝이 0 이다 — 왼쪽으로 되돌아가면 조각 번호가 하나 는다 */
+    ok(idxB[r] < idxB[r-1] && segOf(idxB[r]) === segOf(idxB[r-1]) + 1,
+       '★아래(지연)는 되돌아갈 때 바로 왼쪽 조각의 왼쪽 끝으로 간다');
+  }
+  ok(jumps >= 1 && jumps <= P.SEG_COUNT - 1, '★아래 가닥은 조각 수만큼 되돌아간다 (' + jumps + '번)');
+
+  /* 이미 손으로 채운 칸은 다시 나타나지 않는다 */
+  let stale = [];
+  for (let i = 0; i < P.N; i++){
+    if (handT.charAt(i) !== '·' && P._store['c_newTop_' + i].style.animationDelay) stale.push('T' + i);
+    if (handB.charAt(i) !== '·' && P._store['c_newBot_' + i].style.animationDelay) stale.push('B' + i);
+  }
+  eq(stale.join(','), '', '★손으로 채운 칸에는 지연이 붙지 않는다 (다시 깔리지 않는다)');
+  eq(seqT.length + seqB.length,
+     (P.N - handT.replace(/[^ACGT]/g, '').length) + (P.N - handB.replace(/[^ACGT]/g, '').length),
+     '지연이 붙은 칸 수 = 자동으로 채운 칸 수');
+  ok(beforeT.indexOf('A') < 0 && beforeB.indexOf('A') < 0, '(전제) 손으로 붙이기 전에는 비어 있었다');
+
+  /* 연출과 무관하게 결과는 확정된다 (제작 표준 §4) */
+  eq(P.arrStr(P.state.newTop), compStr(P.TOP_TEMPLATE), '연출과 무관하게 결과는 이미 확정된다(①)');
+  eq(P.arrStr(P.state.newBot), compStr(P.BOT_TEMPLATE), '연출과 무관하게 결과는 이미 확정된다(②)');
+  ok(html(P,'fb_stage').indexOf('합성 방향대로 한 칸씩') > 0, '피드백이 한 칸씩 채워짐을 알린다');
+
+  /* CSS 쪽 짝 */
+  ok(/@keyframes pourIn/.test(src), '.pour 를 움직이는 @keyframes pourIn 이 있다');
+  ok(/\.cell\.nt\.pour[\s\S]{0,60}animation:\s*pourIn/.test(src), '.cell.nt.pour 에 pourIn 이 걸려 있다');
+  ok(/prefers-reduced-motion[\s\S]{0,200}\.cell\.nt\.pour[^}]*animation:none/.test(src),
+     '★prefers-reduced-motion 에서 순차 채우기를 끈다');
+}
+
 // ══════════════════ [8] 리셋 ══════════════════
 console.log('[8] 리셋');
 {

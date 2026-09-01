@@ -1503,6 +1503,52 @@ console.log('[12] 연출 무대 레이아웃');
     eq(l.lig.length, S.SEG_COUNT - 1, '이음매는 조각 수 - 1 곳');
     eq(l.lig.filter(o => o.op > 0).length, S.SEG_COUNT - 1, '이은 뒤 이음매 전부 표시');
     ok(l.lig.every(o => o.y > l.polT.y), '★연결효소는 아래쪽(지연) 대역에만 나온다');
+  }
+  /* ── ★중합효소 배지가 프라이머 캡슐을 덮지 않는다 (2026-09-01 브라우저 실측에서 잡힘) ──
+     같은 y 에 두었더니 국면 ④ 에서 위쪽 배지가 캡슐 폭의 43% 를 덮었다.
+     열(3′ 말단)은 그대로 두고 **줄만 바깥으로** 뗀다. 세로로 안 겹치면 빗금이 다 보인다. */
+  {
+    const POL_R = 12, CAP_H = 11;              // 배지 반지름 · 캡슐 높이(그리는 코드와 손으로 맞춘 값)
+    /* ★★「안 겹친다」로는 모자란다 — 18 일 때 실측 여유가 **0.5px** 뿐이라 붙어 보였다(2026-09-01).
+       눈에 틈이 보이려면 여유가 필요하다. 최소 여유를 상수로 박아 둔다. */
+    const GAP_MIN = 4;
+    const NEED = POL_R + CAP_H / 2 + GAP_MIN;
+    ok(S.FK_POL_OFF >= NEED, '★배지와 캡슐 사이에 눈에 보이는 여유(' + GAP_MIN + ')가 있다 (FK_POL_OFF=' + S.FK_POL_OFF + ' ≥ ' + NEED + ')');
+    const CAP_W = S.PMR_LEN * S.FK_P;          // 캡슐 폭 = 3칸
+    /* 캡슐의 x 는 왼쪽 끝, 배지의 x 는 중심이다 — 가로로 겹칠 때만 세로를 문다 */
+    const xHit = (pol, cap) => (pol.x + POL_R > cap.x) && (pol.x - POL_R < cap.x + CAP_W);
+    let 검사한짝 = 0;
+    for (let ph = 0; ph <= S.aniLast(); ph++){
+      const l = L(ph);
+      if (l.polT.op > 0 && l.pmrTop.op > 0 && xHit(l.polT, l.pmrTop)){
+        검사한짝++;
+        const d = Math.abs(l.polT.y - l.pmrTop.y);
+        ok(d >= NEED, 'ph' + ph + ' 위 배지와 캡슐 사이에 여유가 있다 (' + d.toFixed(1) + ')');
+      }
+      for (let k = 0; k < S.SEG_COUNT; k++){
+        if (l.polB.op > 0 && l.pmrBot[k].op > 0 && xHit(l.polB, l.pmrBot[k])){
+          검사한짝++;
+          const d = Math.abs(l.polB.y - l.pmrBot[k].y);
+          ok(d >= NEED, 'ph' + ph + ' 아래 배지와 조각' + (k+1) + ' 캡슐 사이에 여유가 있다 (' + d.toFixed(1) + ')');
+        }
+      }
+    }
+    ok(검사한짝 >= 2, '★배지와 캡슐이 가로로 겹치는 짝이 실제로 있다 (' + 검사한짝 + '짝) — 없으면 위 검사가 헛돈다');
+    /* 뗀 방향이 맞는가 — 위는 위로(작아짐), 아래는 아래로(커짐) */
+    const l4 = L(S.FK_ATTACH_PH);
+    ok(l4.polT.y < l4.pmrTop.y, '★위 배지는 새 가닥 줄보다 **위**로 뗀다');
+    ok(l4.polB.y > l4.pmrBot[0].y, '★아래 배지는 새 가닥 줄보다 **아래**로 뗀다');
+    /* 무대 밖으로 나가지 않는가 (viewBox 0 0 700 300) */
+    for (let ph = 0; ph <= S.aniLast(); ph++){
+      const l = L(ph);
+      ok(l.polT.y - POL_R >= 0 && l.polB.y + POL_R <= 300, 'ph' + ph + ' 배지가 무대 세로 범위 안에 있다');
+    }
+    /* ★열은 안 바뀐다 — 뗀 것은 줄뿐이다 */
+    eq(L(S.FK_ATTACH_PH).polT.col, S.FK_POLT[S.FK_ATTACH_PH], '뗀 뒤에도 위 배지의 열은 그대로');
+    eq(L(S.FK_ATTACH_PH).polB.col, S.FK_POLB[S.FK_ATTACH_PH], '뗀 뒤에도 아래 배지의 열은 그대로');
+  }
+  {
+    const l = L(S.aniLast());
     eq(l.lig.map(o => o.col).sort((x,y) => x - y).join(','), '8,16,24', '이음매 자리 = 8·16·24번');
   }
   /* ★무대는 어느 국면에서도 선도/지연 이름을 주지 않는다 (2026-09-01 교사 지시) */
@@ -1659,6 +1705,36 @@ console.log('[15] 교과서 범위 경계');
 // ══════════════════ [16] 색 규약 — CSS ↔ JS 짝 ══════════════════
 console.log('[16] 색 규약');
 {
+  /* ── ★사다리 가로대가 알갱이보다 연하면 「사다리」로 안 읽힌다 (2026-09-01 브라우저 실측) ──
+     실측에서 가로대(#9AA1AC 1.8)가 화면에서 가장 연한 요소라, 멀리서 보면
+     「알갱이 두 줄」로 먼저 읽혔다. 알갱이와 같은 색으로 올리고 굵혔다. */
+  {
+    const BEAD = '#6B7280';                       // 주형 알갱이 색 (그리는 코드와 손으로 맞춘 값)
+    eq(S.FK_LAD_COLOR.toUpperCase(), BEAD, '★가로대 색 = 알갱이 색 (더 연하면 안 된다)');
+    ok(S.FK_LAD_W >= 2.4, '★가로대 굵기 2.4 이상 (실측 전 1.8 은 너무 가늘었다) — 실제 ' + S.FK_LAD_W);
+    ok(S.FK_LAD_W < S.FK_P, '가로대가 한 칸 폭보다는 가늘다');
+    const svg = S.fkStageSvg();
+    ok(svg.indexOf('stroke="' + S.FK_LAD_COLOR + '"') > 0, '무대 SVG 가 그 색을 실제로 쓴다');
+    ok(svg.indexOf('stroke-width="' + S.FK_LAD_W + '"') > 0, '무대 SVG 가 그 굵기를 실제로 쓴다');
+    ok(svg.indexOf('#9AA1AC" stroke-width="1.8"') < 0, '★옛 연회색 가로대가 남아 있지 않다');
+    /* 가로대는 두 가닥 사이를 실제로 잇는다 — 길이는 사다리 폭 그대로 */
+    ok(svg.indexOf('y1="-' + S.FK_LAD + '"') > 0 && svg.indexOf('y2="' + S.FK_LAD + '"') > 0,
+       '가로대 길이가 사다리 폭(±FK_LAD)이다');
+  }
+  /* ── ★무대가 좁은 화면에서 제한 없이 쪼그라들지 않는다 (2026-09-01 실측) ── */
+  {
+    const r = cssRule('svg.stage');
+    ok(r.length > 0, 'svg.stage 규칙이 있다');
+    const mw = cssPx(r, 'min-width');
+    ok(mw >= 600, '★무대 min-width 가 600px 이상이다 (0 이면 좁은 화면에서 가로대가 먼저 사라진다) — 실제 ' + mw);
+    /* ★★소스를 grep 하면 **CSS 주석이 검사를 통과시킨다** — 실제로 겪었다.
+       (주석에 「.stage-wrap 이 이미 overflow-x:auto」라고 적어 두었더니 변이가 안 잡혔다.)
+       규칙 본문만 떼어 와서 본다. */
+    const w = cssRule('.stage-wrap');
+    ok(w.length > 0, '.stage-wrap 규칙이 있다');
+    ok(/overflow-x\s*:\s*auto/.test(w),
+       '★.stage-wrap 이 overflow-x:auto — 좁아지면 무대가 줄지 않고 가로 스크롤이 생긴다');
+  }
   /* ★★염기 타일이 회색으로 나오던 회귀 — `.cell` 이 `.b-A~.b-C` 보다 뒤에 있어
      color/border 를 덮었다(교사 지적 2026-08-31: 「주형 가닥이 너무 연해서 안 보여」).
      2-클래스 규칙이 살아 있는지, 네 색이 정확히 짝지어졌는지 문다. */

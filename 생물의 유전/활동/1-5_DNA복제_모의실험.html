@@ -241,7 +241,11 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
 
   /* ── 연출 무대(SVG) ── */
   .stage-wrap { overflow-x:auto; border:1px solid #E3E7EC; border-radius:10px; background:#FCFDFE; padding:6px; }
-  svg.stage { width:100%; min-width:0; height:auto; display:block; }
+  /* ★min-width 를 0 으로 두었더니 좁은 화면에서 무대가 제한 없이 쪼그라들었다(2026-09-01 실측).
+     자매 활동도 600px 을 준다. 감싼 상자가 이미 가로로 스크롤되므로
+     (검사 [4]가 자매 활동 이름을 본문에서 금지하므로 여기 적지 않는다)
+     좁아지면 무대가 줄지 않고 **가로 스크롤이 생긴다.** 가로대가 먼저 사라지는 것을 막는다. */
+  svg.stage { width:100%; min-width:600px; height:auto; display:block; }
   .rmove { transition:transform .85s cubic-bezier(.4,0,.2,1), opacity .45s ease; }
   .rfade { transition:opacity .45s ease; }
   @media (prefers-reduced-motion:reduce){
@@ -1284,6 +1288,17 @@ function stepDone(){
 var FK_X0 = 150, FK_P = 15;                 // 격자 왼쪽 끝 x, 한 칸 폭 (150 + 32×15 = 630)
 var FK_Y = { open_nt:82, open_tt:108, mid:150, open_tb:192, open_nb:218 };
 var FK_LAD = 11;                            // 아직 붙어 있는 구간의 반간격 — 사다리 가로대의 절반 길이
+/* ★중합효소 배지(r=12)를 새 가닥 줄에서 **바깥쪽으로** 떼는 거리 (2026-09-01 브라우저 실측).
+   같은 y 에 두었더니 국면 ④ 에서 위쪽 배지가 프라이머 캡슐의 **43%** 를 덮었다
+   (겹침 18.8px / 캡슐 폭 43.2px, 세로는 캡슐 높이 전부). 열(3′ 말단)은 그대로 두고 줄만 뗀다 —
+   위 가닥은 위로, 아래 가닥은 아래로. 검사 [12]가 「캡슐과 세로로 겹치지 않는다」를 문다. */
+var FK_POL_OFF = 22;   /* ★22 가 위쪽 한계다 — 검사 [12]의 무대 띠(y 60~245)에 딱 닿는다.
+                          위 배지 y = FK_Y.open_nt(82) − 22 = 60. 더 떼면 띠를 벗어난다. */
+/* ★사다리 가로대 — 연회색 #9AA1AC · 1.8 이던 것을 진하고 굵게 (2026-09-01 브라우저 실측).
+   실측에서 가로대가 화면에서 **가장 연한 요소**라, 멀리서 보면 「사다리」가 아니라
+   「알갱이 두 줄」로 먼저 읽혔다. 알갱이(#6B7280)와 같은 계열로 맞춘다. 검사 [16]이 문다. */
+var FK_LAD_COLOR = '#6B7280';
+var FK_LAD_W = 2.6;
 var FK_RAMP = 4;                            // 갈라지는 목의 길이(칸) — 짧으면 Y자로 안 읽힌다
 /* ★CSS 와 손으로 맞추는 값 — `.rmove { transition:transform .85s … }` 와 같아야 한다.
    중합효소가 한 국면을 이동하는 데 걸리는 시간이며, 새 가닥 칸의 전이 지연을 이 값으로 나눠 준다.
@@ -1427,9 +1442,9 @@ function fkLayout(ph){
   }
   /* 중합효소 — 자기 가닥의 3′ 말단에 얹힌다 */
   var polT = { col:f.polT, x:fkCx(f.polT < 0 ? 0 : f.polT),
-               y:fkNewTopY(f.polT < 0 ? 0 : f.polT, fork), op:f.polT >= 0 ? 1 : 0 };
+               y:fkNewTopY(f.polT < 0 ? 0 : f.polT, fork) - FK_POL_OFF, op:f.polT >= 0 ? 1 : 0 };
   var polB = { col:f.polB, x:fkCx(f.polB < 0 ? N - 1 : f.polB),
-               y:fkNewBotY(f.polB < 0 ? N - 1 : f.polB, fork), op:f.polB >= 0 ? 1 : 0 };
+               y:fkNewBotY(f.polB < 0 ? N - 1 : f.polB, fork) + FK_POL_OFF, op:f.polB >= 0 ? 1 : 0 };
   /* 연결효소 — 조각 사이 이음매 3곳(8·16·24번 자리) */
   var lig = [];
   for (k = 1; k < SEG_COUNT; k++){
@@ -1465,7 +1480,7 @@ function fkStageSvg(){
   /* 아직 붙어 있는 구간의 가로대(먼저 그려 뒤로 보낸다) */
   for (i = 0; i < N; i++){
     h += '<g id="fk_bd_' + i + '" class="rmove"><line x1="0" y1="-' + FK_LAD + '" x2="0" y2="' + FK_LAD + '" ' +
-         'stroke="#9AA1AC" stroke-width="1.8"/></g>';
+         'stroke="' + FK_LAD_COLOR + '" stroke-width="' + FK_LAD_W + '"/></g>';
   }
   /* 주형 두 가닥 */
   for (i = 0; i < N; i++){

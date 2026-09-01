@@ -465,7 +465,6 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
           <span class="anistep" id="ani_step"></span>
         </div>
         <div class="anicap" id="ani_cap"></div>
-        <div class="note" id="ani_gate" style="color:var(--amber-ink);"></div>
       </div>
       <div class="pane-r">
         <div class="pr-do">
@@ -1343,16 +1342,14 @@ var FK_CAP = [
 
 function aniLast(){ return FK_STEPS.length - 1; }   /* ★상수가 아니라 함수 */
 
-/* ★볼 수 있는 마지막 국면 — 마지막 국면(⑪ 연결효소)만 잠근다.
-   제작 표준: 「직접 해 본 뒤에 본다」. ③에서 🔗 조각을 이어야 열리며,
-   그 시점은 격자에 「(지연 가닥)」 이름표가 뜨는 때와 정확히 같다.
-   ⑩까지는 처음부터 열려 있다 — 갈라짐·프라이머·두 방향의 합성은 다 보인다.
-   ★2026-09-01: 예전에는 이 잠금이 「선도/지연 이름 공개」를 막는 것이었으나,
-     그 국면을 뺐으므로 이제는 마지막 국면 자체를 막는다. */
-function fkCap(){
-  if (teacherOpen || state.ligated) return aniLast();
-  return aniLast() - 1;
-}
+/* ★무대에는 잠금이 없다 — 12국면이 처음부터 다 열려 있다 (2026-09-01 교사 결정).
+   원래 이 잠금은 「선도/지연이라는 **용어**를 미리 주지 않는다」를 위한 것이었는데,
+   ⑫ 이름 공개 국면을 뺀 뒤로는 감출 용어가 없어졌다. 남은 ⑪(연결효소)을 계속 잠그면
+   ① 카드 ①의 범례가 이미 「DNA 연결효소 — 마름모」를 밝히고 있어 **낱말은 주고 뜻만 가리는** 꼴이 되고,
+   ② 학생이 ③에서 🔗 을 **처음 보는 채로 눌러야** 해 「보고 나서 해 본다」가 뒤집히며,
+   ③ 이음 완료는 카드 ④의 `resultLocked` 가 이미 지키므로 덧자물쇠일 뿐이다.
+   ★앞으로 나아가는 관문(③ = 문항에 답하면 열림)은 그대로다 — 그건 제 몫을 한다.
+   ★되돌리려면 이 자리에 fkCap() 을 되살리고 아래 세 군데를 그것으로 바꾸면 된다. */
 var ani = { ph:0, prev:-1 };
 
 /* 국면 → 놓인 물체 목록 (뼈대) */
@@ -1638,11 +1635,8 @@ function fkApplyPhase(ph, prev){
   if (cp) cp.innerHTML = L.cap;
   setDisabled('ani_prev',  L.ph <= 0);
   setDisabled('ani_first', L.ph <= 0);
-  setDisabled('ani_next',  L.ph >= fkCap());
-  setDisabled('ani_last',  L.ph >= fkCap());
-  var gl = document.getElementById('ani_gate');
-  if (gl) gl.innerHTML = (fkCap() < aniLast() && L.ph >= fkCap())
-    ? '🔒 마지막 단계는 <b>③에서 🔗 조각을 이은 뒤</b>에 열린다.' : '';
+  setDisabled('ani_next',  L.ph >= aniLast());
+  setDisabled('ani_last',  L.ph >= aniLast());
 }
 
 function fkRender(){
@@ -1653,9 +1647,9 @@ function fkRender(){
   fkApplyPhase(ani.ph, pv);
 }
 function aniGo(delta){
-  var p = (delta === -99) ? 0 : (delta === 99) ? fkCap() : ani.ph + delta;
+  var p = (delta === -99) ? 0 : (delta === 99) ? aniLast() : ani.ph + delta;
   ani.prev = ani.ph;
-  ani.ph = Math.max(0, Math.min(fkCap(), p));
+  ani.ph = Math.max(0, Math.min(aniLast(), p));
   fkRender();
 }
 

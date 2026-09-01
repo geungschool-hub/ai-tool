@@ -1449,33 +1449,43 @@ console.log('[13] 연출 무대 SVG · 잠금');
     eq(open, close, 'SVG g 여닫기 균형 (' + open + ')');
   }
   ok(/id="fkStage"[\s\S]{0,200}aria-label="/.test(src), '무대에 aria-label 이 있다');
-  // ★마지막 국면 잠금 — 격자의 「(지연 가닥)」 이름표와 열리는 시점이 같다
+  /* ★무대에는 잠금이 없다 — 12국면이 처음부터 다 열려 있다 (2026-09-01 교사 결정).
+     ⑫ 이름 공개 국면을 뺀 뒤로 감출 용어가 없어졌고, 카드 ①의 범례가 이미
+     「DNA 연결효소 — 마름모」를 밝히고 있어 남은 잠금은 낱말은 주고 뜻만 가리는 꼴이었다.
+     앞으로 나아가는 관문(③ = 문항에 답하면 열림)과 카드 ④의 결과 잠금은 그대로다. */
   {
     const T = makeSandbox(); T.init();
-    eq(T.fkCap(), T.aniLast() - 1, '처음에는 마지막 국면이 잠겨 있다');
+    eq(typeof T.fkCap, 'undefined', '★무대 잠금 함수(fkCap)가 없다');
+    ok(!/id="ani_gate"/.test(src), '★잠금 안내 요소도 없다');
+    ok(!/🔒[^<]{0,40}마지막 단계/.test(src), '★무대에 마지막 단계 잠금 안내 문구가 없다');
     T.aniGo(99);
-    eq(T.ani.ph, T.aniLast() - 1, '끝까지 단추는 잠긴 국면 앞에서 멈춘다');
+    eq(T.ani.ph, T.aniLast(), '★아무것도 안 해도 ⏩ 로 마지막 국면까지 간다');
+    ok(T.FK_STEPS[T.ani.ph].indexOf('연결효소') > 0, '그 마지막 국면이 연결효소 국면이다');
+    ok(T.FK_CAP[T.ani.ph].indexOf('딸 DNA 2개') > 0, '마지막 캡션이 딸 DNA 2개로 맺는다');
+    eq(T._store['ani_next'].disabled, true, '마지막 국면에서 다음 단추 비활성');
+    eq(T._store['ani_last'].disabled, true, '마지막 국면에서 끝까지 단추 비활성');
     T.aniGo(1);
-    eq(T.ani.ph, T.aniLast() - 1, '다음 단추도 잠금을 넘지 못한다');
-    ok(T.FK_STEPS[T.ani.ph].indexOf('연결효소') < 0, '잠긴 동안에는 연결효소 국면에 닿지 못한다');
-    ok(html(T,'ani_gate').indexOf('이은 뒤') > 0, '잠금 안내가 뜬다');
+    eq(T.ani.ph, T.aniLast(), '마지막을 넘어가지 않는다');
     T.aniGo(-99);
     eq(T.ani.ph, 0, '처음부터 단추');
     eq(T._store['ani_prev'].disabled, true, '첫 국면에서 이전 단추 비활성');
     eq(T._store['ani_next'].disabled, false, '첫 국면에서 다음 단추 활성');
     ok(txt(T,'ani_step').indexOf('1 / ' + (T.aniLast() + 1)) > 0, '단계 표시 n / N');
+    /* 국면을 하나씩 밟아도 끝까지 간다 — 중간에 멈추는 자리가 없다 */
+    T.aniGo(-99);
+    for (let k = 0; k < T.aniLast(); k++) T.aniGo(1);
+    eq(T.ani.ph, T.aniLast(), '★▶ 만 눌러도 중간에 막히지 않고 끝까지 간다');
+    /* 조작 카드의 관문은 그대로 살아 있다 */
+    const G = makeSandbox(); G.init();
+    eq(G.card3Open(), false, '③ 은 여전히 문항에 답해야 열린다');
+    G.pickQ('d1', G.QDEF.d1.a);
+    eq(G.card3Open(), true, '답하면 ③ 이 열린다');
+    eq(G.card4Open(), false, '④ 는 여전히 이어야 열린다');
     const U = makeSandbox(); U.init(); U.pickQ('d1', U.QDEF.d1.a); playManual(U); U.ligate();
-    eq(U.fkCap(), U.aniLast(), '조각을 이으면 마지막 국면이 열린다');
-    ok(txt(U,'lab_newBot').indexOf('지연 가닥') > 0, '★같은 시점에 격자에도 지연 가닥 이름이 뜬다');
-    U.aniGo(99);
-    eq(U.ani.ph, U.aniLast(), '마지막 국면까지 간다');
-    ok(U.FK_STEPS[U.ani.ph].indexOf('연결효소') > 0, '열린 마지막 국면이 연결효소 국면이다');
-    ok(U.FK_CAP[U.ani.ph].indexOf('딸 DNA 2개') > 0, '마지막 캡션이 딸 DNA 2개로 맺는다');
-    eq(U._store['ani_next'].disabled, true, '마지막 국면에서 다음 단추 비활성');
-    eq(html(U,'ani_gate'), '', '열린 뒤에는 잠금 안내가 사라진다');
+    ok(txt(U,'lab_newBot').indexOf('지연 가닥') > 0, '★이름은 격자에서 준다 — 이은 뒤 지연 가닥 이름표');
+    eq(U.card4Open(), true, '이으면 ④ 가 열린다');
     const V = makeSandbox(); V.init();
     for (let i = 0; i < 5; i++) V.badgeTap();
-    eq(V.fkCap(), V.aniLast(), '교사용 해제로도 마지막 국면까지 열림');
     ok(!V.localStorage._mem[V.LS_KEY] || JSON.parse(V.localStorage._mem[V.LS_KEY]).teacherOpen === undefined,
        '★교사용 해제는 저장되지 않는다');
     eq(V.card3Open(), true, '교사용 해제로 조작 카드도 열린다');

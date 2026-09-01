@@ -540,26 +540,33 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   M.init();
   eq(M.stepDone(), 0, '초기 진행 0');
   eq(txt(M, 'progress'), '진행 0 / 5', '배지 0 / 5');
-  /* ★카드 ③ 은 카드 ②의 결론 문항에 답해야 열린다 */
-  eq(M.card3Open(), false, '시작 시 ③ 조작 카드 잠김');
-  eq(M._store['lock3'].style.display, 'block', '③ 잠금 안내 표시');
-  M.pickQ('d1', M.QDEF.d1.a);
-  eq(M.card3Open(), true, 'd1 정답 → ③ 열림');
-  /* ★★applyLocks 는 잠겼을 때 한 방향으로만 끈다 — 열린 뒤 되살려 주지 않으면 단추가 죽은 채로 남는다.
-     실제로 pick_top·pick_bot 이 그랬다(교사 신고 2026-08-31). 열린 직후 꺼져 있어도 되는 단추를
-     **이름으로 못박는다** — 여기 없는 단추가 꺼져 있으면 되살리는 곳을 빠뜨린 것이다. */
+  /* ★2026-09-01 교사 결정 — 섹션 잠금을 전부 없앴다. 카드는 처음부터 다 열려 있다.
+     복습할 때 앞 칸을 다시 채워야 뒤 칸이 열리는 것이 너무 불편했다. */
+  eq(typeof M.card3Open, 'undefined', '★카드 잠금 판정 함수 card3Open 이 없다');
+  eq(typeof M.card4Open, 'undefined', '★card4Open 이 없다');
+  eq(typeof M.card5Open, 'undefined', '★card5Open 이 없다');
+  eq(typeof M.badgeTap, 'undefined', '★열 것이 없어져 교사용 배지 해제도 없다');
+  ok(!/id="lock3"|id="lock5"|id="resultLocked"/.test(src), '★잠금 안내 요소 3개가 없다');
+  ok(!/class="lockmsg"/.test(src), '★lockmsg 를 쓰는 자리가 없다');
+  /* ★★아무것도 안 한 상태에서 꺼져 있어도 되는 단추를 **이름으로 못박는다.**
+     applyLocks 가 한 방향으로만 끄던 시절 pick_top·pick_bot 이 죽은 채 남은 적이 있다(2026-08-31).
+     여기 없는 단추가 꺼져 있으면 되살리는 곳을 빠뜨린 것이다. */
   {
     const GATED = ['btnUnwind','btnUnwindAll','btnPrimer','nb_A','nb_T','nb_G','nb_C',
-                   'btnRemove','btnAuto','btnLigate','pick_top','pick_bot'];
+                   'btnRemove','btnAuto','btnLigate','pick_top','pick_bot','btnVerify'];
     const off = GATED.filter(id => M._store[id] && M._store[id].disabled);
     eq(off.sort().join(','), ['btnAuto','btnLigate','btnPrimer'].sort().join(','),
-       '★열린 직후 꺼져 있어도 되는 단추는 셋뿐 (실제: ' + (off.join(',') || '없음') + ')');
+       '★처음부터 꺼져 있어도 되는 단추는 셋뿐 (실제: ' + (off.join(',') || '없음') + ')');
   }
+  eq(M._store['btnVerify'].disabled, false,
+     '★딸 DNA 확인 단추는 처음부터 눌린다 — 모자라면 verifyDaughters 가 말해 준다');
+  M.verifyDaughters();
+  ok(html(M,'fb_stage').indexOf('완성되지 않았다') > 0, '아직 못 할 때는 죽은 단추가 아니라 안내로 답한다');
+  eq(M.state.verified, false, '누른다고 통과되지는 않는다');
+  M.pickQ('d1', M.QDEF.d1.a);
   eq(M.stepDone(), 1, 'd1 정답으로 진행 1');
-  eq(M._store['btnVerify'].disabled, true, '시작 시 딸 DNA 확인 버튼 잠김');
   eq(M._store['btnLigate'].disabled, true, '시작 시 연결효소 버튼 잠김');
   eq(M._store['btnAuto'].disabled, true, '시작 시 자동 합성 잠김');
-  eq(M._store['resultLocked'].style.display, 'block', '③ 잠금 안내 표시');
   eq(M._store['arrowTop'].style.display, 'none', '화살표 막대 숨김');
   eq(botBars(M).length, 0, '시작 시 지연 가닥 조각 막대 0개');
   ok(html(M,'wrongEcho').indexOf('붙여 보지 않았다') > 0, '시작 시 정리하기 3 에코 = 아직 시작 전 안내');
@@ -770,7 +777,6 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   M.removeLast();
   eq(M.filledCount(M.state.newBot), 32, '연결 후 아래 가닥 떼어내기 차단');
   ok(html(M,'fb_stage').indexOf('떼어낼 수 없') > 0, '차단 안내');
-  eq(M._store['resultLocked'].style.display, 'none', '③ 잠금 해제');
 
   // 딸 DNA 확인
   M.verifyDaughters();
@@ -778,11 +784,9 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(M.stepDone(), 3, '확인만으로는 진행이 오르지 않는다(결론 문항이 남아 있다)');
   M.pickQ('d2', M.QDEF.d2.a);
   eq(M.stepDone(), 4, '진행 4 (d2)');
-  eq(M.card5Open(), false, 'd3 전에는 💪 잠김');
   M.pickQ('d3', M.QDEF.d3.a);
   eq(M.stepDone(), 5, '진행 5 / 5');
   eq(txt(M,'progress'), '진행 5 / 5', '배지 5 / 5');
-  eq(M.card5Open(), true, 'd3 정답 → 💪 열림');
   eq(M._store['resultBody'].style.display, 'block', '결과 영역 공개');
   ok(html(M,'dgtCheck').indexOf('32 / 32') > 0, '자동 대조 32/32');
   ok(html(M,'dgtCheck').indexOf('같다 ✅') > 0, '두 딸 DNA가 같다는 판정');
@@ -854,7 +858,6 @@ console.log('[6] UI 흐름 — 전 과정 수동');
   eq(R.primerCounts(R.state.prim).top, 1, '복원: 선도 프라이머 1개');
   eq(R.primerCounts(R.state.prim).bot, 4, '복원: 지연 프라이머 4개');
   eq(R._store['resultBody'].style.display, 'block', '복원: 결과 영역 공개');
-  eq(R._store['resultLocked'].style.display, 'none', '복원: 잠금 해제');
   eq(txt(R,'lab_newTop'), '새 가닥 ① (선도 가닥)', '복원: 선도 가닥 이름');
   eq(txt(R,'lab_newBot'), '새 가닥 ② (지연 가닥)', '복원: 지연 가닥 이름');
   eq(R._store['ta1'].value, '두 딸 DNA는 같다', '복원: 서술 답');
@@ -1015,6 +1018,7 @@ console.log('[7] 자동 합성 결과 대조');
 }
 
 // ══════════════════ [8] 리셋 ══════════════════
+const SEC_KEYS = { rule:'①', stage:'②', grid:'③', result:'④', prac:'💪', sum:'⑤' };
 console.log('[8] 리셋');
 {
   const D = makeSandbox();
@@ -1037,6 +1041,118 @@ console.log('[8] 리셋');
   eq(txt(E,'progress'), '진행 0 / 5', '리셋 후 배지 0 / 5');
   eq(cls(E,'fb_stage'), '', '리셋 후 새로 열면 「기록 불러옴」 배너 없음');
   ok(html(E,'wrongEcho').indexOf('붙여 보지 않았다') > 0, '리셋 후 정리하기 3 에코도 초기 안내로');
+}
+
+// ── [8-2] ★섹션별 되돌리기 — 그 칸만 지운다 (교사 지시 2026-09-01) ──
+{
+  /* 여섯 칸을 모두 채운 상태를 하나 만들어 두고, 칸마다 하나씩 되돌려 본다 */
+  const full = () => {
+    const X = makeSandbox(); X.init();
+    X.pickQ('in1', X.QDEF.in1.a);
+    X.pickQ('d1', X.QDEF.d1.a);
+    X.aniGo(99);
+    playManual(X); X.ligate(); X.verifyDaughters();
+    X.pickQ('d2', X.QDEF.d2.a);
+    X.pickQ('d3', X.QDEF.d3.a);
+    X.Q_PRAC.forEach(id => X.pickQ(id, X.QDEF[id].a));
+    X._store['ta1'].value = '두 딸 DNA는 같다';
+    X.state.ta = { ta1:'두 딸 DNA는 같다' };
+    X.state.chk = { chk1:true };
+    X._store['chk1'].checked = true;
+    X._rec.confirmRet = true;
+    return X;
+  };
+  const A = full();
+  eq(A.stepDone(), 5, '(전제) 다 채운 상태 진행 5 / 5');
+  eq(A.state.verified, true, '(전제) 대조까지 끝났다');
+  eq(A.filledCount(A.state.newTop), 32, '(전제) 위 가닥 32칸');
+
+  /* ① 규칙 — 문항 하나만 */
+  { const X = full(); X.resetSec('rule');
+    eq(X.state.qa.in1, undefined, '① 되돌리기: in1 지워짐');
+    eq(X.state.qa.d1, A.state.qa.d1, '① 되돌리기: ② 의 답은 그대로');
+    eq(X.filledCount(X.state.newTop), 32, '① 되돌리기: ③ 격자는 그대로');
+    eq(X.state.verified, true, '① 되돌리기: ④ 결과도 그대로');
+    eq(X._rec.confirms, 0, '① 은 확인 대화상자 없이 바로 지운다'); }
+
+  /* ② 무대 — 국면 0 으로 + d1 */
+  { const X = full(); X.resetSec('stage');
+    eq(X.ani.ph, 0, '② 되돌리기: 첫 국면으로');
+    eq(X.state.qa.d1, undefined, '② 되돌리기: d1 지워짐');
+    eq(X.filledCount(X.state.newBot), 32, '② 되돌리기: ③ 격자는 그대로');
+    eq(X.state.qa.in1, A.state.qa.in1, '② 되돌리기: ① 의 답은 그대로'); }
+
+  /* ③ 격자 — 여기가 교사가 말한 그 칸이다 */
+  { const X = full();
+    X._rec.confirmRet = false; X.resetSec('grid');
+    eq(X.filledCount(X.state.newTop), 32, '③ 되돌리기: 취소하면 아무것도 안 지운다');
+    eq(X._rec.confirms, 1, '③ 은 확인 대화상자를 띄운다');
+    X._rec.confirmRet = true; X.resetSec('grid');
+    eq(X.state.unwound, 0, '③ 되돌리기: 풀린 길이 0');
+    eq(X.filledCount(X.state.newTop) + X.filledCount(X.state.newBot), 0, '③ 되돌리기: 붙인 것 0');
+    eq(X.state.ligated, false, '③ 되돌리기: 연결 해제');
+    eq(X.state.manualTop + X.state.manualBot, 0, '③ 되돌리기: 직접 붙인 수 0');
+    eq(X.state.usedAuto, false, '③ 되돌리기: 자동 합성 기록도 지움');
+    eq(X.state.wrong, 0, '③ 되돌리기: 오답 수 0');
+    eq(X.primerCounts(X.state.prim).top + X.primerCounts(X.state.prim).bot, 0, '③ 되돌리기: 프라이머 0개');
+    eq(X.state.qa.d2, undefined, '③ 되돌리기: d2 지워짐');
+    eq(X.state.verified, false, '★③ 을 지우면 ④ 의 대조 결과도 함께 지워진다 (없는 가닥의 결과가 남지 않게)');
+    eq(X._store['resultBody'].style.display, 'none', '③ 되돌리기: 결과 영역도 닫힌다');
+    eq(html(X,'dgtCheck'), '', '③ 되돌리기: 대조 문구도 지워진다');
+    /* ★다른 칸은 살아 있다 — 이것이 이 기능의 요점이다 */
+    eq(X.state.qa.in1, A.state.qa.in1, '★③ 되돌리기: ① 의 답은 살아 있다');
+    eq(X.state.qa.d1, A.state.qa.d1, '★③ 되돌리기: ② 의 답은 살아 있다');
+    eq(X.state.qa.p1, A.state.qa.p1, '★③ 되돌리기: 💪 의 답은 살아 있다');
+    eq(X.state.ta.ta1, '두 딸 DNA는 같다', '★③ 되돌리기: ⑤ 의 서술 답안은 살아 있다');
+    eq(X._store['ta1'].value, '두 딸 DNA는 같다', '★③ 되돌리기: 화면의 서술 답안도 그대로');
+    /* 지운 뒤 곧바로 다시 할 수 있는가 */
+    eq(X._store['btnUnwind'].disabled, false, '★③ 되돌리기 뒤 [풀기] 단추가 살아 있다');
+    eq(X._store['pick_top'].disabled, false, '★③ 되돌리기 뒤 [위 주형] 단추가 살아 있다');
+    eq(X._store['nb_A'].disabled, false, '★③ 되돌리기 뒤 염기 단추가 살아 있다');
+    X.unwindAll(); playManual(X); X.ligate();
+    eq(X.arrStr(X.state.newTop), compStr(X.TOP_TEMPLATE), '★되돌린 뒤 처음부터 다시 채울 수 있다');
+    eq(X.localStorage._mem['dna_sim_v2'] !== undefined, true, '되돌린 상태가 저장된다'); }
+
+  /* ④ 결과 */
+  { const X = full(); X.resetSec('result');
+    eq(X.state.verified, false, '④ 되돌리기: 대조 결과 지워짐');
+    eq(X.state.qa.d3, undefined, '④ 되돌리기: d3 지워짐');
+    eq(X.filledCount(X.state.newTop), 32, '★④ 되돌리기: ③ 의 가닥은 그대로 (다시 확인만 하면 된다)');
+    eq(X.state.ligated, true, '④ 되돌리기: 연결 상태도 그대로');
+    X.verifyDaughters();
+    eq(X.state.verified, true, '★④ 되돌리기 뒤 곧바로 다시 확인할 수 있다'); }
+
+  /* 💪 더 풀어 보기 */
+  { const X = full(); X.resetSec('prac');
+    eq(X.Q_PRAC.filter(id => X.state.qa[id] !== undefined).join(','), '', '💪 되돌리기: 연습 문항 4개 모두 지워짐');
+    eq(X.state.qa.d3, A.state.qa.d3, '💪 되돌리기: ④ 의 답은 그대로');
+    eq(X.filledCount(X.state.newTop), 32, '💪 되돌리기: ③ 격자는 그대로'); }
+
+  /* ⑤ 정리하기 */
+  { const X = full();
+    X._rec.confirmRet = false; X.resetSec('sum');
+    eq(X.state.ta.ta1, '두 딸 DNA는 같다', '⑤ 되돌리기: 취소하면 그대로');
+    X._rec.confirmRet = true; X.resetSec('sum');
+    /* ★saveState 가 화면을 다시 읽어 담으므로 칸은 남고 값이 빈다 — 값으로 문다 */
+    eq(Object.keys(X.state.ta).filter(k => X.state.ta[k]).join(','), '', '⑤ 되돌리기: 서술 답안 지워짐');
+    eq(Object.keys(X.state.chk).filter(k => X.state.chk[k]).join(','), '', '⑤ 되돌리기: 체크 지워짐');
+    eq(X._store['ta1'].value, '', '⑤ 되돌리기: 화면의 글상자도 비워진다');
+    eq(X._store['chk1'].checked, false, '⑤ 되돌리기: 화면의 체크도 풀린다');
+    eq(X.filledCount(X.state.newTop), 32, '⑤ 되돌리기: ③ 격자는 그대로');
+    eq(X.state.qa.d2, A.state.qa.d2, '⑤ 되돌리기: 문항 답은 그대로'); }
+
+  /* 없는 열쇠는 아무 일도 하지 않는다 */
+  { const X = full(); const before = X.arrStr(X.state.newTop);
+    X.resetSec('없는칸'); X.resetSec(undefined);
+    eq(X.arrStr(X.state.newTop), before, '모르는 열쇠에는 아무 일도 하지 않는다');
+    eq(X._rec.confirms, 0, '모르는 열쇠에는 확인 대화상자도 안 뜬다'); }
+
+  /* 화면에 단추가 실제로 걸려 있는가 — 여섯 칸 전부 */
+  Object.keys(SEC_KEYS).forEach(k => {
+    ok(src.indexOf("resetSec('" + k + "')") >= 0, '카드에 ' + SEC_KEYS[k] + ' 되돌리기 단추가 있다');
+  });
+  eq((src.match(/class="secreset"/g) || []).length, 6, '★되돌리기 줄이 여섯 칸에 하나씩 있다');
+  ok(src.indexOf('onclick="resetAll()"') >= 0, '전체 리셋도 그대로 남아 있다');
 }
 
 // ══════════════════ [9] 무대 렌더 — 막대·조각·이음새 ══════════════════
@@ -1397,7 +1513,6 @@ console.log('[12] 연출 무대 레이아웃');
   /* ★grep 이 아니라 실제로 그려 보고 문다 — 어느 함수에서 이름을 넣든 걸린다 */
   {
     const W = makeSandbox(); W.init();
-    for (let i = 0; i < 5; i++) W.badgeTap();      // 잠금까지 풀어 전 국면을 그린다
     let leaked = [];
     for (let ph = 0; ph <= W.aniLast(); ph++){
       W.fkApplyPhase(ph, ph - 1);
@@ -1475,20 +1590,9 @@ console.log('[13] 연출 무대 SVG · 잠금');
     T.aniGo(-99);
     for (let k = 0; k < T.aniLast(); k++) T.aniGo(1);
     eq(T.ani.ph, T.aniLast(), '★▶ 만 눌러도 중간에 막히지 않고 끝까지 간다');
-    /* 조작 카드의 관문은 그대로 살아 있다 */
-    const G = makeSandbox(); G.init();
-    eq(G.card3Open(), false, '③ 은 여전히 문항에 답해야 열린다');
-    G.pickQ('d1', G.QDEF.d1.a);
-    eq(G.card3Open(), true, '답하면 ③ 이 열린다');
-    eq(G.card4Open(), false, '④ 는 여전히 이어야 열린다');
-    const U = makeSandbox(); U.init(); U.pickQ('d1', U.QDEF.d1.a); playManual(U); U.ligate();
+    const U = makeSandbox(); U.init(); playManual(U); U.ligate();
     ok(txt(U,'lab_newBot').indexOf('지연 가닥') > 0, '★이름은 격자에서 준다 — 이은 뒤 지연 가닥 이름표');
-    eq(U.card4Open(), true, '이으면 ④ 가 열린다');
-    const V = makeSandbox(); V.init();
-    for (let i = 0; i < 5; i++) V.badgeTap();
-    ok(!V.localStorage._mem[V.LS_KEY] || JSON.parse(V.localStorage._mem[V.LS_KEY]).teacherOpen === undefined,
-       '★교사용 해제는 저장되지 않는다');
-    eq(V.card3Open(), true, '교사용 해제로 조작 카드도 열린다');
+    ok(!/teacherOpen/.test(js), '★교사용 해제 흔적이 코드에 남아 있지 않다');
   }
   ok(!/setTimeout|setInterval|requestAnimationFrame/.test(js), '★연출에 setTimeout 을 쓰지 않는다');
   ok(/prefers-reduced-motion/.test(src), 'prefers-reduced-motion 에서 전환을 끈다');
@@ -1620,7 +1724,7 @@ console.log('[16] 색 규약');
   ok(/rotate\(45\)/.test(raw), '연결효소는 마름모 모양으로 갈린다');
   // ★JS 가 쓰는 class 가 CSS 에 다 있는가
   ['pmr-cap','ez-pol','ez-lig','primerrow','anibar','anibtn','anistep','anicap','qbox','qopt','qfb','qhint',
-   'stage-wrap','rmove','rfade','lockmsg','panes','pane-l','pane-r','pr-do','pr-q','orderband','tbl-outer',
+   'stage-wrap','rmove','rfade','secreset','panes','pane-l','pane-r','pr-do','pr-q','orderband','tbl-outer',
    'elg','e-mark','e-pmr','e-pol','e-lig','lockable'].forEach(c => {
     ok(src.indexOf('.' + c) >= 0, 'CSS 에 .' + c + ' 가 선언되어 있다');
   });
@@ -1671,9 +1775,8 @@ console.log('[17] 문항');
     eq(Q.qCorrect('d1', undefined), false, '안 풀면 정답 아님');
     Q.pickQ('d1', (Q.QDEF.d1.a + 1) % 4);
     eq(Q.qCorrect('d1', Q.state.qa.d1), false, '오답 기록');
-    /* ★★잠금은 「정답」이 아니라 「답했는가」로 연다 (교사 결정 2026-08-31).
-       전에는 한 번 틀리면 ③ 이 영영 안 열려 「처음부터 다시 하기」밖에 길이 없었다. */
-    eq(Q.card3Open(), true, '★오답이어도 답했으면 조작 카드가 열린다');
+    /* ★2026-09-01 — 카드 잠금 자체가 사라졌으므로 「오답이면 안 열린다」는 걱정도 사라졌다.
+       남은 것은 「답을 몇 번이든 고칠 수 있는가」뿐이다. */
     ok(html(Q,'qh_d1').indexOf('wrong') > 0, '오답 표시');
     ok(html(Q,'qh_d1').indexOf('right') > 0, '정답도 함께 보인다');
     ok(html(Q,'qh_d1').indexOf(Q.QDEF.d1.ex.slice(0,10)) > 0, '해설은 정답·오답 모두에게 보인다');
@@ -1681,10 +1784,8 @@ console.log('[17] 문항');
     Q.pickQ('d1', Q.QDEF.d1.a);
     eq(Q.state.qa.d1, Q.QDEF.d1.a, '★답을 고칠 수 있다');
     ok(html(Q,'qh_d1').indexOf('wrong') < 0, '고쳐서 맞히면 오답 표시가 사라진다');
-    eq(Q.card3Open(), true, '고친 뒤에도 열린 채로 있다');
-    /* 되돌리기 — 다시 오답으로 고쳐도 잠기지 않는다(한 번 연 문은 닫지 않는다) */
     Q.pickQ('d1', (Q.QDEF.d1.a + 2) % 4);
-    eq(Q.card3Open(), true, '다시 오답으로 고쳐도 잠기지 않는다');
+    eq(Q.state.qa.d1, (Q.QDEF.d1.a + 2) % 4, '다시 오답으로도 고칠 수 있다');
     Q.pickQ('d1', Q.QDEF.d1.a);
     const raw = Q.localStorage._mem[Q.LS_KEY];
     const Q2 = makeSandbox({ seed:{ 'dna_sim_v2': raw } }); Q2.init();

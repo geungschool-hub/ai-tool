@@ -62,11 +62,22 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
     display:inline-block; font-size:13px; color:var(--blue); background:var(--blue-bg);
     border-radius:10px; padding:2px 10px; margin-right:4px;
   }
+  /* ★단추가 아니라 표시다 — 교사용 배지 해제를 없애면서 button 을 div 로 바꿨다(2026-09-01).
+     ※검사 [1]이 소스의 div 여닫기를 글자 그대로 세므로 주석에 태그를 쓰지 않는다 */
   #progress {
     background:var(--blue); color:#fff; font-weight:700; font-size:16px;
-    padding:8px 16px; border-radius:20px; white-space:nowrap; cursor:pointer;
-    border:none; font-family:inherit; min-height:44px;
+    padding:8px 16px; border-radius:20px; white-space:nowrap;
+    display:flex; align-items:center; min-height:44px;
   }
+
+  /* 섹션별 되돌리기 — 카드 오른쪽 아래에 조용히 놓는다 (교사 지시 2026-09-01) */
+  .secreset { display:flex; justify-content:flex-end; margin-top:12px; }
+  .secreset button {
+    background:#fff; color:#666; border:1.5px solid #C8CDD4; border-radius:8px;
+    font-family:inherit; font-size:15px; font-weight:600; padding:9px 14px;
+    min-height:44px; cursor:pointer;
+  }
+  .secreset button:hover { border-color:var(--blue); color:var(--blue); }
 
   .card {
     background:#fff; border-radius:14px; padding:16px 18px;
@@ -80,11 +91,6 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
   .card h2.pmr   { border-left-color:var(--pmr);   background:var(--pmr-bg); }
   .card h2.amber { border-left-color:var(--amber); background:var(--amber-bg); }
   .card h2.lig   { border-left-color:var(--lig);   background:var(--lig-bg); }
-  .card.locked   { opacity:.55; }
-  .lockmsg {
-    border-left:4px solid var(--amber); background:var(--amber-bg);
-    border-radius:8px; padding:9px 12px; font-size:16px; margin-bottom:10px;
-  }
 
   /* ── 2단 배치 (제작 표준 §2) — 경계 1180px ── */
   .panes { display:flex; flex-direction:column; gap:14px; }
@@ -380,7 +386,7 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
       <div class="sub">DNA의 반보존적 복제 과정을 이해하고, 설명할 수 있다 (교과서 46~49쪽 · 부록 137쪽 모형)</div>
       <div class="tags"><span class="tag">반보존적 복제</span><span class="tag">5′→3′ 합성</span><span class="tag">프라이머</span><span class="tag">선도·지연 가닥</span></div>
     </div>
-    <button id="progress" onclick="badgeTap()">진행 0 / 5</button>
+    <div id="progress">진행 0 / 5</div>
   </header>
 
   <!-- ── 미완성 잠금 ── -->
@@ -446,6 +452,7 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
       <span class="e"><span class="e-mark e-lig"></span>DNA 연결효소 — 마름모</span>
     </div>
     <div id="qh_in1"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('rule')">↻ ① 다시 하기</button></div>
   </section>
 
   <!-- ══ ② 연출 무대 — 갈라짐 ══ -->
@@ -482,11 +489,11 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
         <div class="pr-q"><div id="qh_d1"></div></div>
       </div>
     </div>
+    <div class="secreset"><button type="button" onclick="resetSec('stage')">↻ ② 처음 국면부터 다시 보기</button></div>
   </section>
 
   <!-- ══ ③ 조작 무대 ══ -->
   <section class="card" id="card3">
-    <div id="lock3" class="lockmsg">🔒 카드 ②의 문항에 답하면 열린다.</div>
     <h2 class="pmr">③ 복제 무대 — 새 가닥을 직접 붙이시오</h2>
 
     <div class="panel">
@@ -585,15 +592,13 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
     </div>
 
     <div id="qh_d2"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('grid')">↻ ③ 붙인 것 지우고 다시 하기</button></div>
   </section>
 
   <!-- ══ ④ 완성 ══ -->
   <section class="card" id="card4">
     <h2 class="lig">④ 완성 — 딸 DNA 2개를 비교하시오</h2>
-    <div id="resultLocked" class="lockmsg">
-      🔒 아직 복제가 끝나지 않았다. ③에서 <b>이중나선을 끝까지 풀고</b>,
-      <b>두 새 가닥을 모두 완성</b>한 뒤 <b>🔗 DNA 연결효소</b>로 조각을 이으면 열린다.
-    </div>
+    <p class="note">③에서 두 새 가닥을 완성하고 🔗 으로 조각을 이은 뒤 <b>[🔍 딸 DNA 확인하기]</b>를 누르시오.</p>
     <div class="btnrow" style="justify-content:flex-start;">
       <button class="btn lig" id="btnVerify" onclick="verifyDaughters()">🔍 딸 DNA 확인하기</button>
     </div>
@@ -627,17 +632,18 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
       </div>
       <div id="qh_d3"></div>
     </div>
+    <div class="secreset"><button type="button" onclick="resetSec('result')">↻ ④ 다시 하기</button></div>
   </section>
 
   <!-- ══ 💪 더 풀어 보기 ══ -->
   <section class="card" id="card5">
-    <div id="lock5" class="lockmsg">🔒 ④까지 마치면 열린다. 풀지 않아도 활동은 완료된다.</div>
     <h2 class="amber">💪 더 풀어 보기</h2>
     <p class="note">활동에서 본 것을 <b>비틀어</b> 묻는다. 풀지 않아도 활동 완료에는 들어가지 않는다.</p>
     <div id="qh_p1"></div>
     <div id="qh_p2"></div>
     <div id="qh_p3"></div>
     <div id="qh_p4"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('prac')">↻ 💪 다시 풀기</button></div>
   </section>
 
   <!-- ══ ⑤ 정리하기 ══ -->
@@ -712,6 +718,7 @@ var DRAFT_KEY  = 'dna_sim_draft_ok';
       <label class="chkitem"><input type="checkbox" id="chk3" onchange="saveState()">
         <span><b>[가치·태도]</b> 유전물질의 복제 오류가 생명의 진화에 미치는 영향을 생각해 보았는가?</span></label>
     </div>
+    <div class="secreset"><button type="button" onclick="resetSec('sum')">↻ ⑤ 적은 답안 지우기</button></div>
   </section>
 
   <!-- ★「💡 이어서 할 활동 — 메셀슨과 스탈」 안내 카드를 **통째로 지웠다**(교사 지시 2026-08-31).
@@ -1151,7 +1158,6 @@ function freshState(){
   };
 }
 var state = freshState();
-var teacherOpen = false;   // 교사용 해제 — 저장하지 않는다
 
 function sanitizeStrand(a){
   if (!a || typeof a.length !== 'number' || a.length !== N) return null;
@@ -1254,9 +1260,12 @@ function stepDone(){
   if (state.verified && qAnswered('d3')) n++;
   return n;
 }
-function card3Open(){ return teacherOpen || qAnswered('d1'); }
-function card4Open(){ return teacherOpen || (strandComplete(state.newTop) && strandComplete(state.newBot) && state.ligated); }
-function card5Open(){ return teacherOpen || (state.verified && qAnswered('d3')); }
+/* ★2026-09-01 교사 결정 — **섹션 잠금을 전부 없앴다.** 카드는 처음부터 다 열려 있고
+   서로를 막지 않는다. 「앞을 채워야 뒤가 열린다」는 첫 공부에는 좋았으나
+   **복습에는 걸림돌**이었다(다시 해 보려면 전체 리셋밖에 길이 없었다).
+   대신 카드마다 「↻ 이 단계만 다시 하기」를 두어 **그 칸만** 되돌린다 → resetSec().
+   ★못하게 막는 것과 못 하는 것은 다르다 — ④의 딸 DNA 대조는 ③의 산물이 있어야 하므로
+     단추는 늘 눌리되 verifyDaughters() 가 무엇이 모자란지 말해 준다(죽은 단추를 만들지 않는다). */
 
 /* ══════════════════════════════════════════════════════════════
    ② 연출 무대 — 이중나선이 풀려 두 주형이 갈라지고,
@@ -1911,33 +1920,28 @@ function updateStage(){
         state.manualTop + '</b> / 아래 <b>' + state.manualBot + '</b>.';
     }
   }
-  var rl = document.getElementById('resultLocked');
-  var okAll = doneAll && state.ligated;
-  if (rl) rl.style.display = okAll ? 'none' : 'block';
   /* ★⑤ 정리하기 3번의 근거 박스는 오답 횟수가 바뀔 때마다 다시 그려야 한다 */
   renderWrongEcho();
   applyLocks();
 }
 
 /* ════════════ 카드 잠금 ════════════ */
+/* ★잠금이 없어졌으므로 이 함수는 「늘 열어 둔다」만 한다.
+   ★★남겨 둔 까닭 — 예전 applyLocks 는 **끄기만 하고 켜지 않아** 단추 2개가 죽은 채 남은 적이 있다
+     (2026-08-31 「답했는데 안 열려」). 그래서 여기서 **명시적으로 켠다.** */
+var CARD3_BTNS = ['btnUnwind','btnUnwindAll','btnPrimer','nb_A','nb_T','nb_G','nb_C','btnRemove',
+                  'btnAuto','btnLigate','pick_top','pick_bot'];
 function applyLocks(){
-  var c3 = card3Open(), c4 = card4Open(), c5 = card5Open();
   var e;
-  e = document.getElementById('card3'); if (e) e.className = 'card' + (c3 ? '' : ' locked');
-  e = document.getElementById('lock3'); if (e) e.style.display = c3 ? 'none' : 'block';
-  e = document.getElementById('card5'); if (e) e.className = 'card' + (c5 ? '' : ' locked');
-  e = document.getElementById('lock5'); if (e) e.style.display = c5 ? 'none' : 'block';
-  ['btnUnwind','btnUnwindAll','btnPrimer','nb_A','nb_T','nb_G','nb_C','btnRemove','btnAuto','btnLigate',
-   'pick_top','pick_bot'].forEach(function(id){
-    if (!c3) setDisabled(id, true);
-  });
-  setDisabled('btnVerify', !c4 || !(strandComplete(state.newTop) && strandComplete(state.newBot) && state.ligated));
+  e = document.getElementById('card3'); if (e) e.className = 'card';
+  e = document.getElementById('card5'); if (e) e.className = 'card';
   Q_PRAC.forEach(function(id){
     var box = document.getElementById('qh_' + id);
-    if (box) box.style.display = c5 ? 'block' : 'none';
+    if (box) box.style.display = 'block';
   });
   var qd3 = document.getElementById('qh_d3');
-  if (qd3) qd3.style.display = state.verified ? 'block' : 'none';
+  if (qd3) qd3.style.display = 'block';
+  setDisabled('btnVerify', false);   /* ★늘 눌린다 — 모자라면 verifyDaughters 가 말해 준다 */
 }
 
 /* ════════════ 풀기 ════════════ */
@@ -2395,6 +2399,61 @@ function restoreUI(){
   }
   updateProgress();
 }
+/* ════════════ 섹션별 되돌리기 (교사 지시 2026-09-01) ════════════
+   「전체 리셋 아니면 다시 해 보기가 불가능하다 — 복습이 너무 불편하다」
+   ★칸마다 **자기가 만든 것만** 지운다. 다른 칸은 건드리지 않는다.
+   ★③ 을 지우면 ④ 의 대조 결과(verified)도 함께 지운다 — ④ 는 ③ 의 산물이라,
+     남겨 두면 없는 가닥에 대한 결과가 화면에 남는다(거짓말이 된다).
+   ★새로고침이 아니라 그 자리에서 다시 그린다 — 다른 칸의 답이 살아 있어야 하므로. */
+var SEC_DEF = {
+  rule:   { q:['in1'],                    ask:false, msg:'① 의 문항을 지웠다. 다시 답하시오.' },
+  stage:  { q:['d1'],   ani:true,         ask:false, msg:'② 를 처음 국면으로 되돌리고 문항을 지웠다.' },
+  grid:   { q:['d2'],   grid:true,        ask:true,  msg:'③ 을 처음 상태로 되돌렸다 — 다시 풀고 붙이시오.' },
+  result: { q:['d3'],   verified:true,    ask:false, msg:'④ 의 대조 결과와 문항을 지웠다. 다시 확인하시오.' },
+  prac:   { q:['p1','p2','p3','p4'],      ask:false, msg:'💪 의 문항 4개를 지웠다.' },
+  sum:    { text:true,                    ask:true,  msg:'⑤ 에 적은 답안과 체크를 지웠다.' }
+};
+var SEC_ASK = {
+  grid: '③ 에 붙인 뉴클레오타이드를 모두 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  sum:  '⑤ 에 적은 답안을 모두 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)'
+};
+function resetSec(key){
+  var d = SEC_DEF[key];
+  if (!d) return;
+  if (d.ask && !confirm(SEC_ASK[key])) return;
+  (d.q || []).forEach(function(id){ delete state.qa[id]; qHintStep[id] = 0; });
+  if (d.ani){ ani = { ph:0, prev:-1 }; }
+  if (d.grid){
+    state.unwound = 0;
+    state.newTop = emptyStrand();
+    state.newBot = emptyStrand();
+    state.prim = freshPrimer();
+    state.manualTop = 0; state.manualBot = 0;
+    state.wrong = 0;
+    state.usedAuto = false;
+    state.ligated = false;
+    state.sel = null;
+    state.verified = false;        /* ★④ 의 결과는 ③ 의 산물이다 — 함께 지운다 */
+  }
+  if (d.verified) state.verified = false;
+  if (d.text){
+    state.ta = {}; state.chk = {};
+    ['ta1','ta2','ta3','ta4'].forEach(function(id){ var e = document.getElementById(id); if (e) e.value = ''; });
+    ['chk1','chk2','chk3'].forEach(function(id){ var e = document.getElementById(id); if (e) e.checked = false; });
+  }
+  if (d.grid || d.verified){
+    var rb = document.getElementById('resultBody');
+    if (rb) rb.style.display = 'none';
+    var dc = document.getElementById('dgtCheck');
+    if (dc) dc.innerHTML = '';
+  }
+  renderAllQ();
+  renderWrongEcho();
+  if (d.ani) fkRender();
+  applyLocks(); updateStage(); updateProgress(); saveState();
+  showFb('fb_stage', 'info', '↻ ' + d.msg);
+}
+
 function resetAll(){
   if (!confirm('지금까지 붙인 뉴클레오타이드와 적은 답을 모두 지우고 처음부터 다시 하시겠습니까?')) return;
   try { localStorage.removeItem(LS_KEY); } catch(e) {}
@@ -2402,24 +2461,12 @@ function resetAll(){
   ani = { ph:0 };
   fkMounted = false;
   qHintStep = {};
-  teacherOpen = false;
   location.reload();
 }
 
-/* ════════════ 교사용 해제 · 미완성 잠금 ════════════ */
-var tapTimes = [];
-function badgeTap(){
-  /* ★Date 를 그대로 쓰지 않는다 — 헤드리스 검사에는 Date 가 없다(제작 표준 §8) */
-  var now = (typeof Date !== 'undefined') ? (new Date()).getTime() : 0;
-  tapTimes.push(now);
-  while (tapTimes.length && now - tapTimes[0] > 2500) tapTimes.shift();
-  if (tapTimes.length >= 5){
-    tapTimes = [];
-    teacherOpen = true;          /* ★저장하지 않는다 — 새로고침하면 도로 잠긴다 */
-    applyLocks(); updateStage();
-    showFb('fb_stage', 'info', '🔑 교사용 — 모든 카드를 열었다. 새로고침하면 다시 잠긴다.');
-  }
-}
+/* ════════════ 미완성 잠금 ════════════ */
+/* ★교사용 배지 해제(badgeTap)는 **없앴다**(2026-09-01) — 카드 잠금이 사라져 열 것이 없다.
+   미완성 잠금(DRAFT_MODE·draftTry)은 그것과 별개이므로 그대로 둔다. */
 function draftTry(){
   var el = document.getElementById('draftPass');
   var v = el ? el.value : '';

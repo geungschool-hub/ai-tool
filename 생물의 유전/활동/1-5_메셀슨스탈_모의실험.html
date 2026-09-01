@@ -85,6 +85,10 @@ h3{font-size:16.5px;margin:16px 0 8px;color:var(--ink);}
 .sub{color:var(--sub);font-size:15px;margin:0 0 10px;}
 .tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .tag{font-size:13px;background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:3px 11px;}
+.secreset{display:flex;justify-content:flex-end;margin-top:12px;}
+.secreset button{background:#fff;color:#666;border:1.5px solid #C8CDD4;border-radius:8px;
+  font-family:inherit;font-size:15px;font-weight:600;padding:9px 14px;min-height:44px;cursor:pointer;}
+.secreset button:hover{border-color:var(--blue);color:var(--blue);}
 .badge{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px;cursor:pointer;user-select:none;}
 .yr{display:inline-block;font-size:13.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;vertical-align:2px;
     background:var(--blue-bg);color:var(--blue);}
@@ -412,6 +416,7 @@ html:not(.unlocked) #draftGate{display:flex;}
       메셀슨과 스탈이 <b>1958년</b>에 내놓은 답이 이 활동의 내용이다.
     </div>
     <div id="introQ"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('intro')">↻ ① 다시 하기</button></div>
   </div>
 
   <!-- ══ ② 무게를 재는 법 ══ -->
@@ -464,14 +469,14 @@ html:not(.unlocked) #draftGate{display:flex;}
        </div>
 
        <div class="pr-q">
-        <div class="msg info" id="balQlock">🔒 네 조합을 모두 만들면 결론 문항이 열린다.</div>
-        <div id="balQwrap" style="display:none;">
+        <div id="balQwrap">
           <h3>결론 — 무엇을 알 수 있는가</h3>
           <div id="balQ"></div>
         </div>
        </div>
       </div>
     </div>
+    <div class="secreset"><button type="button" onclick="resetSec('bal')">↻ ② 만든 조합 지우고 다시 하기</button></div>
   </div>
 
   <!-- ══ ③ 세 모델로 굴려 보기 ══ -->
@@ -480,8 +485,7 @@ html:not(.unlocked) #draftGate{display:flex;}
       <h2 class="m2" style="flex:1 1 300px;margin-bottom:0;">③ 세 모델을 직접 굴려 보시오<span class="yr">예상</span></h2>
       <span class="tag" id="repProg">굴려 본 모델 0 / 3</span>
     </div>
-    <div class="msg info" id="repLock"></div>
-    <div id="repBody" style="display:none;">
+    <div id="repBody">
      <div class="panes">
       <div class="pane-l">
         <div id="nLegend2" style="margin-top:10px;"></div>
@@ -518,8 +522,7 @@ html:not(.unlocked) #draftGate{display:flex;}
         <div class="chips" id="repChips"></div>
        </div>
        <div class="pr-q">
-        <div class="msg info" id="repQlock">🔒 세 모델을 모두 굴리면 결론 문항이 열린다.</div>
-        <div id="repQwrap" style="display:none;">
+        <div id="repQwrap">
           <h3>결론 — 무엇을 알 수 있는가</h3>
           <div id="repQ"></div>
         </div>
@@ -527,6 +530,7 @@ html:not(.unlocked) #draftGate{display:flex;}
       </div>
      </div>
     </div>
+    <div class="secreset"><button type="button" onclick="resetSec('rep')">↻ ③ 굴린 결과 지우고 다시 하기</button></div>
   </div>
 
   <!-- ══ ④ 실제 결과와 대조 ══ -->
@@ -535,8 +539,7 @@ html:not(.unlocked) #draftGate{display:flex;}
       <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">④ 실제 실험 결과와 맞추어 보시오<span class="yr">배제</span></h2>
       <span class="tag" id="cmpProg">공개한 세대 0 / 2</span>
     </div>
-    <div class="msg info" id="cmpLock"></div>
-    <div id="cmpBody" style="display:none;">
+    <div id="cmpBody">
      <div class="panes">
       <div class="pane-l">
         <div class="stage-wrap" style="margin-top:10px;"><div id="cmpStage"></div></div>
@@ -556,8 +559,7 @@ html:not(.unlocked) #draftGate{display:flex;}
         <div class="handoff hide" id="hoG1"></div>
        </div>
        <div class="pr-q">
-        <div class="msg info" id="cmpQlock">🔒 1세대 결과를 공개하면 문항이 열린다.</div>
-        <div id="cmpQwrap" style="display:none;">
+        <div id="cmpQwrap">
           <h3>판단 — 무엇을 지울 수 있는가</h3>
           <div id="cmpQ"></div>
         </div>
@@ -566,6 +568,7 @@ html:not(.unlocked) #draftGate{display:flex;}
       </div>
      </div>
     </div>
+    <div class="secreset"><button type="button" onclick="resetSec('cmp')">↻ ④ 공개한 결과 지우고 다시 하기</button></div>
   </div>
 
   <!-- ══ 💪 더 풀어 보기 ══ -->
@@ -575,8 +578,8 @@ html:not(.unlocked) #draftGate{display:flex;}
       <span class="tag" id="pracProg">푼 문항 0 / 4</span>
     </div>
     <p class="sub">활동을 마친 뒤 푸는 문항이다. <b>풀지 않아도 활동은 완료된다.</b></p>
-    <div class="msg info" id="pracLock"></div>
-    <div id="pracBody" style="display:none;"><div id="pracBox"></div></div>
+    <div id="pracBody"><div id="pracBox"></div></div>
+    <div class="secreset"><button type="button" onclick="resetSec('prac')">↻ 💪 다시 풀기</button></div>
   </div>
 
   <!-- ══ ⑤ 정리하기 ══ -->
@@ -588,6 +591,7 @@ html:not(.unlocked) #draftGate{display:flex;}
     <p class="sub">모범답안은 <b>스스로 서술한 뒤에</b> 열린다. ✏️</p>
     <div id="writeBox"></div>
     <div class="selfcheck" id="selfBox"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('write')">↻ ⑤ 적은 답안 지우기</button></div>
   </div>
 
   <footer>
@@ -2461,15 +2465,12 @@ function stepDone(k){
   if (k === 'cmp') return cmpDone();
   return false;
 }
-/* 앞 단계를 마쳐야 다음이 열린다 — 배제의 차례를 밟게 하는 장치 */
-function stepOpen(k){
-  if (state.teacherUnlock) return true;
-  if (k === 'bal') return true;
-  if (k === 'rep') return balDone();
-  if (k === 'cmp') return repDone();
-  if (k === 'prac') return cmpDone();
-  return false;
-}
+/* ★2026-09-01 교사 지시 — **섹션 잠금을 없앴다.** 카드는 처음부터 다 열려 있고 서로를 막지 않는다.
+   「앞을 채워야 뒤가 열린다」는 첫 공부에는 좋았으나 **복습에는 걸림돌**이었다.
+   대신 카드마다 「↻ 이 단계 다시 하기」를 둔다 → resetSec(). 규약 정본은
+   작업노트 방법_웹활동_제작표준 §「섹션 잠금은 두지 않는다」.
+   ★`stepDone` 은 남는다 — 진행 레일과 배지가 「어디까지 했는가」를 보여 주는 데 쓴다.
+     막는 데 쓰지 않을 뿐이다. */
 function doneCount(){
   var n = 0;
   STEPS.forEach(function(s){ if (stepDone(s.key)) n++; });
@@ -2482,7 +2483,7 @@ function updateRail(){
   STEPS.forEach(function(s){
     var cls = 'rstep';
     if (stepDone(s.key)) cls += ' ok';
-    else if (stepOpen(s.key)) cls += ' on';
+    else cls += ' on';           /* ★잠긴 칸이 없다 — 마쳤는가만 보인다 */
     h += '<div class="' + cls + '">' + s.no + ' ' + s.name +
          '<span class="rsub">' + s.sub + '</span></div>';
   });
@@ -2491,38 +2492,14 @@ function updateRail(){
   if (b) b.textContent = '진행 ' + doneCount() + ' / ' + STEPS.length;
 }
 
-/* 잠긴 구역에 안내를 띄우고 본문을 감춘다 */
-function applyLock(key, lockId, bodyId, text){
-  var lock = document.getElementById(lockId);
-  var body = document.getElementById(bodyId);
-  var open = stepOpen(key);
-  if (lock){
-    lock.className = 'msg info' + (open ? ' hide' : '');
-    if (!open) lock.innerHTML = '🔒 ' + text;
-  }
-  if (body) body.style.display = open ? 'block' : 'none';
-}
-function updateLocks(){
-  applyLock('rep', 'repLock', 'repBody',
-            '②를 마친 뒤에 열린다. 네 조합을 모두 만들고 결론 문항 ' + Q_BAL.length + '개에 답하시오.');
-  applyLock('cmp', 'cmpLock', 'cmpBody',
-            '③을 마친 뒤에 열린다. 세 모델을 모두 굴리고 결론 문항 ' + Q_REP.length + '개에 답하시오.');
-  applyLock('prac', 'pracLock', 'pracBody',
-            '④를 마친 뒤에 열린다. 두 세대의 결과를 모두 공개하고 판단 문항에 답하시오.');
-}
-
-/* 무대 안의 결론 문항 잠금 — 무대를 다 돌려야 문항이 열린다 */
-function gateQ(open, lockId, wrapId){
-  var lock = document.getElementById(lockId);
-  var wrap = document.getElementById(wrapId);
-  if (lock) lock.className = 'msg info' + (open ? ' hide' : '');
-  if (wrap) wrap.style.display = open ? 'block' : 'none';
-}
-function updateQGates(){
-  var t = !!state.teacherUnlock;
-  gateQ(t || balDoneCount() === BAL_COMBOS.length, 'balQlock', 'balQwrap');
-  gateQ(t || repDoneCount() === MODELS.length,     'repQlock', 'repQwrap');
-  gateQ((state.cmpStage || 0) >= 1,                'cmpQlock', 'cmpQwrap');
+/* ★잠금이 없어졌으므로 「늘 열어 둔다」만 한다.
+   ★★남겨 둔 까닭 — 감추기만 하고 되돌려 주지 않으면 구역이 감춰진 채 남는다.
+     여기서 **명시적으로 켠다**(자매 활동에서 죽은 단추로 겪은 일이다). */
+function openAll(){
+  ['repBody','cmpBody','pracBody','balQwrap','repQwrap','cmpQwrap'].forEach(function(id){
+    var e = document.getElementById(id);
+    if (e) e.style.display = 'block';
+  });
 }
 
 /* ══════════════════ 선택형 문항 ══════════════════
@@ -2668,8 +2645,7 @@ function syncCmpQ(){
 function updateAll(){
   syncCmpQ();
   updateRail();
-  updateLocks();
-  updateQGates();
+  openAll();
   updateProgTags();
   refreshAnsGates();
 }
@@ -2718,7 +2694,9 @@ function renderWrite(){
   }
 }
 
-/* ══════════════════ ⑤ 서술 · 모범답안 잠금 ══════════════════ */
+/* ══════════════════ ⑤ 서술 · 모범답안 잠금 ══════════════════
+   ★섹션 잠금을 없앤 뒤(2026-09-01) `teacherUnlock` 에 남은 일은 **이것 하나뿐이다** —
+     모범답안의 자수 잠금 해제. 진행 배지 5연타 → 확인. 저장하지 않는다. */
 function ansGate(id){
   if (state.teacherUnlock) return { open:true, reason:'' };
   var w = null;
@@ -2777,7 +2755,7 @@ function tapProgress(){
   if (tapLog.length > 5) tapLog.shift();
   if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
     tapLog = [];
-    if (confirm('교사용: 모든 잠금과 모범답안을 해제합니다.\n' +
+    if (confirm('교사용: 모범답안 잠금을 해제합니다.\n' +
                 '★이 화면에서만 풀린다 — 새로고침하면 도로 잠긴다.\n' +
                 '해제하시겠습니까?')){
       state.teacherUnlock = true;   /* 이 화면에서만. 저장하지 않으므로 새로고침하면 도로 잠긴다 */
@@ -2803,6 +2781,52 @@ function unlockDraft(){
   if (gate) gate.style.display = 'none';
   if (err) err.textContent = '';
   return true;
+}
+
+/* ══════════════════ 섹션별 되돌리기 (교사 지시 2026-09-01) ══════════════════
+   「전체 리셋 아니면 다시 해 보기가 불가능하다 — 복습이 너무 불편하다」
+   ★칸마다 **자기가 만든 것만** 지운다. 다른 칸은 건드리지 않는다.
+   ★새로고침하지 않는다(resetAll 과 다른 점) — 다른 칸의 답이 살아 있어야 한다.
+   ★확인 대화상자는 **잃을 것이 큰 칸에만** — 직접 굴린 ②③④ 와 손으로 적은 ⑤.
+     ①·💪 는 고르기만 한 것이라 그냥 지운다. */
+var SEC_DEF = {
+  intro: { qs:function(){ return Q_INTRO; },  ask:false, msg:'① 의 문항을 지웠다.' },
+  bal:   { qs:function(){ return Q_BAL; },    ask:true,  msg:'② 를 처음 상태로 되돌렸다 — 네 조합을 다시 만들어 보시오.',
+           run:function(){ state.balRun = {}; state.balLast = null; } },
+  rep:   { qs:function(){ return Q_REP; },    ask:true,  msg:'③ 을 처음 상태로 되돌렸다 — 세 모델을 다시 굴려 보시오.',
+           run:function(){ state.repRun = {}; state.repLast = null; } },
+  cmp:   { qs:function(){ return Q_CMP; },    ask:true,  msg:'④ 를 처음 상태로 되돌렸다 — 결과를 다시 공개해 보시오.',
+           run:function(){ state.cmpStage = 0; } },
+  prac:  { prac:true,                         ask:false, msg:'💪 의 문항을 지웠다.' },
+  write: { write:true,                        ask:true,  msg:'⑤ 에 적은 답안과 자기평가를 지웠다.' }
+};
+var SEC_ASK = {
+  bal:   '② 에서 만들어 본 조합과 결론 문항의 답을 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  rep:   '③ 에서 굴려 본 모델과 결론 문항의 답을 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  cmp:   '④ 에서 공개한 결과와 문항의 답을 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  write: '⑤ 에 적은 답안을 모두 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)'
+};
+function resetSec(key){
+  var d = SEC_DEF[key];
+  if (!d) return;
+  if (d.ask && !confirm(SEC_ASK[key])) return;
+  if (d.qs) d.qs().forEach(function(q){ delete state.qPick[q.id]; });
+  if (d.run) d.run();
+  if (d.prac) state.pPick = {};
+  if (d.write){
+    state.ta = {}; state.self = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) el.value = '';
+    });
+  }
+  /* ★무대를 다시 짓게 한다 — 돌던 연출은 gen 을 올려 끊는다 */
+  balPick = { top:null, bot:null };
+  cmpQShown = -1;
+  repMounted = null;
+  ani = { st:null, id:null, ph:0, gen:ani.gen + 1, auto:false, reveal:false };
+  saveState();
+  restoreUI();
 }
 
 function resetAll(){

@@ -31,6 +31,7 @@ function ok(cond, name){
 //   「문항이 4개인가」 같은 검사가 거짓으로 통과한다.
 function makeSandbox(storageSeed){
   const store = {};
+  const rec = { confirms:0, confirmRet:true, reloads:0 };
   function makeEl(id){
     const el = {
       className:'', textContent:'', value:'', style:{}, disabled:false, checked:false,
@@ -73,8 +74,9 @@ function makeSandbox(storageSeed){
       removeItem: k => { delete mem[k]; },
       _mem: mem
     },
-    confirm: () => true,
-    location: { reload(){} }
+    /* ★확인 대화상자를 세고, 답을 바꿀 수 있게 한다 — 섹션별 되돌리기 검사가 쓴다 */
+    confirm: () => { rec.confirms++; return rec.confirmRet; },
+    location: { reload(){ rec.reloads++; } }
     // ★setTimeout / Date / requestAnimationFrame 은 일부러 넣지 않는다 —
     //   앱의 typeof 가드가 실제로 동작하는지, 연출 없이도 결과가 나는지 여기서 검증된다.
   };
@@ -83,6 +85,9 @@ function makeSandbox(storageSeed){
   vm.runInContext(gateJs, sandbox);
   vm.runInContext(js, sandbox);
   sandbox._store = store;
+  sandbox._rec = rec;
+  sandbox.confirmRet = v => { rec.confirmRet = v; rec.confirms = 0; };
+  sandbox.confirms = () => rec.confirms;
   return sandbox;
 }
 const S = makeSandbox();
@@ -464,7 +469,7 @@ console.log('[7] ② 무게를 재는 법');
   D.balRun();
   ok(D.state.balRun['HL'] === true && D.state.balLast === 'HL', '실행한 조합이 기록된다');
   ok($('balProg').textContent === '만들어 본 조합 1 / 4', '진행 표시');
-  ok($('balQwrap').style.display === 'none', '★네 조합을 다 만들기 전에는 결론 문항이 잠겨 있다');
+  ok($('balQwrap').style.display === 'block', '★결론 문항은 처음부터 열려 있다 (섹션 잠금 없음 · 2026-09-01)');
 
   // ★위·아래를 바꾸어도 띠는 같은 자리
   D.balPickSet('top', 'L'); D.balPickSet('bot', 'H'); D.balRun();
@@ -473,7 +478,7 @@ console.log('[7] ② 무게를 재는 법');
   D.balPickSet('top', 'L'); D.balPickSet('bot', 'L'); D.balRun();
   D.balPickSet('top', 'H'); D.balPickSet('bot', 'H'); D.balRun();
   ok(D.balDoneCount() === 4, '네 조합을 모두 만들었다');
-  ok($('balQwrap').style.display === 'block', '★네 조합을 다 만들면 결론 문항이 열린다');
+  ok($('balQwrap').style.display === 'block', '네 조합을 다 만든 뒤에도 열린 채로 있다');
   /* ★시험관 눈금 이름은 1.15배로 커진다 — 무대(680) 안에 들어와야 한다.
      x=536 에 두었더니 「중간 무게의 DNA」가 오른쪽으로 잘렸다(2026-08-26 눈 확인). */
   ok(/tubeSvg\(500, 44, 1\.15/.test(js), '★② 시험관은 x=500 에 있다 (더 오른쪽이면 눈금 이름이 잘린다)');
@@ -492,19 +497,18 @@ console.log('[8] ③ 세 모델 굴리기');
 {
   const D = makeSandbox();
   const $ = id => D._store[id];
-  ok($('repBody').style.display === 'none', '★②를 마치기 전에는 ③이 잠겨 있다');
-  ok(/🔒/.test($('repLock').innerHTML), '잠금 안내가 뜬다');
+  ok($('repBody').style.display === 'block', '★③ 은 ② 를 마치기 전에도 열려 있다 (섹션 잠금 없음)');
   finishBal(D);
-  ok($('repBody').style.display === 'block', '②를 마치면 ③이 열린다');
+  ok($('repBody').style.display === 'block', '② 를 마친 뒤에도 열린 채로 있다');
 
   D.repRun('cons');
   ok(D.state.repRun['cons'] === true && D.state.repLast === 'cons', '굴린 모델이 기록된다');
   ok($('repProg').textContent === '굴려 본 모델 1 / 3', '진행 표시');
-  ok($('repQwrap').style.display === 'none', '★셋을 다 굴리기 전에는 결론 문항이 잠겨 있다');
+  ok($('repQwrap').style.display === 'block', '★결론 문항은 처음부터 열려 있다');
   ok($('repTbody').innerHTML.indexOf('아직 굴리지 않았다') < 0,
      '★모델을 굴리면 P·G1·G2 세 줄이 모두 채워진다 (연출과 무관하게 결과가 확정된다)');
   D.repRun('semi'); D.repRun('disp');
-  ok(D.repDoneCount() === 3 && $('repQwrap').style.display === 'block', '셋을 다 굴리면 결론 문항이 열린다');
+  ok(D.repDoneCount() === 3 && $('repQwrap').style.display === 'block', '셋을 다 굴린 뒤에도 열려 있다');
 
   // 무대가 모델마다 실제로 다르다 — 같으면 활동이 실패한다
   const gs = D.MODELS.map(m => D.repStageSvg(m.id));
@@ -693,16 +697,16 @@ console.log('[9] ④ 대조 · 배제 논리');
 {
   const D = makeSandbox();
   const $ = id => D._store[id];
-  ok($('cmpBody').style.display === 'none', '★③을 마치기 전에는 ④가 잠겨 있다');
+  ok($('cmpBody').style.display === 'block', '★④ 는 ③ 을 마치기 전에도 열려 있다 (섹션 잠금 없음)');
   finishBal(D); finishRep(D);
-  ok($('cmpBody').style.display === 'block', '③을 마치면 ④가 열린다');
+  ok($('cmpBody').style.display === 'block', '③ 을 마친 뒤에도 열린 채로 있다');
 
-  ok($('cmpQwrap').style.display === 'none', 'G1 을 공개하기 전에는 판단 문항이 잠겨 있다');
+  ok($('cmpQwrap').style.display === 'block', '★판단 문항 자리는 처음부터 열려 있다');
   ok($('cmpG2Btn').disabled === true, '★G1 을 공개하기 전에는 G2 단추가 꺼져 있다');
 
   D.cmpReveal(1);
   ok(D.state.cmpStage === 1, 'G1 공개');
-  ok($('cmpQwrap').style.display === 'block', 'G1 을 공개하면 판단 문항이 열린다');
+  ok($('cmpQwrap').style.display === 'block', 'G1 공개 뒤에도 열려 있다');
   ok($('cmpQ').children.length === 1, '★G2 공개 전에는 문항이 c1 하나뿐이다 (문항 은행 §6 「Q7의 잠금 규칙」)');
   ok(D.cmpQList().length === 1 && D.cmpQList()[0].id === 'c1', 'cmpQList 가 c1 만 내놓는다');
   ok($('cmpG1Btn').disabled === true, 'G1 단추는 다시 누를 수 없다');
@@ -732,10 +736,10 @@ console.log('[9] ④ 대조 · 배제 논리');
   ok(/세 배 많다/.test(src), '★대신 「가벼운 DNA 가 세 배 많다」로 쓴다');
 
   ok(D.stepDone('cmp') === false, '★두 세대를 공개한 것만으로는 ④가 끝나지 않는다');
-  ok($('pracBody').style.display === 'none', '④를 마치기 전에는 더 풀어 보기가 잠겨 있다');
+  ok($('pracBody').style.display === 'block', '★💪 도 처음부터 열려 있다');
   D.Q_CMP.slice(1).forEach(p => D.pickQ(p.id, p.a));
   ok(D.stepDone('cmp') === true, '판단 문항까지 답해야 ④가 끝난다');
-  ok($('pracBody').style.display === 'block', '④를 마치면 더 풀어 보기가 열린다');
+  ok($('pracBody').style.display === 'block', '④ 를 마친 뒤에도 열린 채로 있다');
   ok($('progress').textContent === '진행 3 / 3', '진행 배지 3 / 3');
   ok(/hide/.test($('cmpDone').className) === false && /반보존적 복제만 남았다/.test($('cmpDone').innerHTML),
      '★마무리 문구가 뜬다');
@@ -897,13 +901,17 @@ console.log('[12] 저장 · 복원');
 console.log('[13] 교사용 해제 · 되돌리기');
 {
   const D = makeSandbox();
-  ok(D._store['repBody'].style.display === 'none', '처음에는 ③이 잠겨 있다');
+  /* ★2026-09-01 — 섹션 잠금을 없앤 뒤 교사용 해제에 남은 일은 **모범답안 하나뿐**이다. */
+  ok(typeof D.stepOpen === 'undefined', '★섹션 잠금 판정 함수(stepOpen)가 없다');
+  ok(typeof D.updateLocks === 'undefined', '★updateLocks 가 없다');
+  ok(typeof D.updateQGates === 'undefined', '★updateQGates 가 없다');
+  ok(!/id="repLock"|id="cmpLock"|id="pracLock"|id="balQlock"|id="repQlock"|id="cmpQlock"/.test(src),
+     '★잠금 안내 요소 6개가 모두 없다');
+  ok(D._store['repBody'].style.display === 'block', '처음부터 ③ 이 열려 있다');
+  ok(D.ansGate('w1').open === false, '(전제) 서술 전에는 모범답안이 잠겨 있다');
   for (let i = 0; i < 5; i++) D.tapProgress();
   ok(D.state.teacherUnlock === true, '진행 배지 5연타로 열린다');
-  ok(D._store['repBody'].style.display === 'block' && D._store['cmpBody'].style.display === 'block',
-     '★교사용 해제는 모든 잠금을 연다');
-  ok(D._store['balQwrap'].style.display === 'block', '무대 안 결론 문항도 열린다');
-  ok(D.ansGate('w1').open === true, '모범답안도 열린다');
+  ok(D.ansGate('w1').open === true, '★교사용 해제가 여는 것은 모범답안이다');
   ok(JSON.parse(D.localStorage._mem[D.LS_KEY]).teacherUnlock === false,
      '★그래도 저장분에는 남지 않는다 (2026-08-25 교사 지시)');
   ok(D._store['cmpQ'].children.length === 1,
@@ -925,6 +933,107 @@ console.log('[13] 교사용 해제 · 되돌리기');
   E.onTa('w1');
   ok(!(E.LS_KEY in E.localStorage._mem) || Object.keys(JSON.parse(E.localStorage._mem[E.LS_KEY]).balRun).length === 0,
      '★되돌린 뒤 무엇을 눌러도 옛 진행이 되살아나지 않는다');
+}
+
+/* ════════════════════════════════════════════════════════════
+   [13-2] ★섹션별 되돌리기 — 그 칸만 지운다 (교사 지시 2026-09-01)
+   ════════════════════════════════════════════════════════════ */
+console.log('[13-2] 섹션별 되돌리기');
+{
+  /* 여섯 칸을 모두 채운 상태를 만들어 두고, 칸마다 하나씩 되돌려 본다 */
+  const full = () => {
+    const X = makeSandbox();
+    X.Q_INTRO.forEach(q => X.pickQ(q.id, q.a));
+    finishBal(X); finishRep(X); finishCmp(X);
+    X.PRACTICE.forEach(q => X.pickQ(q.id, q.a));
+    X._store['ta_w1'].value = '두 딸 DNA 는 모두 중간 무게였다';
+    X.onTa('w1');
+    X.state.self = { s1:true };
+    X.confirmRet(true);
+    return X;
+  };
+  const A = full();
+  ok(A.doneCount() === 3, '(전제) 세 단계를 모두 마쳤다');
+  ok(A.balDoneCount() === 4 && A.repDoneCount() === 3 && A.state.cmpStage === 2, '(전제) 무대 셋 다 채웠다');
+  ok(String(A.state.ta.w1 || '').length > 0, '(전제) 서술도 적었다');
+
+  /* ① 도입 — 문항만 */
+  { const X = full(); X.resetSec('intro');
+    ok(X.Q_INTRO.every(q => X.state.qPick[q.id] === undefined), '① 되돌리기: 도입 문항 지워짐');
+    ok(X.balDoneCount() === 4, '① 되돌리기: ② 의 조합은 그대로');
+    ok(X.state.cmpStage === 2, '① 되돌리기: ④ 의 공개도 그대로');
+    ok(X.confirms() === 0, '① 은 확인 대화상자 없이 바로 지운다'); }
+
+  /* ② 무게 재기 — 여기가 「다시 해 보고 싶다」의 자리다 */
+  { const X = full();
+    X.confirmRet(false); X.resetSec('bal');
+    ok(X.balDoneCount() === 4, '② 되돌리기: 취소하면 아무것도 안 지운다');
+    ok(X.confirms() === 1, '② 는 확인 대화상자를 띄운다');
+    X.confirmRet(true); X.resetSec('bal');
+    ok(X.balDoneCount() === 0, '② 되돌리기: 만들어 본 조합 0');
+    ok(X.state.balLast === null, '② 되돌리기: 마지막 조합도 지워짐');
+    ok(X.balPick.top === null && X.balPick.bot === null, '② 되돌리기: 고르던 가닥도 비워짐');
+    ok(X.Q_BAL.every(q => X.state.qPick[q.id] === undefined), '② 되돌리기: 결론 문항 지워짐');
+    /* ★다른 칸은 살아 있다 — 이것이 요점이다 */
+    ok(X.repDoneCount() === 3, '★② 되돌리기: ③ 의 모델은 살아 있다');
+    ok(X.state.cmpStage === 2, '★② 되돌리기: ④ 의 공개는 살아 있다');
+    ok(X.Q_INTRO.every(q => X.state.qPick[q.id] !== undefined), '★② 되돌리기: ① 의 답은 살아 있다');
+    ok(X.PRACTICE.every(q => X.state.pPick[q.id] !== undefined), '★② 되돌리기: 💪 의 답은 살아 있다');
+    ok(String(X.state.ta.w1 || '').length > 0, '★② 되돌리기: ⑤ 의 서술은 살아 있다');
+    /* 지운 뒤 곧바로 다시 할 수 있는가 */
+    ok(X._store['balQwrap'].style.display === 'block', '② 되돌리기 뒤에도 결론 문항 자리는 열려 있다');
+    finishBal(X);
+    ok(X.balDoneCount() === 4 && X.stepDone('bal') === true, '★되돌린 뒤 ② 를 처음부터 다시 마칠 수 있다'); }
+
+  /* ③ 모델 굴리기 */
+  { const X = full(); X.resetSec('rep');
+    ok(X.repDoneCount() === 0 && X.state.repLast === null, '③ 되돌리기: 굴린 모델 0');
+    ok(X.Q_REP.every(q => X.state.qPick[q.id] === undefined), '③ 되돌리기: 결론 문항 지워짐');
+    ok(X.balDoneCount() === 4, '★③ 되돌리기: ② 는 그대로');
+    ok(X.state.cmpStage === 2, '★③ 되돌리기: ④ 는 그대로');
+    finishRep(X);
+    ok(X.stepDone('rep') === true, '★되돌린 뒤 ③ 을 다시 마칠 수 있다'); }
+
+  /* ④ 실제 결과 대조 */
+  { const X = full(); X.resetSec('cmp');
+    ok(X.state.cmpStage === 0, '④ 되돌리기: 공개한 세대 0');
+    ok(X.Q_CMP.every(q => X.state.qPick[q.id] === undefined), '④ 되돌리기: 판단 문항 지워짐');
+    ok(X._store['cmpG1Btn'].disabled === false, '★④ 되돌리기 뒤 G1 단추가 다시 눌린다');
+    ok(X.balDoneCount() === 4 && X.repDoneCount() === 3, '★④ 되돌리기: ②③ 은 그대로');
+    finishCmp(X);
+    ok(X.stepDone('cmp') === true, '★되돌린 뒤 ④ 를 다시 마칠 수 있다'); }
+
+  /* 💪 더 풀어 보기 */
+  { const X = full(); X.resetSec('prac');
+    ok(X.PRACTICE.every(q => X.state.pPick[q.id] === undefined), '💪 되돌리기: 연습 문항 지워짐');
+    ok(X.Q_CMP.every(q => X.state.qPick[q.id] !== undefined), '💪 되돌리기: ④ 의 답은 그대로');
+    ok(X.confirms() === 0, '💪 는 확인 없이 지운다'); }
+
+  /* ⑤ 정리하기 */
+  { const X = full();
+    X.confirmRet(false); X.resetSec('write');
+    ok(String(X.state.ta.w1 || '').length > 0, '⑤ 되돌리기: 취소하면 그대로');
+    X.confirmRet(true); X.resetSec('write');
+    ok(Object.keys(X.state.ta).every(k => !X.state.ta[k]), '⑤ 되돌리기: 서술 답안 지워짐');
+    ok(Object.keys(X.state.self).every(k => !X.state.self[k]), '⑤ 되돌리기: 자기평가 지워짐');
+    ok(X._store['ta_w1'].value === '', '⑤ 되돌리기: 화면의 글상자도 비워진다');
+    ok(X.ansGate('w1').open === false, '⑤ 되돌리기: 모범답안이 도로 잠긴다');
+    ok(X.balDoneCount() === 4, '★⑤ 되돌리기: ② 는 그대로'); }
+
+  /* 모르는 열쇠는 아무 일도 하지 않는다 */
+  { const X = full(); X.resetSec('없는칸'); X.resetSec(undefined);
+    ok(X.balDoneCount() === 4 && X.confirms() === 0, '모르는 열쇠에는 아무 일도 하지 않는다'); }
+
+  /* 화면에 단추가 실제로 걸려 있는가 — 여섯 칸 전부 */
+  ['intro','bal','rep','cmp','prac','write'].forEach(k => {
+    ok(src.indexOf("resetSec('" + k + "')") >= 0, "카드에 resetSec('" + k + "') 단추가 있다");
+  });
+  ok((src.match(/class="secreset"/g) || []).length === 6, '★되돌리기 줄이 여섯 칸에 하나씩 있다');
+  ok(src.indexOf('onclick="resetAll()"') >= 0, '전체 리셋도 그대로 남아 있다');
+  ok(js.slice(js.indexOf('function resetSec'), js.indexOf('function resetAll')).indexOf('location') < 0,
+     '★섹션 되돌리기는 새로고침하지 않는다 (다른 칸의 답이 살아 있어야 한다)');
+  { const X = full(); X.confirmRet(true); X.resetSec('bal');
+    ok(X._rec.reloads === 0, '★되돌린 뒤에도 새로고침이 일어나지 않았다'); }
 }
 
 /* ════════════════════════════════════════════════════════════

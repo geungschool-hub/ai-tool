@@ -1,0 +1,910 @@
+// 업무 관리 도구 — 파서·묶음·스토어·앱 회귀 검사 (Node 헤드리스)
+// 실행:  node _test_taskboard.js            (옆의 web/index.html)
+//        node _test_taskboard.js <다른 HTML>  (변이 검사용)
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const HTML = process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, 'web', 'index.html');
+const src = fs.readFileSync(HTML, 'utf8');
+
+let pass = 0, fail = 0;
+function ok(cond, name){ if (cond) pass++; else { fail++; console.error('  X FAIL: ' + name); } }
+function eq(a, b, name){ ok(typeof a === typeof b && JSON.stringify(a) === JSON.stringify(b), name + '  (got ' + JSON.stringify(a) + ', want ' + JSON.stringify(b) + ')'); }
+function sec(t){ console.log(t); }
+
+function between(a, b){
+  const i = src.indexOf(a), j = src.indexOf(b);
+  return (i >= 0 && j > i) ? src.slice(i + a.length, j) : null;
+}
+const PARSE = between('/*PARSE-START*/', '/*PARSE-END*/');
+const GROUP = between('/*GROUP-START*/', '/*GROUP-END*/');
+const CONFIG = between('/*CONFIG-START*/', '/*CONFIG-END*/');
+const STORE = between('/*STORE-START*/', '/*STORE-END*/');
+const CSS = (src.match(/<style>([\s\S]*?)<\/style>/) || [])[1] || '';
+const SCRIPT = (src.match(/<script>([\s\S]*?)<\/script>\s*<\/body>/) || [])[1] || '';
+const APP = src.slice(src.indexOf('/*STORE-END*/'));
+const stripComments = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"])\/\/[^\n]*/g, '$1');
+
+// 고정 시계 — 순수 계층이 인자 today 대신 실제 시계를 쓰면 여기서 드러난다(실행일과 무관)
+function frozenDate(ref){
+  return class FDate extends Date {
+    constructor(...a){ super(...(a.length ? a : [ref.now])); }
+    static now(){ return ref.now; }
+  };
+}
+
+// ══ [1] 마커 존재·순수성 ══
+sec('[1] 마커 존재·순수성');
+ok(PARSE !== null, 'PARSE 마커');
+ok(GROUP !== null, 'GROUP 마커');
+ok(CONFIG !== null, 'CONFIG 마커');
+ok(STORE !== null, 'STORE 마커');
+ok(SCRIPT.length > 0, 'script 블록');
+ok(/firebaseConfig\s*=/.test(CONFIG || ''), 'CONFIG 에 firebaseConfig');
+ok(/T_UID\s*=/.test(CONFIG || ''), 'CONFIG 에 T_UID');
+{
+  const pureP = stripComments(PARSE || ''), pureG = stripComments(GROUP || '');
+  for (const bad of ['document', 'window', 'localStorage', 'navigator', 'setTimeout', 'globalThis', 'self', 'location', 'fetch', 'alert', 'Date.now', 'Math.random']) {
+    ok(!pureP.includes(bad), 'PARSE 블록에 ' + bad + ' 없음');
+    ok(!pureG.includes(bad), 'GROUP 블록에 ' + bad + ' 없음');
+  }
+  ok(!/new Date\(\s*\)/.test(pureP), 'PARSE 에 인자 없는 new Date() 없음');
+  ok(!/new Date\(\s*\)/.test(pureG), 'GROUP 에 인자 없는 new Date() 없음');
+}
+// localStorage 는 STORE 블록 안에서만
+const outsideStore = stripComments(src.replace(STORE || '', ''));
+ok(!/localStorage/.test(outsideStore), 'localStorage 는 STORE 블록 밖에 없음');
+ok(!/<script[^>]+src=/.test(src), '외부 스크립트 없음');
+ok(!/<link[^>]+href=/.test(src), '외부 스타일 없음');
+ok(!/https?:\/\/(?!www\.w3\.org)/.test(src), '외부 URL 없음');
+ok(/<meta name="viewport"/.test(src), 'viewport');
+ok(/var BUILD = 'v\d{4}-\d{2}-\d{2}[a-z]';/.test(src), '빌드 스탬프 형식 vYYYY-MM-DDx');
+ok(/class="stamp">' \+ esc\(BUILD\)/.test(src), '설정 화면에 BUILD 표시');
+if (PARSE === null || GROUP === null) { console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패'); process.exit(1); }
+
+const CLOCK = { now: Date.UTC(2031, 5, 15, 3, 0, 0) };   // 2031-06-15 — 검사 기준일과 멀리
+const S = { Math, JSON, Object, Array, String, Number, Date: frozenDate(CLOCK), RegExp, console };
+vm.createContext(S);
+let loadErr = null;
+try { vm.runInContext(PARSE + '\n' + GROUP, S); } catch (e) { loadErr = e; }
+ok(!loadErr, '마커 코드가 독립 실행됨' + (loadErr ? ' — ' + loadErr.message : ''));
+ok(typeof S.parse === 'function', 'parse 함수');
+ok(typeof S.resolveDate === 'function', 'resolveDate 함수');
+ok(typeof S.groupToday === 'function', 'groupToday 함수');
+ok(typeof S.sortAll === 'function', 'sortAll 함수');
+if (loadErr) { console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패'); process.exit(1); }
+
+const T = '2026-09-03';    // 목요일
+const T2 = '2026-12-17';   // 목요일 — 두 번째 기준일(today 인자가 실제로 쓰이는지)
+// 저장 모양 그대로: 키가 id, 값에 id 없음
+const TASKS = {
+  '260903k3x': { title: '감독 배정표 회신', status: 'todo', area: 'admin', priority: 2, due: '2026-09-05', updatedAt: 10, createdAt: 10 },
+  '260901m2p': { title: '중간고사 문항', status: 'doing', area: 'class', priority: 1, due: '2026-09-25', updatedAt: 20, createdAt: 5 },
+  '260830q8a': { title: '1-3 심화 세트', status: 'done', area: 'class', priority: 2, updatedAt: 30, createdAt: 1 }
+};
+const P = (line, area, today, tasks) => S.parse(line, area || 'admin', today || T, tasks === undefined ? TASKS : tasks);
+
+// ══ [2] PRD §4.2 예시 4줄 ══
+sec('[2] PRD §4.2 예시 4줄');
+{
+  let r = P('학력평가 결과 보고 @9/12 ! +NEIS 추출 +표 +결재', 'event');
+  eq(r.title, '학력평가 결과 보고', '예1 제목');
+  eq(r.due, '2026-09-12', '예1 마감');
+  eq(r.priority, 1, '예1 높음');
+  eq(r.area, 'event', '예1 현재 탭 영역');
+  eq(r.checks, ['NEIS 추출', '표', '결재'], '예1 체크 3');
+  eq(r.editId, null, '예1 새 항목');
+  eq(r.memo, undefined, '예1 메모 없음');
+  eq(r.fallback, false, '예1 정상 줄');
+
+  r = P('위탁 교육생 면담 @내일 // 5교시 후');
+  eq(r.title, '위탁 교육생 면담', '예2 제목');
+  eq(r.due, '2026-09-04', '예2 내일');
+  eq(r.memo, '5교시 후', '예2 메모');
+  eq(r.priority, 2, '예2 보통');
+  eq(r.checks, [], '예2 체크 0');
+
+  r = P('1-3 심화 세트 #교');
+  eq(r.title, '1-3 심화 세트', '예3 제목');
+  eq(r.area, 'class', '예3 교과');
+  eq(r.checks, ['제작', '검사', '배포', '허브 카드'], '예3 체크 4틀');
+  eq(r.due, undefined, '예3 마감 없음');
+
+  r = P('>k3x @담주월');
+  eq(r.editId, '260903k3x', '예4 수정 대상');
+  eq(r.patch, { due: '2026-09-07' }, '예4 patch 마감만');
+  eq(r.title, '', '예4 제목 비어 있음');
+  // 두 번째 기준일
+  eq(P('위탁 교육생 면담 @내일', 'admin', T2).due, '2026-12-18', '예2 를 12월 기준으로');
+  eq(P('>k3x @담주월', 'admin', T2).patch, { due: '2026-12-21' }, '예4 를 12월 기준으로');
+}
+
+// ══ [3] 날짜 토큰 ══
+sec('[3] 날짜 토큰 (오늘 = 2026-09-03 목)');
+{
+  const R = (tok, today) => S.resolveDate(tok, today || T);
+  eq(R('오늘'), '2026-09-03', '@오늘');
+  eq(R('내일'), '2026-09-04', '@내일');
+  eq(R('모레'), '2026-09-05', '@모레');
+  eq(R('목'), '2026-09-03', '@목 = 오늘');
+  eq(R('금'), '2026-09-04', '@금');
+  eq(R('토'), '2026-09-05', '@토');
+  eq(R('일'), '2026-09-06', '@일');
+  eq(R('월'), '2026-09-07', '@월 (지남 → 다음 주)');
+  eq(R('화'), '2026-09-08', '@화');
+  eq(R('수'), '2026-09-09', '@수 (지남 → 다음 주)');
+  eq(R('담주월'), '2026-09-07', '@담주월');
+  eq(R('담주화'), '2026-09-08', '@담주화');
+  eq(R('담주수'), '2026-09-09', '@담주수');
+  eq(R('담주목'), '2026-09-10', '@담주목 (오늘 요일이라도 다음 주)');
+  eq(R('담주금'), '2026-09-11', '@담주금');
+  eq(R('담주토'), '2026-09-12', '@담주토');
+  eq(R('담주일'), '2026-09-13', '@담주일');
+  eq(R('이번주'), '2026-09-04', '@이번주 = 이번 주 금');
+  eq(R('다음주'), '2026-09-07', '@다음주 = 다음 주 월');
+  eq(R('9/25'), '2026-09-25', '@9/25');
+  eq(R('0925'), '2026-09-25', '@0925');
+  eq(R('9-25'), '2026-09-25', '@9-25');
+  eq(R('9.25'), '2026-09-25', '@9.25');
+  eq(R('12/1'), '2026-12-01', '@12/1');
+  eq(R('2026-10-01'), '2026-10-01', '@YYYY-MM-DD');
+  eq(R('2026-06-01'), '2026-06-01', '연도 있는 지난 날짜는 그대로(내년으로 안 밀림)');
+  eq(R('2025-06-01'), '2025-06-01', '연도 있는 작년 날짜 그대로');
+  eq(R('2027-06-01'), '2027-06-01', '연도 있는 내년 날짜 그대로');
+  eq(R('2026-13-01'), null, '연도 있어도 틀린 달은 아님');
+  eq(R('+3'), '2026-09-06', '@+3');
+  eq(R('+0'), '2026-09-03', '@+0');
+  eq(R('+30'), '2026-10-03', '@+30 (달 넘김)');
+  eq(R('없음'), 'none', '@없음');
+  eq(R('9/3'), '2026-09-03', '@9/3 = 오늘');
+  eq(R('8/20'), '2026-08-20', '@8/20 (2주 지남 → 올해 그대로)');
+  eq(R('1/10'), '2027-01-10', '@1/10 (한 달 넘게 지남 → 내년)');
+  eq(R('1/10', '2026-12-20'), '2027-01-10', '12월에 @1/10 → 내년');
+  eq(R('12/1', '2026-12-20'), '2026-12-01', '12월에 @12/1 → 올해');
+  eq(R('13/1'), null, '@13/1 은 날짜 아님');
+  eq(R('2/30'), null, '@2/30 은 날짜 아님');
+  eq(R('0231'), null, '@0231 은 날짜 아님');
+  eq(R('abc'), null, '@abc 는 날짜 아님');
+  eq(R(''), null, '빈 토큰');
+  eq(R('담주'), null, '@담주 만은 아님');
+  eq(R('담주요'), null, '@담주요 아님');
+  // 요일 경계 — 이번주·다음주 (주 시작 = 월요일)
+  eq(R('이번주', '2026-09-04'), '2026-09-04', '금요일의 @이번주 = 오늘');
+  eq(R('이번주', '2026-09-05'), '2026-09-11', '토요일의 @이번주 = 다음 주 금');
+  eq(R('이번주', '2026-09-06'), '2026-09-11', '일요일의 @이번주 = 다음 주 금');
+  eq(R('이번주', '2026-09-07'), '2026-09-11', '월요일의 @이번주 = 이번 주 금');
+  eq(R('다음주', '2026-09-07'), '2026-09-14', '월요일의 @다음주 = 다음 주 월');
+  eq(R('다음주', '2026-09-06'), '2026-09-07', '일요일의 @다음주 = 내일');
+  eq(R('담주월', '2026-09-07'), '2026-09-14', '월요일의 @담주월');
+  eq(R('담주일', '2026-09-06'), '2026-09-13', '일요일의 @담주일');
+  eq(R('월', '2026-09-07'), '2026-09-07', '월요일의 @월 = 오늘');
+  eq(R('일', '2026-09-06'), '2026-09-06', '일요일의 @일 = 오늘');
+  eq(R('내일', '2026-12-31'), '2027-01-01', '연말 @내일');
+  eq(R('+3', '2026-02-27'), '2026-03-02', '2월 말 @+3');
+  // 두 번째 기준일(12-17 목) — parse 경유
+  eq(P('a @오늘', 'admin', T2).due, '2026-12-17', 'T2 @오늘');
+  eq(P('a @모레', 'admin', T2).due, '2026-12-19', 'T2 @모레');
+  eq(P('a @수', 'admin', T2).due, '2026-12-23', 'T2 @수 → 다음 주');
+  eq(P('a @담주화', 'admin', T2).due, '2026-12-22', 'T2 @담주화');
+  eq(P('a @이번주', 'admin', T2).due, '2026-12-18', 'T2 @이번주');
+  eq(P('a @다음주', 'admin', T2).due, '2026-12-21', 'T2 @다음주');
+  eq(P('a @+3', 'admin', T2).due, '2026-12-20', 'T2 @+3');
+  eq(P('a @1/10', 'admin', T2).due, '2027-01-10', 'T2 @1/10 → 내년');
+  eq(P('a @0925', 'admin', T2).due, '2027-09-25', 'T2 @0925 → 내년');
+  // parse 를 거친 due
+  eq(P('a @모레').due, '2026-09-05', 'parse @모레');
+  eq(P('a @없음').due, undefined, 'parse @없음 → due 없음');
+  eq(P('a @9/25 @없음').due, undefined, '@없음 이 뒤에 오면 없음');
+  eq(P('a @없음 @9/25').due, '2026-09-25', '뒤 토큰이 이김');
+  eq(P('a @9/25 @내일').due, '2026-09-04', '마지막 @ 가 이김');
+  eq(P('a @2026-06-01').due, '2026-06-01', 'parse 연도 있는 토큰 그대로(📅 경로)');
+  eq(P('a @abc').title, 'a @abc', '안 걸리는 @ 는 제목');
+  eq(P('a @').title, 'a @', '@ 홀로는 제목');
+  eq(P('a @13/1').title, 'a @13/1', '틀린 날짜는 제목');
+}
+
+// ══ [4] 공백 규칙 ══
+sec('[4] 공백 규칙');
+{
+  let r = P('a@b.com 회신');
+  eq(r.title, 'a@b.com 회신', '붙은 @ 는 제목'); eq(r.due, undefined, '붙은 @ 마감 없음');
+  r = P('회신@내일');
+  eq(r.title, '회신@내일', '붙은 @내일 도 제목'); eq(r.due, undefined, '붙은 @내일 마감 없음');
+  r = P('회신 @내일');
+  eq(r.title, '회신', '띄운 @내일 은 토큰'); eq(r.due, '2026-09-04', '띄운 @내일 마감');
+  r = P('x#교 정리');
+  eq(r.title, 'x#교 정리', '붙은 # 는 제목'); eq(r.area, 'admin', '붙은 # 영역 안 바뀜'); eq(r.checks, [], '붙은 # 체크 없음');
+  r = P('C#교재 !');
+  eq(r.title, 'C#교재', '붙은 #교재'); eq(r.priority, 1, '띄운 ! 는 높음');
+  r = P('급함! 회신');
+  eq(r.title, '급함! 회신', '붙은 ! 는 제목'); eq(r.priority, 2, '붙은 ! 중요도 그대로');
+  r = P('!급함');
+  eq(r.title, '!급함', '! 뒤에 글자 있으면 제목'); eq(r.priority, 2, '!급함 중요도 그대로');
+  r = P('a ~');
+  eq(r.priority, 3, '~ 는 낮음'); eq(r.title, 'a', '~ 제목 제외');
+  r = P('a~b');
+  eq(r.title, 'a~b', '붙은 ~ 는 제목'); eq(r.priority, 2, '붙은 ~ 중요도');
+  r = P('보고 // 5교시 후 @내일 +x');
+  eq(r.memo, '5교시 후 @내일 +x', '// 뒤는 끝까지 메모'); eq(r.due, undefined, '메모 안 @ 는 마감 아님'); eq(r.checks, [], '메모 안 + 는 체크 아님'); eq(r.title, '보고', '메모 앞이 제목');
+  r = P('//메모만');
+  eq(r.memo, '메모만', '줄 머리 // 도 메모'); ok(r.title.length > 0, '전부 토큰이면 제목은 원문(실패 없음)'); eq(r.fallback, true, '전부 토큰이면 fallback true');
+  eq(P('a').fallback, false, '보통 줄은 fallback false');
+  eq(P('@내일 !').fallback, true, '토큰만 있으면 fallback'); eq(P('@내일 !').title, '@내일 !', '토큰만 있으면 원문이 제목');
+  eq(P('>k3x 완료').fallback, false, '수정은 fallback 아님');
+  r = P('https://x.y/z 확인');
+  eq(r.title, 'https://x.y/z 확인', 'URL 의 // 는 메모 아님'); eq(r.memo, undefined, 'URL 메모 없음');
+  r = P('a // b // c');
+  eq(r.memo, 'b // c', '첫 // 부터 끝까지');
+  r = P('a //');
+  eq(r.memo, undefined, '빈 메모는 없음'); eq(r.title, 'a', '빈 메모 제목');
+  r = P('a +x +y +z');
+  eq(r.checks, ['x', 'y', 'z'], '+ 여러 개');
+  r = P('a +NEIS 추출 +표 정리 @금');
+  eq(r.checks, ['NEIS 추출', '표 정리'], '체크 텍스트는 다음 토큰까지'); eq(r.due, '2026-09-04', '체크 뒤 @ 토큰'); eq(r.title, 'a', '체크 뒤 제목 안 섞임');
+  r = P('a +x b');
+  eq(r.checks, ['x b'], '체크 뒤 낱말은 체크에 붙음');
+  r = P('a @금 b');
+  eq(r.title, 'a b', '@ 뒤 낱말은 제목으로');
+  r = P('a +');
+  eq(r.title, 'a +', '+ 홀로는 제목'); eq(r.checks, [], '+ 홀로 체크 없음');
+  r = P('1+1 계산');
+  eq(r.title, '1+1 계산', '붙은 + 는 제목'); eq(r.checks, [], '붙은 + 체크 없음');
+  r = P('   앞 공백   @내일   ');
+  eq(r.title, '앞 공백', '여러 공백'); eq(r.due, '2026-09-04', '여러 공백 뒤 토큰');
+  r = P('a\t@내일');
+  eq(r.due, '2026-09-04', '탭도 공백');
+  r = P('@내일 회의');
+  eq(r.due, '2026-09-04', '줄 머리 토큰'); eq(r.title, '회의', '줄 머리 토큰 뒤 제목');
+  r = P('#사 체육대회');
+  eq(r.area, 'event', '줄 머리 #사'); eq(r.title, '체육대회', '줄 머리 # 뒤 제목');
+  r = P('a ! b ~');
+  eq(r.priority, 3, '! 뒤 ~ 는 마지막이 이김'); eq(r.title, 'a b', '! ~ 제목 제외');
+  r = P('a #행 #사');
+  eq(r.area, 'event', '# 는 마지막이 이김');
+  r = P('a #행정'); eq(r.area, 'admin', '#행정');
+  r = P('a #행사'); eq(r.area, 'event', '#행사');
+  r = P('a #교과'); eq(r.area, 'class', '#교과');
+  r = P('a #x'); eq(r.title, 'a #x', '모르는 # 는 제목'); eq(r.area, 'admin', '모르는 # 영역 그대로');
+  r = P('a #'); eq(r.title, 'a #', '# 홀로는 제목');
+  r = P('a >'); eq(r.title, 'a >', '> 홀로는 제목');
+  r = P(''); eq(r.title, '', '빈 줄'); eq(r.editId, null, '빈 줄 수정 아님');
+  r = P(null); eq(typeof r.title, 'string', 'null 도 문자열');
+  r = P(undefined); eq(typeof r.title, 'string', 'undefined 도 문자열');
+}
+
+// ══ [5] #교 4틀 ══
+sec('[5] #교 4틀 — 토큰을 직접 쳤을 때만 / + 있으면 그것만');
+{
+  eq(P('a #교').checks, ['제작', '검사', '배포', '허브 카드'], '#교 → 4틀 순서대로');
+  eq(P('a #교').checks.length, 4, '#교 정확히 4');
+  eq(P('a #교과').checks, ['제작', '검사', '배포', '허브 카드'], '#교과 도 4틀');
+  eq(P('a #교 +초안').checks, ['초안'], '#교 + 체크 있으면 그것만');
+  eq(P('a +초안 +검토 #교').checks, ['초안', '검토'], '+ 가 앞에 있어도 그것만');
+  eq(P('a #행').checks, [], '#행 은 체크 없음');
+  eq(P('a #사').checks, [], '#사 는 체크 없음');
+  eq(P('a').checks, [], '영역 기본(행정)은 체크 없음');
+  eq(P('a', 'class').checks, [], '기본 영역이 교과여도 토큰 없이는 4틀 안 붙음');
+  eq(P('a', 'class').area, 'class', '기본 영역 교과는 영역만');
+  eq(P('a #교', 'class').checks, ['제작', '검사', '배포', '허브 카드'], '교과 영역에서 #교 를 치면 4틀');
+  eq(P('a #행', 'class').checks, [], '교과 탭에서 #행 이면 없음');
+  eq(P('a #교 #행').checks, [], '#교 뒤 #행 이면 없음(마지막 영역 기준)');
+  eq(P('a #교 // 메모').checks, ['제작', '검사', '배포', '허브 카드'], '메모 있어도 4틀');
+  eq(P('a #교 // 메모').memo, '메모', '#교 + 메모');
+  eq(P('a #교 +x // +y').checks, ['x'], '메모 안 + 는 체크 아님');
+  eq(P('>k3x #교').patch, { area: 'class' }, '수정에서 #교 는 영역만(4틀 안 붙임)');
+  eq(P('>k3x #교').checks, [], '수정 반환 checks 도 비어 있음');
+}
+
+// ══ [6] >id 수정 ══
+sec('[6] >id 수정');
+{
+  let r = P('>k3x @9/19'); eq(r.editId, '260903k3x', '>id 찾음'); eq(r.patch, { due: '2026-09-19' }, '마감 변경');
+  r = P('>k3x 완료'); eq(r.patch, { status: 'done' }, '완료');
+  r = P('>k3x 진행'); eq(r.patch, { status: 'doing' }, '진행');
+  r = P('>k3x 대기'); eq(r.patch, { status: 'todo' }, '대기');
+  r = P('>k3x 버림'); eq(r.patch, { status: 'dropped' }, '버림');
+  r = P('>k3x +결재'); eq(r.patch, { 'checks+': ['결재'] }, '+체크 추가');
+  r = P('>k3x +결재 +발송'); eq(r.patch['checks+'], ['결재', '발송'], '+체크 여러 개');
+  r = P('>k3x 새 제목'); eq(r.patch, { title: '새 제목' }, '새 제목'); eq(r.title, '새 제목', '반환 title 도 새 제목');
+  r = P('>k3x 완료 보고서'); eq(r.patch, { title: '완료 보고서' }, '상태어가 포함된 긴 제목은 제목');
+  r = P('>k3x @없음'); eq(r.patch, { due: null }, '@없음 → due null');
+  r = P('>k3x !'); eq(r.patch, { priority: 1 }, '높음');
+  r = P('>k3x ~'); eq(r.patch, { priority: 3 }, '낮음');
+  r = P('>k3x #사'); eq(r.patch, { area: 'event' }, '영역');
+  r = P('>k3x // 5교시 후'); eq(r.patch, { memo: '5교시 후' }, '메모');
+  r = P('>k3x @담주월 ! +결재 // m'); eq(r.patch, { due: '2026-09-07', priority: 1, 'checks+': ['결재'], memo: 'm' }, '여러 필드 한꺼번에');
+  r = P('>k3x'); eq(r.editId, '260903k3x', '>id 만'); eq(r.patch, {}, '>id 만이면 patch 빈 객체');
+  r = P('>260903k3x 완료'); eq(r.editId, '260903k3x', '전체 id 도 됨'); eq(r.patch, { status: 'done' }, '전체 id 완료');
+  r = P('>K3X 완료'); eq(r.editId, '260903k3x', '대문자 id');
+  r = P('>m2p 완료'); eq(r.editId, '260901m2p', '다른 id');
+  r = P('>zzz 뭐'); eq(r.editId, null, '없는 id 는 수정 아님'); eq(r.title, '>zzz 뭐', '없는 id 는 제목 취급'); eq(r.patch, null, '새 항목 patch null');
+  r = P('>k3 뭐'); eq(r.editId, null, '2자 id 는 아님'); eq(r.title, '>k3 뭐', '2자 id 제목');
+  r = P('>k3xy 뭐'); eq(r.editId, null, '4자 id 는 아님');
+  r = P('제목 >k3x @금'); eq(r.editId, '260903k3x', '> 가 뒤에 와도 됨'); eq(r.patch, { due: '2026-09-04', title: '제목' }, '뒤 > 제목+마감');
+  r = P('a>k3x'); eq(r.editId, null, '붙은 > 는 제목'); eq(r.title, 'a>k3x', '붙은 > 제목');
+  r = P('>k3x >m2p'); eq(r.editId, '260903k3x', '두 번째 > 는 무시'); eq(r.patch, { title: '>m2p' }, '두 번째 > 는 제목');
+  r = P('>k3x @9/19', 'admin', T, null); eq(r.editId, null, 'tasks 없으면 수정 아님');
+  r = P('>k3x @9/19', 'admin', T, {}); eq(r.editId, null, 'tasks 비면 수정 아님'); eq(r.title, '>k3x', '그때 제목');
+  r = P('>k3x 완료', 'admin', T, Object.keys(TASKS).map(k => Object.assign({ id: k }, TASKS[k]))); eq(r.editId, '260903k3x', '배열 tasks 도 됨');
+  eq(P('>k3x 완료').due, undefined, '수정 반환의 due 는 undefined');
+  eq(P('>k3x 완료').checks, [], '수정 반환의 checks');
+  // 접미 충돌 — 휴지통 아닌 쪽
+  const dup = { '260801k3x': { title: 'old', status: 'todo', deletedAt: 5 }, '260903k3x': TASKS['260903k3x'] };
+  eq(P('>k3x 완료', 'admin', T, dup).editId, '260903k3x', '같은 접미면 휴지통 아닌 쪽');
+  // 키 ≠ 값의 id — 키가 이긴다
+  const odd = { '260903k3x': Object.assign({ id: 'other' }, TASKS['260903k3x']) };
+  eq(P('>k3x 완료', 'admin', T, odd).editId, '260903k3x', '값에 id 가 있어도 키가 id');
+}
+
+// ══ [7] 실패 없음 ══
+sec('[7] 실패 없음 (무작위 30줄)');
+{
+  let seed = 20260903;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const pool = ['@', '#', '!', '~', '+', '>', '/', '//', ' ', ' ', ' ', '가', '나', '다', 'k3x', '9/25', '0925', '내일', '담주화', '교', '행', '완료', '없음', '\t', '@@', '#교', '+', '13/1', '2/30', 'a@b'];
+  let thrown = 0, strings = 0, nonEmpty = 0, validPri = 0, validArea = 0, arrChecks = 0;
+  for (let i = 0; i < 30; i++) {
+    const n = 1 + Math.floor(rnd() * 12);
+    let line = '';
+    for (let j = 0; j < n; j++) line += pool[Math.floor(rnd() * pool.length)];
+    let r;
+    try { r = P(line); } catch (e) { thrown++; console.error('    throw: ' + JSON.stringify(line) + ' — ' + e.message); continue; }
+    if (typeof r.title === 'string') strings++;
+    if (r.editId || !line.trim() || r.title.length > 0) nonEmpty++;
+    if ([1, 2, 3].includes(r.priority)) validPri++;
+    if (['admin', 'event', 'class'].includes(r.area)) validArea++;
+    if (Array.isArray(r.checks)) arrChecks++;
+  }
+  eq(thrown, 0, '예외 0');
+  eq(strings, 30, 'title 은 항상 문자열');
+  eq(nonEmpty, 30, '비지 않은 줄은 title 을 낸다');
+  eq(validPri, 30, 'priority 는 1|2|3');
+  eq(validArea, 30, 'area 는 셋 중 하나');
+  eq(arrChecks, 30, 'checks 는 배열');
+}
+
+// ══ [8] groupToday ══
+sec('[8] groupToday 묶음 순서·빈 묶음 제외·정렬');
+{
+  const mk = (id, o) => Object.assign({ id, title: id, status: 'todo', area: 'admin', priority: 2, updatedAt: 100, createdAt: 1 }, o);
+  const G = (arr, today) => S.groupToday(arr, today || T);
+  const keys = g => g.map(x => x.key);
+  const ids = (g, k) => (g.find(x => x.key === k) || { items: [] }).items.map(t => t.id);
+
+  eq(G([]), [], '빈 입력 → 빈 배열');
+  eq(G({}), [], '빈 객체 → 빈 배열');
+  eq(keys(G([mk('a', { due: '2026-09-01' })])), ['overdue'], '지남만');
+  eq(keys(G([mk('a', { due: '2026-09-03' })])), ['today'], '오늘만');
+  eq(keys(G([mk('a', { status: 'doing' })])), ['doing'], '진행만');
+  eq(keys(G([mk('a', { due: '2026-09-08' })])), ['week'], '이번 주만');
+  eq(keys(G([mk('a', { priority: 1 })])), ['nodueHigh'], '날짜 없음·높음만');
+  eq(keys(G([mk('a')])), [], '날짜 없음·보통은 안 보임');
+  eq(keys(G([mk('a', { priority: 3 })])), [], '날짜 없음·낮음은 안 보임');
+  eq(keys(G([mk('a', { due: '2026-09-11' })])), [], '8일 뒤는 안 보임');
+  eq(keys(G([mk('a', { due: '2026-09-10' })])), ['week'], '7일 뒤는 이번 주');
+  eq(keys(G([mk('a', { due: '2026-09-04' })])), ['week'], '내일은 이번 주');
+  eq(keys(G([mk('a', { status: 'done', due: '2026-09-01' })])), [], '완료는 안 보임');
+  eq(keys(G([mk('a', { status: 'dropped', due: '2026-09-03' })])), [], '버림은 안 보임');
+  eq(keys(G([mk('a', { deletedAt: 5, due: '2026-09-03' })])), [], '휴지통은 안 보임');
+  eq(keys(G([mk('a', { ok: false, due: '2026-09-03' })])), [], 'ok:false(교사 ✓ 전) 는 안 보임');
+  eq(keys(G([mk('a', { ok: false, status: 'doing' })])), [], 'ok:false 진행도 안 보임');
+  eq(keys(G([mk('a', { ok: true, due: '2026-09-03' })])), ['today'], 'ok:true 는 보임');
+  eq(keys(G([mk('a', { status: 'doing', due: '2026-09-01' })])), ['overdue'], '진행+지남 → 지남');
+  eq(keys(G([mk('a', { status: 'doing', due: '2026-09-03' })])), ['today'], '진행+오늘 → 오늘');
+  eq(keys(G([mk('a', { status: 'doing', due: '2026-09-08' })])), ['doing'], '진행+이번 주 → 진행');
+  eq(keys(G([mk('a', { status: 'doing', priority: 1 })])), ['doing'], '진행+높음+날짜 없음 → 진행');
+  eq(keys(G([mk('a', { status: 'doing', due: '2027-01-01' })])), ['doing'], '진행+먼 마감 → 진행');
+  eq(keys(G([mk('a', { due: '2026-09-30', priority: 1 })])), [], '먼 마감은 높음이어도 안 보임');
+
+  const full = [
+    mk('w1', { due: '2026-09-08' }), mk('h1', { priority: 1 }), mk('d1', { status: 'doing' }),
+    mk('t1', { due: '2026-09-03' }), mk('o1', { due: '2026-09-01' }),
+    mk('x1', { status: 'done', due: '2026-09-03' }), mk('x2', { deletedAt: 1, due: '2026-09-01' }), mk('x3', { ok: false, due: '2026-09-03' })
+  ];
+  const g = G(full);
+  eq(keys(g), ['overdue', 'today', 'doing', 'week', 'nodueHigh'], '5묶음 순서');
+  eq(g.map(x => x.items.length), [1, 1, 1, 1, 1], '각 1개');
+  eq(keys(G(full.filter(t => t.id !== 't1' && t.id !== 'd1'))), ['overdue', 'week', 'nodueHigh'], '빈 묶음은 빠진다');
+  ok(g.every(x => x.items.length > 0), '빈 묶음 없음');
+  const all = [].concat(...g.map(x => x.items.map(t => t.id)));
+  eq(new Set(all).size, all.length, '한 항목은 한 묶음에만');
+  eq(all.length, 5, '열린 항목 전부 배치');
+
+  // 객체 입력 (id 는 키에서 — 값에 id 가 있어도 키가 이긴다)
+  const obj = {}; full.forEach(t => { const c = Object.assign({}, t); delete c.id; obj[t.id] = c; });
+  eq(keys(G(obj)), ['overdue', 'today', 'doing', 'week', 'nodueHigh'], '객체 입력도 같다');
+  eq(ids(G(obj), 'today'), ['t1'], '객체 입력 id 는 키에서');
+  eq(ids(G({ k1: mk('other', { due: '2026-09-03' }) }), 'today'), ['k1'], '키 ≠ 값 id 면 키');
+
+  // 묶음 안 정렬: priority → due → updatedAt(최근 먼저)
+  const srt = [
+    mk('a', { due: '2026-09-09', priority: 2, updatedAt: 1 }),
+    mk('b', { due: '2026-09-08', priority: 2, updatedAt: 1 }),
+    mk('c', { due: '2026-09-10', priority: 1, updatedAt: 1 }),
+    mk('d', { due: '2026-09-08', priority: 2, updatedAt: 9 }),
+    mk('e', { due: '2026-09-04', priority: 3, updatedAt: 1 })
+  ];
+  eq(ids(G(srt), 'week'), ['c', 'd', 'b', 'a', 'e'], '정렬 priority → due → updatedAt 최근 먼저');
+  const ov = [mk('a', { due: '2026-09-02' }), mk('b', { due: '2026-09-01' }), mk('c', { due: '2026-09-02', priority: 1 })];
+  eq(ids(G(ov), 'overdue'), ['c', 'b', 'a'], '지남 묶음 정렬');
+  const dg = [mk('a', { status: 'doing', updatedAt: 1 }), mk('b', { status: 'doing', due: '2026-09-20', updatedAt: 1 }), mk('c', { status: 'doing', updatedAt: 5 })];
+  eq(ids(G(dg), 'doing'), ['b', 'c', 'a'], '진행 묶음: 날짜 있는 것 먼저, 없으면 최근 먼저');
+  // 날짜 경계 — today 인자가 실제로 쓰인다
+  eq(keys(G([mk('a', { due: '2026-09-06' })], '2026-09-06')), ['today'], '오늘 기준 바뀜');
+  eq(keys(G([mk('a', { due: '2026-09-05' })], '2026-09-06')), ['overdue'], '어제는 지남');
+  eq(keys(G([mk('a', { due: '2026-12-17' })], T2)), ['today'], 'T2 오늘');
+  eq(keys(G([mk('a', { due: '2026-12-24' })], T2)), ['week'], 'T2 7일 뒤');
+  eq(keys(G([mk('a', { due: '2026-12-25' })], T2)), [], 'T2 8일 뒤는 안 보임');
+  eq(keys(G([mk('a', { due: '2026-09-03' })], T2)), ['overdue'], 'T2 에서 9월은 지남');
+  ok(G(full).every(x => Array.isArray(x.items) && typeof x.key === 'string'), '반환 모양 {key, items}');
+  ok(!G(full).some(x => x.items.some(t => t.status === 'done')), '완료 없음');
+}
+
+// ══ [9] sortAll ══
+sec('[9] sortAll');
+{
+  const mk = (id, o) => Object.assign({ id, status: 'todo', priority: 2, updatedAt: 1 }, o);
+  const arr = [mk('a'), mk('b', { priority: 1 }), mk('c', { due: '2026-09-01' }), mk('d', { due: '2026-08-01' }), mk('e', { priority: 3, due: '2026-01-01' }), mk('f', { updatedAt: 9 }), mk('g', { priority: 1, due: '2026-12-01' })];
+  eq(S.sortAll(arr).map(t => t.id), ['g', 'b', 'd', 'c', 'f', 'a', 'e'], 'priority → due(없음 뒤) → updatedAt 최근 먼저');
+  eq(S.sortAll(arr).length, 7, '개수 보존');
+  eq(S.sortAll([]).length, 0, '빈 배열');
+  const obj = {}; arr.forEach(t => { obj[t.id] = Object.assign({}, t); delete obj[t.id].id; });
+  eq(S.sortAll(obj).map(t => t.id), ['g', 'b', 'd', 'c', 'f', 'a', 'e'], '객체 입력도 같다');
+  eq(S.sortAll({ k1: mk('zzz') }).map(t => t.id), ['k1'], '키 ≠ 값 id 면 키');
+  ok(S.sortAll(arr) !== arr, '원본 배열을 돌려주지 않음');
+  eq(arr.map(t => t.id), ['a', 'b', 'c', 'd', 'e', 'f', 'g'], '원본 순서 보존');
+  eq(S.sortAll([mk('x', { priority: undefined })]).length, 1, 'priority 없으면 보통 취급');
+  eq(S.sortAll([mk('x', { priority: undefined }), mk('y', { priority: 3 })]).map(t => t.id), ['x', 'y'], 'priority 없음 = 2');
+}
+
+// ══ [10] 필드 경로 규약 ══
+sec('[10] 필드 경로 규약 (store.update 인자)');
+{
+  const app = stripComments(APP);
+  let calls = 0, good = 0;
+  const re = /store\.update\(/g; let m;
+  while ((m = re.exec(app))) {
+    let i = m.index + m[0].length, depth = 1, j = i;
+    while (j < app.length && depth) { const ch = app[j]; if (ch === '(' || ch === '{' || ch === '[') depth++; else if (ch === ')' || ch === '}' || ch === ']') depth--; j++; }
+    const arg = app.slice(i, j - 1).trim();
+    calls++;
+    let fine = false;
+    if (/^(map|inv)$/.test(arg)) fine = true;                              // 경로 map 변수는 map / inv 만
+    else if (arg.startsWith('{')) {
+      const keys = [...arg.matchAll(/(?:^|[{,])\s*(?:'([^']+)'|"([^"]+)"|\[([^\]]+)\])\s*:/g)];
+      fine = keys.length > 0 && keys.every(k => {
+        const lit = k[1] || k[2];
+        if (lit) return /^(tasks|meta|log)\//.test(lit);
+        return /tp\(|'tasks\/'|'meta\/'|'log\/'/.test(k[3]);
+      });
+    }
+    if (fine) good++; else console.error('    경로 규약 위반: store.update(' + arg.slice(0, 60) + ')');
+  }
+  ok(calls >= 3, 'store.update 호출 ' + calls + '개 발견');
+  eq(good, calls, '모든 store.update 인자가 필드 경로 map');
+  // map / inv 는 경로 키로만 채워진다
+  const fills = [...app.matchAll(/\b(map|inv)\[([^\]]+)\]\s*=/g)].map(x => x[2]);
+  ok(fills.length >= 8, 'map[…] = 채우기 ' + fills.length + '곳');
+  eq(fills.filter(k => !/^(tp\(|'(tasks|meta|log)\/|p\b)/.test(k)), [], 'map 키는 tasks/·meta/·log/ 경로');
+  ok(/function tp\(id, f\)\{ return 'tasks\/' \+ id \+ '\/' \+ f; \}/.test(app), 'tp() 가 tasks/<id>/<field>');
+  ok(/'log\/' \+ pushKey\(/.test(app), 'log 는 log/<push> 경로');
+  ok(/map\['tasks\/' \+ id\] = t/.test(app), '새 항목은 tasks/<id> 통째로');
+  const others = [...app.matchAll(/\bstore\.(\w+)/g)].map(x => x[1]).filter(x => !['load', 'update', 'subscribe'].includes(x));
+  eq(others, [], 'store 의 다른 함수는 쓰지 않음');
+  ok(/'meta\/lastArea'/.test(app), '새 항목마다 meta/lastArea');
+  ok(/'meta\/reviewReq'/.test(app), '검토 요청은 meta/reviewReq');
+  ok(/'meta\/exam'/.test(app), '시험 기간은 meta/exam');
+}
+
+// ══ [11] 앱 규칙 (정규식) ══
+sec('[11] 앱 규칙 (정규식)');
+{
+  const app = stripComments(APP);
+  ok(/via: 'app'/.test(app), 'log via app');
+  ok(/by: 'me'/.test(app), 'log by me');
+  ok(/field: field, from:/.test(app), 'log 에 field/from/to');
+  ok(/createdBy: 'me'/.test(app) && /ok: true/.test(app), '새 항목 createdBy me · ok true');
+  ok(/todayStr\(\)\.replace\(\/-\/g, ''\)\.slice\(2\)/.test(app), 'id = yymmdd + …');
+  ok(/toString\(36\)\.slice\(2, 5\)/.test(app), 'id 뒤 base36 3자');
+  ok(/deletedAt: Date\.now\(\)/.test(app), '휴지통은 deletedAt');
+  ok(/todo: 'doing', doing: 'done', done: 'todo'/.test(app), '상태점 순환 todo→doing→done→todo');
+  ok(/14 \* DAY/.test(app), '14일 무변경 흐림');
+  ok(/, undo \? 5000 : 1500\)/.test(app), '되돌리기 토스트 5초');
+  ok(/'시험 뒤'/.test(app) && /exam\.end/.test(app), '시험 뒤 단추는 exam.end 있을 때만');
+  ok(/'meta\/reviewReq': !d\.meta\.reviewReq/.test(app), '검토 요청 토글');
+  ok(/if \(pr\.editId\) \{[^}]*applyPatch\(pr\.editId, pr\.patch\)/.test(app) && /else createTask\(pr\)/.test(app), 'submit: editId 면 applyPatch, 아니면 createTask');
+  ok(/insertToken\('@' \+ this\.value\)/.test(app), '📅 는 연도까지 @YYYY-MM-DD');
+  ok(/isComposing/.test(app), '한글 조합 중 Enter 무시');
+  ok(/\.filter\(function\(t\)\{ return t\.ok !== false/.test(app), '전체 탭도 ok:false 제외');
+  ok(/isPC\(\)\) \$\('in'\)\.focus\(\)/.test(app), '탭 전환 포커스는 PC 만');
+  ok(/sh-\(title\|memo\|ref\)/.test(app), '시트 적는 중엔 다시 안 그림');
+  ok(/scrollTop = st/.test(app), '시트 스크롤 복원');
+  ok(/data-act="cycle"/.test(app) && /t\.deletedAt \? '<span class="dot off">/.test(app), '휴지통 행은 상태점 안 돎');
+}
+
+// ══ [12] 44px·16px·행 48px ══
+sec('[12] 44px·16px·행 48px (CSS + 인라인)');
+{
+  ok(/button,\.tap\{min-height:44px;min-width:44px\}/.test(CSS), 'button 44×44');
+  ok(/\.row\{[^}]*min-height:48px/.test(CSS), '행 48px');
+  ok(/html\{font-size:16px/.test(CSS), 'html 16px');
+  ok(/input,textarea,select\{[^}]*font-size:16px/.test(CSS), '입력창 16px (iOS 확대 방지)');
+  const sizes = [...src.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
+  ok(sizes.length >= 8, 'font-size 선언 ' + sizes.length + '개(CSS·인라인·JS 문자열 전부)');
+  eq(sizes.filter(s => s < 16), [], '16px 미만 글자 없음');
+  const shorthand = [...src.matchAll(/font:\s*[^;'"}]*?(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
+  eq(shorthand.filter(s => s < 16), [], 'font: 축약에도 16px 미만 없음');
+  eq([...src.matchAll(/font-size:\s*(\d*\.?\d+)(em|rem|pt)/g)].map(x => x[0]), [], 'em/rem/pt 글자 크기 없음');
+  ok(/#inbar \.chip\{min-width:44px/.test(CSS), '입력창 칩 44px');
+  ok(/#inbar \.sep\{[^}]*width:1px/.test(CSS), '칩 구분선은 1px 선');
+  const rules = [...CSS.matchAll(/([^{}]+)\{([^}]*)\}/g)];
+  const small = rules.filter(r => /button|\.chip|\.dot|\.tap|nav/.test(r[1]) && /min-height:\s*(\d+)px/.test(r[2]) && +r[2].match(/min-height:\s*(\d+)px/)[1] < 44).map(r => r[1].trim());
+  eq(small, [], '탭 가능한 규칙에 44 미만 min-height 없음');
+  const smallH = rules.filter(r => /button|\.dot|nav/.test(r[1]) && !/\si$/.test(r[1].trim()) && /(?:^|;)height:\s*(\d+)px/.test(r[2]) && +r[2].match(/(?:^|;)height:\s*(\d+)px/)[1] < 44).map(r => r[1].trim());
+  eq(smallH, [], '단추 height 44 미만 없음');
+  const smallW = rules.filter(r => /\.chip/.test(r[1]) && !/sep/.test(r[1]) && /min-width:\s*(\d+)px/.test(r[2]) && +r[2].match(/min-width:\s*(\d+)px/)[1] < 44).map(r => r[1].trim());
+  eq(smallW, [], '칩 min-width 44 미만 없음');
+  ok(/nav button\{[^}]*height:var\(--nav-h\)/.test(CSS) && /--nav-h:56px/.test(CSS), '하단 탭 56px');
+  ok(/@media \(min-width:768px\)/.test(CSS), 'PC 분기 768px');
+  ok(/@media \(min-width:768px\)\{[\s\S]*?#inbar\{order:2/.test(CSS) && /main\{order:3\}/.test(CSS), 'PC 는 입력창이 위');
+  ok(/#inbar\{order:2/.test(CSS.split('@media')[0]) && /nav\{order:3/.test(CSS.split('@media')[0]), '폰은 입력창·탭이 아래');
+  ok(/overflow-x:hidden/.test(CSS), '가로 스크롤 막음');
+  ok(/env\(safe-area-inset-bottom\)/.test(CSS), 'iOS 안전 영역');
+  ok(/100dvh/.test(CSS), 'dvh 높이');
+}
+
+// ══ [13] CSS 클래스 존재 · 군더더기 ══
+sec('[13] CSS 클래스 존재 · 군더더기');
+{
+  ok(/--admin:#/.test(CSS) && /--event:#/.test(CSS) && /--class:#/.test(CSS), '영역 3색 변수');
+  ok(/--todo:#/.test(CSS) && /--doing:#/.test(CSS) && /--done:#/.test(CSS), '상태색 변수');
+  ok(/\.row\.a-admin\{border-left-color:var\(--admin\)\}/.test(CSS), '영역 띠');
+  ok(/\.row\.stale/.test(CSS), '방치 흐림 클래스');
+  ok(/\.chips-wrap\.more::after/.test(CSS), '칩 줄 넘침 fade');
+  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 's-dropped', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'sep', 'chips-wrap', 'more', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'push', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'restore', 'modal-body', 'stack', 'wide', 'exam', 'stamp', 'empty', 'ed', 'hi', 'lo']) {
+    ok(new RegExp('\\.' + c.replace(/-/g, '\\-') + '(?![\\w-])').test(CSS), 'CSS 에 .' + c);
+  }
+  ok(!/※/.test(src), '※ 안내문 없음');
+  ok(!/placeholder="[^"]{3,}"/.test(src), '긴 placeholder 없음');
+  ok(!/<p[ >]/.test(src.replace(/<script>[\s\S]*<\/script>/, '')), '본문에 설명 문단 없음');
+}
+
+// ══ [14] STORE 실행 — load / update / subscribe 계약 ══
+sec('[14] STORE 실행 (localStorage 스텁 · window 없음)');
+try {
+  const mkStore = (seed) => {
+    const mem = Object.assign({}, seed || {});
+    const C = { Math, JSON, Object, Array, String, Number, Date, console,
+      localStorage: { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } } };
+    vm.createContext(C);
+    vm.runInContext(STORE, C);
+    return { C, mem };
+  };
+  let err = null, st;
+  try { st = mkStore(); } catch (e) { err = e; }
+  ok(!err, 'STORE 가 window 없이 실행됨' + (err ? ' — ' + err.message : ''));
+  if (!err) {
+    const { C, mem } = st, store = C.store;
+    eq(Object.keys(store).sort(), ['load', 'subscribe', 'update'], 'store 는 load/update/subscribe 셋뿐');
+    const d = store.load();
+    eq(Object.keys(d).sort(), ['log', 'meta', 'tasks'], '빈 저장소 모양 {meta, tasks, log}');
+    eq(Object.keys(d.meta).sort(), ['cutoverAt', 'exam', 'lastArea', 'lastReview', 'reviewReq', 'schema'], 'meta 칸');
+    eq(d.meta.schema, 1, 'schema 1'); eq(d.meta.reviewReq, false, 'reviewReq false'); eq(d.meta.exam, null, 'exam null'); eq(d.meta.lastArea, 'admin', 'lastArea admin');
+    ok(store.load() === d, 'load 는 같은 객체');
+    let calls = 0, got = null; store.subscribe(x => { calls++; got = x; });
+    const obj = { title: 'a', status: 'todo', checks: { c1: { text: 'x', done: false } } };
+    store.update({ 'tasks/id1': obj, 'meta/lastArea': 'class' });
+    eq(calls, 1, 'update 마다 구독 알림 1회'); ok(got === d, '알림 인자는 데이터');
+    eq(d.tasks.id1.title, 'a', '통째 쓰기'); eq(d.meta.lastArea, 'class', 'meta 경로');
+    obj.title = 'changed'; obj.checks.c1.done = true;
+    eq(d.tasks.id1.title, 'a', '깊은 복사 — 원본을 바꿔도 저장은 그대로'); eq(d.tasks.id1.checks.c1.done, false, '깊은 복사(중첩)');
+    store.update({ 'tasks/id1/checks/c2/text': 'y' });
+    eq(d.tasks.id1.checks.c2, { text: 'y' }, '중간 경로 자동 생성');
+    store.update({ 'tasks/id1/due': '2026-01-01' }); eq(d.tasks.id1.due, '2026-01-01', '필드 추가');
+    store.update({ 'tasks/id1/due': null }); ok(!('due' in d.tasks.id1), 'null 은 키 삭제(저장소에 null 이 남지 않음)');
+    store.update({ 'tasks/id1/memo': undefined }); ok(!('memo' in d.tasks.id1), 'undefined 도 삭제');
+    store.update({ 'tasks/id1/checks/c1': null }); ok(!('c1' in d.tasks.id1.checks), '중첩 삭제');
+    store.update({ 'tasks/id1': null }); ok(!('id1' in d.tasks), '항목 삭제');
+    store.update({ 'tasks/id2/title': 't2', 'tasks/id2/priority': 0, 'tasks/id2/ok': false });
+    eq(d.tasks.id2, { title: 't2', priority: 0, ok: false }, '0·false 는 삭제가 아니라 값');
+    eq(calls, 8, '알림 횟수 = update 횟수');
+    const saved = JSON.parse(mem.tm);
+    eq(saved.tasks.id2.title, 't2', 'localStorage 에 씀'); eq(saved, d, '저장본 = 메모리');
+    // 다시 읽기
+    const st2 = mkStore(mem); const d2 = st2.C.store.load();
+    eq(d2.tasks.id2, { title: 't2', priority: 0, ok: false }, '새 컨텍스트가 같은 저장소를 읽음');
+    eq(d2.meta.lastArea, 'class', 'meta 도 유지');
+    // 망가진 저장소
+    const st3 = mkStore({ tm: '{oops' }); eq(Object.keys(st3.C.store.load()).sort(), ['log', 'meta', 'tasks'], '깨진 JSON 은 빈 저장소');
+    const st4 = mkStore({ tm: '{"tasks":{"a":{"title":"x"}}}' }); const d4 = st4.C.store.load();
+    eq(d4.meta.schema, 1, '빠진 meta 는 채워짐'); eq(d4.tasks.a.title, 'x', '있는 tasks 는 유지'); eq(d4.log, {}, '빠진 log 는 빈 객체');
+    const st5 = mkStore({ tm: '"str"' }); eq(Object.keys(st5.C.store.load()).sort(), ['log', 'meta', 'tasks'], '객체 아닌 JSON 은 빈 저장소');
+  }
+} catch (e) { fail++; console.log('  X FAIL: [14] STORE 실행이 예외로 멈췄다 — ' + (e && e.message)); }
+
+// ══ [15] 앱 실행 — DOM 스텁 위에서 submit / 시트 / 휴지통 / 되돌리기 ══
+sec('[15] 앱 실행 (DOM 스텁 · 생성 → >id 수정 → 상태 순환 → 휴지통 → 되돌리기)');
+// 앞 절이 깨뜨린 스토어 때문에 여기서 던지면 결과 줄이 안 나온다 — 던짐도 실패로 센다.
+try {
+  function makeApp(seed, clock){
+    const mem = Object.assign({}, seed || {});
+    const els = {};
+    const doc = { activeElement: null };
+    function makeEl(id){
+      const classes = new Set();
+      const el = { id, value: '', innerHTML: '', textContent: '', hidden: false, style: {}, dataset: {}, listeners: {}, scrollTop: 0, offsetHeight: 0,
+        classList: { add: c => classes.add(c), remove: c => classes.delete(c), contains: c => classes.has(c),
+          toggle: (c, f) => { if (f === undefined) f = !classes.has(c); if (f) classes.add(c); else classes.delete(c); return f; } },
+        _classes: classes,
+        addEventListener(t, f){ (el.listeners[t] = el.listeners[t] || []).push(f); },
+        fire(t, ev){ (el.listeners[t] || []).forEach(f => f.call(el, ev || {})); },
+        last(t){ const l = el.listeners[t] || []; return l[l.length - 1]; },
+        focus(){ doc.activeElement = el; }, blur(){ doc.activeElement = null; }, select(){}, click(){},
+        contains(){ return false; }, closest(){ return null; },
+        querySelector(){ return makeEl(); }, querySelectorAll(){ return []; },
+        appendChild(){}, removeChild(){} };
+      return el;
+    }
+    doc.getElementById = id => els[id] || (els[id] = makeEl(id));
+    doc.querySelector = sel => els['sel:' + sel] || (els['sel:' + sel] = makeEl(sel));
+    doc.querySelectorAll = () => [];
+    doc.createElement = () => makeEl();
+    doc.execCommand = () => true;
+    doc.body = makeEl('body');
+    const timers = [];
+    const C = { Math, JSON, Object, Array, String, Number, RegExp, console, Date: frozenDate(clock),
+      document: doc, navigator: {},
+      localStorage: { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } },
+      setTimeout: (f, ms) => { timers.push([f, ms]); return timers.length; }, clearTimeout: () => {} };
+    C.window = C; C.addEventListener = (t, f) => { (C._wl = C._wl || {})[t] = f; };
+    vm.createContext(C);
+    vm.runInContext(SCRIPT, C);
+    C._mem = mem; C._els = els; C._timers = timers; C._doc = doc;
+    return C;
+  }
+  const clock = { now: Date.UTC(2031, 5, 15, 3, 0, 0) };
+  let A = null, err = null;
+  try { A = makeApp(null, clock); } catch (e) { err = e; }
+  ok(!err, '앱 전체가 DOM 스텁 위에서 뜬다' + (err ? ' — ' + err.stack.split('\n').slice(0, 2).join(' ') : ''));
+  if (A) {
+    const $ = id => A._els[id] || A._doc.getElementById(id);
+    const data = () => A.store.load();
+    let lastId = null;
+    const type = (line) => { const was = Object.keys(data().tasks); $('in').value = line; A.submit(); const now = Object.keys(data().tasks).filter(k => !was.includes(k)); if (now.length) lastId = now[0]; return now[0] || null; };
+    const only = () => lastId;
+    const logsOf = (id) => Object.keys(data().log).map(k => data().log[k]).filter(l => l.task === id);
+    ok(A._doc.activeElement === $('in'), '열면 입력창 포커스');
+    eq(A.ui.tab, 'today', '처음 탭은 오늘');
+
+    // 생성
+    type('감독 배정표 회신 @오늘 ! +NEIS 추출');
+    eq(Object.keys(data().tasks).length, 1, '한 줄 → 항목 1');
+    const id1 = only(), t1 = data().tasks[id1];
+    ok(/^\d{6}[0-9a-z]{3}$/.test(id1), 'id = 6자리 날짜 + base36 3자 (' + id1 + ')');
+    eq(id1.slice(0, 6), A.todayStr().replace(/-/g, '').slice(2), 'id 앞 6자 = 오늘');
+    const ALLOWED = ['title', 'status', 'area', 'priority', 'due', 'checks', 'memo', 'ref', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'doneAt', 'deletedAt', 'claude'];
+    eq(Object.keys(t1).filter(k => !ALLOWED.includes(k)), [], '새 항목에 PRD §3 밖의 필드 없음');
+    eq(['title', 'status', 'area', 'priority', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'due', 'checks'].filter(k => !(k in t1)), [], '필수 필드 전부 있음');
+    ok(!('id' in t1), '저장 값엔 id 없음(키가 id)');
+    eq(t1.title, '감독 배정표 회신', '제목'); eq(t1.status, 'todo', 'todo 로 태어남'); eq(t1.area, 'admin', '오늘 탭 새 항목 = 행정');
+    eq(t1.priority, 1, '높음'); eq(t1.due, A.todayStr(), '@오늘 = 앱의 오늘');
+    eq(t1.createdBy, 'me', 'createdBy me'); eq(t1.ok, true, 'ok true');
+    eq(t1.createdAt, clock.now, 'createdAt = 지금'); eq(t1.updatedAt, clock.now, 'updatedAt = 지금'); ok(t1.doneAt == null, 'doneAt 없음'); ok(t1.deletedAt == null, 'deletedAt 없음');
+    const cks = Object.keys(t1.checks);
+    eq(cks.length, 1, '체크 1'); ok(/^c/.test(cks[0]), '체크 키는 c<push>');
+    eq(t1.checks[cks[0]], { text: 'NEIS 추출', done: false, by: null, ts: null, order: 1 }, '체크 모양 {text,done,by,ts,order}');
+    eq(data().meta.lastArea, 'admin', 'meta.lastArea 갱신');
+    const l1 = logsOf(id1);
+    eq(l1.length, 1, '생성 log 1');
+    eq(Object.keys(l1[0]).sort(), ['by', 'field', 'from', 'task', 'to', 'ts', 'via'], 'log 모양 {task,field,from,to,by,via,ts}');
+    eq(l1[0], { task: id1, field: 'create', from: null, to: '감독 배정표 회신', by: 'me', via: 'app', ts: clock.now }, '생성 log 내용');
+    eq($('in').value, '', '저장 후 입력창 비움'); ok(A._doc.activeElement === $('in'), '저장 후 포커스 유지');
+    ok(JSON.parse(A._mem.tm).tasks[id1].title === '감독 배정표 회신', 'localStorage 에 저장됨');
+    ok(!$('toast').hidden && /추가됨/.test($('toast').innerHTML) && /되돌리기/.test($('toast').innerHTML), '추가 토스트 + 되돌리기');
+    ok(new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '목록에 새 항목');
+    ok(/D-day/.test($('list').innerHTML), 'D-day 표시'); ok(/☑0\/1/.test($('list').innerHTML), '☑0/1');
+
+    // >id 수정 — 앱 계층이 editId 분기를 실제로 타는가
+    const s1 = id1.slice(-3);
+    clock.now += 60000;
+    type('>' + s1 + ' 완료');
+    eq(Object.keys(data().tasks).length, 1, '>id 완료 는 새 항목을 만들지 않는다');
+    eq(data().tasks[id1].status, 'done', '>id 완료 → done'); eq(data().tasks[id1].doneAt, clock.now, 'done → doneAt');
+    eq(data().tasks[id1].updatedAt, clock.now, 'updatedAt 갱신');
+    eq(logsOf(id1).filter(l => l.field === 'status').map(l => [l.from, l.to]), [['todo', 'done']], 'status log todo→done');
+    type('>' + s1 + ' 대기');
+    eq(data().tasks[id1].status, 'todo', '>id 대기 → todo'); ok(data().tasks[id1].doneAt == null, '완료 해제 → doneAt 비움');
+    type('>' + s1 + ' 진행'); eq(data().tasks[id1].status, 'doing', '>id 진행');
+    type('>' + s1 + ' 새 이름'); eq(data().tasks[id1].title, '새 이름', '>id 새 제목');
+    type('>' + s1 + ' @9/25'); ok(/-09-25$/.test(data().tasks[id1].due), '>id @9/25');
+    type('>' + s1 + ' ~'); eq(data().tasks[id1].priority, 3, '>id ~');
+    type('>' + s1 + ' #사'); eq(data().tasks[id1].area, 'event', '>id #사'); eq(Object.keys(data().tasks[id1].checks).length, 1, '>id #사 로 체크 안 늘어남');
+    type('>' + s1 + ' #교'); eq(Object.keys(data().tasks[id1].checks).length, 1, '>id #교 도 4틀 안 붙음');
+    type('>' + s1 + ' // 5교시 후'); eq(data().tasks[id1].memo, '5교시 후', '>id 메모');
+    eq(Object.keys(data().tasks).length, 1, '수정 8꼴 뒤에도 항목 1');
+
+    // >id +체크 @없음 — commit 한 번 · 되돌리기 한 번에
+    clock.now += 60000;
+    const nLogBefore = Object.keys(data().log).length;
+    type('>' + s1 + ' +결재 +발송 @없음');
+    ok(!('due' in data().tasks[id1]), '@없음 → due 키 자체가 없어짐');
+    eq(Object.keys(data().tasks[id1].checks).length, 3, '체크 +2');
+    eq(A.ckList(data().tasks[id1]).map(c => [c.text, c.order]), [['NEIS 추출', 1], ['결재', 2], ['발송', 3]], '체크 order 이어짐');
+    const tsSet = new Set(Object.keys(data().log).slice(nLogBefore).map(k => data().log[k].ts));
+    eq(tsSet.size, 1, '한 줄의 변경은 한 ts(커밋 한 번)');
+    ok(/수정됨/.test($('toast').innerHTML) && /되돌리기/.test($('toast').innerHTML), '수정 토스트 + 되돌리기');
+    $('undo').last('click')();
+    eq(Object.keys(data().tasks[id1].checks).length, 1, '되돌리기 → 체크 원복'); ok(/-09-25$/.test(data().tasks[id1].due), '되돌리기 → 마감 원복');
+    eq(Object.keys(data().log).length, nLogBefore, '되돌리기 → log 도 원복');
+
+    // 없는 id 는 제목
+    type('>zzz 뭐'); eq(Object.keys(data().tasks).length, 2, '없는 id 는 새 항목'); eq(data().tasks[only()].title, '>zzz 뭐', '그때 제목은 원문');
+    // 되돌리기로 방금 항목 삭제
+    $('undo').last('click')(); eq(Object.keys(data().tasks).length, 1, '추가 되돌리기 → 항목 사라짐');
+
+    // 상태점 순환
+    clock.now += 60000;
+    A.cycleStatus(id1); eq(data().tasks[id1].status, 'done', 'doing → done'); eq(data().tasks[id1].doneAt, clock.now, 'doneAt');
+    A.cycleStatus(id1); eq(data().tasks[id1].status, 'todo', 'done → todo'); ok(data().tasks[id1].doneAt == null, 'doneAt 해제');
+    A.cycleStatus(id1); eq(data().tasks[id1].status, 'doing', 'todo → doing');
+    A.cycleStatus(id1); eq(data().tasks[id1].status, 'done', 'doing → done (2)');
+    eq(logsOf(id1).filter(l => l.field === 'status').length, 7, '상태 변경마다 log');
+
+    // #교 4틀 — 토큰일 때만
+    type('1-3 심화 세트 #교');
+    const idC = only(), tC = data().tasks[idC];
+    eq(tC.area, 'class', '#교 → 교과');
+    eq(A.ckList(tC).map(c => c.text), ['제작', '검사', '배포', '허브 카드'], '#교 → 4틀');
+    eq(A.ckList(tC).map(c => c.order), [1, 2, 3, 4], '4틀 order');
+    eq(data().meta.lastArea, 'class', 'lastArea = class');
+    A.ui.tab = 'all'; A.ui.areaFilter = null; A.render();
+    const idA = type('전체 탭 항목');
+    eq(data().tasks[idA].area, 'class', '전체 탭·칩 없음 → 마지막 영역(class)');
+    ok(!data().tasks[idA].checks, '영역만 교과일 땐 4틀 안 붙음');
+    A.ui.areaFilter = 'event'; A.render();
+    const idE = type('전체 탭 행사 칩');
+    eq(data().tasks[idE].area, 'event', '전체 탭·행사 칩 → 행사');
+    eq(data().meta.lastArea, 'event', 'lastArea = event');
+    A.ui.areaFilter = null; A.ui.tab = 'today'; A.render();
+    const idM = type('교육과정위원회 회의 @9/7');
+    eq(data().tasks[idM].area, 'admin', '오늘 탭은 lastArea(event) 를 안 따르고 행정');
+    ok(!data().tasks[idM].checks, '체크 없음(4틀 오염 없음)');
+    eq(data().meta.lastArea, 'admin', '오늘 탭 생성도 lastArea 를 갱신');
+
+    // 전체 탭 그리기 · ok:false 제외
+    A.store.update({ 'tasks/300101bot': { title: '봇 제안', status: 'todo', area: 'admin', priority: 1, createdBy: 'claude', ok: false, createdAt: 1, updatedAt: 1 } });
+    A.render(); ok(!/300101bot/.test($('list').innerHTML), '오늘 탭에 ok:false 없음');
+    A.ui.tab = 'all'; A.render(); ok(!/300101bot/.test($('list').innerHTML), '전체 탭에 ok:false 없음');
+    ok(/대기<b>/.test($('list').innerHTML) && /완료<b>/.test($('list').innerHTML), '전체 탭 상태 그룹');
+    ok(!new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '완료 그룹은 접혀 있음');
+    A.ui.fold.done = false; A.render(); ok(new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '완료 펼침');
+    A.ui.areaFilter = 'event'; A.render(); ok(new RegExp('data-id="' + idE + '"').test($('list').innerHTML), '영역 칩 필터: 행사 보임');
+    ok(!new RegExp('data-id="' + idC + '"').test($('list').innerHTML) && !new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '영역 칩 필터: 교과 항목 안 보임');
+    A.ui.areaFilter = null; A.store.update({ 'tasks/300101bot': null });
+    A.ui.tab = 'today'; A.render();
+
+    // 타이핑 중 필터 — 오늘 묶음 밖도 「그 밖」으로
+    type('먼 마감 회의 @+40');
+    const idFar = only();
+    $('in').value = '먼 마감'; A.render();
+    ok(/그 밖/.test($('list').innerHTML) && new RegExp('data-id="' + idFar + '"').test($('list').innerHTML), '걸러 볼 땐 먼 마감 항목도 「그 밖」에');
+    ok(!new RegExp('data-id="' + idM + '"').test($('list').innerHTML), '안 맞는 항목은 안 보임');
+    $('in').value = ''; A.render();
+    ok(!/그 밖/.test($('list').innerHTML), '필터 없으면 「그 밖」 없음');
+    ok(!new RegExp('data-id="' + idFar + '"').test($('list').innerHTML), '먼 마감은 오늘 화면에 없음');
+
+    // 시트
+    A.ui.open = idC; A.renderSheet();
+    const sh = $('sheet');
+    ok(!sh.hidden, '시트 열림');
+    ok(new RegExp('<span class="id">' + idC.slice(-3) + '</span>').test(sh.innerHTML), '시트에 id 뒤 3자');
+    ok(/value="1-3 심화 세트"/.test(sh.innerHTML), '시트 제목');
+    ok(/data-set="area" data-v="class" class="a-class on"/.test(sh.innerHTML), '영역 교과 켜짐');
+    ok(/허브 카드/.test(sh.innerHTML), '체크 목록');
+    const pushBtns = [...sh.innerHTML.matchAll(/data-set="due" data-v="(\d{4}-\d{2}-\d{2})">([^<]+)</g)].map(m => [m[2], m[1]]);
+    eq(pushBtns, [['내일', '2031-06-16'], ['이번 주 금', '2031-06-20']], '일요일(06-15): 내일 = 다음 주 월이라 하나로 합쳐 2단추');
+    const PD = (d, ex) => A.pushDates(d, ex || null);
+    eq(PD('2031-06-19'), [['내일', '2031-06-20'], ['다음 주 월', '2031-06-23'], ['다음 주 금', '2031-06-27']], '목요일: 이번 주 금 = 내일이라 다음 주 금으로, 날짜순');
+    eq(PD('2031-06-20'), [['내일', '2031-06-21'], ['다음 주 월', '2031-06-23'], ['다음 주 금', '2031-06-27']], '금요일: 이번 주 금 = 오늘이라 다음 주 금으로');
+    eq(PD('2031-06-17'), [['내일', '2031-06-18'], ['이번 주 금', '2031-06-20'], ['다음 주 월', '2031-06-23']], '수요일: 셋 다 다름');
+    eq(PD('2031-06-17', { end: '2031-06-25' }), [['내일', '2031-06-18'], ['이번 주 금', '2031-06-20'], ['다음 주 월', '2031-06-23'], ['시험 뒤', '2031-06-30']], '시험 뒤 = 종료 다음 월요일');
+    eq(PD('2031-06-17', { end: '2031-06-20' }).map(p => p[0]), ['내일', '이번 주 금', '다음 주 월'], '시험 뒤가 다음 주 월과 같으면 하나만');
+    eq(PD('2031-06-17', { start: '2031-06-20', end: null }).length, 3, '종료일 없으면 시험 뒤 없음');
+    ok(PD('2031-06-19').every((p, i) => !i || p[1] > PD('2031-06-19')[i - 1][1]), '미루기 날짜 오름차순');
+    ok(!/시험 뒤/.test(sh.innerHTML), '시험 미설정이면 시험 뒤 없음');
+    A.store.update({ 'meta/exam': { start: '2031-06-20', end: '2031-06-25' } }); A.renderSheet();
+    ok(/시험 뒤/.test(sh.innerHTML) && /data-v="2031-06-30">시험 뒤/.test(sh.innerHTML), '시험 뒤 = 종료일 다음 월요일');
+    // 체크 토글 — log 는 done 한 줄
+    const cid = A.ckList(data().tasks[idC])[0].id;
+    const nLog = Object.keys(data().log).length;
+    clock.now += 1000;
+    sh.fire('click', { target: { closest: () => ({ dataset: { ck: cid } }) } });
+    eq(data().tasks[idC].checks[cid].done, true, '체크 토글'); eq(data().tasks[idC].checks[cid].by, 'me', '체크 by me'); eq(data().tasks[idC].checks[cid].ts, clock.now, '체크 ts');
+    eq(Object.keys(data().log).length - nLog, 1, '체크 토글 log 는 1건');
+    eq(logsOf(idC).slice(-1)[0].field, 'checks/' + cid + '/done', '그 1건은 done');
+    A.renderSheet();
+    ok(/☑ 제작 ✓/.test(sh.innerHTML), '기록에 「☑ 제작 ✓」'); ok(!/checks\//.test(sh.innerHTML), '기록에 필드 경로 노출 없음');
+    ok(/<details open>/.test(sh.innerHTML) || /<details>/.test(sh.innerHTML), '기록 details');
+    sh.fire('click', { target: { closest: () => ({ dataset: { ck: cid } }) } });
+    eq(data().tasks[idC].checks[cid].done, false, '체크 되돌림'); ok(data().tasks[idC].checks[cid].by == null, 'by 해제'); ok(data().tasks[idC].checks[cid].ts == null, 'ts 해제');
+    // 체크 추가·삭제
+    sh.fire('keydown', { key: 'Enter', target: { id: 'sh-ck', value: '동교과 검토' }, preventDefault(){} });
+    eq(A.ckList(data().tasks[idC]).map(c => c.text).slice(-1), ['동교과 검토'], '시트에서 체크 추가'); eq(A.ckList(data().tasks[idC]).slice(-1)[0].order, 5, 'order = max+1');
+    const cidLast = A.ckList(data().tasks[idC]).slice(-1)[0].id;
+    sh.fire('click', { target: { closest: () => ({ dataset: { ckrm: cidLast } }) } });
+    ok(!(cidLast in data().tasks[idC].checks), '체크 삭제');
+    sh.fire('keydown', { key: 'Enter', target: { id: 'sh-ck', value: '다시' }, preventDefault(){} });
+    eq(A.ckList(data().tasks[idC]).slice(-1)[0].order, 5, '삭제 뒤 추가해도 order 는 max+1(겹침 없음)');
+    // 상태·마감 단추 · change
+    sh.fire('click', { target: { closest: () => ({ dataset: { set: 'priority', v: '1' } }) } }); eq(data().tasks[idC].priority, 1, '중요도 단추');
+    sh.fire('click', { target: { closest: () => ({ dataset: { set: 'due', v: '2031-07-01' } }) } }); eq(data().tasks[idC].due, '2031-07-01', '미루기 단추');
+    sh.fire('click', { target: { closest: () => ({ dataset: { set: 'due', v: '' } }) } }); ok(!('due' in data().tasks[idC]), '없음 단추 → due 삭제');
+    sh.fire('change', { target: { id: 'sh-title', value: '  1-3 심화 세트 v2 ' } }); eq(data().tasks[idC].title, '1-3 심화 세트 v2', '제목 인라인 편집');
+    sh.fire('change', { target: { id: 'sh-title', value: '   ' } }); eq(data().tasks[idC].title, '1-3 심화 세트 v2', '빈 제목은 무시');
+    sh.fire('change', { target: { id: 'sh-memo', value: '메모 본문' } }); eq(data().tasks[idC].memo, '메모 본문', '메모 저장');
+    sh.fire('change', { target: { id: 'sh-memo', value: '' } }); ok(!('memo' in data().tasks[idC]), '빈 메모는 키 삭제');
+    sh.fire('change', { target: { id: 'sh-ref', value: '작업노트/_재개지점.md#3' } }); eq(data().tasks[idC].ref, '작업노트/_재개지점.md#3', 'ref 저장');
+    // 적는 중엔 다시 안 그림
+    $('sh-memo').focus(); sh.contains = () => true; const before = sh.innerHTML; sh.innerHTML = 'DRAFT';
+    A.renderSheet(); eq(sh.innerHTML, 'DRAFT', '메모 적는 중 알림이 와도 시트를 다시 그리지 않음');
+    $('sh-memo').blur(); sh.contains = () => false; A.renderSheet(); ok(sh.innerHTML !== 'DRAFT' && sh.innerHTML.length > before.length / 2, '포커스 빠지면 다시 그림');
+    // 버리기 → dropped
+    sh.fire('click', { target: { closest: () => ({ dataset: { set: 'status', v: 'dropped' } }) } }); eq(data().tasks[idC].status, 'dropped', '버리기');
+    A.render(); ok(!new RegExp('data-id="' + idC + '"').test($('list').innerHTML), '버린 항목은 오늘 화면에 없음');
+    // 휴지통 → deletedAt · 되살리기
+    clock.now += 1000;
+    sh.fire('click', { target: { closest: () => ({ dataset: { act: 'trash' } }) } });
+    eq(data().tasks[idC].deletedAt, clock.now, '휴지통 = deletedAt'); ok(sh.hidden, '휴지통 뒤 시트 닫힘'); eq(A.ui.open, null, 'open 해제');
+    ok(A._doc.activeElement === null || A._doc.activeElement === $('in'), '시트 닫힘 뒤 포커스 처리');
+    eq(logsOf(idC).slice(-1)[0].field, 'deletedAt', '휴지통 log');
+    A.ui.tab = 'all'; A.ui.fold.trash = false; A.render();
+    const trashRow = ($('list').innerHTML.match(new RegExp('<li class="row[^>]*data-id="' + idC + '">[\\s\\S]*?</li>')) || [''])[0];
+    ok(trashRow.length > 0, '휴지통 그룹에 행'); ok(!/data-act="cycle"/.test(trashRow), '휴지통 행은 상태점이 안 돎'); ok(/dot off/.test(trashRow), '휴지통 상태점은 꺼짐');
+    A.cycleStatus(idC); eq(data().tasks[idC].status, 'dropped', '휴지통 항목은 cycleStatus 도 무시');
+    A.ui.open = idC; A.renderSheet(); ok(/되살리기/.test(sh.innerHTML) && !/휴지통<\/button>/.test(sh.innerHTML), '휴지통 항목 시트는 되살리기');
+    sh.fire('click', { target: { closest: () => ({ dataset: { act: 'restore' } }) } }); ok(data().tasks[idC].deletedAt == null, '되살리기'); ok(idC in data().tasks, '되살린 항목 남아 있음');
+    A.ui.open = null; sh.hidden = true; A.ui.tab = 'today'; A.ui.fold.trash = true;
+
+    // 검토 요청 토글
+    $('reqbtn').fire('click'); eq(data().meta.reviewReq, true, '검토 요청 켬');
+    $('reqbtn').fire('click'); eq(data().meta.reviewReq, false, '검토 요청 끔');
+    // 시험 기간 설정
+    A.openSettings(); ok(/v\d{4}-\d{2}-\d{2}[a-z]/.test($('settings').innerHTML), '설정에 빌드 스탬프');
+    $('ex-s').value = '2031-06-20'; $('ex-e').value = '2031-06-26';
+    $('settings').fire('change', { target: { id: 'ex-e' } }); eq(data().meta.exam, { start: '2031-06-20', end: '2031-06-26' }, 'meta.exam');
+    // MD
+    const md = A.toMarkdown(data());
+    ok(/## 열린 항목 \(\d+\)/.test(md) && /## 완료 항목 \(\d+\)/.test(md), 'MD 두 표');
+    ok(/\| 감독 배정표 회신 \|/.test(md) === false && /새 이름/.test(md), 'MD 에 제목');
+    ok(!/300101bot/.test(md), 'MD 에 ok:false 없음');
+    // 14일 무변경 흐림
+    const idS = type('방치 확인 @+1');
+    A.render(); ok(new RegExp('data-id="' + idS + '"').test($('list').innerHTML), '내일 마감은 오늘 화면에'); ok(!/ stale/.test($('list').innerHTML), '지금은 흐림 없음');
+    clock.now += 15 * 86400000; A.render(); ok(/ stale/.test($('list').innerHTML), '15일 뒤엔 흐림');
+    clock.now -= 15 * 86400000;
+    // 새 id 접미 3자 충돌 회피
+    const idsNow = Object.keys(data().tasks);
+    for (let i = 0; i < 25; i++) type('항목 ' + i + ' @+' + (i + 1));
+    const ids2 = Object.keys(data().tasks);
+    eq(ids2.length, idsNow.length + 25, '25개 추가');
+    const sufs = ids2.filter(k => !data().tasks[k].deletedAt).map(k => k.slice(-3));
+    eq(new Set(sufs).size, sufs.length, '살아 있는 항목의 뒤 3자가 전부 다름');
+    // 다른 탭의 storage 이벤트
+    const memNow = JSON.parse(A._mem.tm); memNow.tasks[id1].title = '다른 탭에서 바꿈'; A._mem.tm = JSON.stringify(memNow);
+    let rendered = false; A.store.subscribe(() => { rendered = true; });
+    A._wl.storage({ key: 'tm' }); eq(data().tasks[id1].title, '다른 탭에서 바꿈', 'storage 이벤트로 다시 읽음'); ok(rendered, '구독 알림');
+    A._wl.storage({ key: 'other' }); eq(data().tasks[id1].title, '다른 탭에서 바꿈', '다른 키는 무시');
+
+    // 새로고침(새 컨텍스트) 뒤 유지 — M1 완료 조건
+    const B = makeApp(A._mem, clock);
+    eq(Object.keys(B.store.load().tasks).length, ids2.length, '새로고침 뒤 항목 수 유지');
+    eq(B.store.load().tasks[id1].title, '다른 탭에서 바꿈', '새로고침 뒤 내용 유지');
+    eq(B.store.load().meta.exam, { start: '2031-06-20', end: '2031-06-26' }, '새로고침 뒤 meta 유지');
+    ok(Object.keys(B.store.load().log).length > 20, 'log 유지');
+    ok(B._els.list.innerHTML.length > 0 && new RegExp('data-id="' + idS + '"').test(B._els.list.innerHTML), '새 컨텍스트가 같은 목록을 그린다');
+  }
+} catch (e) { fail++; console.log('  X FAIL: [15] 앱 실행이 예외로 멈췄다 — ' + (e && e.message)); }
+
+console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');
+process.exit(fail ? 1 : 0);

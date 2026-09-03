@@ -1,0 +1,41 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "tm": {
+      ".read": "auth != null && (auth.uid === 'T_UID' || auth.uid === 'B_UID')",
+      "meta": {
+        ".write": "auth != null && auth.uid === 'T_UID'",
+        "lastReview": { ".write": "auth != null && auth.uid === 'B_UID'" },
+        "reviewReq":  { ".write": "auth != null && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && newData.val() === false))" }
+      },
+      "tasks": {
+        "$id": {
+          ".write": "auth != null && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && !data.exists() && newData.child('createdBy').val() === 'claude' && newData.child('ok').val() === false && newData.child('status').val() === 'todo'))",
+          ".validate": "newData.hasChildren(['title','status','area','priority','createdBy','createdAt'])",
+          "title":     { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
+          "status":    { ".write": "auth != null && auth.uid === 'B_UID' && data.exists() && newData.val() === 'done'",
+                         ".validate": "newData.val() === 'todo' || newData.val() === 'doing' || newData.val() === 'done' || newData.val() === 'dropped'" },
+          "doneAt":    { ".write": "auth != null && auth.uid === 'B_UID' && data.parent().child('status').exists()" },
+          "updatedAt": { ".write": "auth != null && auth.uid === 'B_UID' && data.parent().child('status').exists()" },
+          "area":      { ".validate": "newData.val() === 'admin' || newData.val() === 'event' || newData.val() === 'class'" },
+          "priority":  { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3" },
+          "due":       { ".validate": "newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
+          "createdBy": { ".validate": "newData.val() === 'me' || newData.val() === 'notion' || newData.val() === 'claude'" },
+          "claude":    { ".write": "auth != null && auth.uid === 'B_UID'" },
+          "checks": {
+            "$cid": {
+              ".write": "auth != null && auth.uid === 'B_UID' && newData.child('by').val() === 'claude' && (!data.exists() || newData.child('text').val() === data.child('text').val())"
+            }
+          }
+        }
+      },
+      "log": {
+        "$id": { ".write": "auth != null && !data.exists() && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && newData.child('by').val() === 'claude' && newData.child('via').val() === 'bot'))" }
+      },
+      "reviews": {
+        "$id": { ".write": "auth != null && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && !data.exists()))" }
+      }
+    }
+  }
+}

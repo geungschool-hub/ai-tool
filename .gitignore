@@ -149,3 +149,11 @@ sk-ant-*
 #   아래 규칙은 앞으로를 막을 뿐이고, 이미 올라간 것은 별도 조치가 필요하다(§재개지점).
 생물의 유전/중간고사/
 생물의 유전/기말고사/
+
+# 업무 관리 도구(task_management) — 데이터·백업·노션 내보내기는 동료 실명 포함 → 절대 추적 금지
+task_management/_backup/
+task_management/_import/
+task_management/**/.secret*
+
+# firebase CLI 디버그 로그(요청 상세 포함)
+firebase-debug.log

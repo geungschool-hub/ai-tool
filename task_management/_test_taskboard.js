@@ -531,21 +531,41 @@ sec('[11] 앱 규칙 (정규식)');
 }
 
 // ══ [12] 44px·16px·행 48px ══
-sec('[12] 44px·16px·행 48px (CSS + 인라인)');
+// @media (min-width:768px){ … } 블록만 모은다. 조건을 바꾼 변이가 바로 드러나게.
+function pcBlocks(css){
+  const NEEDLE = '@media (min-width:768px){';
+  let out = [], i = 0;
+  for (;;) {
+    const at = css.indexOf(NEEDLE, i); if (at < 0) break;
+    let d = 0, j = at + NEEDLE.length - 1;
+    for (; j < css.length; j++) { if (css[j] === '{') d++; else if (css[j] === '}') { d--; if (!d) break; } }
+    out.push(css.slice(at, j + 1)); i = j + 1;
+  }
+  return out;
+}
+sec('[12] 폰은 44px·16px / PC 는 노션 밀도');
 {
-  ok(/button,\.tap\{min-height:44px;min-width:44px\}/.test(CSS), 'button 44×44');
+  // 폰(기본)과 PC 분기를 갈라 잰다 — 노션 표는 14px 행·12px 열 머리라 PC 에서만 촘촘하다.
+  const PCARR = pcBlocks(CSS), CSSPC = PCARR.join('');
+  ok(CSSPC.length > 400, '★PC 분기(@media min-width:768px)가 살아 있다');
+  let CSSBASE = CSS; PCARR.forEach(function(b){ CSSBASE = CSSBASE.replace(b, ''); });
+  ok(/button,\.tap\{[^}]*min-height:44px[^}]*min-width:44px/.test(CSS), 'button 44×44');
   ok(/\.row\{[^}]*min-height:48px/.test(CSS), '행 48px');
   ok(/html\{font-size:16px/.test(CSS), 'html 16px');
   ok(/input,textarea,select\{[^}]*font-size:16px/.test(CSS), '입력창 16px (iOS 확대 방지)');
-  const sizes = [...src.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
-  ok(sizes.length >= 8, 'font-size 선언 ' + sizes.length + '개(CSS·인라인·JS 문자열 전부)');
-  eq(sizes.filter(s => s < 16), [], '16px 미만 글자 없음');
-  const shorthand = [...src.matchAll(/font:\s*[^;'"}]*?(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
+  let srcBase = src; PCARR.forEach(function(b){ srcBase = srcBase.replace(b, ''); });
+  const sizes = [...srcBase.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
+  ok(sizes.length >= 8, '폰 font-size 선언 ' + sizes.length + '개');
+  eq(sizes.filter(s => s < 16), [], '★폰에는 16px 미만 글자 없음');
+  const pcSizes = [...CSSPC.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
+  ok(pcSizes.length >= 4, 'PC 분기가 글자 크기를 다시 잡는다 ' + pcSizes.length + '곳');
+  eq(pcSizes.filter(s => s < 12), [], 'PC 라도 12px 미만은 없다');
+  const shorthand = [...srcBase.matchAll(/font:\s*[^;'"}]*?(\d+(?:\.\d+)?)px/g)].map(x => +x[1]);
   eq(shorthand.filter(s => s < 16), [], 'font: 축약에도 16px 미만 없음');
   eq([...src.matchAll(/font-size:\s*(\d*\.?\d+)(em|rem|pt)/g)].map(x => x[0]), [], 'em/rem/pt 글자 크기 없음');
   ok(/#inbar \.chip\{min-width:44px/.test(CSS), '입력창 칩 44px');
   ok(/#inbar \.sep\{[^}]*width:1px/.test(CSS), '칩 구분선은 1px 선');
-  const rules = [...CSS.matchAll(/([^{}]+)\{([^}]*)\}/g)];
+  const rules = [...CSSBASE.matchAll(/([^{}]+)\{([^}]*)\}/g)].filter(r => !/::(after|before)/.test(r[1]));
   const small = rules.filter(r => /button|\.chip|\.dot|\.tap|nav/.test(r[1]) && /min-height:\s*(\d+)px/.test(r[2]) && +r[2].match(/min-height:\s*(\d+)px/)[1] < 44).map(r => r[1].trim());
   eq(small, [], '탭 가능한 규칙에 44 미만 min-height 없음');
   const smallH = rules.filter(r => /button|\.dot|nav/.test(r[1]) && !/\si$/.test(r[1].trim()) && /(?:^|;)height:\s*(\d+)px/.test(r[2]) && +r[2].match(/(?:^|;)height:\s*(\d+)px/)[1] < 44).map(r => r[1].trim());
@@ -554,8 +574,9 @@ sec('[12] 44px·16px·행 48px (CSS + 인라인)');
   eq(smallW, [], '칩 min-width 44 미만 없음');
   ok(/nav button\{[^}]*height:var\(--nav-h\)/.test(CSS) && /--nav-h:56px/.test(CSS), '하단 탭 56px');
   ok(/@media \(min-width:768px\)/.test(CSS), 'PC 분기 768px');
-  ok(/@media \(min-width:768px\)\{[\s\S]*?#inbar\{order:2/.test(CSS) && /main\{order:3\}/.test(CSS), 'PC 는 입력창이 위');
-  ok(/#inbar\{order:2/.test(CSS.split('@media')[0]) && /nav\{order:3/.test(CSS.split('@media')[0]), '폰은 입력창·탭이 아래');
+  ok(/#inbar\{order:2/.test(CSSPC) && /(^|[^-\w])main\{order:3/.test(CSSPC), 'PC 는 입력창이 위');
+  ok(/#inbar\{order:2/.test(CSSBASE) && /(^|[^-\w])nav\{order:3/.test(CSSBASE) && /(^|[^-\w])main\{order:1/.test(CSSBASE), '폰은 본문 위 · 입력창과 탭이 아래');
+  ok(/(^|[^-\w])nav\{display:none/.test(CSSPC), 'PC 에서는 아래 탭을 감춘다(보기 탭이 위에 있다)');
   ok(/overflow-x:hidden/.test(CSS), '가로 스크롤 막음');
   ok(/env\(safe-area-inset-bottom\)/.test(CSS), 'iOS 안전 영역');
   ok(/100dvh/.test(CSS), 'dvh 높이');
@@ -566,14 +587,23 @@ sec('[13] CSS 클래스 존재 · 군더더기');
 {
   ok(/--admin:#/.test(CSS) && /--event:#/.test(CSS) && /--class:#/.test(CSS), '영역 3색 변수');
   ok(/--todo:#/.test(CSS) && /--doing:#/.test(CSS) && /--done:#/.test(CSS), '상태색 변수');
-  ok(/\.row\.a-admin\{border-left-color:var\(--admin\)\}/.test(CSS), '영역 띠');
+  ok(/\.row\.a-admin\{border-left-color:var\(--admin\)\}/.test(CSS), '폰 행의 영역 띠');
+  // 노션 태그 팔레트 — 배경·글자가 짝으로 있어야 대비가 산다
+  for (const c of ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red']) {
+    ok(new RegExp('--t-' + c + '-b:#').test(CSS) && new RegExp('--t-' + c + '-f:#').test(CSS), '태그색 ' + c + ' 짝');
+    ok(new RegExp('\\.tg\\.' + c + '\\{').test(CSS), '.tg.' + c);
+  }
+  ok(/--ink:#37352F/i.test(CSS), '★글자는 순검정이 아니라 노션의 먹빛 #37352F');
+  ok(!/color:\s*#000\b/i.test(CSS) && !/color:\s*black\b/i.test(CSS), '순검정 글자 없음');
   ok(/\.row\.stale/.test(CSS), '방치 흐림 클래스');
   ok(/\.chips-wrap\.more::after/.test(CSS), '칩 줄 넘침 fade');
-  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 's-dropped', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'sep', 'chips-wrap', 'more', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'push', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'restore', 'modal-body', 'stack', 'wide', 'exam', 'stamp', 'empty', 'ed', 'hi', 'lo']) {
+  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 's-dropped', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'sep', 'chips-wrap', 'more', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'push', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'restore', 'modal-body', 'stack', 'wide', 'exam', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'cal', 'calbar', 'mon', 'today', 'dow', 'grid', 'day', 'out', 'is-today', 'num', 'ev', 'emogrid', 'acct', 'msg']) {
     ok(new RegExp('\\.' + c.replace(/-/g, '\\-') + '(?![\\w-])').test(CSS), 'CSS 에 .' + c);
   }
   ok(!/※/.test(src), '※ 안내문 없음');
-  ok(!/placeholder="[^"]{3,}"/.test(src), '긴 placeholder 없음');
+  // 안내문 대신 두 낱말짜리 이름표만 — 설명하는 placeholder 는 군더더기다
+  const phs = [...src.matchAll(/placeholder="([^"]*)"/g)].map(x => x[1]);
+  eq(phs.filter(v => v.length > 6), [], '설명하는 placeholder 없음 (' + phs.join(' · ') + ')');
   ok(!/<p[ >]/.test(src.replace(/<script>[\s\S]*<\/script>/, '')), '본문에 설명 문단 없음');
 }
 
@@ -631,9 +661,6 @@ try {
 } catch (e) { fail++; console.log('  X FAIL: [14] STORE 실행이 예외로 멈췄다 — ' + (e && e.message)); }
 
 // ══ [15] 앱 실행 — DOM 스텁 위에서 submit / 시트 / 휴지통 / 되돌리기 ══
-sec('[15] 앱 실행 (DOM 스텁 · 생성 → >id 수정 → 상태 순환 → 휴지통 → 되돌리기)');
-// 앞 절이 깨뜨린 스토어 때문에 여기서 던지면 결과 줄이 안 나온다 — 던짐도 실패로 센다.
-try {
   function makeApp(seed, clock){
     const mem = Object.assign({}, seed || {});
     const els = {};
@@ -656,6 +683,7 @@ try {
     doc.getElementById = id => els[id] || (els[id] = makeEl(id));
     doc.querySelector = sel => els['sel:' + sel] || (els['sel:' + sel] = makeEl(sel));
     doc.querySelectorAll = () => [];
+    doc.addEventListener = (t, f) => { (doc._dl = doc._dl || {})[t] = f; };
     doc.createElement = () => makeEl();
     doc.execCommand = () => true;
     doc.body = makeEl('body');
@@ -670,6 +698,9 @@ try {
     C._mem = mem; C._els = els; C._timers = timers; C._doc = doc;
     return C;
   }
+sec('[15] 앱 실행 (DOM 스텁 · 생성 → >id 수정 → 상태 순환 → 휴지통 → 되돌리기)');
+// 앞 절이 깨뜨린 스토어 때문에 여기서 던지면 결과 줄이 안 나온다 — 던짐도 실패로 센다.
+try {
   const clock = { now: Date.UTC(2031, 5, 15, 3, 0, 0) };
   let A = null, err = null;
   try { A = makeApp(null, clock); } catch (e) { err = e; }
@@ -682,7 +713,7 @@ try {
     const only = () => lastId;
     const logsOf = (id) => Object.keys(data().log).map(k => data().log[k]).filter(l => l.task === id);
     ok(A._doc.activeElement === $('in'), '열면 입력창 포커스');
-    eq(A.ui.tab, 'today', '처음 탭은 오늘');
+    eq(A.ui.view, 'today', '처음 보기는 오늘');
 
     // 생성
     type('감독 배정표 회신 @오늘 ! +NEIS 추출');
@@ -709,8 +740,8 @@ try {
     eq($('in').value, '', '저장 후 입력창 비움'); ok(A._doc.activeElement === $('in'), '저장 후 포커스 유지');
     ok(JSON.parse(A._mem.tm).tasks[id1].title === '감독 배정표 회신', 'localStorage 에 저장됨');
     ok(!$('toast').hidden && /추가됨/.test($('toast').innerHTML) && /되돌리기/.test($('toast').innerHTML), '추가 토스트 + 되돌리기');
-    ok(new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '목록에 새 항목');
-    ok(/D-day/.test($('list').innerHTML), 'D-day 표시'); ok(/☑0\/1/.test($('list').innerHTML), '☑0/1');
+    ok(new RegExp('data-id="' + id1 + '"').test($('main').innerHTML), '목록에 새 항목');
+    ok(/D-day/.test($('main').innerHTML), 'D-day 표시'); ok(/☑0\/1/.test($('main').innerHTML), '☑0/1');
 
     // >id 수정 — 앱 계층이 editId 분기를 실제로 타는가
     const s1 = id1.slice(-3);
@@ -765,7 +796,7 @@ try {
     eq(A.ckList(tC).map(c => c.text), ['제작', '검사', '배포', '허브 카드'], '#교 → 4틀');
     eq(A.ckList(tC).map(c => c.order), [1, 2, 3, 4], '4틀 order');
     eq(data().meta.lastArea, 'class', 'lastArea = class');
-    A.ui.tab = 'all'; A.ui.areaFilter = null; A.render();
+    A.ui.view = 'all'; A.ui.areaFilter = null; A.render();
     const idA = type('전체 탭 항목');
     eq(data().tasks[idA].area, 'class', '전체 탭·칩 없음 → 마지막 영역(class)');
     ok(!data().tasks[idA].checks, '영역만 교과일 땐 4틀 안 붙음');
@@ -773,7 +804,7 @@ try {
     const idE = type('전체 탭 행사 칩');
     eq(data().tasks[idE].area, 'event', '전체 탭·행사 칩 → 행사');
     eq(data().meta.lastArea, 'event', 'lastArea = event');
-    A.ui.areaFilter = null; A.ui.tab = 'today'; A.render();
+    A.ui.areaFilter = null; A.ui.view = 'today'; A.render();
     const idM = type('교육과정위원회 회의 @9/7');
     eq(data().tasks[idM].area, 'admin', '오늘 탭은 lastArea(event) 를 안 따르고 행정');
     ok(!data().tasks[idM].checks, '체크 없음(4틀 오염 없음)');
@@ -781,25 +812,25 @@ try {
 
     // 전체 탭 그리기 · ok:false 제외
     A.store.update({ 'tasks/300101bot': { title: '봇 제안', status: 'todo', area: 'admin', priority: 1, createdBy: 'claude', ok: false, createdAt: 1, updatedAt: 1 } });
-    A.render(); ok(!/300101bot/.test($('list').innerHTML), '오늘 탭에 ok:false 없음');
-    A.ui.tab = 'all'; A.render(); ok(!/300101bot/.test($('list').innerHTML), '전체 탭에 ok:false 없음');
-    ok(/대기<b>/.test($('list').innerHTML) && /완료<b>/.test($('list').innerHTML), '전체 탭 상태 그룹');
-    ok(!new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '완료 그룹은 접혀 있음');
-    A.ui.fold.done = false; A.render(); ok(new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '완료 펼침');
-    A.ui.areaFilter = 'event'; A.render(); ok(new RegExp('data-id="' + idE + '"').test($('list').innerHTML), '영역 칩 필터: 행사 보임');
-    ok(!new RegExp('data-id="' + idC + '"').test($('list').innerHTML) && !new RegExp('data-id="' + id1 + '"').test($('list').innerHTML), '영역 칩 필터: 교과 항목 안 보임');
+    A.render(); ok(!/300101bot/.test($('main').innerHTML), '오늘 탭에 ok:false 없음');
+    A.ui.view = 'all'; A.render(); ok(!/300101bot/.test($('main').innerHTML), '전체 탭에 ok:false 없음');
+    ok(/대기<b>/.test($('main').innerHTML) && /완료<b>/.test($('main').innerHTML), '전체 탭 상태 그룹');
+    ok(!new RegExp('data-id="' + id1 + '"').test($('main').innerHTML), '완료 그룹은 접혀 있음');
+    A.ui.fold.done = false; A.render(); ok(new RegExp('data-id="' + id1 + '"').test($('main').innerHTML), '완료 펼침');
+    A.ui.areaFilter = 'event'; A.render(); ok(new RegExp('data-id="' + idE + '"').test($('main').innerHTML), '영역 칩 필터: 행사 보임');
+    ok(!new RegExp('data-id="' + idC + '"').test($('main').innerHTML) && !new RegExp('data-id="' + id1 + '"').test($('main').innerHTML), '영역 칩 필터: 교과 항목 안 보임');
     A.ui.areaFilter = null; A.store.update({ 'tasks/300101bot': null });
-    A.ui.tab = 'today'; A.render();
+    A.ui.view = 'today'; A.render();
 
     // 타이핑 중 필터 — 오늘 묶음 밖도 「그 밖」으로
     type('먼 마감 회의 @+40');
     const idFar = only();
     $('in').value = '먼 마감'; A.render();
-    ok(/그 밖/.test($('list').innerHTML) && new RegExp('data-id="' + idFar + '"').test($('list').innerHTML), '걸러 볼 땐 먼 마감 항목도 「그 밖」에');
-    ok(!new RegExp('data-id="' + idM + '"').test($('list').innerHTML), '안 맞는 항목은 안 보임');
+    ok(/그 밖/.test($('main').innerHTML) && new RegExp('data-id="' + idFar + '"').test($('main').innerHTML), '걸러 볼 땐 먼 마감 항목도 「그 밖」에');
+    ok(!new RegExp('data-id="' + idM + '"').test($('main').innerHTML), '안 맞는 항목은 안 보임');
     $('in').value = ''; A.render();
-    ok(!/그 밖/.test($('list').innerHTML), '필터 없으면 「그 밖」 없음');
-    ok(!new RegExp('data-id="' + idFar + '"').test($('list').innerHTML), '먼 마감은 오늘 화면에 없음');
+    ok(!/그 밖/.test($('main').innerHTML), '필터 없으면 「그 밖」 없음');
+    ok(!new RegExp('data-id="' + idFar + '"').test($('main').innerHTML), '먼 마감은 오늘 화면에 없음');
 
     // 시트
     A.ui.open = idC; A.renderSheet();
@@ -858,20 +889,20 @@ try {
     $('sh-memo').blur(); sh.contains = () => false; A.renderSheet(); ok(sh.innerHTML !== 'DRAFT' && sh.innerHTML.length > before.length / 2, '포커스 빠지면 다시 그림');
     // 버리기 → dropped
     sh.fire('click', { target: { closest: () => ({ dataset: { set: 'status', v: 'dropped' } }) } }); eq(data().tasks[idC].status, 'dropped', '버리기');
-    A.render(); ok(!new RegExp('data-id="' + idC + '"').test($('list').innerHTML), '버린 항목은 오늘 화면에 없음');
+    A.render(); ok(!new RegExp('data-id="' + idC + '"').test($('main').innerHTML), '버린 항목은 오늘 화면에 없음');
     // 휴지통 → deletedAt · 되살리기
     clock.now += 1000;
     sh.fire('click', { target: { closest: () => ({ dataset: { act: 'trash' } }) } });
     eq(data().tasks[idC].deletedAt, clock.now, '휴지통 = deletedAt'); ok(sh.hidden, '휴지통 뒤 시트 닫힘'); eq(A.ui.open, null, 'open 해제');
     ok(A._doc.activeElement === null || A._doc.activeElement === $('in'), '시트 닫힘 뒤 포커스 처리');
     eq(logsOf(idC).slice(-1)[0].field, 'deletedAt', '휴지통 log');
-    A.ui.tab = 'all'; A.ui.fold.trash = false; A.render();
-    const trashRow = ($('list').innerHTML.match(new RegExp('<li class="row[^>]*data-id="' + idC + '">[\\s\\S]*?</li>')) || [''])[0];
+    A.ui.view = 'all'; A.ui.fold.trash = false; A.render();
+    const trashRow = ($('main').innerHTML.match(new RegExp('<li class="row[^>]*data-id="' + idC + '">[\\s\\S]*?</li>')) || [''])[0];
     ok(trashRow.length > 0, '휴지통 그룹에 행'); ok(!/data-act="cycle"/.test(trashRow), '휴지통 행은 상태점이 안 돎'); ok(/dot off/.test(trashRow), '휴지통 상태점은 꺼짐');
     A.cycleStatus(idC); eq(data().tasks[idC].status, 'dropped', '휴지통 항목은 cycleStatus 도 무시');
     A.ui.open = idC; A.renderSheet(); ok(/되살리기/.test(sh.innerHTML) && !/휴지통<\/button>/.test(sh.innerHTML), '휴지통 항목 시트는 되살리기');
     sh.fire('click', { target: { closest: () => ({ dataset: { act: 'restore' } }) } }); ok(data().tasks[idC].deletedAt == null, '되살리기'); ok(idC in data().tasks, '되살린 항목 남아 있음');
-    A.ui.open = null; sh.hidden = true; A.ui.tab = 'today'; A.ui.fold.trash = true;
+    A.ui.open = null; sh.hidden = true; A.ui.view = 'today'; A.ui.fold.trash = true;
 
     // 검토 요청 토글
     $('reqbtn').fire('click'); eq(data().meta.reviewReq, true, '검토 요청 켬');
@@ -887,8 +918,8 @@ try {
     ok(!/300101bot/.test(md), 'MD 에 ok:false 없음');
     // 14일 무변경 흐림
     const idS = type('방치 확인 @+1');
-    A.render(); ok(new RegExp('data-id="' + idS + '"').test($('list').innerHTML), '내일 마감은 오늘 화면에'); ok(!/ stale/.test($('list').innerHTML), '지금은 흐림 없음');
-    clock.now += 15 * 86400000; A.render(); ok(/ stale/.test($('list').innerHTML), '15일 뒤엔 흐림');
+    A.render(); ok(new RegExp('data-id="' + idS + '"').test($('main').innerHTML), '내일 마감은 오늘 화면에'); ok(!/ stale/.test($('main').innerHTML), '지금은 흐림 없음');
+    clock.now += 15 * 86400000; A.render(); ok(/ stale/.test($('main').innerHTML), '15일 뒤엔 흐림');
     clock.now -= 15 * 86400000;
     // 새 id 접미 3자 충돌 회피
     const idsNow = Object.keys(data().tasks);
@@ -909,7 +940,7 @@ try {
     eq(B.store.load().tasks[id1].title, '다른 탭에서 바꿈', '새로고침 뒤 내용 유지');
     eq(B.store.load().meta.exam, { start: '2031-06-20', end: '2031-06-26' }, '새로고침 뒤 meta 유지');
     ok(Object.keys(B.store.load().log).length > 20, 'log 유지');
-    ok(B._els.list.innerHTML.length > 0 && new RegExp('data-id="' + idS + '"').test(B._els.list.innerHTML), '새 컨텍스트가 같은 목록을 그린다');
+    ok(B._els.main.innerHTML.length > 0 && new RegExp('data-id="' + idS + '"').test(B._els.main.innerHTML), '새 컨텍스트가 같은 목록을 그린다');
   }
 } catch (e) { fail++; console.log('  X FAIL: [15] 앱 실행이 예외로 멈췄다 — ' + (e && e.message)); }
 
@@ -976,6 +1007,75 @@ try {
   ok(!/signInWithPopup|createUserWithEmailAndPassword/.test(SY), '가입·팝업 로그인은 쓰지 않는다');
   ok(/T_UID/.test(src), 'T_UID 자리가 있다');
 } catch (e) { fail++; console.log('  X FAIL: [16] 원격 모드가 예외로 멈췄다 — ' + (e && e.message)); }
+
+sec('[17] 노션 화면 (표 머리 · 아이콘 · 태그 · 보드 · 캘린더)');
+try {
+  // PC 분기가 실제로 표를 만드는가 — 분기 조건만 바꿔도 걸리게
+  const PC = pcBlocks(CSS).join('');
+  ok(/\.thead,\.row\{display:grid/.test(PC), '★PC 분기가 표(grid)를 만든다');
+  ok(/grid-template-columns:minmax\(/.test(PC), '표 열 너비가 정해져 있다');
+  ok(/\.thead\{display:grid[^}]*position:sticky/.test(PC), '열 머리가 붙어 있다');
+  ok(/nav\{display:none/.test(PC), 'PC 에서는 아래 탭을 감춘다');
+
+  const clock2 = { now: Date.UTC(2031, 5, 15, 3, 0, 0) };
+  const A2 = makeApp(null, clock2);
+  const el = id => A2._els[id] || A2._doc.getElementById(id);
+  const html = () => el('main').innerHTML;
+
+  el('in').value = '감독 배정표 회신 @오늘 ! +NEIS 추출'; A2.submit();
+  el('in').value = '위탁 설명회 @내일 #사'; A2.submit();
+  el('in').value = '1-3 심화 세트 #교 ~ @모레'; A2.submit();   // 마감이 있어야 오늘 화면의 「이번 주」에 뜬다
+  const ids = Object.keys(A2.store.load().tasks);
+  eq(ids.length, 3, '세 항목');
+
+  // 표 머리 여섯 칸
+  ok(/class="thead"/.test(html()), '★표 머리를 그린다');
+  ['업무', '상태', '마감일', '영역', '중요도', '체크포인트'].forEach(function(c){
+    ok(new RegExp('<span>[^<]*' + c + '</span>').test(html()), '열 「' + c + '」');
+  });
+
+  // 상태·영역·중요도가 태그로
+  ok(/class="stat s-todo"/.test(html()), '★상태를 태그로 그린다');
+  ok(/class="tg orange">행정</.test(html()), '영역 행정 = 주황 태그');
+  ok(/class="tg red">행사</.test(html()), '영역 행사 = 빨강 태그');
+  ok(/class="tg blue">교과</.test(html()), '영역 교과 = 파랑 태그');
+  ok(/class="tg red">높음</.test(html()), '중요도 높음 = 빨강 태그');
+  ok(/class="tg gray">낮음</.test(html()), '중요도 낮음 = 회색 태그');
+  ok(!/>보통</.test(html()), '보통은 태그를 안 붙인다(기본값이라 군더더기)');
+  ok(/class="tg green[^"]*">NEIS 추출</.test(html()), '체크포인트도 태그로');
+
+  // 아이콘
+  const id1 = ids[0];
+  A2.editTask(id1, { icon: '😤' }, false); A2.render();
+  ok(/😤/.test(html()), '★아이콘을 그린다');
+  ok(/class="emo">😤</.test(html()), '아이콘 자리는 .emo');
+  A2.editTask(id1, { icon: null }, false); A2.render();
+  ok(!/😤/.test(html()), '지우면 사라진다');
+
+  // 보드
+  A2.ui.view = 'board'; A2.render();
+  ok(/class="board"/.test(html()) && /class="bcol"/.test(html()), '★보드는 칸으로');
+  eq((html().match(/class="bcol"/g) || []).length, 4, '보드 칸 넷(대기·진행·완료·버림)');
+  ok(/class="card/.test(html()), '보드는 카드로');
+  ok(new RegExp('data-id="' + id1 + '"').test(html()), '보드에도 항목이 있다');
+
+  // 캘린더
+  A2.ui.view = 'cal'; A2.ui.cal = null; A2.render();
+  ok(/class="cal"/.test(html()) && /class="grid"/.test(html()), '★캘린더는 월력');
+  eq((html().match(/class="day/g) || []).length, 42, '6주 × 7일 = 42칸');
+  ok(/2031년 6월/.test(html()), '이번 달 이름');
+  ok(/class="day[^"]*is-today"/.test(html()), '오늘 칸 표시');
+  ok(/class="ev a-admin/.test(html()), '마감이 있는 항목이 월력에 뜬다');
+  A2.ui.cal = '2031-08'; A2.render();
+  ok(/2031년 8월/.test(html()) && !/class="ev /.test(html()), '다른 달로 넘기면 6월 것은 안 보인다');
+
+  // 검토는 붙박이 요소 — 본문 안에 있으면 눌러도 안 닿는다
+  A2.ui.view = 'review'; A2.render();
+  ok(el('review').hidden === false && el('main').hidden === true, '검토 보기는 붙박이 요소');
+  ok(el('inbar').hidden === true, '검토 보기에선 입력창을 내린다');
+  A2.ui.view = 'today'; A2.render();
+  ok(el('review').hidden === true && el('main').hidden === false, '돌아오면 본문');
+} catch (e) { fail++; console.log('  X FAIL: [17] 노션 화면이 예외로 멈췄다 — ' + (e && e.message)); }
 
 console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

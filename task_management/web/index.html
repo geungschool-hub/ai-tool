@@ -15,6 +15,14 @@
   --nav-h:56px;
 }
 *{box-sizing:border-box}
+#conn{font-size:16px;padding:2px 8px;border-radius:10px;background:#fde8e8;color:#a33;margin-left:auto;margin-right:8px;white-space:nowrap}
+#conn.ok{display:none}
+#login{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#login form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px}
+#login h2{margin:0 0 8px;font-size:22px}
+#login input{height:48px;font-size:16px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+#login button{height:48px;font-size:16px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:600}
+#login .msg{min-height:22px;font-size:16px;color:var(--danger)}
 html{font-size:16px;-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",Roboto,sans-serif;font-size:16px;line-height:1.35;
   display:flex;flex-direction:column;height:100dvh;overflow:hidden}
@@ -153,6 +161,7 @@ details[open] summary::before{transform:rotate(90deg)}
 
 <header>
   <h1>할 일<span class="cnt" id="cnt"></span></h1>
+  <span id="conn" hidden></span>
   <button id="gear" aria-label="설정">⚙</button>
 </header>
 
@@ -198,11 +207,37 @@ details[open] summary::before{transform:rotate(90deg)}
 
 <div id="sheet" class="sheet" hidden></div>
 <div id="settings" class="modal" hidden></div>
+<div id="login" hidden>
+  <form id="loginform">
+    <h2>할 일</h2>
+    <label class="lbl" for="lg-e">이메일</label>
+    <input id="lg-e" type="email" autocomplete="username" required>
+    <label class="lbl" for="lg-p">비밀번호</label>
+    <input id="lg-p" type="password" autocomplete="current-password" required>
+    <button type="submit">들어가기</button>
+    <div class="msg" id="lg-msg"></div>
+  </form>
+</div>
 <div id="toast" hidden></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>
-/*CONFIG-START*/ var firebaseConfig = null; var T_UID = null; /*CONFIG-END*/
-var BUILD = 'v2026-09-03b';
+/*CONFIG-START*/
+// 공개 전제 값이다(브라우저에 그대로 실린다). 방어는 서버 규칙이 한다 — PRD §6.
+var firebaseConfig = {
+  apiKey: "AIzaSyC4T-TNMPV76nDro8U4kdRugk0vx5UUxq0",
+  authDomain: "geung-taskboard.firebaseapp.com",
+  databaseURL: "https://geung-taskboard-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "geung-taskboard",
+  storageBucket: "geung-taskboard.firebasestorage.app",
+  messagingSenderId: "206346767038",
+  appId: "1:206346767038:web:28c9f132158092fa45acef"
+};
+var T_UID = "xmj4YNqWfLfLXTQJRDUjbmYKG6l1";   // 교사 계정 uid (비밀 아님 — 방어는 서버 규칙이 한다)
+/*CONFIG-END*/
+var BUILD = 'v2026-09-04a';
 
 /*PARSE-START*/
 var AREA_TOKENS = {'행':'admin','행정':'admin','사':'event','행사':'event','교':'class','교과':'class'};
@@ -336,16 +371,46 @@ function groupToday(tasks, today){
 /*GROUP-END*/
 
 /*STORE-START*/
-// M1: localStorage. M2 에서 이 블록만 RTDB 로 갈아 끼운다. 앱은 load / update(pathValueMap) / subscribe 만 쓴다.
+// 앱은 load / update(pathValueMap) / subscribe 셋만 쓴다.
 // update 의 규약: 키는 'tasks/<id>/<field>' 꼴 경로, 값 null 은 삭제, 중간 경로는 만들어 가며 쓴다, 값은 깊은 복사.
+// tmSync 가 붙으면(M2~) 정본은 RTDB 다 — localStorage 는 부팅용 스냅샷만 되고 memo 를 빼고 24시간 뒤 버린다.
+// tmSync 가 없으면(M1·검사) 예전 그대로 localStorage 가 정본이다.
+var tmSync = null;    // SYNC 블록이 { write: fn } 를 넣는다
+var tmHooks = {};     // STORE 가 SYNC 에게 건네는 것 — fromRemote · clearCache
 var store = (function(){
-  var KEY = 'tm', data = null, subs = [];
+  var KEY = 'tm', SNAP = 'tm.snap', SNAP_TTL = 24 * 3600 * 1000, data = null, subs = [];
   function fresh(){ return { meta: { schema: 1, reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin', exam: null }, tasks: {}, log: {} }; }
+  function merge(d){   // 저장본을 기본값 위에 얹는다. meta 는 칸별로 — 통째로 덮으면 빠진 칸이 사라진다.
+    var f = fresh(), r = d || {};
+    return { meta: Object.assign(f.meta, r.meta || {}), tasks: r.tasks || {}, log: r.log || {} };
+  }
+  function strip(d){   // 스냅샷에서 memo 를 뺀다 — 폰을 잃어버려도 내용까지 남지는 않게
+    var o = JSON.parse(JSON.stringify(d));
+    Object.keys(o.tasks || {}).forEach(function(k){ delete o.tasks[k].memo; });
+    return o;
+  }
   function read(){
-    try { var s = localStorage.getItem(KEY); if (s) { var d = JSON.parse(s); if (d && typeof d === 'object') return Object.assign(fresh(), d); } } catch (e) {}
+    try {
+      if (tmSync) {
+        var s = localStorage.getItem(SNAP);
+        if (s) {
+          var o = JSON.parse(s);
+          if (o && o.ts && (Date.now() - o.ts) < SNAP_TTL && o.data && typeof o.data === 'object') return merge(o.data);
+          localStorage.removeItem(SNAP);
+        }
+        return fresh();
+      }
+      var t = localStorage.getItem(KEY);
+      if (t) { var d = JSON.parse(t); if (d && typeof d === 'object') return merge(d); }
+    } catch (e) {}
     return fresh();
   }
-  function write(){ try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+  function write(){
+    try {
+      if (tmSync) localStorage.setItem(SNAP, JSON.stringify({ ts: Date.now(), data: strip(data) }));
+      else localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
   function setPath(obj, path, val){
     var p = path.split('/'), o = obj;
     for (var i = 0; i < p.length - 1; i++) { if (o[p[i]] == null || typeof o[p[i]] !== 'object') o[p[i]] = {}; o = o[p[i]]; }
@@ -354,7 +419,15 @@ var store = (function(){
   }
   function notify(){ subs.forEach(function(cb){ cb(data); }); }
   function load(){ if (!data) data = read(); return data; }
-  function update(map){ load(); Object.keys(map).forEach(function(k){ setPath(data, k, map[k]); }); write(); notify(); }
+  function update(map){
+    load();
+    Object.keys(map).forEach(function(k){ setPath(data, k, map[k]); });
+    write(); notify();
+    if (tmSync && tmSync.write) tmSync.write(map);
+  }
+  // 원격이 부르는 것
+  tmHooks.fromRemote = function(full){ data = merge(full); write(); notify(); };
+  tmHooks.clearCache = function(){ try { localStorage.removeItem(SNAP); localStorage.removeItem(KEY); } catch (e) {} };
   function subscribe(cb){ subs.push(cb); }
   if (typeof window !== 'undefined' && window.addEventListener) {
     window.addEventListener('storage', function(e){ if (e.key === KEY) { data = read(); notify(); } });
@@ -362,6 +435,45 @@ var store = (function(){
   return { load: load, update: update, subscribe: subscribe };
 })();
 /*STORE-END*/
+
+/*SYNC-START*/
+// RTDB 연결 · 로그인. STORE 는 이 블록이 없어도(M1·검사) 그대로 돈다.
+var sync = (function(){
+  var st = { on: false, at: null, uid: null, email: null, ready: false, err: null };
+  var db = null, ref = null;
+  function fmtT(ms){ var d = new Date(ms); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function paint(){
+    var b = document.getElementById('conn'); if (!b) return;
+    b.hidden = !st.uid;
+    b.className = st.on ? 'ok' : 'off';
+    b.textContent = st.on ? '' : '읽기 전용';   // 마지막 동기화 시각은 설정에
+  }
+  function start(user){
+    st.uid = user.uid; st.email = user.email;
+    tmSync = { write: function(map){
+      var out = {}; Object.keys(map).forEach(function(k){ var v = map[k]; out[k] = v === undefined ? null : v; });
+      ref.update(out)['catch'](function(e){ toast('저장 못 함 — ' + e.code); });
+    } };
+    db = firebase.database(); ref = db.ref('tm');
+    db.ref('.info/connected').on('value', function(s){ st.on = !!s.val(); if (st.on) st.at = Date.now(); paint(); });
+    ref.on('value', function(s){ st.at = Date.now(); tmHooks.fromRemote(s.val() || {}); paint(); },
+      function(e){ st.err = e.code; toast('읽기 못 함 — ' + e.code); });
+  }
+  function signIn(email, pw){ return firebase.auth().signInWithEmailAndPassword(email, pw); }
+  function signOut(){ tmHooks.clearCache(); return firebase.auth().signOut().then(function(){ location.reload(); }); }
+  function boot(onReady){
+    firebase.initializeApp(firebaseConfig);
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    firebase.auth().onAuthStateChanged(function(u){
+      if (u) { if (!st.uid) start(u); }
+      else { st.uid = null; tmSync = null; }
+      st.ready = true; onReady(u); paint();
+    });
+  }
+  return { state: st, boot: boot, signIn: signIn, signOut: signOut, paint: paint, fmtT: fmtT };
+})();
+/*SYNC-END*/
+
 
 /* ── 앱 ── */
 var $ = function(id){ return document.getElementById(id); };
@@ -685,7 +797,9 @@ function openSettings(){
   $('settings').innerHTML = '<div class="modal-body"><h2>설정<button data-act="close" aria-label="닫기">✕</button></h2><div class="stack">' +
     '<button class="wide" data-act="json">JSON 복사</button><button class="wide" data-act="md">MD 복사</button>' +
     '<div class="lbl">시험 기간</div><div class="exam"><input type="date" id="ex-s" value="' + (ex.start || '') + '"> ~ <input type="date" id="ex-e" value="' + (ex.end || '') + '"></div>' +
-    '</div><div class="stamp">' + esc(BUILD) + '</div></div>';
+    (sync.state.uid ? '<div class="lbl">계정</div><div class="acct">' + esc(sync.state.email || '') + '</div>' +
+      '<button class="wide" data-act="logout">로그아웃</button>' : '') +
+    '</div><div class="stamp">' + esc(BUILD) + (sync.state.at ? ' · 동기화 ' + sync.fmtT(sync.state.at) : '') + '</div></div>';
   $('settings').hidden = false;
 }
 $('gear').addEventListener('click', openSettings);
@@ -695,6 +809,7 @@ $('settings').addEventListener('click', function(e){
   if (b.dataset.act === 'close') $('settings').hidden = true;
   else if (b.dataset.act === 'json') copyText(JSON.stringify(store.load(), null, 2));
   else if (b.dataset.act === 'md') copyText(toMarkdown(store.load()));
+  else if (b.dataset.act === 'logout') sync.signOut();
 });
 $('settings').addEventListener('change', function(e){
   if (e.target.id !== 'ex-s' && e.target.id !== 'ex-e') return;
@@ -733,9 +848,28 @@ function toast(msg, undo){
 
 store.subscribe(function(){ render(); });
 window.addEventListener('resize', chipFade);
-render();
-chipFade();
-$('in').focus();
+
+/* 로그인 뒤에 그린다. firebaseConfig 가 없으면(M1 판) 예전처럼 바로 연다. */
+function open_(){ $('login').hidden = true; render(); chipFade(); sync.paint(); $('in').focus(); }
+function askLogin(msg){
+  $('login').hidden = false; $('lg-msg').textContent = msg || '';
+  $('list').innerHTML = ''; $('cnt').textContent = '';
+}
+$('loginform').addEventListener('submit', function(e){
+  e.preventDefault();
+  var b = this.querySelector('button'); b.disabled = true; $('lg-msg').textContent = '';
+  sync.signIn($('lg-e').value.trim(), $('lg-p').value)['catch'](function(err){
+    var m = { 'auth/invalid-credential': '이메일이나 비밀번호가 맞지 않는다.',
+              'auth/invalid-email': '이메일 꼴이 아니다.',
+              'auth/user-disabled': '사용 중지된 계정이다.',
+              'auth/too-many-requests': '시도가 많아 잠겼다. 잠시 뒤 다시.',
+              'auth/network-request-failed': '네트워크에 닿지 않는다.' }[err.code] || err.code;
+    $('lg-msg').textContent = m;
+  })['finally'](function(){ b.disabled = false; $('lg-p').value = ''; });
+});
+
+if (!firebaseConfig || typeof firebase === 'undefined') { open_(); }
+else sync.boot(function(u){ if (u) open_(); else askLogin(''); });
 </script>
 </body>
 </html>

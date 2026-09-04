@@ -55,9 +55,16 @@ ok(/T_UID\s*=/.test(CONFIG || ''), 'CONFIG 에 T_UID');
 // localStorage 는 STORE 블록 안에서만
 const outsideStore = stripComments(src.replace(STORE || '', ''));
 ok(!/localStorage/.test(outsideStore), 'localStorage 는 STORE 블록 밖에 없음');
-ok(!/<script[^>]+src=/.test(src), '외부 스크립트 없음');
-ok(!/<link[^>]+href=/.test(src), '외부 스타일 없음');
-ok(!/https?:\/\/(?!www\.w3\.org)/.test(src), '외부 URL 없음');
+// 외부에서 끌어오는 것은 판을 못박은 firebase compat SDK 셋뿐이다.
+{
+  const SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\/\d+\.\d+\.\d+\/firebase-(app|auth|database)-compat\.js$/;
+  const srcs = [...src.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1]);
+  eq(srcs.filter(u => !SDK.test(u)), [], '외부 스크립트는 판 고정 firebase compat SDK 뿐');
+  ok(!/<link[^>]+href=/.test(src), '외부 스타일 없음');
+  const OKU = /^https:\/\/(www\.w3\.org|www\.gstatic\.com\/firebasejs\/|[a-z0-9.-]+\.firebaseapp\.com|[a-z0-9.-]+\.firebasedatabase\.app|[a-z0-9.-]+\.firebasestorage\.app)/;
+  const urls = [...src.matchAll(/https?:\/\/[^\s"'<>)]+/g)].map(m => m[0]).filter(u => !OKU.test(u));
+  eq(urls, [], '그 밖의 외부 URL 없음');
+}
 ok(/<meta name="viewport"/.test(src), 'viewport');
 ok(/var BUILD = 'v\d{4}-\d{2}-\d{2}[a-z]';/.test(src), '빌드 스탬프 형식 vYYYY-MM-DDx');
 ok(/class="stamp">' \+ esc\(BUILD\)/.test(src), '설정 화면에 BUILD 표시');
@@ -484,7 +491,7 @@ sec('[10] 필드 경로 규약 (store.update 인자)');
   ok(calls >= 3, 'store.update 호출 ' + calls + '개 발견');
   eq(good, calls, '모든 store.update 인자가 필드 경로 map');
   // map / inv 는 경로 키로만 채워진다
-  const fills = [...app.matchAll(/\b(map|inv)\[([^\]]+)\]\s*=/g)].map(x => x[2]);
+  const fills = [...app.matchAll(/\b(map|inv)\[([^\]]+)\]\s*=(?![=>])/g)].map(x => x[2]);
   ok(fills.length >= 8, 'map[…] = 채우기 ' + fills.length + '곳');
   eq(fills.filter(k => !/^(tp\(|'(tasks|meta|log)\/|p\b)/.test(k)), [], 'map 키는 tasks/·meta/·log/ 경로');
   ok(/function tp\(id, f\)\{ return 'tasks\/' \+ id \+ '\/' \+ f; \}/.test(app), 'tp() 가 tasks/<id>/<field>');
@@ -905,6 +912,70 @@ try {
     ok(B._els.list.innerHTML.length > 0 && new RegExp('data-id="' + idS + '"').test(B._els.list.innerHTML), '새 컨텍스트가 같은 목록을 그린다');
   }
 } catch (e) { fail++; console.log('  X FAIL: [15] 앱 실행이 예외로 멈췄다 — ' + (e && e.message)); }
+
+sec('[16] 원격 모드 (tmSync 가 붙었을 때 — 스냅샷 캐시 · 로그아웃)');
+try {
+  const mkSync = (seed) => {
+    const mem = Object.assign({}, seed || {});
+    const C = { Math, JSON, Object, Array, String, Number, Date, console,
+      localStorage: { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } } };
+    vm.createContext(C);
+    vm.runInContext(STORE, C);
+    const sent = [];
+    C.tmSync = { write: m => sent.push(m) };     // 원격이 붙은 척
+    return { C, mem, sent, store: C.store, hooks: C.tmHooks };
+  };
+  const S = mkSync();
+  ok(S.hooks && typeof S.hooks.fromRemote === 'function' && typeof S.hooks.clearCache === 'function',
+     'tmHooks 는 fromRemote·clearCache 를 준다');
+  S.store.update({ 'tasks/a': { title: 't', memo: '5교시 후', status: 'todo' } });
+  eq(S.sent.length, 1, 'update 가 원격에도 보낸다');
+  eq(S.sent[0], { 'tasks/a': { title: 't', memo: '5교시 후', status: 'todo' } }, '보내는 것은 같은 필드 경로 map');
+  eq(S.store.load().tasks.a.memo, '5교시 후', '메모리에는 memo 가 있다');
+  ok(!('tm' in S.mem), '원격 모드에서는 옛 tm 키를 쓰지 않는다');
+  const snap = JSON.parse(S.mem['tm.snap']);
+  ok(typeof snap.ts === 'number' && snap.ts > 0, '스냅샷에 저장 시각이 있다');
+  ok(!('memo' in snap.data.tasks.a), '★스냅샷에는 memo 를 넣지 않는다 (폰을 잃어버려도 내용은 안 남는다)');
+  eq(snap.data.tasks.a.title, 't', '스냅샷에 나머지 필드는 있다');
+
+  // 부팅 — 싱싱한 스냅샷은 읽고, 24시간 지난 것은 버린다
+  const fresh = mkSync({ 'tm.snap': JSON.stringify({ ts: Date.now() - 3600 * 1000, data: { tasks: { z: { title: 'z' } } } }) });
+  eq(fresh.store.load().tasks.z.title, 'z', '1시간 전 스냅샷은 읽는다');
+  const stale = mkSync({ 'tm.snap': JSON.stringify({ ts: Date.now() - 25 * 3600 * 1000, data: { tasks: { z: { title: 'z' } } } }) });
+  eq(stale.store.load().tasks, {}, '★24시간 지난 스냅샷은 안 읽는다');
+  ok(!('tm.snap' in stale.mem), '지난 스냅샷은 지운다');
+  const noTs = mkSync({ 'tm.snap': JSON.stringify({ data: { tasks: { z: {} } } }) });
+  eq(noTs.store.load().tasks, {}, '시각 없는 스냅샷은 안 읽는다');
+
+  // 원격 스냅샷 적용
+  const R = mkSync();
+  let calls = 0; R.store.subscribe(() => calls++);
+  R.hooks.fromRemote({ tasks: { q: { title: 'q' } }, meta: { schema: 1, lastArea: 'event' } });
+  eq(R.store.load().tasks.q.title, 'q', 'fromRemote 가 데이터를 갈아 끼운다');
+  eq(R.store.load().meta.reviewReq, false, '빠진 meta 칸은 채워진다');
+  eq(calls, 1, 'fromRemote 도 구독에 알린다');
+  eq(R.sent.length, 0, 'fromRemote 는 원격으로 되쏘지 않는다');
+  R.mem.tm = '{"tasks":{}}';   // M1 때 쓰던 키가 남아 있는 기기
+  R.hooks.clearCache();
+  ok(!('tm.snap' in R.mem), 'clearCache 가 스냅샷을 지운다');
+  ok(!('tm' in R.mem), '★clearCache 는 M1 때의 tm 키까지 지운다 (로그아웃 뒤 남으면 안 된다)');
+
+  // tmSync 가 없으면(M1·검사) 예전 그대로
+  const L = mkSync(); L.C.tmSync = null;
+  L.store.update({ 'tasks/b': { title: 'b', memo: 'm' } });
+  ok('tm' in L.mem, 'tmSync 없으면 tm 키에 쓴다');
+  eq(JSON.parse(L.mem.tm).tasks.b.memo, 'm', 'tmSync 없으면 memo 도 그대로 남는다');
+
+  // SYNC 블록 규약 — firebase 없이 실행할 수 없으니 코드로 묻는다
+  const SY = (src.match(/\/\*SYNC-START\*\/([\s\S]*?)\/\*SYNC-END\*\//) || [])[1] || '';
+  ok(SY.length > 200, 'SYNC 블록이 있다');
+  ok(/function signOut\(\)[^}]*tmHooks\.clearCache\(\)/.test(SY), '★로그아웃은 캐시를 지우고 나간다');
+  ok(/setPersistence\([^)]*Persistence\.LOCAL/.test(SY), '로그인은 기기에 유지된다');
+  ok(/\.info\/connected/.test(SY), '연결 상태를 본다');
+  ok(/tmHooks\.fromRemote\(/.test(SY), '원격 값을 STORE 로 넘긴다');
+  ok(!/signInWithPopup|createUserWithEmailAndPassword/.test(SY), '가입·팝업 로그인은 쓰지 않는다');
+  ok(/T_UID/.test(src), 'T_UID 자리가 있다');
+} catch (e) { fail++; console.log('  X FAIL: [16] 원격 모드가 예외로 멈췄다 — ' + (e && e.message)); }
 
 console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

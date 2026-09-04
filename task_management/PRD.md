@@ -383,7 +383,34 @@ M1·M2 각 반나절~하루. M3 이후는 각 반나절. 배포는 M2에서 먼�
 - **변이 14종 전부 FAIL 확인**(공백 규칙 · 담주 · 4틀 · 빈 묶음 · 정렬 · `>id` 앱 분기 · 메모 · `@없음` · parse 시계 · STORE null · `ok:false` · 4틀 탭 오염 · groupToday 시계 · taskList 키 우선).
 - ⚠ **브라우저 실측은 iframe 측정으로만 했다** — 크롬 확장이 이 세션에서 끊겨 실기기 확인 미완. 실제 안드로이드 키보드·한글 IME 조합 엔터·safe-area 는 M2 배포 후 폰에서 볼 것.
 
-### M2 준비 (2026-09-04, 진행 중)
+### M2 (2026-09-04) — 동기화까지 올라갔다. 남은 것은 노션 이사
+
+**라이브** https://geung-taskboard.web.app · 프로젝트 `geung-taskboard` · RTDB `asia-southeast1`
+- 인증 이메일/비밀번호 · 사용자 **T**(교사) `xmj4YN…` · **B**(봇) `ts8Vl…`. 비밀번호는 교사만 안다.
+- 규칙·호스팅 배포 완료. 라이브 md5 = 로컬. **무인증 읽기 401** 확인.
+- `index.html` — STORE 블록은 그대로 두고 `tmSync` 가 붙으면 원격 모드가 된다(검사 [14] 를 안 깨려고).
+  스냅샷 캐시는 `tm.snap` 에 **memo 를 빼고 24시간** 만. 로그아웃하면 `tm`·`tm.snap` 둘 다 지운다.
+- `_cli.js` — `backup` · `import <csv> [--write]` · `restore <file> [--yes]`(소유자 CLI 경로).
+- 검사 **660**(`_test_taskboard.js`, 절 [16] 신설) + **76**(`_test_cli.js`) · 0 실패.
+  변이 M1 14종 · M2 10종 · CLI 9종 전부 FAIL 확인.
+- 라이브 왕복을 실제로 한 번 돌렸다: backup → import --write(8개) → 두 번 넣기 차단 → restore diff → restore --yes → 라이브 비움.
+
+**밟은 함정 넷** (다음에 또 만난다)
+| | |
+|---|---|
+| node 24 + 윈도 | `.cmd` 직접 실행 금지(EINVAL) → `firebase.js` 를 `node` 로 부른다 |
+| firebase CLI + 윈도 | **STDIN 을 안 받는다** → 보낼 JSON 은 임시 파일에 써서 infile 로 |
+| `database:set/update` | `-f` 없으면 확인 프롬프트에서 죽는다 · 리전이 달라 `--instance` 필요 |
+| Bash 도구 heredoc | `\\` 를 `\` 로 삼킨다(두 겹이 한 겹이 된다) — 정규식·JSON 을 heredoc 으로 쓰지 말 것(규칙 JSON·`_cli.js` 에서 두 번 밟았다) |
+
+**고친 진짜 버그** — `fromRemote`/`read` 가 `Object.assign(fresh(), d)` 라 **RTDB 의 `meta` 에 칸이 하나라도 없으면 기본값이 통째로 날아갔다.** 칸별 병합(`merge()`)으로. 검사 [16] 이 잡았다.
+
+🔴 **남은 것**
+1. 교사가 폰에서 로그인 확인(안드로이드 · 홈 화면 추가)
+2. 노션 CSV 내보내기 → `_cli.js import` → 건수 대조 → 노션 잠금
+3. ⚠ **규칙 검증 미완** — 봇 토큰을 못 만들어(서비스 계정 `signJwt` 권한 없음) T·B 권한을 실제로 두드리지 못했다. **M3 에서 봇 비밀번호가 생기면** `scratchpad/rules_probe.mjs` 를 그대로 돌린다(무인증 401 만 확인된 상태).
+
+### (지난 기록) M2 준비 (2026-09-04)
 - Firebase 프로젝트 **`geung-taskboard`** 생성 완료. RTDB `https://geung-taskboard-default-rtdb.asia-southeast1.firebasedatabase.app` (ACTIVE).
 - 웹앱 등록 · `database.rules.json`(T·B 2계정, done 권한 반영) · `firebase.json` 작성 완료.
 - 🔴 **남은 것 — 교사가 콘솔에서 1분**: 이메일/비밀번호 로그인 켜기. REST 로 켜려니 `BILLING_NOT_ENABLED`(Identity Platform 경로) 가 난다. 콘솔에서는 무료로 켜진다.

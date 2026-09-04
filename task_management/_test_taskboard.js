@@ -336,9 +336,9 @@ sec('[6] >id 수정');
   r = P('>k3x 완료', 'admin', T, Object.keys(TASKS).map(k => Object.assign({ id: k }, TASKS[k]))); eq(r.editId, '260903k3x', '배열 tasks 도 됨');
   eq(P('>k3x 완료').due, undefined, '수정 반환의 due 는 undefined');
   eq(P('>k3x 완료').checks, [], '수정 반환의 checks');
-  // 접미 충돌 — 휴지통 아닌 쪽
-  const dup = { '260801k3x': { title: 'old', status: 'todo', deletedAt: 5 }, '260903k3x': TASKS['260903k3x'] };
-  eq(P('>k3x 완료', 'admin', T, dup).editId, '260903k3x', '같은 접미면 휴지통 아닌 쪽');
+  // 접미 충돌 — 아직 교사가 ✓ 안 한 봇 제안 말고 살아 있는 쪽
+  const dup = { '260801k3x': { title: 'old', status: 'todo', ok: false }, '260903k3x': TASKS['260903k3x'] };
+  eq(P('>k3x 완료', 'admin', T, dup).editId, '260903k3x', '같은 접미면 목록에 있는 쪽');
   // 키 ≠ 값의 id — 키가 이긴다
   const odd = { '260903k3x': Object.assign({ id: 'other' }, TASKS['260903k3x']) };
   eq(P('>k3x 완료', 'admin', T, odd).editId, '260903k3x', '값에 id 가 있어도 키가 id');
@@ -393,7 +393,7 @@ sec('[8] groupToday 묶음 순서·빈 묶음 제외·정렬');
   eq(keys(G([mk('a', { due: '2026-09-04' })])), ['week'], '내일은 이번 주');
   eq(keys(G([mk('a', { status: 'done', due: '2026-09-01' })])), [], '완료는 안 보임');
   eq(keys(G([mk('a', { status: 'dropped', due: '2026-09-03' })])), [], '버림은 안 보임');
-  eq(keys(G([mk('a', { deletedAt: 5, due: '2026-09-03' })])), [], '휴지통은 안 보임');
+  eq(keys(G([mk('a', { ok: false, due: '2026-09-03' })])), [], '교사 ✓ 전인 봇 제안은 안 보임');
   eq(keys(G([mk('a', { ok: false, due: '2026-09-03' })])), [], 'ok:false(교사 ✓ 전) 는 안 보임');
   eq(keys(G([mk('a', { ok: false, status: 'doing' })])), [], 'ok:false 진행도 안 보임');
   eq(keys(G([mk('a', { ok: true, due: '2026-09-03' })])), ['today'], 'ok:true 는 보임');
@@ -407,7 +407,7 @@ sec('[8] groupToday 묶음 순서·빈 묶음 제외·정렬');
   const full = [
     mk('w1', { due: '2026-09-08' }), mk('h1', { priority: 1 }), mk('d1', { status: 'doing' }),
     mk('t1', { due: '2026-09-03' }), mk('o1', { due: '2026-09-01' }),
-    mk('x1', { status: 'done', due: '2026-09-03' }), mk('x2', { deletedAt: 1, due: '2026-09-01' }), mk('x3', { ok: false, due: '2026-09-03' })
+    mk('x1', { status: 'done', due: '2026-09-03' }), mk('x2', { status: 'dropped', due: '2026-09-01' }), mk('x3', { ok: false, due: '2026-09-03' })
   ];
   const g = G(full);
   eq(keys(g), ['overdue', 'today', 'doing', 'week', 'nodueHigh'], '5묶음 순서');
@@ -514,7 +514,10 @@ sec('[11] 앱 규칙 (정규식)');
   ok(/createdBy: 'me'/.test(app) && /ok: true/.test(app), '새 항목 createdBy me · ok true');
   ok(/todayStr\(\)\.replace\(\/-\/g, ''\)\.slice\(2\)/.test(app), 'id = yymmdd + …');
   ok(/toString\(36\)\.slice\(2, 5\)/.test(app), 'id 뒤 base36 3자');
-  ok(/deletedAt: Date\.now\(\)/.test(app), '휴지통은 deletedAt');
+  // ★삭제는 삭제다 — 휴지통을 두지 않는다(교사 지시 2026-09-04). 되돌릴 길은 5초 토스트와 restore.
+  ok(!/deletedAt/.test(app), '앱에 deletedAt 이 남아 있지 않음');
+  ok(/map\['tasks\/' \+ id\] = null/.test(app), '삭제는 항목을 null 로');
+  ok(/if \(d\.log\[k\]\.task === id\) map\['log\/' \+ k\] = null/.test(app), '그 항목의 기록도 함께 지운다');
   ok(/todo: 'doing', doing: 'done', done: 'todo'/.test(app), '상태점 순환 todo→doing→done→todo');
   ok(/14 \* DAY/.test(app), '14일 무변경 흐림');
   ok(/, undo \? 5000 : 1500\)/.test(app), '되돌리기 토스트 5초');
@@ -527,7 +530,8 @@ sec('[11] 앱 규칙 (정규식)');
   ok(/isPC\(\)\) \$\('in'\)\.focus\(\)/.test(app), '탭 전환 포커스는 PC 만');
   ok(/sh-\(title\|memo\|ref\)/.test(app), '시트 적는 중엔 다시 안 그림');
   ok(/scrollTop = st/.test(app), '시트 스크롤 복원');
-  ok(/data-act="cycle"/.test(app) && /t\.deletedAt \? '<span class="dot off">/.test(app), '휴지통 행은 상태점 안 돎');
+  ok(/data-act="cycle"/.test(app), '상태점은 눌러서 돈다');
+  ok(/data-act="del"/.test(app) && !/data-act="trash"/.test(app) && !/data-act="restore"/.test(app), '시트에는 삭제 하나뿐');
 }
 
 // ══ [12] 44px·16px·행 48px ══
@@ -574,8 +578,13 @@ sec('[12] 폰은 44px·16px / PC 는 노션 밀도');
   eq(smallW, [], '칩 min-width 44 미만 없음');
   ok(/nav button\{[^}]*height:var\(--nav-h\)/.test(CSS) && /--nav-h:56px/.test(CSS), '하단 탭 56px');
   ok(/@media \(min-width:768px\)/.test(CSS), 'PC 분기 768px');
-  ok(/#inbar\{order:2/.test(CSSPC) && /(^|[^-\w])main\{order:3/.test(CSSPC), 'PC 는 입력창이 위');
-  ok(/#inbar\{order:2/.test(CSSBASE) && /(^|[^-\w])nav\{order:3/.test(CSSBASE) && /(^|[^-\w])main\{order:1/.test(CSSBASE), '폰은 본문 위 · 입력창과 탭이 아래');
+  ok(/#inbar\{order:1/.test(CSSPC) && /#scroll\{order:2/.test(CSSPC), 'PC 는 입력창이 맨 위');
+  ok(/#inbar\{order:2/.test(CSSBASE) && /(^|[^-\w])nav\{order:3/.test(CSSBASE) && /#scroll\{order:1/.test(CSSBASE), '폰은 본문 위 · 입력창과 탭이 아래');
+  // ★제목은 같이 굴러가고 보기 탭만 붙어 있어야 한다 — 화면을 크게 차지하지 않게(교사 지시 2026-09-04)
+  ok(/#scroll\{[^}]*overflow:auto/.test(CSSBASE), '스크롤은 #scroll 이 맡는다');
+  ok(!/(^|[^-\w])main\{[^}]*overflow:auto/.test(CSS), 'main 은 스크롤하지 않는다(제목이 안 굴러가게 되므로)');
+  ok(/\.views\{[^}]*position:sticky[^}]*top:0/.test(CSSBASE), '보기 탭은 위에 붙는다');
+  ok(/\.gh\{[^}]*position:sticky/.test(CSSBASE), '그룹 머리도 붙는다');
   ok(/(^|[^-\w])nav\{display:none/.test(CSSPC), 'PC 에서는 아래 탭을 감춘다(보기 탭이 위에 있다)');
   ok(/overflow-x:hidden/.test(CSS), '가로 스크롤 막음');
   ok(/env\(safe-area-inset-bottom\)/.test(CSS), 'iOS 안전 영역');
@@ -597,7 +606,7 @@ sec('[13] CSS 클래스 존재 · 군더더기');
   ok(!/color:\s*#000\b/i.test(CSS) && !/color:\s*black\b/i.test(CSS), '순검정 글자 없음');
   ok(/\.row\.stale/.test(CSS), '방치 흐림 클래스');
   ok(/\.chips-wrap\.more::after/.test(CSS), '칩 줄 넘침 fade');
-  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 's-dropped', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'sep', 'chips-wrap', 'more', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'push', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'restore', 'modal-body', 'stack', 'wide', 'exam', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'cal', 'calbar', 'mon', 'today', 'dow', 'grid', 'day', 'out', 'is-today', 'num', 'ev', 'emogrid', 'acct', 'msg']) {
+  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 's-dropped', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'sep', 'chips-wrap', 'more', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'push', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'modal-body', 'stack', 'wide', 'exam', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'cal', 'calbar', 'mon', 'today', 'dow', 'grid', 'day', 'out', 'is-today', 'num', 'ev', 'emogrid', 'acct', 'msg']) {
     ok(new RegExp('\\.' + c.replace(/-/g, '\\-') + '(?![\\w-])').test(CSS), 'CSS 에 .' + c);
   }
   ok(!/※/.test(src), '※ 안내문 없음');
@@ -660,7 +669,7 @@ try {
   }
 } catch (e) { fail++; console.log('  X FAIL: [14] STORE 실행이 예외로 멈췄다 — ' + (e && e.message)); }
 
-// ══ [15] 앱 실행 — DOM 스텁 위에서 submit / 시트 / 휴지통 / 되돌리기 ══
+// ══ [15] 앱 실행 — DOM 스텁 위에서 submit / 시트 / 삭제 / 되돌리기 ══
   function makeApp(seed, clock){
     const mem = Object.assign({}, seed || {});
     const els = {};
@@ -677,6 +686,8 @@ try {
         focus(){ doc.activeElement = el; }, blur(){ doc.activeElement = null; }, select(){}, click(){},
         contains(){ return false; }, closest(){ return null; },
         querySelector(){ return makeEl(); }, querySelectorAll(){ return []; },
+        _attr: {}, setAttribute(k, v){ this._attr[k] = v; }, removeAttribute(k){ delete this._attr[k]; },
+        getAttribute(k){ return k in this._attr ? this._attr[k] : null; },
         appendChild(){}, removeChild(){} };
       return el;
     }
@@ -686,6 +697,11 @@ try {
     doc.addEventListener = (t, f) => { (doc._dl = doc._dl || {})[t] = f; };
     doc.createElement = () => makeEl();
     doc.execCommand = () => true;
+    doc.documentElement = Object.assign(makeEl('html'), {
+      _attr: {},
+      setAttribute(k, v){ this._attr[k] = v; }, removeAttribute(k){ delete this._attr[k]; },
+      getAttribute(k){ return k in this._attr ? this._attr[k] : null; },
+    });
     doc.body = makeEl('body');
     const timers = [];
     const C = { Math, JSON, Object, Array, String, Number, RegExp, console, Date: frozenDate(clock),
@@ -698,7 +714,7 @@ try {
     C._mem = mem; C._els = els; C._timers = timers; C._doc = doc;
     return C;
   }
-sec('[15] 앱 실행 (DOM 스텁 · 생성 → >id 수정 → 상태 순환 → 휴지통 → 되돌리기)');
+sec('[15] 앱 실행 (DOM 스텁 · 생성 → >id 수정 → 상태 순환 → 삭제 → 되돌리기)');
 // 앞 절이 깨뜨린 스토어 때문에 여기서 던지면 결과 줄이 안 나온다 — 던짐도 실패로 센다.
 try {
   const clock = { now: Date.UTC(2031, 5, 15, 3, 0, 0) };
@@ -721,14 +737,14 @@ try {
     const id1 = only(), t1 = data().tasks[id1];
     ok(/^\d{6}[0-9a-z]{3}$/.test(id1), 'id = 6자리 날짜 + base36 3자 (' + id1 + ')');
     eq(id1.slice(0, 6), A.todayStr().replace(/-/g, '').slice(2), 'id 앞 6자 = 오늘');
-    const ALLOWED = ['title', 'status', 'area', 'priority', 'due', 'checks', 'memo', 'ref', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'doneAt', 'deletedAt', 'claude'];
+    const ALLOWED = ['title', 'status', 'area', 'priority', 'due', 'checks', 'memo', 'ref', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'doneAt', 'claude'];
     eq(Object.keys(t1).filter(k => !ALLOWED.includes(k)), [], '새 항목에 PRD §3 밖의 필드 없음');
     eq(['title', 'status', 'area', 'priority', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'due', 'checks'].filter(k => !(k in t1)), [], '필수 필드 전부 있음');
     ok(!('id' in t1), '저장 값엔 id 없음(키가 id)');
     eq(t1.title, '감독 배정표 회신', '제목'); eq(t1.status, 'todo', 'todo 로 태어남'); eq(t1.area, 'admin', '오늘 탭 새 항목 = 행정');
     eq(t1.priority, 1, '높음'); eq(t1.due, A.todayStr(), '@오늘 = 앱의 오늘');
     eq(t1.createdBy, 'me', 'createdBy me'); eq(t1.ok, true, 'ok true');
-    eq(t1.createdAt, clock.now, 'createdAt = 지금'); eq(t1.updatedAt, clock.now, 'updatedAt = 지금'); ok(t1.doneAt == null, 'doneAt 없음'); ok(t1.deletedAt == null, 'deletedAt 없음');
+    eq(t1.createdAt, clock.now, 'createdAt = 지금'); eq(t1.updatedAt, clock.now, 'updatedAt = 지금'); ok(t1.doneAt == null, 'doneAt 없음'); ok(!('deletedAt' in t1), '휴지통 필드 자체가 없음');
     const cks = Object.keys(t1.checks);
     eq(cks.length, 1, '체크 1'); ok(/^c/.test(cks[0]), '체크 키는 c<push>');
     eq(t1.checks[cks[0]], { text: 'NEIS 추출', done: false, by: null, ts: null, order: 1 }, '체크 모양 {text,done,by,ts,order}');
@@ -890,20 +906,25 @@ try {
     // 버리기 → dropped
     sh.fire('click', { target: { closest: () => ({ dataset: { set: 'status', v: 'dropped' } }) } }); eq(data().tasks[idC].status, 'dropped', '버리기');
     A.render(); ok(!new RegExp('data-id="' + idC + '"').test($('main').innerHTML), '버린 항목은 오늘 화면에 없음');
-    // 휴지통 → deletedAt · 되살리기
+    // 삭제 — 휴지통 없이 바로 지운다. 되돌리기 5초.
     clock.now += 1000;
-    sh.fire('click', { target: { closest: () => ({ dataset: { act: 'trash' } }) } });
-    eq(data().tasks[idC].deletedAt, clock.now, '휴지통 = deletedAt'); ok(sh.hidden, '휴지통 뒤 시트 닫힘'); eq(A.ui.open, null, 'open 해제');
-    ok(A._doc.activeElement === null || A._doc.activeElement === $('in'), '시트 닫힘 뒤 포커스 처리');
-    eq(logsOf(idC).slice(-1)[0].field, 'deletedAt', '휴지통 log');
-    A.ui.view = 'all'; A.ui.fold.trash = false; A.render();
-    const trashRow = ($('main').innerHTML.match(new RegExp('<li class="row[^>]*data-id="' + idC + '">[\\s\\S]*?</li>')) || [''])[0];
-    ok(trashRow.length > 0, '휴지통 그룹에 행'); ok(!/data-act="cycle"/.test(trashRow), '휴지통 행은 상태점이 안 돎'); ok(/dot off/.test(trashRow), '휴지통 상태점은 꺼짐');
-    A.cycleStatus(idC); eq(data().tasks[idC].status, 'dropped', '휴지통 항목은 cycleStatus 도 무시');
-    A.ui.open = idC; A.renderSheet(); ok(/되살리기/.test(sh.innerHTML) && !/휴지통<\/button>/.test(sh.innerHTML), '휴지통 항목 시트는 되살리기');
-    sh.fire('click', { target: { closest: () => ({ dataset: { act: 'restore' } }) } }); ok(data().tasks[idC].deletedAt == null, '되살리기'); ok(idC in data().tasks, '되살린 항목 남아 있음');
-    A.ui.open = null; sh.hidden = true; A.ui.view = 'today'; A.ui.fold.trash = true;
-
+    const nLogAll = Object.keys(data().log).length, nLogC = logsOf(idC).length;
+    ok(/삭제</.test(sh.innerHTML) && !/휴지통/.test(sh.innerHTML) && !/되살리기/.test(sh.innerHTML), '시트 아래는 삭제 하나뿐');
+    sh.fire('click', { target: { closest: () => ({ dataset: { act: 'del' } }) } });
+    ok(!(idC in data().tasks), '★삭제하면 항목이 사라진다');
+    eq(logsOf(idC).length, 0, '★그 항목의 기록도 함께 사라진다');
+    eq(Object.keys(data().log).length, nLogAll - nLogC, '남의 기록은 안 건드린다');
+    ok(sh.hidden, '삭제 뒤 시트 닫힘'); eq(A.ui.open, null, 'open 해제');
+    ok(!/지움/.test($('toast').hidden ? '' : $('toast').innerHTML) === false, '지움 토스트');
+    ok(/되돌리기/.test($('toast').innerHTML), '되돌리기 단추');
+    $('undo').last('click')();   // 스텁은 리스너가 쌓인다 — 방금 뜬 토스트의 되돌리기만 부른다
+    ok(idC in data().tasks, '★되돌리면 항목이 돌아온다');
+    eq(logsOf(idC).length, nLogC, '기록도 함께 돌아온다');
+    eq(data().tasks[idC].title, '1-3 심화 세트 v2', '내용 그대로');
+    A.ui.open = idC; A.renderSheet();
+    sh.fire('click', { target: { closest: () => ({ dataset: { act: 'del' } }) } });
+    ok(!(idC in data().tasks), '다시 삭제');
+    A.ui.open = null; sh.hidden = true; A.ui.view = 'today';
     // 검토 요청 토글
     $('reqbtn').fire('click'); eq(data().meta.reviewReq, true, '검토 요청 켬');
     $('reqbtn').fire('click'); eq(data().meta.reviewReq, false, '검토 요청 끔');
@@ -926,7 +947,7 @@ try {
     for (let i = 0; i < 25; i++) type('항목 ' + i + ' @+' + (i + 1));
     const ids2 = Object.keys(data().tasks);
     eq(ids2.length, idsNow.length + 25, '25개 추가');
-    const sufs = ids2.filter(k => !data().tasks[k].deletedAt).map(k => k.slice(-3));
+    const sufs = ids2.map(k => k.slice(-3));
     eq(new Set(sufs).size, sufs.length, '살아 있는 항목의 뒤 3자가 전부 다름');
     // 다른 탭의 storage 이벤트
     const memNow = JSON.parse(A._mem.tm); memNow.tasks[id1].title = '다른 탭에서 바꿈'; A._mem.tm = JSON.stringify(memNow);
@@ -1076,6 +1097,59 @@ try {
   A2.ui.view = 'today'; A2.render();
   ok(el('review').hidden === true && el('main').hidden === false, '돌아오면 본문');
 } catch (e) { fail++; console.log('  X FAIL: [17] 노션 화면이 예외로 멈췄다 — ' + (e && e.message)); }
+
+sec('[18] 다크모드');
+try {
+  const dm = (CSS.match(/@media \(prefers-color-scheme:dark\)\{[\s\S]*?\n\} \}/) || [''])[0];
+  const attr = (CSS.match(/:root\[data-theme="dark"\]\{[\s\S]*?\n\}/) || [''])[0];
+  ok(dm.length > 300, '★시스템이 어두우면 따라간다');
+  ok(attr.length > 300, '★설정으로 고른 어둡게가 시스템을 이긴다');
+  ok(/:root:not\(\[data-theme="light"\]\)/.test(dm), '밝게를 고르면 시스템이 어두워도 밝게 남는다');
+  // 밝을 때 정의한 토큰은 어두울 때도 전부 다시 잡아야 한다 — 하나라도 빠지면 그 색만 흰 바탕에 남는다
+  const root = (CSS.match(/:root\{[\s\S]*?\n\}/) || [''])[0];
+  const names = [...root.matchAll(/(--[a-z0-9-]+):/g)].map(m => m[1]).filter(n => !/^--(nav-h|row-h)$/.test(n));
+  ok(names.length >= 25, '밝을 때 토큰 ' + names.length + '개');
+  ['dm', 'attr'].forEach(function(which, i){
+    const blk = i ? attr : dm;
+    const miss = names.filter(n => !new RegExp(n.replace(/-/g, '\\-') + ':').test(blk));
+    eq(miss, [], '★어두울 때 안 잡힌 토큰 없음 (' + (i ? '[data-theme]' : 'prefers-color-scheme') + ')');
+  });
+  for (const c of ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red']) {
+    ok(new RegExp('--t-' + c + '-b:#').test(dm), '어두울 때 태그색 ' + c);
+  }
+  // 색을 토큰 밖에서 박아 쓰면 어두울 때 그 자리만 하얗게 남는다
+  const outside = CSS.replace(root, '').replace(dm, '').replace(attr, '');
+  eq([...outside.matchAll(/background:\s*(#fff\b|#ffffff\b|white\b)/gi)].map(m => m[0]), [], '★토큰 밖에서 흰 배경을 박아 쓰지 않는다');
+  ok(/linear-gradient\(90deg,transparent,var\(--bg\)\)/.test(CSS), '칩 줄 넘침 그림자도 배경색을 따라간다');
+  ok(/meta name="theme-color"/.test(src), '브라우저 위 띠 색도 바꾼다');
+
+  // 저장 · 적용
+  const A3 = makeApp(null, { now: Date.UTC(2031, 5, 15, 3, 0, 0) });
+  const html3 = A3._doc.documentElement;
+  eq(A3.tmTheme.get(), 'system', '처음은 시스템 따라가기');
+  eq(html3.getAttribute('data-theme'), null, '시스템이면 표시를 안 붙인다');
+  A3.tmTheme.set('dark'); A3.applyTheme('dark');
+  eq(html3.getAttribute('data-theme'), 'dark', '어둡게를 고르면 표시가 붙는다');
+  eq(A3.tmTheme.get(), 'dark', '기기에 남는다');
+  A3.tmHooks.clearCache();
+  eq(A3.tmTheme.get(), 'dark', '★로그아웃해도 테마는 남는다(자료가 아니라 기기 취향이다)');
+  A3.tmTheme.set('system'); A3.applyTheme('system');
+  eq(html3.getAttribute('data-theme'), null, '시스템으로 돌리면 표시를 뗀다');
+  ok(!('tm.theme' in A3._mem), '시스템일 때는 저장하지 않는다');
+  A3.openSettings();
+  ok(/data-theme="dark"/.test(A3._els.settings.innerHTML), '설정에 어둡게 단추');
+  ok(/data-theme="light"/.test(A3._els.settings.innerHTML) && /data-theme="system"/.test(A3._els.settings.innerHTML), '밝게·시스템 단추도');
+
+  // 토큰만 치면 항목이 안 생긴다
+  const A4 = makeApp(null, { now: Date.UTC(2031, 5, 15, 3, 0, 0) });
+  A4._els.in.value = '#교 !'; A4.submit();
+  eq(Object.keys(A4.store.load().tasks).length, 0, '★토큰만 치면 항목이 안 생긴다');
+  ok(/제목/.test(A4._els.toast.innerHTML), '왜 안 생겼는지 알려 준다');
+  A4._els.in.value = '@오늘'; A4.submit();
+  eq(Object.keys(A4.store.load().tasks).length, 0, '날짜만 쳐도 마찬가지');
+  A4._els.in.value = '회의 자료 @오늘'; A4.submit();
+  eq(Object.keys(A4.store.load().tasks).length, 1, '제목이 있으면 만든다');
+} catch (e) { fail++; console.log('  X FAIL: [18] 다크모드가 예외로 멈췄다 — ' + (e && e.message)); }
 
 console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');
 process.exit(fail ? 1 : 0);

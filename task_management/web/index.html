@@ -17,7 +17,7 @@
   --ink-60:rgba(55,53,47,.65); --ink-45:rgba(55,53,47,.45); --ink-30:rgba(55,53,47,.3);
   --line:rgba(55,53,47,.09); --line-2:rgba(55,53,47,.16);
   --hover:rgba(55,53,47,.06); --press:rgba(55,53,47,.12);
-  --blue:#2383E2; --blue-soft:rgba(35,131,226,.14);
+  --blue:#2383E2;
   --shadow:0 1px 2px rgba(15,15,15,.1);
   --sheet-shadow:rgba(15,15,15,.05) 0 0 0 1px,rgba(15,15,15,.1) 0 3px 6px,rgba(15,15,15,.2) 0 9px 24px;
 
@@ -39,6 +39,47 @@
 
   --nav-h:56px; --row-h:48px;
 }
+
+/* ── 어두울 때 — 노션의 밤 색. 값만 갈아 끼운다(구조는 그대로) ───────────
+   시스템 설정을 따르되 [data-theme] 이 있으면 그쪽이 이긴다. */
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --bg:#191919; --ink:rgba(255,255,255,.81);
+  --ink-60:rgba(255,255,255,.56); --ink-45:rgba(255,255,255,.44); --ink-30:rgba(255,255,255,.28);
+  --line:rgba(255,255,255,.094); --line-2:rgba(255,255,255,.18);
+  --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.1);
+  --blue:#2E9AF5; --shadow:0 1px 2px rgba(0,0,0,.4);
+  --sheet-shadow:rgba(255,255,255,.06) 0 0 0 1px,rgba(0,0,0,.4) 0 3px 6px,rgba(0,0,0,.5) 0 9px 24px;
+  --t-gray-b:#5A5A5A;   --t-gray-f:rgba(255,255,255,.88);
+  --t-brown-b:#603B2C;  --t-brown-f:rgba(255,255,255,.88);
+  --t-orange-b:#854C1D; --t-orange-f:rgba(255,255,255,.88);
+  --t-yellow-b:#89632A; --t-yellow-f:rgba(255,255,255,.88);
+  --t-green-b:#2B593F;  --t-green-f:rgba(255,255,255,.88);
+  --t-blue-b:#28456C;   --t-blue-f:rgba(255,255,255,.88);
+  --t-purple-b:#492F64; --t-purple-f:rgba(255,255,255,.88);
+  --t-pink-b:#69314C;   --t-pink-f:rgba(255,255,255,.88);
+  --t-red-b:#6E3630;    --t-red-f:rgba(255,255,255,.88);
+  --admin:#C77D48; --event:#DF5452; --class:#5E97C0;
+  --todo:#979797; --doing:#5E97C0; --done:#6E9B78; --dropped:#787774;
+} }
+:root[data-theme="dark"]{
+  --bg:#191919; --ink:rgba(255,255,255,.81);
+  --ink-60:rgba(255,255,255,.56); --ink-45:rgba(255,255,255,.44); --ink-30:rgba(255,255,255,.28);
+  --line:rgba(255,255,255,.094); --line-2:rgba(255,255,255,.18);
+  --hover:rgba(255,255,255,.055); --press:rgba(255,255,255,.1);
+  --blue:#2E9AF5; --shadow:0 1px 2px rgba(0,0,0,.4);
+  --sheet-shadow:rgba(255,255,255,.06) 0 0 0 1px,rgba(0,0,0,.4) 0 3px 6px,rgba(0,0,0,.5) 0 9px 24px;
+  --t-gray-b:#5A5A5A;   --t-gray-f:rgba(255,255,255,.88);
+  --t-brown-b:#603B2C;  --t-brown-f:rgba(255,255,255,.88);
+  --t-orange-b:#854C1D; --t-orange-f:rgba(255,255,255,.88);
+  --t-yellow-b:#89632A; --t-yellow-f:rgba(255,255,255,.88);
+  --t-green-b:#2B593F;  --t-green-f:rgba(255,255,255,.88);
+  --t-blue-b:#28456C;   --t-blue-f:rgba(255,255,255,.88);
+  --t-purple-b:#492F64; --t-purple-f:rgba(255,255,255,.88);
+  --t-pink-b:#69314C;   --t-pink-f:rgba(255,255,255,.88);
+  --t-red-b:#6E3630;    --t-red-f:rgba(255,255,255,.88);
+  --admin:#C77D48; --event:#DF5452; --class:#5E97C0;
+  --todo:#979797; --doing:#5E97C0; --done:#6E9B78; --dropped:#787774;
+}
 *{box-sizing:border-box}
 html{font-size:16px;-webkit-text-size-adjust:100%}
 body{
@@ -47,20 +88,22 @@ body{
   font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
   display:flex;flex-direction:column;height:100dvh;overflow:hidden;overflow-x:hidden;
 }
-button,.tap{min-height:44px;min-width:44px;font-family:inherit;color:inherit;background:none;border:0;cursor:pointer;border-radius:4px}
+button,.tap{min-height:44px;min-width:44px;font-family:inherit;font-size:inherit;color:inherit;background:none;border:0;cursor:pointer;border-radius:4px}
 button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 input,textarea,select{font-family:inherit;font-size:16px;color:inherit;border:0;background:none}
 ul,ol{margin:0;padding:0;list-style:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ── 머리 ───────────────────────────────────────────────────────────── */
-header{padding:20px 16px 0;flex:none}
-.pageicon{font-size:40px;line-height:1;margin-bottom:4px}
-h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+#scroll{order:1;flex:1;overflow:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+header{padding:12px 16px 0;flex:none}
+.pageicon{font-size:32px;line-height:1;margin-bottom:2px}
+h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
 .sub{color:var(--ink-45);font-size:16px;margin-top:2px}
 
 /* 보기 탭 — 노션은 밑줄 2px 하나로 지금 보기를 알린다 */
-.views{display:flex;gap:2px;align-items:center;margin-top:12px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.views{display:flex;gap:2px;align-items:center;margin-top:12px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;
+  position:sticky;top:0;z-index:5;background:var(--bg);flex:none}
 .views::-webkit-scrollbar{display:none}
 .views button{padding:0 8px;height:44px;min-width:0;color:var(--ink-60);white-space:nowrap;border-radius:4px 4px 0 0;position:relative}
 .views button:hover{background:var(--hover)}
@@ -79,7 +122,7 @@ h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 #go{width:44px;height:44px;background:var(--blue);color:#fff;border-radius:6px;font-weight:600;flex:none}
 #pick{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 .chips-wrap{position:relative;margin-top:6px}
-.chips-wrap.more::after{content:"";position:absolute;right:0;top:0;bottom:0;width:28px;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,0),#fff)}
+.chips-wrap.more::after{content:"";position:absolute;right:0;top:0;bottom:0;width:28px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--bg))}
 .chips{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 #inbar .chip{min-width:44px;height:44px;padding:0 10px;color:var(--ink-60);white-space:nowrap;flex:none;border-radius:4px}
@@ -114,8 +157,8 @@ h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 .stat.s-dropped{background:var(--t-gray-b);color:var(--ink-45)}
 
 /* ── 본문 ───────────────────────────────────────────────────────────── */
-main{order:1;flex:1;overflow:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:0 8px 24px}
-.gh{display:flex;align-items:center;gap:6px;padding:0 8px;height:44px;position:sticky;top:0;background:var(--bg);z-index:2}
+main{flex:1 0 auto;padding:0 8px 24px}
+.gh{display:flex;align-items:center;gap:6px;padding:0 8px;height:44px;position:sticky;top:44px;background:var(--bg);z-index:2}
 .gh .fold{width:44px;height:44px;color:var(--ink-45);display:flex;align-items:center;justify-content:center}
 .gh .fold b{font-style:normal;font-weight:400;display:block;transition:transform .12s ease}
 .gh.closed .fold b{transform:rotate(-90deg)}
@@ -173,7 +216,7 @@ main{order:1;flex:1;overflow:auto;overflow-x:hidden;-webkit-overflow-scrolling:t
 .grid{display:grid;grid-template-columns:repeat(7,1fr)}
 .day{min-height:96px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px;overflow:hidden}
 .day:nth-child(7n){border-right:0}
-.day.out{background:rgba(55,53,47,.02)}
+.day.out{background:var(--hover);opacity:.6}
 .day .num{color:var(--ink-45);text-align:right;padding:0 2px}
 .day.is-today .num{display:inline-block;float:right;background:var(--event);color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;padding:0}
 .day .ev{display:block;width:100%;text-align:left;min-height:0;padding:2px 4px;border-radius:4px;margin-top:2px;
@@ -225,7 +268,7 @@ details summary{min-height:44px;display:flex;align-items:center;color:var(--ink-
 details summary::-webkit-details-marker{display:none}
 .danger{display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
 .danger button{flex:1;min-height:44px;color:var(--event);border-radius:4px;background:var(--hover)}
-.danger .restore{color:var(--done)}
+.danger button{font-weight:500}
 .stack{display:flex;flex-direction:column}
 .wide{width:100%;min-height:44px;background:var(--hover);border-radius:4px;margin-top:8px;text-align:center}
 .acct{color:var(--ink-45)}
@@ -239,8 +282,8 @@ details summary::-webkit-details-marker{display:none}
 .emogrid button:hover{background:var(--hover)}
 
 /* 검토 */
-#review{order:1;flex:1;overflow:auto;padding:24px 16px}
-@media (min-width:768px){#review{order:3;width:100%;max-width:1120px;margin:0 auto;padding:32px 24px}}
+#review{flex:1 0 auto;padding:24px 16px}
+@media (min-width:768px){#review{width:100%;max-width:1120px;margin:0 auto;padding:32px 24px}}
 #reqbtn{min-height:44px;padding:0 16px;border-radius:4px;background:var(--hover);color:var(--ink-60)}
 #reqbtn.on{background:var(--t-blue-b);color:var(--t-blue-f)}
 
@@ -264,38 +307,39 @@ details summary::-webkit-details-marker{display:none}
 /* ── PC — 여기서부터 노션 표의 밀도(14px 행 · 12px 열 머리) ───────────── */
 @media (min-width:768px){
   body{font-size:14px}
-  header{padding:48px 0 0;width:100%;max-width:1120px;margin:0 auto}
+  #scroll{order:2}
+  header{padding:20px 0 0;width:100%;max-width:1120px;margin:0 auto}
   header>*{padding-left:24px;padding-right:24px}
-  .pageicon{font-size:56px;margin-bottom:8px}
-  h1{font-size:40px}
+  .views{width:100%;max-width:1120px;margin:10px auto 0;padding:0 24px}
+  .pageicon{font-size:38px;margin-bottom:4px}
+  h1{font-size:30px}
   .sub{font-size:14px}
-  .views{margin-top:16px}
   .views button{height:36px;min-height:36px;font-size:14px}
-  main{order:3;padding:0 0 64px;width:100%;max-width:1120px;margin:0 auto}
+  main{padding:0 0 64px;width:100%;max-width:1120px;margin:0 auto}
   main>*{padding-left:24px;padding-right:24px}
   nav{display:none}
-  #inbar{order:2;border-top:0;border-bottom:1px solid var(--line);width:100%;max-width:1120px;margin:0 auto;padding:10px 24px}
+  #inbar{order:1;border-top:0;border-bottom:1px solid var(--line);width:100%;padding:10px calc(50% - 536px)}
   #in{height:36px;min-height:36px}
   #go{width:36px;height:36px;min-height:36px;min-width:36px}
   #inbar .chip{height:32px;min-height:32px;font-size:14px}
   .chips-wrap.more::after{display:none}
 
   /* 표 */
-  .thead,.row{display:grid;grid-template-columns:minmax(220px,1fr) 132px 132px 104px 104px minmax(160px,1fr);
+  .thead,.row{display:grid;grid-template-columns:minmax(260px,2.2fr) 116px 124px 96px 96px minmax(150px,1fr);
               gap:0;align-items:center}
   .thead{display:grid;font-size:12px;color:var(--ink-45);border-bottom:1px solid var(--line);
-         position:sticky;top:0;background:var(--bg);z-index:3;height:34px}
+         position:sticky;top:36px;background:var(--bg);z-index:3;height:34px}
   .thead span{padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-right:1px solid var(--line)}
   .thead span:last-child{border-right:0}
   .row{min-height:34px;padding:0;border-left:0;font-size:14px}
   .row>*{padding:5px 8px;border-right:1px solid var(--line);min-width:0;height:100%;display:flex;align-items:center;gap:6px}
   .row>*:last-child{border-right:0}
-  .row .dot{width:auto;height:auto;margin:0}
+  .row .dot{width:auto;height:auto;margin:0;min-height:0;min-width:0}
   .row .main{gap:6px}
   .row .meta{margin:0;font-size:14px}
   .row .emo{width:auto}
   .tg,.stat{height:20px;font-size:14px;padding:0 6px}
-  .gh{height:34px;font-size:14px;padding:0}
+  .gh{height:34px;font-size:14px;padding:0;top:36px}
   .gh .fold{width:24px;height:34px;min-height:0;min-width:0}
   .gh .add{width:28px;height:34px;min-height:0;min-width:0}
   .empty{text-align:left;padding:16px 8px}
@@ -316,6 +360,7 @@ details summary::-webkit-details-marker{display:none}
 </head>
 <body>
 
+<div id="scroll">
 <header>
   <div class="pageicon" id="pageicon">🗂️</div>
   <h1>학교업무</h1>
@@ -331,6 +376,10 @@ details summary::-webkit-details-marker{display:none}
     <button class="gear" id="gear" aria-label="설정">⚙</button>
   </div>
 </header>
+
+<main id="main"></main>
+<div id="review" hidden><button id="reqbtn">검토 요청</button></div>
+</div>
 
 <div id="inbar">
   <div id="preview"></div>
@@ -355,9 +404,6 @@ details summary::-webkit-details-marker{display:none}
   </div>
   </div>
 </div>
-
-<main id="main"></main>
-<div id="review" hidden><button id="reqbtn">검토 요청</button></div>
 
 <nav>
   <button data-view="today" class="on">오늘</button>
@@ -455,7 +501,7 @@ function taskList(tasks){
 function findTaskId(tasks, tok){
   tok = String(tok).toLowerCase();
   var hit = taskList(tasks).filter(function(t){ return t.id === tok || (tok.length === 3 && t.id.slice(-3) === tok); });
-  if (hit.length > 1) { var live = hit.filter(function(t){ return !t.deletedAt; }); if (live.length) hit = live; }
+  if (hit.length > 1) { var live = hit.filter(function(t){ return t.ok !== false; }); if (live.length) hit = live; }
   return hit.length ? hit[0].id : null;
 }
 // parse(line, defaultArea, today, tasks) — 순수. 토큰은 앞에 공백(또는 줄 머리)이 있을 때만. 실패 없음.
@@ -514,8 +560,8 @@ function cmpTask(a, b){
   return (b.updatedAt || 0) - (a.updatedAt || 0);
 }
 function sortAll(tasks){ return taskList(tasks).sort(cmpTask); }
-// 목록에 보이는 항목 — 휴지통 제외, ok:false(교사 ✓ 전) 제외
-function isListed(t){ return !t.deletedAt && t.ok !== false; }
+// 목록에 보이는 항목 — ok:false(교사 ✓ 전)만 뺀다. 지운 것은 아예 없으므로 뺄 것이 없다.
+function isListed(t){ return t.ok !== false; }
 function isOpen(t){ return isListed(t) && (t.status === 'todo' || t.status === 'doing'); }
 var GROUP_KEYS = ['overdue', 'today', 'doing', 'week', 'nodueHigh'];
 // 열린 항목을 첫 번째로 맞는 묶음 하나에만 넣는다. 빈 묶음은 뺀다.
@@ -539,6 +585,22 @@ function groupToday(tasks, today){
 // update 의 규약: 키는 'tasks/<id>/<field>' 꼴 경로, 값 null 은 삭제, 중간 경로는 만들어 가며 쓴다, 값은 깊은 복사.
 // tmSync 가 붙으면(M2~) 정본은 RTDB 다 — localStorage 는 부팅용 스냅샷만 되고 memo 를 빼고 24시간 뒤 버린다.
 // tmSync 가 없으면(M1·검사) 예전 그대로 localStorage 가 정본이다.
+// 테마는 기기마다 다르다 — 동기화하지 않고 이 기기에만 남긴다(로그아웃해도 지우지 않는다).
+var tmTheme = (function(){
+  var K = 'tm.theme';
+  return {
+    get: function(){ try { return localStorage.getItem(K) || 'system'; } catch (e) { return 'system'; } },
+    set: function(v){ try { if (v === 'system') localStorage.removeItem(K); else localStorage.setItem(K, v); } catch (e) {} }
+  };
+})();
+// 테마는 기기마다 다르다 — 동기화하지 않고 이 기기에만 남긴다(로그아웃해도 지우지 않는다).
+var tmTheme = (function(){
+  var K = 'tm.theme';
+  return {
+    get: function(){ try { return localStorage.getItem(K) || 'system'; } catch (e) { return 'system'; } },
+    set: function(v){ try { if (v === 'system') localStorage.removeItem(K); else localStorage.setItem(K, v); } catch (e) {} }
+  };
+})();
 var tmSync = null;    // SYNC 블록이 { write: fn } 를 넣는다
 var tmHooks = {};     // STORE 가 SYNC 에게 건네는 것 — fromRemote · clearCache
 var store = (function(){
@@ -649,7 +711,7 @@ var PRI_TAG = ['', 'red', 'yellow', 'gray'];
 var FIELD_KO = { title: '제목', status: '상태', area: '영역', priority: '중요도', due: '마감', memo: '메모', ref: 'ref', icon: '아이콘' };
 var GROUP_KO = { overdue: '지남', today: '오늘', doing: '진행 중', week: '이번 주', nodueHigh: '날짜 없음 · 높음' };
 var WDK = ['일', '월', '화', '수', '목', '금', '토'];
-var STAT_GROUPS = [['todo', '대기'], ['doing', '진행'], ['done', '완료'], ['dropped', '버림'], ['trash', '휴지통']];
+var STAT_GROUPS = [['todo', '대기'], ['doing', '진행'], ['done', '완료'], ['dropped', '버림']];
 var EMOJI = ('📋 📌 🗂️ 📁 📄 📝 ✏️ 🖊️ 📊 📈 📉 🧾 📑 🗒️ 📅 🗓️ ⏰ ⏳ ⌛ 🔔 🚨 ⚠️ ❗ ❓ ✅ ☑️ 🔥 ⭐ 💡 🎯 🏁 🚀 ' +
   '🏫 🎓 📚 📖 🧑‍🏫 👩‍🎓 🧒 👥 🗣️ 🤝 💬 📣 📢 🎤 🎫 🎪 🎉 🎂 🍰 ☕ 🍱 🧃 ' +
   '🧬 🔬 🧪 🧫 🦠 🧠 🫀 🌱 🌿 🍀 🐛 🐝 🦋 🌍 🔭 ⚗️ 🩺 💊 ' +
@@ -658,6 +720,13 @@ var EMOJI = ('📋 📌 🗂️ 📁 📄 📝 ✏️ 🖊️ 📊 📈 📉 �
   '💰 💳 🧮 📦 📮 📬 🗳️ ⚖️ 🏛️ 📜 🖇️ 📎 ✂️ 🩹 ❤️ 💙 💚 💛 🧡 💜 ' +
   '😀 🙂 😌 🤔 😮 😐 😑 😴 😵‍💫 😤 😬 😱 🥹 🙃 🫠 💀').split(' ');
 
+var THEME_KO = { system: '시스템', light: '밝게', dark: '어둡게' };
+function applyTheme(v){
+  var r = document.documentElement;
+  if (v === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', v);
+  var dark = v === 'dark' || (v === 'system' && typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme:dark)').matches);
+  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', dark ? '#191919' : '#ffffff');
+}
 function isPC(){ return typeof matchMedia === 'function' && matchMedia('(min-width:768px)').matches; }
 function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
 function tp(id, f){ return 'tasks/' + id + '/' + f; }
@@ -665,7 +734,7 @@ function pushKey(ts){ return ts.toString(36) + Math.random().toString(36).slice(
 // id = yymmdd + base36 3자. 전체 id 는 물론 화면·>id 에 쓰는 뒤 3자도 살아 있는 항목과 겹치지 않게
 function newId(){
   var d = store.load(), day = todayStr().replace(/-/g, '').slice(2), used = {}, id;
-  Object.keys(d.tasks).forEach(function(k){ used[k] = 1; if (!d.tasks[k].deletedAt) used[k.slice(-3)] = 1; });
+  Object.keys(d.tasks).forEach(function(k){ used[k] = 1; used[k.slice(-3)] = 1; });
   do { id = day + Math.random().toString(36).slice(2, 5).padEnd(3, '0'); } while (used[id] || used[id.slice(-3)]);
   return id;
 }
@@ -722,7 +791,7 @@ function addChecks(id, texts, map, ts){
 function createTask(p){
   var ts = Date.now(), id = newId(), map = {};
   var t = { title: p.title, status: 'todo', area: p.area, priority: p.priority,
-            createdBy: 'me', ok: true, createdAt: ts, updatedAt: ts, doneAt: null, deletedAt: null };
+            createdBy: 'me', ok: true, createdAt: ts, updatedAt: ts, doneAt: null };
   if (p.due) t.due = p.due;
   if (p.memo) t.memo = p.memo;
   if (p.checks.length) { t.checks = {}; p.checks.forEach(function(text, i){ t.checks['c' + pushKey(ts + i)] = { text: text, done: false, by: null, ts: null, order: i + 1 }; }); }
@@ -732,6 +801,14 @@ function createTask(p){
   commit(map, '추가됨 ' + short(id));
   return id;
 }
+// 지우면 지운다. 되돌릴 길은 5초 토스트와 _cli.js restore 둘뿐 — 휴지통은 두지 않는다.
+function deleteTask(id){
+  var d = store.load(), t = d.tasks[id]; if (!t) return;
+  var map = {};
+  map['tasks/' + id] = null;
+  Object.keys(d.log || {}).forEach(function(k){ if (d.log[k].task === id) map['log/' + k] = null; });
+  commit(map, '지움 ' + short(id));
+}
 function applyPatch(id, patch){
   var fields = {}, ts = Date.now(), map = {};
   Object.keys(patch).forEach(function(k){ if (k !== 'checks+') fields[k] = patch[k]; });
@@ -740,14 +817,14 @@ function applyPatch(id, patch){
   if (Object.keys(map).length) commit(map, '수정됨 ' + short(id));
 }
 function cycleStatus(id){
-  var t = store.load().tasks[id]; if (!t || t.deletedAt) return;
+  var t = store.load().tasks[id]; if (!t) return;
   var next = { todo: 'doing', doing: 'done', done: 'todo', dropped: 'todo' }[t.status] || 'todo';
   editTask(id, { status: next }, STATUS_KO[next] + ' ' + short(id));
 }
 
 /* ── 화면 상태 ── */
 var ui = { view: 'today', areaFilter: null, open: null, emoFor: null, cal: null,
-           fold: { done: true, dropped: true, trash: true } };
+           fold: { done: true, dropped: true } };
 
 /* ── 조각 ── */
 function tag(cls, text){ return '<span class="tg ' + cls + '">' + esc(text) + '</span>'; }
@@ -770,7 +847,7 @@ function rowHtml(t, today){
   var glyph = t.status === 'done' ? '✓' : t.status === 'dropped' ? '×' : '';
   return '<li class="row a-' + t.area + ' s-' + t.status + (isStale(t) ? ' stale' : '') + '" data-id="' + t.id + '">' +
     '<span class="main" data-act="open">' +
-      (t.deletedAt ? '<span class="dot off"><i>' + glyph + '</i></span>' : '<button class="dot" data-act="cycle" aria-label="상태"><i>' + glyph + '</i></button>') +
+      '<button class="dot" data-act="cycle" aria-label="상태"><i>' + glyph + '</i></button>' +
       '<span class="emo">' + esc(t.icon || '') + '</span>' +
       '<span class="ttl">' + esc(t.title) + '</span>' +
       '<span class="meta">' + (t.due ? '<span class="dn' + (dParse(t.due) < dParse(today) ? ' over' : t.due === today ? ' now' : '') + '">' + dLabel(t.due, today) + '</span>' : '') +
@@ -840,7 +917,7 @@ function viewTable(d, today, match){
   var all = sortAll(d.tasks).filter(function(t){ return t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
   var html = THEAD;
   STAT_GROUPS.forEach(function(g){
-    var items = all.filter(function(t){ return g[0] === 'trash' ? !!t.deletedAt : (!t.deletedAt && t.status === g[0]); });
+    var items = all.filter(function(t){ return t.status === g[0]; });
     if (!items.length) return;
     var closed = !!ui.fold[g[0]];
     html += ghHtml(g[1], items.length, g[0], closed);
@@ -850,8 +927,8 @@ function viewTable(d, today, match){
   return areaChips() + '<ul id="list">' + html + '</ul>';
 }
 function viewBoard(d, today, match){
-  var all = sortAll(d.tasks).filter(function(t){ return t.ok !== false && !t.deletedAt && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
-  var cols = STAT_GROUPS.slice(0, 4).map(function(g){
+  var all = sortAll(d.tasks).filter(function(t){ return t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
+  var cols = STAT_GROUPS.map(function(g){
     var items = all.filter(function(t){ return t.status === g[0]; });
     return '<div class="bcol"><div class="bhead">' +
       '<span class="stat s-' + g[0] + '"><span class="dot s-' + g[0] + '"><i></i></span>' + g[1] + '</span>' +
@@ -874,7 +951,7 @@ function viewCal(d, today){
   var start = addDays(first, -dow(first));
   var byDay = {};
   taskList(d.tasks).forEach(function(t){
-    if (!t.due || t.deletedAt || t.ok === false) return;
+    if (!t.due || t.ok === false) return;
     (byDay[t.due] = byDay[t.due] || []).push(t);
   });
   var cells = '';
@@ -919,6 +996,8 @@ function renderPreview(pr){
 function submit(){
   var inp = $('in'), line = inp.value; if (!line.trim()) return;
   var d = store.load(), pr = parse(line, curArea(), todayStr(), d.tasks);
+  // 토큰만 치면 제목이 없다 — 「#교 !」 같은 항목이 생기지 않게 막는다
+  if (pr.fallback) { toast('제목을 적어야 한다'); return; }
   if (pr.editId) { if (Object.keys(pr.patch).length) applyPatch(pr.editId, pr.patch); }
   else createTask(pr);
   inp.value = ''; render(); inp.focus();
@@ -997,7 +1076,6 @@ function logLine(t, l){
     return '☑ ' + (txt || '') + ' ' + (l.to ? '✓' : '○');
   }
   if (f === 'create') return '생성';
-  if (f === 'deletedAt') return l.to == null ? '되살림' : '휴지통';
   if (f === 'icon') return l.to ? '아이콘 ' + l.to : '아이콘 지움';
   var kv = function(v){ if (v == null) return '—'; if (f === 'status') return STATUS_KO[v] || v;
     if (f === 'area') return AREA_KO[v] || v; if (f === 'priority') return PRI_KO[v] || v;
@@ -1040,8 +1118,7 @@ function renderSheet(){
       return logs.length ? '<details' + (opened ? ' open' : '') + '><summary>기록</summary><ul class="log">' +
         logs.map(function(l){ return '<li><span>' + fmtTs(l.ts) + '</span><span>' + esc(l.text) + '</span></li>'; }).join('') + '</ul></details>' : '';
     })() +
-    '<div class="danger">' + (t.deletedAt ? '<button class="restore" data-act="restore">되살리기</button>'
-      : '<button data-set="status" data-v="dropped">버리기</button><button data-act="trash">휴지통</button>') + '</div>' +
+    '<div class="danger"><button data-act="del">삭제</button></div>' +
     '</div>';
   sh.hidden = false;
   body = sh.querySelector('.sheet-body'); if (body && st) body.scrollTop = st;
@@ -1054,8 +1131,7 @@ $('sheet').addEventListener('click', function(e){
   var id = ui.open, b = e.target.closest('button,[data-act]'); if (!b || !id) return;
   if (b.dataset.act === 'close') { closeSheet(); return; }
   if (b.dataset.act === 'emo') { openEmoji(id); return; }
-  if (b.dataset.act === 'trash') { editTask(id, { deletedAt: Date.now() }, '휴지통 ' + short(id)); closeSheet(); render(); return; }
-  if (b.dataset.act === 'restore') { editTask(id, { deletedAt: null }, '되살림 ' + short(id)); render(); return; }
+  if (b.dataset.act === 'del') { deleteTask(id); closeSheet(); render(); return; }
   if (b.dataset.set) {
     var f = b.dataset.set, v = b.dataset.v;
     if (f === 'priority') v = +v;
@@ -1104,6 +1180,8 @@ function openSettings(){
   var d = store.load(), ex = d.meta.exam || {};
   $('settings').innerHTML = '<div class="modal-body"><h2>설정<button data-act="close" aria-label="닫기">✕</button></h2><div class="stack">' +
     '<button class="wide" data-act="json">JSON 복사</button><button class="wide" data-act="md">MD 복사</button>' +
+    '<div class="lbl">화면</div><div class="seg">' + Object.keys(THEME_KO).map(function(k){
+      return '<button data-theme="' + k + '"' + (tmTheme.get() === k ? ' class="on"' : '') + '>' + THEME_KO[k] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">시험 기간</div><div class="exam"><input type="date" id="ex-s" value="' + (ex.start || '') + '"> ~ <input type="date" id="ex-e" value="' + (ex.end || '') + '"></div>' +
     (sync.state.uid ? '<div class="lbl">계정</div><div class="acct">' + esc(sync.state.email || '') + '</div>' +
       '<button class="wide" data-act="logout">로그아웃</button>' : '') +
@@ -1113,6 +1191,8 @@ function openSettings(){
 $('gear').addEventListener('click', openSettings);
 $('settings').addEventListener('click', function(e){
   if (e.target === $('settings')) { $('settings').hidden = true; return; }
+  var th = e.target.closest('[data-theme]');
+  if (th) { tmTheme.set(th.dataset.theme); applyTheme(th.dataset.theme); openSettings(); return; }
   var b = e.target.closest('[data-act]'); if (!b) return;
   if (b.dataset.act === 'close') $('settings').hidden = true;
   else if (b.dataset.act === 'json') copyText(JSON.stringify(store.load(), null, 2));
@@ -1154,6 +1234,10 @@ function toast(msg, undo){
   undoTimer = setTimeout(function(){ el.hidden = true; }, undo ? 5000 : 1500);   // 되돌리기 5초
 }
 
+applyTheme(tmTheme.get());
+if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme:dark)').addEventListener) {
+  matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function(){ applyTheme(tmTheme.get()); });
+}
 store.subscribe(function(){ render(); });
 window.addEventListener('resize', chipFade);
 

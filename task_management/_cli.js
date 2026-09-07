@@ -110,13 +110,15 @@ function col(row, names) {                     // 열 이름이 조금 달라도
 }
 
 /* ── 날짜 ─────────────────────────────────────────────────────────────── */
-function toDate(s) {                           // 'September 12, 2026' · '2026/09/12' · '2026-09-12'
+function toDate(s) {   // '2026년 9월 12일' · 'September 12, 2026' · '2026/09/12' · '2026-09-12'
   s = (s || '').trim();
   if (!s) return null;
   let m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/.exec(s);
   if (m) return `${m[1]}-${('0' + m[2]).slice(-2)}-${('0' + m[3]).slice(-2)}`;
   m = /^([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(s);
   if (m && MONTH[m[1].toLowerCase()]) return `${m[3]}-${('0' + MONTH[m[1].toLowerCase()]).slice(-2)}-${('0' + m[2]).slice(-2)}`;
+  m = /^(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/.exec(s);   // ★노션 한국어 꺼내기
+  if (m) return `${m[1]}-${('0' + m[2]).slice(-2)}-${('0' + m[3]).slice(-2)}`;
   m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s);                    // 미국식 M/D/YYYY
   if (m) return `${m[3]}-${('0' + m[1]).slice(-2)}-${('0' + m[2]).slice(-2)}`;
   return undefined;                            // 못 읽음 — null(마감 없음)과 구분한다

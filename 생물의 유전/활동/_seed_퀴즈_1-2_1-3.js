@@ -1,4 +1,8 @@
-// 생물의 유전 — 1-2기초 · 1-3기초 복습 퀴즈를 라이브 RTDB에 올린다.
+// 생물의 유전 — 1-2 · 1-3 복습 퀴즈를 라이브 RTDB에 올린다. (2026-09-01 실행 완료)
+//
+// ★★다시 실행하지 말 것★★ — 2026-09-09에 단원 통합이 있었다.
+//   1-2 는 `유전1-2_사람의유전_퀴즈`(20문항)로 합쳐졌고, 1-3 은 id 가 `유전1-3_사람의유전병_퀴즈`로 바뀌었다.
+//   지금 라이브를 바꾸는 정본은 `_migrate_퀴즈_단원통합.js` 다.
 //
 //   node _seed_퀴즈기초.js            → 라이브 상태만 확인하고 끝낸다 (아무것도 쓰지 않는다)
 //   node _seed_퀴즈기초.js --write    → 백업 후 실제로 올린다
@@ -11,7 +15,7 @@
 // ★database 규칙은 이 스크립트가 건드리지 않는다. hosting 배포도 필요 없다(문항은 DB에 있다).
 
 'use strict';
-const { quiz12, quiz13 } = require('./_build_퀴즈기초_1-2_1-3.js');
+const { quiz12, quiz13 } = require('./_build_퀴즈_1-2_1-3.js');
 
 const KEY = 'AIzaSyA1yobw0EreDxuIVRr_eaI2XN7BZRtZ9w4';   // index.html firebaseConfig
 const DB  = 'https://lifescience-quiz-default-rtdb.asia-southeast1.firebasedatabase.app';

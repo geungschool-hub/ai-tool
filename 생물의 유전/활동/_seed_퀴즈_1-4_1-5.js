@@ -1,4 +1,7 @@
-// 생물의 유전 — 1-4기초 · 1-5기초 복습 퀴즈를 라이브 RTDB에 올린다.
+// 생물의 유전 — 1-4 · 1-5 복습 퀴즈를 라이브 RTDB에 올린다. (2026-09-09 실행 완료)
+//
+// ★지금 라이브를 바꾸는 정본은 `_migrate_퀴즈_단원통합.js` 다 — 단원 통합·학생 기록 이전까지 함께 한다.
+//   이 스크립트는 「새 퀴즈 두 장을 올리기만」 하며, id 가 이미 있으면 멈춘다.
 //
 //   node _seed_퀴즈기초_1-4_1-5.js            → 라이브 상태만 확인하고 끝낸다 (아무것도 쓰지 않는다)
 //   node _seed_퀴즈기초_1-4_1-5.js --write    → 백업 후 실제로 올린다
@@ -89,6 +92,6 @@ const j = async (url, opt) => {
     if (!same(after[k], before[k])) { bad++; console.log('  X 기존 퀴즈가 바뀌었다: ' + k); }
   }
   console.log('\n재검증: 라이브 ' + Object.keys(after).length + '개 · 불일치 ' + bad + '건');
-  console.log(bad ? '★확인 필요' : '완료 — https://lifescience-quiz.web.app/gen 에서 카드 6장이 보이면 된다');
+  console.log(bad ? '★확인 필요' : '완료 — https://lifescience-quiz.web.app/gen 에서 카드 5장이 보이면 된다');
   console.log('★올린 뒤 할 일: 1-5 Q2 의 <sup>15</sup>N · <sup>14</sup>N 이 위첨자로 보이는지 눈으로 확인');
 })().catch(e => { console.error('실패: ' + e.message); process.exit(1); });

@@ -579,7 +579,9 @@ sec('[12] 폰은 44px·16px / PC 는 노션 밀도');
   ok(/nav button\{[^}]*height:var\(--nav-h\)/.test(CSS) && /--nav-h:56px/.test(CSS), '하단 탭 56px');
   ok(/@media \(min-width:768px\)/.test(CSS), 'PC 분기 768px');
   ok(/#inbar\{order:1/.test(CSSPC) && /#scroll\{order:2/.test(CSSPC), 'PC 는 입력창이 맨 위');
-  ok(/#inbar\{order:2/.test(CSSBASE) && /(^|[^-\w])nav\{order:3/.test(CSSBASE) && /#scroll\{order:1/.test(CSSBASE), '폰은 본문 위 · 입력창과 탭이 아래');
+  // ★폰도 입력창이 맨 위다 — 아래에 두니 「영 이상하다」(교사 지시 2026-09-09). 아래에 남는 것은 탭뿐이다
+  ok(/#inbar\{order:1/.test(CSSBASE) && /#scroll\{order:2/.test(CSSBASE) && /(^|[^-\w])nav\{order:3/.test(CSSBASE), '폰도 입력창이 맨 위 · 탭만 아래');
+  ok(/#inbar\{[^}]*border-bottom:1px/.test(CSSBASE) && !/#inbar\{[^}]*border-top:1px/.test(CSSBASE), '폰 입력창 경계선은 아래쪽(위에 있으므로)');
   // ★제목은 같이 굴러가고 보기 탭만 붙어 있어야 한다 — 화면을 크게 차지하지 않게(교사 지시 2026-09-04)
   ok(/#scroll\{[^}]*overflow:auto/.test(CSSBASE), '스크롤은 #scroll 이 맡는다');
   ok(!/(^|[^-\w])main\{[^}]*overflow:auto/.test(CSS), 'main 은 스크롤하지 않는다(제목이 안 굴러가게 되므로)');

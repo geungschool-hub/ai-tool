@@ -121,16 +121,15 @@ h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 #in::placeholder{color:var(--ink-30)}
 #go{width:44px;height:44px;background:var(--blue);color:#fff;border-radius:6px;font-weight:600;flex:none}
 #pick{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
-.chips-wrap{position:relative;margin-top:6px}
-.chips-wrap.more::after{content:"";position:absolute;right:0;top:0;bottom:0;width:28px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--bg))}
 .chips{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-#inbar .chip{min-width:44px;height:44px;padding:0 10px;color:var(--ink-60);white-space:nowrap;flex:none;border-radius:4px}
-#inbar .chip:hover{background:var(--hover)}
-#inbar .chip.a-admin{color:var(--admin)}
-#inbar .chip.a-event{color:var(--event)}
-#inbar .chip.a-class{color:var(--class)}
-#inbar .sep{flex:none;width:1px;height:20px;margin:0 4px;background:var(--line-2)}
+/* 영역 거르개 칩(본문). 입력창 아래 토큰 칩 줄은 폐지했다 — 교사 지시 2026-09-09 */
+.chip{min-width:44px;height:44px;padding:0 10px;color:var(--ink-60);white-space:nowrap;flex:none;border-radius:4px}
+.chip:hover{background:var(--hover)}
+.chip.on{background:var(--hover);font-weight:500}
+.chip.a-admin{color:var(--admin)}
+.chip.a-event{color:var(--event)}
+.chip.a-class{color:var(--class)}
 
 /* ── 태그 칩 ────────────────────────────────────────────────────────── */
 .tg{display:inline-flex;align-items:center;max-width:100%;height:24px;padding:0 8px;border-radius:4px;
@@ -176,7 +175,14 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .row.stale .main{opacity:.55}
 .row .dot{width:28px;height:44px;margin-left:-6px}
 .row .emo{flex:none;width:22px;text-align:center}
-.row .main{flex:1;min-width:0}
+/* 폰 행 = [점][이모지][제목] / 그 아래 메타 한 줄. 점·이모지는 두 줄에 걸친다.
+   inline 이면 넷이 통째로 세로로 쌓여 행이 108px 가 된다(2026-09-09 실측) */
+.row .main{flex:1;min-width:0;display:grid;grid-template-columns:auto auto minmax(0,1fr);
+           grid-template-areas:"dot emo ttl" "dot emo meta";align-items:center;column-gap:6px}
+.row .main>.dot{grid-area:dot}
+.row .main>.emo{grid-area:emo}
+.row .main>.ttl{grid-area:ttl}
+.row .main>.meta{grid-area:meta}
 .row .ttl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row.s-done .ttl,.row.s-dropped .ttl{color:var(--ink-45);text-decoration:line-through}
 .row .meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px;color:var(--ink-45)}
@@ -184,7 +190,23 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .row .dn.over{color:var(--event);font-weight:500}
 .row .dn.now{color:var(--admin);font-weight:500}
 .row .id{color:var(--ink-30);font-variant-numeric:tabular-nums}
+.dn.ok{color:var(--done)}
+.ph{color:var(--ink-30)}
+/* 폰 meta 줄은 누르는 자리다 — 영역·중요도·마감·체크를 그 자리에서 고친다(교사 지시 2026-09-09) */
+.row .meta [data-edit]{display:inline-flex;align-items:center;min-height:34px;padding:0 2px;border-radius:4px}
+.row .meta [data-edit]:active{background:var(--hover)}
+/* ★PC 표의 5칸은 폰에서 그리지 않는다 — 폰 행은 .main 두 줄이 전부다.
+   이 규칙이 없어 폰에서 6칸이 한 줄에 들어차 제목이 0px 로 짓눌렸다(2026-09-09) */
+.row .c-stat,.row .c-due,.row .c-area,.row .c-pri,.row .c-ck{display:none}
 .empty{padding:32px 12px;color:var(--ink-30);text-align:center}
+/* 표에서 바로 고치기 — 칸을 누르면 고르는 판이 뜨거나 그 자리에 입력칸이 생긴다 */
+[data-edit]{cursor:pointer}
+.menu{position:fixed;z-index:60;background:var(--bg);border-radius:6px;box-shadow:var(--sheet-shadow);
+      padding:4px;display:flex;flex-direction:column;gap:2px;min-width:150px}
+.menu button{display:flex;align-items:center;justify-content:flex-start;min-height:44px;padding:0 8px;border-radius:4px}
+.menu button:hover{background:var(--hover)}
+.menu button.on{background:var(--hover);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.cell-in{width:100%;min-width:0;height:28px;padding:0 6px;background:var(--hover);border-radius:4px;font-size:inherit}
 
 /* 표 머리 — PC 에서만 보인다 */
 .thead{display:none}
@@ -203,29 +225,6 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .badd:hover{background:var(--hover)}
 
 /* ── 캘린더 ─────────────────────────────────────────────────────────── */
-.cal{padding:8px 0}
-.calbar{display:flex;align-items:center;gap:4px;padding:0 4px 8px}
-.calbar .mon{font-weight:600;margin-right:auto}
-.calbar button{width:44px;height:44px;color:var(--ink-60)}
-.calbar button:hover{background:var(--hover)}
-.calbar .today{width:auto;padding:0 12px;color:var(--ink-60)}
-.dow{display:grid;grid-template-columns:repeat(7,1fr);color:var(--ink-45);border-bottom:1px solid var(--line)}
-.dow span{padding:6px 8px;text-align:right}
-.dow span:first-child{color:var(--event)}
-.dow span:last-child{color:var(--blue)}
-.grid{display:grid;grid-template-columns:repeat(7,1fr)}
-.day{min-height:96px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px;overflow:hidden}
-.day:nth-child(7n){border-right:0}
-.day.out{background:var(--hover);opacity:.6}
-.day .num{color:var(--ink-45);text-align:right;padding:0 2px}
-.day.is-today .num{display:inline-block;float:right;background:var(--event);color:#fff;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;padding:0}
-.day .ev{display:block;width:100%;text-align:left;min-height:0;padding:2px 4px;border-radius:4px;margin-top:2px;
-         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--t-gray-b);color:var(--t-gray-f)}
-.day .ev.a-admin{background:var(--t-orange-b);color:var(--t-orange-f)}
-.day .ev.a-event{background:var(--t-red-b);color:var(--t-red-f)}
-.day .ev.a-class{background:var(--t-blue-b);color:var(--t-blue-f)}
-.day .ev.s-done{opacity:.5;text-decoration:line-through}
-.day .more{color:var(--ink-45);padding:0 4px;min-height:0}
 
 /* ── 아래 탭 ────────────────────────────────────────────────────────── */
 nav{order:3;flex:none;display:flex;border-top:1px solid var(--line);background:var(--bg);padding-bottom:env(safe-area-inset-bottom)}
@@ -236,7 +235,8 @@ nav button.on{color:var(--ink);font-weight:500;box-shadow:inset 0 2px 0 var(--in
 .sheet,.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(15,15,15,.3)}
 .modal{align-items:center;padding:16px}
 .sheet-bg{position:absolute;inset:0}
-.sheet-body,.modal-body{position:relative;width:100%;max-width:560px;max-height:88dvh;overflow:auto;background:var(--bg);
+.modal-body{max-width:560px}
+.sheet-body,.modal-body{position:relative;width:100%;max-width:760px;max-height:88dvh;overflow:auto;background:var(--bg);
   border-radius:10px 10px 0 0;box-shadow:var(--sheet-shadow);padding:8px 16px calc(16px + env(safe-area-inset-bottom))}
 .modal-body{border-radius:10px;max-width:420px;padding:8px 16px 16px}
 .sh-top{display:flex;align-items:center;gap:8px;position:sticky;top:0;background:var(--bg);padding-top:8px;z-index:1}
@@ -248,11 +248,18 @@ h2 button{margin-left:auto;width:44px;height:44px;color:var(--ink-45)}
 .lbl{color:var(--ink-45);padding:14px 0 4px}
 .seg{display:flex;gap:4px;flex-wrap:wrap}
 .seg button{min-height:44px;padding:0 12px;border-radius:4px;background:var(--hover);color:var(--ink-60)}
-.seg button.on{background:var(--ink);color:#fff}
+/* 고른 것은 본 화면에서 쓰는 태그 색 그대로 — 회색이면 무엇을 골랐는지 안 보인다(교사 지시 2026-09-09) */
+.seg button.on{box-shadow:inset 0 0 0 1.5px var(--ink-45);background:var(--t-gray-b);color:var(--t-gray-f)}
+.seg button.on.s-doing{background:var(--t-blue-b);color:var(--t-blue-f)}
+.seg button.on.s-done{background:var(--t-green-b);color:var(--t-green-f)}
+.seg button.on.a-admin{background:var(--t-orange-b);color:var(--t-orange-f)}
+.seg button.on.a-event{background:var(--t-red-b);color:var(--t-red-f)}
+.seg button.on.a-class{background:var(--t-blue-b);color:var(--t-blue-f)}
+.seg button.on.p-1{background:var(--t-red-b);color:var(--t-red-f)}
+.seg button.on.p-2{background:var(--t-yellow-b);color:var(--t-yellow-f)}
+.seg button.on.p-3{background:var(--t-gray-b);color:var(--t-gray-f)}
 .duerow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .duerow input{height:44px;padding:0 10px;background:var(--hover);border-radius:4px}
-.push{display:flex;gap:4px;flex-wrap:wrap}
-.push button{min-height:44px;padding:0 10px;color:var(--ink-60);border-radius:4px;background:var(--hover)}
 .ck{display:flex;align-items:center;gap:8px;padding:2px 0}
 .ck .tg{flex:none}
 .ck span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -272,8 +279,6 @@ details summary::-webkit-details-marker{display:none}
 .stack{display:flex;flex-direction:column}
 .wide{width:100%;min-height:44px;background:var(--hover);border-radius:4px;margin-top:8px;text-align:center}
 .acct{color:var(--ink-45)}
-.exam{display:flex;gap:8px;align-items:center}
-.exam input{flex:1;min-width:0;height:44px;padding:0 10px;background:var(--hover);border-radius:4px}
 .stamp{color:var(--ink-30);padding-top:16px;text-align:center}
 
 /* 이모지 고르기 */
@@ -322,7 +327,6 @@ details summary::-webkit-details-marker{display:none}
   #in{height:36px;min-height:36px}
   #go{width:36px;height:36px;min-height:36px;min-width:36px}
   #inbar .chip{height:32px;min-height:32px;font-size:14px}
-  .chips-wrap.more::after{display:none}
 
   /* 표 */
   .thead,.row{display:grid;grid-template-columns:minmax(260px,2.2fr) 116px 124px 96px 96px minmax(150px,1fr);
@@ -335,9 +339,14 @@ details summary::-webkit-details-marker{display:none}
   .row>*{padding:5px 8px;border-right:1px solid var(--line);min-width:0;height:100%;display:flex;align-items:center;gap:6px}
   .row>*:last-child{border-right:0}
   .row .dot{width:auto;height:auto;margin:0;min-height:0;min-width:0}
-  .row .main{gap:6px}
+  .row .main{display:flex;gap:6px}
   .row .meta{margin:0;font-size:14px}
+  /* ★.meta 를 꼭 끼워 넣는다 — 기본의 `.row .meta [data-edit]` 가 특정도가 더 높아
+     `.row .m-area` 로는 안 지워지고 PC 제목 칸에 영역 태그가 겹쳐 보였다(2026-09-09 실측) */
+  .row .meta .m-area,.row .meta .m-pri,.row .meta .ph,.row .meta .m-ck:not(.has){display:none}
+  .row .meta [data-edit]{min-height:0;padding:0}
   .row .emo{width:auto}
+  .row .c-stat,.row .c-due,.row .c-area,.row .c-pri,.row .c-ck{display:flex}
   .tg,.stat{height:20px;font-size:14px;padding:0 6px}
   .gh{height:34px;font-size:14px;padding:0;top:36px}
   .gh .fold{width:24px;height:34px;min-height:0;min-width:0}
@@ -348,9 +357,6 @@ details summary::-webkit-details-marker{display:none}
   .bcol{width:264px}
   .bhead{height:34px}
   .card{font-size:14px}
-  .day{min-height:120px}
-  .day .ev{font-size:12px}
-  .dow{font-size:12px}
   .sheet{align-items:center;padding:24px}
   .sheet-body{border-radius:10px;max-height:82dvh;font-size:14px}
   .modal-body{font-size:14px}
@@ -366,13 +372,12 @@ details summary::-webkit-details-marker{display:none}
   <h1>학교업무</h1>
   <div class="sub" id="sub"></div>
   <div class="views">
-    <button data-view="today" class="on">오늘</button>
-    <button data-view="all">전체</button>
+    <button data-view="all" class="on">전체</button>
     <button data-view="board">상태 보드</button>
-    <button data-view="cal">캘린더</button>
     <button data-view="review">검토</button>
     <span class="grow"></span>
     <span id="conn" hidden></span>
+    <button class="gear" id="undo-btn" aria-label="되돌리기" title="되돌리기" hidden>↺</button>
     <button class="gear" id="gear" aria-label="설정">⚙</button>
   </div>
 </header>
@@ -386,33 +391,16 @@ details summary::-webkit-details-marker{display:none}
   <div class="inrow">
     <input id="in" type="text" autocomplete="off" autocapitalize="off" enterkeyhint="done" spellcheck="false" placeholder="새 업무">
     <button id="go" aria-label="저장">↵</button>
-    <input id="pick" type="date" tabindex="-1" aria-hidden="true">
-  </div>
-  <div class="chips-wrap" id="tokwrap">
-  <div class="chips" id="tokchips">
-    <button class="chip" data-tok="@오늘">오늘</button>
-    <button class="chip" data-tok="@내일">내일</button>
-    <button class="chip" data-tok="@이번주">이번주</button>
-    <button class="chip" data-tok="@다음주">다음주</button>
-    <button class="chip" data-tok="pick">📅</button>
-    <span class="sep"></span>
-    <button class="chip a-admin" data-tok="#행">행정</button>
-    <button class="chip a-event" data-tok="#사">행사</button>
-    <button class="chip a-class" data-tok="#교">교과</button>
-    <span class="sep"></span>
-    <button class="chip" data-tok="!">!</button>
-  </div>
   </div>
 </div>
 
 <nav>
-  <button data-view="today" class="on">오늘</button>
-  <button data-view="all">전체</button>
+  <button data-view="all" class="on">전체</button>
   <button data-view="board">보드</button>
-  <button data-view="cal">캘린더</button>
   <button data-view="review">검토</button>
 </nav>
 
+<div id="menu" class="menu" hidden></div>
 <div id="sheet" class="sheet" hidden></div>
 <div id="settings" class="modal" hidden></div>
 <div id="emopick" class="modal" hidden></div>
@@ -563,21 +551,6 @@ function sortAll(tasks){ return taskList(tasks).sort(cmpTask); }
 // 목록에 보이는 항목 — ok:false(교사 ✓ 전)만 뺀다. 지운 것은 아예 없으므로 뺄 것이 없다.
 function isListed(t){ return t.ok !== false; }
 function isOpen(t){ return isListed(t) && (t.status === 'todo' || t.status === 'doing'); }
-var GROUP_KEYS = ['overdue', 'today', 'doing', 'week', 'nodueHigh'];
-// 열린 항목을 첫 번째로 맞는 묶음 하나에만 넣는다. 빈 묶음은 뺀다.
-function groupToday(tasks, today){
-  var end = addDays(today, 7);
-  var g = { overdue: [], today: [], doing: [], week: [], nodueHigh: [] };
-  taskList(tasks).forEach(function(t){
-    if (!isOpen(t)) return;
-    if (t.due && t.due < today) g.overdue.push(t);
-    else if (t.due === today) g.today.push(t);
-    else if (t.status === 'doing') g.doing.push(t);
-    else if (t.due && t.due <= end) g.week.push(t);
-    else if (!t.due && t.priority === 1) g.nodueHigh.push(t);
-  });
-  return GROUP_KEYS.filter(function(k){ return g[k].length; }).map(function(k){ return { key: k, items: g[k].sort(cmpTask) }; });
-}
 /*GROUP-END*/
 
 /*STORE-START*/
@@ -593,19 +566,24 @@ var tmTheme = (function(){
     set: function(v){ try { if (v === 'system') localStorage.removeItem(K); else localStorage.setItem(K, v); } catch (e) {} }
   };
 })();
-// 테마는 기기마다 다르다 — 동기화하지 않고 이 기기에만 남긴다(로그아웃해도 지우지 않는다).
-var tmTheme = (function(){
-  var K = 'tm.theme';
-  return {
-    get: function(){ try { return localStorage.getItem(K) || 'system'; } catch (e) { return 'system'; } },
-    set: function(v){ try { if (v === 'system') localStorage.removeItem(K); else localStorage.setItem(K, v); } catch (e) {} }
-  };
+// 되돌릴 거리도 기기마다 다르다 — 동기화하지 않고 이 기기에만 남긴다.
+// 한 시간이 지난 것은 읽을 때마다 버리므로 쌓이지 않는다(교사 지시 2026-09-09: 5초짜리는 무의미하다).
+var tmUndo = (function(){
+  var K = 'tm.undo', MS = 3600000, MAX = 50;
+  function get(){
+    try {
+      var a = JSON.parse(localStorage.getItem(K) || '[]');
+      return a.filter(function(u){ return u && Date.now() - u.ts < MS; });
+    } catch (x) { return []; }
+  }
+  function set(a){ try { localStorage.setItem(K, JSON.stringify(a.slice(-MAX))); } catch (x) {} }
+  return { get: get, set: set, MS: MS };
 })();
 var tmSync = null;    // SYNC 블록이 { write: fn } 를 넣는다
 var tmHooks = {};     // STORE 가 SYNC 에게 건네는 것 — fromRemote · clearCache
 var store = (function(){
   var KEY = 'tm', SNAP = 'tm.snap', SNAP_TTL = 24 * 3600 * 1000, data = null, subs = [];
-  function fresh(){ return { meta: { schema: 1, reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin', exam: null }, tasks: {}, log: {} }; }
+  function fresh(){ return { meta: { schema: 1, reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin' }, tasks: {}, log: {} }; }
   function merge(d){   // 저장본을 기본값 위에 얹는다. meta 는 칸별로 — 통째로 덮으면 빠진 칸이 사라진다.
     var f = fresh(), r = d || {};
     return { meta: Object.assign(f.meta, r.meta || {}), tasks: r.tasks || {}, log: r.log || {} };
@@ -709,8 +687,6 @@ var STATUS_KO = { todo: '대기', doing: '진행', done: '완료', dropped: '버
 var PRI_KO = ['', '높음', '보통', '낮음'];
 var PRI_TAG = ['', 'red', 'yellow', 'gray'];
 var FIELD_KO = { title: '제목', status: '상태', area: '영역', priority: '중요도', due: '마감', memo: '메모', ref: 'ref', icon: '아이콘' };
-var GROUP_KO = { overdue: '지남', today: '오늘', doing: '진행 중', week: '이번 주', nodueHigh: '날짜 없음 · 높음' };
-var WDK = ['일', '월', '화', '수', '목', '금', '토'];
 var STAT_GROUPS = [['todo', '대기'], ['doing', '진행'], ['done', '완료'], ['dropped', '버림']];
 var EMOJI = ('📋 📌 🗂️ 📁 📄 📝 ✏️ 🖊️ 📊 📈 📉 🧾 📑 🗒️ 📅 🗓️ ⏰ ⏳ ⌛ 🔔 🚨 ⚠️ ❗ ❓ ✅ ☑️ 🔥 ⭐ 💡 🎯 🏁 🚀 ' +
   '🏫 🎓 📚 📖 🧑‍🏫 👩‍🎓 🧒 👥 🗣️ 🤝 💬 📣 📢 🎤 🎫 🎪 🎉 🎂 🍰 ☕ 🍱 🧃 ' +
@@ -756,8 +732,26 @@ function commit(map, msg){
   var d = store.load(), inv = {};
   Object.keys(map).forEach(function(p){ var v = getAt(d, p); inv[p] = v === undefined ? null : JSON.parse(JSON.stringify(v)); });
   store.update(map);
-  if (msg !== false) toast(msg || '저장됨', function(){ store.update(inv); });
+  undoPush(inv, typeof msg === 'string' ? msg : '');
+  if (msg !== false) toast(msg || '저장됨');
 }
+/* ── 되돌리기 — 한 시간 안이면 언제든(교사 지시 2026-09-09: 5초짜리는 무의미하다).
+      되돌릴 거리는 이 기기에만 둔다. 한 시간이 지난 것은 읽을 때마다 버리므로 쌓이지 않는다. ── */
+function undoLoad(){ return tmUndo.get(); }
+function undoSave(a){ tmUndo.set(a); }
+function undoPush(inv, msg){
+  if (!inv || !Object.keys(inv).length) return;
+  var a = undoLoad(); a.push({ ts: Date.now(), msg: msg || '', inv: inv }); undoSave(a); paintUndo();
+}
+function paintUndo(){ $('undo-btn').hidden = !undoLoad().length; }
+function undoLast(){
+  var a = undoLoad(), u = a.pop();
+  undoSave(a); paintUndo();
+  if (!u) return;
+  store.update(u.inv); render();
+  toast('되돌렸다' + (u.msg ? ' — ' + u.msg : ''));
+}
+$('undo-btn').addEventListener('click', undoLast);
 function logEntry(map, id, field, from, to, ts){
   map['log/' + pushKey(ts)] = { task: id, field: field, from: from === undefined ? null : from, to: to === undefined ? null : to, by: 'me', via: 'app', ts: ts };
 }
@@ -823,7 +817,7 @@ function cycleStatus(id){
 }
 
 /* ── 화면 상태 ── */
-var ui = { view: 'today', areaFilter: null, open: null, emoFor: null, cal: null,
+var ui = { view: 'all', areaFilter: null, open: null, emoFor: null,
            fold: { done: true, dropped: true } };
 
 /* ── 조각 ── */
@@ -832,10 +826,23 @@ function statTag(t){
   var g = t.status === 'done' ? '✓' : t.status === 'dropped' ? '×' : '';
   return '<span class="stat s-' + t.status + '"><span class="dot s-' + t.status + '"><i>' + g + '</i></span>' + STATUS_KO[t.status] + '</span>';
 }
+function ymdOf(ts){ var x = new Date(ts); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); }
+// 완료한 것에는 디데이를 붙이지 않는다 — 마감일 옆에 「완료 M월 D일」을 둔다(교사 지시 2026-09-09)
+function doneKo(t){ return t.doneAt ? '완료 ' + dueKo(ymdOf(t.doneAt)) : ''; }
+function sortDone(items){
+  return items.sort(function(a, b){ return (b.doneAt || b.updatedAt || 0) - (a.doneAt || a.updatedAt || 0); });
+}
 function dueCell(t, today){
+  if (t.status === 'done') return (t.due ? '<span class="dn">' + dueKo(t.due) + '</span>' : '') +
+    (t.doneAt ? '<span class="dn ok">' + doneKo(t) + '</span>' : '');
   if (!t.due) return '';
   var n = Math.round((dParse(t.due) - dParse(today)) / DAY);
   return '<span class="dn' + (n < 0 ? ' over' : n === 0 ? ' now' : '') + '">' + dueKo(t.due) + '</span>';
+}
+function metaDue(t, today){
+  if (t.status === 'done') return t.doneAt ? '<span class="dn ok">' + doneKo(t) + '</span>' : '<span class="ph">–</span>';
+  if (!t.due) return '<span class="ph">–</span>';
+  return '<span class="dn' + (dParse(t.due) < dParse(today) ? ' over' : t.due === today ? ' now' : '') + '">' + dLabel(t.due, today) + '</span>';
 }
 function ckCells(t){
   return ckList(t).slice(0, 3).map(function(c){ return tag('green' + (c.done ? ' done' : ''), (c.done ? '✓ ' : '') + c.text); }).join('') +
@@ -850,15 +857,17 @@ function rowHtml(t, today){
       '<button class="dot" data-act="cycle" aria-label="상태"><i>' + glyph + '</i></button>' +
       '<span class="emo">' + esc(t.icon || '') + '</span>' +
       '<span class="ttl">' + esc(t.title) + '</span>' +
-      '<span class="meta">' + (t.due ? '<span class="dn' + (dParse(t.due) < dParse(today) ? ' over' : t.due === today ? ' now' : '') + '">' + dLabel(t.due, today) + '</span>' : '') +
-        (c.y ? '<span>☑' + c.x + '/' + c.y + '</span>' : '') +
-        '<span class="id">' + short(t.id) + '</span></span>' +
+      '<span class="meta">' +
+        '<span class="m-area" data-edit="area">' + tag(AREA_TAG[t.area], AREA_KO[t.area]) + '</span>' +
+        '<span class="m-pri" data-edit="priority">' + (t.priority !== 2 ? tag(PRI_TAG[t.priority], PRI_KO[t.priority]) : '<span class="ph">–</span>') + '</span>' +
+        '<span class="m-due" data-edit="due">' + metaDue(t, today) + '</span>' +
+        '<span class="m-ck' + (c.y ? ' has' : '') + '" data-edit="checks">☑' + (c.y ? c.x + '/' + c.y : '') + '</span></span>' +
     '</span>' +
-    '<span class="c-stat">' + statTag(t) + '</span>' +
-    '<span class="c-due">' + dueCell(t, today) + '</span>' +
-    '<span class="c-area">' + tag(AREA_TAG[t.area], AREA_KO[t.area]) + '</span>' +
-    '<span class="c-pri">' + (t.priority !== 2 ? tag(PRI_TAG[t.priority], PRI_KO[t.priority]) : '') + '</span>' +
-    '<span class="c-ck">' + ckCells(t) + '</span></li>';
+    '<span class="c-stat" data-edit="status">' + statTag(t) + '</span>' +
+    '<span class="c-due" data-edit="due">' + dueCell(t, today) + '</span>' +
+    '<span class="c-area" data-edit="area">' + tag(AREA_TAG[t.area], AREA_KO[t.area]) + '</span>' +
+    '<span class="c-pri" data-edit="priority">' + (t.priority !== 2 ? tag(PRI_TAG[t.priority], PRI_KO[t.priority]) : '') + '</span>' +
+    '<span class="c-ck" data-edit="checks">' + ckCells(t) + '</span></li>';
 }
 var THEAD = '<div class="thead"><span>Aa 업무</span><span>☼ 상태</span><span>📅 마감일</span>' +
             '<span>◉ 영역</span><span>◉ 중요도</span><span>≔ 체크포인트</span></div>';
@@ -870,6 +879,8 @@ function ghHtml(label, n, key, closed){
 
 /* ── 그리기 ── */
 function render(){
+  closeMenu();
+  paintUndo();
   var d = store.load(), today = todayStr();
   var q = $('in').value;
   var pr = q.trim() ? parse(q, curArea(), today, d.tasks) : null;
@@ -884,29 +895,13 @@ function render(){
   $('reqbtn').classList.toggle('on', !!d.meta.reviewReq);
 
   var m = $('main');
-  if (ui.view === 'today') m.innerHTML = viewToday(d, today, match, filt);
-  else if (ui.view === 'all') m.innerHTML = viewTable(d, today, match);
+  if (ui.view === 'all') m.innerHTML = viewTable(d, today, match);
   else if (ui.view === 'board') m.innerHTML = viewBoard(d, today, match);
-  else if (ui.view === 'cal') m.innerHTML = viewCal(d, today);
   else m.innerHTML = '';
 
   renderPreview(pr);
   if (ui.open) renderSheet();
   placeToast();
-}
-function viewToday(d, today, match, filt){
-  var html = THEAD, placed = {};
-  groupToday(d.tasks, today).forEach(function(g){
-    g.items.forEach(function(t){ placed[t.id] = 1; });
-    var items = g.items.filter(match); if (!items.length) return;
-    html += ghHtml(GROUP_KO[g.key], items.length) + items.map(function(t){ return rowHtml(t, today); }).join('');
-  });
-  if (filt) {   // 걸러 보는 중엔 오늘 묶음 밖의 열린 항목도 찾는다(중복 방지)
-    var rest = sortAll(d.tasks).filter(function(t){ return isOpen(t) && !placed[t.id] && match(t); });
-    if (rest.length) html += ghHtml('그 밖', rest.length) + rest.map(function(t){ return rowHtml(t, today); }).join('');
-  }
-  if (html === THEAD) html += '<li class="empty">' + (filt ? '찾는 것이 없다' : '오늘 볼 것이 없다') + '</li>';
-  return '<ul id="list">' + html + '</ul>';
 }
 function areaChips(){
   return '<div class="chips" id="areachips">' + Object.keys(AREA_KO).map(function(a){
@@ -918,6 +913,7 @@ function viewTable(d, today, match){
   var html = THEAD;
   STAT_GROUPS.forEach(function(g){
     var items = all.filter(function(t){ return t.status === g[0]; });
+    if (g[0] === 'done') sortDone(items);
     if (!items.length) return;
     var closed = !!ui.fold[g[0]];
     html += ghHtml(g[1], items.length, g[0], closed);
@@ -930,6 +926,7 @@ function viewBoard(d, today, match){
   var all = sortAll(d.tasks).filter(function(t){ return t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
   var cols = STAT_GROUPS.map(function(g){
     var items = all.filter(function(t){ return t.status === g[0]; });
+    if (g[0] === 'done') sortDone(items);
     return '<div class="bcol"><div class="bhead">' +
       '<span class="stat s-' + g[0] + '"><span class="dot s-' + g[0] + '"><i></i></span>' + g[1] + '</span>' +
       '<span class="cnt">' + items.length + '</span></div>' +
@@ -944,37 +941,7 @@ function viewBoard(d, today, match){
   }).join('');
   return areaChips() + '<div class="board">' + cols + '</div>';
 }
-function viewCal(d, today){
-  var cur = ui.cal || today.slice(0, 7);
-  var y = +cur.slice(0, 4), mo = +cur.slice(5, 7);
-  var first = y + '-' + pad2(mo) + '-01';
-  var start = addDays(first, -dow(first));
-  var byDay = {};
-  taskList(d.tasks).forEach(function(t){
-    if (!t.due || t.ok === false) return;
-    (byDay[t.due] = byDay[t.due] || []).push(t);
-  });
-  var cells = '';
-  for (var i = 0; i < 42; i++) {
-    var ymd = addDays(start, i), inMon = ymd.slice(0, 7) === cur;
-    var evs = (byDay[ymd] || []).sort(cmpTask);
-    cells += '<div class="day' + (inMon ? '' : ' out') + (ymd === today ? ' is-today' : '') + '" data-day="' + ymd + '">' +
-      '<div class="num">' + (+ymd.slice(8)) + '</div>' +
-      evs.slice(0, 3).map(function(t){
-        return '<button class="ev a-' + t.area + ' s-' + t.status + '" data-id="' + t.id + '" data-act="open">' +
-          esc((t.icon ? t.icon + ' ' : '') + t.title) + '</button>';
-      }).join('') +
-      (evs.length > 3 ? '<div class="more">+' + (evs.length - 3) + '</div>' : '') + '</div>';
-  }
-  return '<div class="cal"><div class="calbar">' +
-    '<span class="mon">' + y + '년 ' + mo + '월</span>' +
-    '<button data-cal="prev" aria-label="이전 달">‹</button>' +
-    '<button class="today" data-cal="now">오늘</button>' +
-    '<button data-cal="next" aria-label="다음 달">›</button></div>' +
-    '<div class="dow">' + WDK.map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div>' +
-    '<div class="grid">' + cells + '</div></div>';
-}
-// 새 항목의 영역: 오늘·보드·캘린더 = 행정. 전체 탭 = 켜진 영역 칩, 없으면 마지막에 쓴 영역
+// 새 항목의 영역: 보드 = 행정. 전체 탭 = 켜진 영역 칩, 없으면 마지막에 쓴 영역
 function curArea(){ var d = store.load(); return ui.view === 'all' ? (ui.areaFilter || d.meta.lastArea || 'admin') : 'admin'; }
 function renderPreview(pr){
   var el = $('preview'); if (!pr) { el.innerHTML = ''; return; }
@@ -1002,25 +969,9 @@ function submit(){
   else createTask(pr);
   inp.value = ''; render(); inp.focus();
 }
-function insertToken(tok){
-  var inp = $('in'), v = inp.value.replace(/\s+$/, '');
-  if (tok === '!') { v = /(^|\s)!(?=\s|$)/.test(v) ? v.replace(/(^|\s)!(?=\s|$)/, '') : v + ' !'; }
-  else if (tok.charAt(0) === '#') { v = v.replace(/(^|\s)#(행정|행사|행|사|교과|교)(?=\s|$)/g, '') + ' ' + tok; }
-  else { v = v.replace(/(^|\s)@(오늘|내일|모레|이번주|다음주|담주[월화수목금토일]|[월화수목금토일]|없음|\+\d+|[\d\/.\-]+)(?=\s|$)/g, '') + ' ' + tok; }
-  inp.value = v.replace(/^\s+/, '') + ' ';
-  render(); inp.focus();
-}
-function chipFade(){ var w = $('tokwrap'), c = $('tokchips'); w.classList.toggle('more', c.scrollLeft + c.clientWidth < c.scrollWidth - 2); }
 $('in').addEventListener('input', render);
 $('in').addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); submit(); } });
 $('go').addEventListener('click', submit);
-$('tokchips').addEventListener('click', function(e){
-  var b = e.target.closest('[data-tok]'); if (!b) return;
-  if (b.dataset.tok === 'pick') { var p = $('pick'); p.value = ''; if (p.showPicker) { try { p.showPicker(); return; } catch (x) {} } p.click(); return; }
-  insertToken(b.dataset.tok);
-});
-$('tokchips').addEventListener('scroll', chipFade);
-$('pick').addEventListener('change', function(){ if (this.value) insertToken('@' + this.value); });   // 연도까지 그대로
 
 /* ── 보기 바꾸기 · 본문 누르기 ── */
 function goView(v){
@@ -1035,16 +986,16 @@ $('reqbtn').addEventListener('click', function(){
   var d = store.load(); store.update({ 'meta/reviewReq': !d.meta.reviewReq }); render();
 });
 $('main').addEventListener('click', function(e){
-  var cal = e.target.closest('[data-cal]');
-  if (cal) {
-    var cur = ui.cal || todayStr().slice(0, 7);
-    if (cal.dataset.cal === 'now') ui.cal = null;
-    else {
-      var y = +cur.slice(0, 4), mo = +cur.slice(5, 7) + (cal.dataset.cal === 'next' ? 1 : -1);
-      if (mo < 1) { mo = 12; y--; } if (mo > 12) { mo = 1; y++; }
-      ui.cal = y + '-' + pad2(mo);
+  var ed = e.target.closest('[data-edit]');
+  if (ed && isPC() && ed.closest('.main')) ed = null;   // PC 는 표의 제 칸에서 고친다 — 제목 칸 meta 는 보기 전용
+  if (ed) {
+    var eh = ed.closest('[data-id]');
+    if (eh) {
+      if (ed.dataset.edit === 'due') editDue(ed, eh.dataset.id);
+      else if (ed.dataset.edit === 'checks') editChecks(ed, eh.dataset.id);
+      else openMenu(ed, eh.dataset.id, ed.dataset.edit);
+      return;
     }
-    render(); return;
   }
   var area = e.target.closest('[data-area]');
   if (area) { ui.areaFilter = ui.areaFilter === area.dataset.area ? null : area.dataset.area; render(); return; }
@@ -1056,17 +1007,75 @@ $('main').addEventListener('click', function(e){
   else if (act === 'open') { ui.open = holder.dataset.id; renderSheet(); }
 });
 
-/* ── 상세 시트 ── */
-function nextMondayAfter(ymd){ return addDays(ymd, ((1 - dow(ymd) + 7) % 7) || 7); }
-function pushDates(today, exam){
-  var tmr = addDays(today, 1), fri = nextDow(today, 5), friL = '이번 주 금';
-  if (fri <= tmr) { fri = addDays(fri, 7); friL = '다음 주 금'; }   // 목·금엔 「이번 주 금」이 내일·오늘이라 다음 주 금으로
-  var p = [['내일', tmr], [friL, fri], ['다음 주 월', nextMonday(today)]];
-  if (exam && exam.end) p.push(['시험 뒤', nextMondayAfter(exam.end)]);
-  p.sort(function(a, b){ return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0; });
-  var seen = {};
-  return p.filter(function(x){ if (seen[x[1]]) return false; seen[x[1]] = 1; return true; });   // 같은 날짜는 하나만
+/* ── 표에서 바로 고치기 (교사 지시 2026-09-09 — 시트를 열지 않고 칸에서 끝낸다) ── */
+var EDIT_OPTS = {
+  status: [['todo', '대기'], ['doing', '진행'], ['done', '완료'], ['dropped', '버림']],
+  area: [['admin', '행정'], ['event', '행사'], ['class', '교과']],
+  priority: [[1, '높음'], [2, '보통'], [3, '낮음']]
+};
+function optTag(f, v){
+  if (f === 'status') return '<span class="stat s-' + v + '"><span class="dot s-' + v + '"><i></i></span>' + STATUS_KO[v] + '</span>';
+  if (f === 'area') return tag(AREA_TAG[v], AREA_KO[v]);
+  return tag(PRI_TAG[v], PRI_KO[v]);
 }
+function closeMenu(){ var m = $('menu'); if (!m.hidden) { m.hidden = true; m.innerHTML = ''; } }
+function openMenu(cell, id, field){
+  var t = store.load().tasks[id]; if (!t || !EDIT_OPTS[field]) return;
+  var m = $('menu');
+  m.innerHTML = EDIT_OPTS[field].map(function(o){
+    return '<button data-v="' + o[0] + '"' + (String(t[field]) === String(o[0]) ? ' class="on"' : '') + '>' +
+      optTag(field, o[0]) + '</button>';
+  }).join('');
+  m.dataset.id = id; m.dataset.field = field; m.hidden = false;
+  var r = cell.getBoundingClientRect(), top = r.bottom + 4;
+  if (top + m.offsetHeight > innerHeight - 8) top = Math.max(8, r.top - m.offsetHeight - 4);
+  m.style.top = top + 'px';
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+}
+$('menu').addEventListener('click', function(e){
+  var b = e.target.closest('[data-v]'); if (!b) return;
+  var m = $('menu'), id = m.dataset.id, f = m.dataset.field;
+  var v = f === 'priority' ? +b.dataset.v : b.dataset.v;
+  closeMenu();
+  var patch = {}; patch[f] = v;
+  editTask(id, patch, kvLabel(f, v) + ' ' + short(id));
+});
+function kvLabel(f, v){
+  if (f === 'status') return STATUS_KO[v] || v;
+  if (f === 'area') return AREA_KO[v] || v;
+  if (f === 'priority') return PRI_KO[v] || v;
+  return String(v);
+}
+function editDue(cell, id){
+  var t = store.load().tasks[id]; if (!t) return;
+  cell.innerHTML = '<input type="date" class="cell-in" value="' + (t.due || '') + '">';
+  var inp = cell.firstChild, done = false;
+  inp.addEventListener('change', function(){
+    done = true;
+    editTask(id, { due: inp.value || null }, (inp.value ? dueKo(inp.value) : '마감 없음') + ' ' + short(id));
+  });
+  inp.addEventListener('blur', function(){ if (!done) render(); });
+  inp.focus();
+  if (inp.showPicker) { try { inp.showPicker(); } catch (x) {} }
+}
+function editChecks(cell, id){
+  cell.innerHTML = '<input type="text" class="cell-in" placeholder="＋ 체크">';
+  var inp = cell.firstChild;
+  inp.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { render(); return; }
+    if (e.key !== 'Enter' || e.isComposing) return;
+    var v = inp.value.trim();
+    if (!v) { render(); return; }
+    var map = {}; addChecks(id, [v], map, Date.now()); commit(map, false); render();
+  });
+  inp.addEventListener('blur', function(){ render(); });
+  inp.focus();
+}
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#menu') && !e.target.closest('[data-edit]')) closeMenu();
+});
+
+/* ── 상세 시트 ── */
 function logLine(t, l){
   var f = l.field, m = /^checks\/([^/]+)(?:\/(\w+))?$/.exec(f);
   if (m) {
@@ -1103,8 +1112,6 @@ function renderSheet(){
       return '<button data-set="priority" data-v="' + p + '" class="p-' + p + (t.priority === p ? ' on' : '') + '">' + PRI_KO[p] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">마감일</div><div class="duerow"><input type="date" id="sh-due" value="' + (t.due || '') + '">' +
       (t.due ? '<span class="dn">' + dLabel(t.due, today) + '</span>' : '') + '</div>' +
-      '<div class="push">' + pushDates(today, d.meta.exam).map(function(p){
-        return '<button data-set="due" data-v="' + p[1] + '">' + p[0] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">체크포인트</div>' + ckList(t).map(function(c){
       return '<div class="ck' + (c.done ? ' done' : '') + '"><button class="tg green" data-ck="' + c.id + '">' + (c.done ? '✓' : '☐') + '</button>' +
         '<span>' + esc(c.text) + '</span><button class="rm" data-ckrm="' + c.id + '" aria-label="빼기">✕</button></div>'; }).join('') +
@@ -1177,12 +1184,10 @@ $('emopick').addEventListener('click', function(e){
 
 /* ── 설정 ── */
 function openSettings(){
-  var d = store.load(), ex = d.meta.exam || {};
   $('settings').innerHTML = '<div class="modal-body"><h2>설정<button data-act="close" aria-label="닫기">✕</button></h2><div class="stack">' +
     '<button class="wide" data-act="json">JSON 복사</button><button class="wide" data-act="md">MD 복사</button>' +
     '<div class="lbl">화면</div><div class="seg">' + Object.keys(THEME_KO).map(function(k){
       return '<button data-theme="' + k + '"' + (tmTheme.get() === k ? ' class="on"' : '') + '>' + THEME_KO[k] + '</button>'; }).join('') + '</div>' +
-    '<div class="lbl">시험 기간</div><div class="exam"><input type="date" id="ex-s" value="' + (ex.start || '') + '"> ~ <input type="date" id="ex-e" value="' + (ex.end || '') + '"></div>' +
     (sync.state.uid ? '<div class="lbl">계정</div><div class="acct">' + esc(sync.state.email || '') + '</div>' +
       '<button class="wide" data-act="logout">로그아웃</button>' : '') +
     '</div><div class="stamp">' + esc(BUILD) + (sync.state.at ? ' · 동기화 ' + sync.fmtT(sync.state.at) : '') + '</div></div>';
@@ -1191,18 +1196,15 @@ function openSettings(){
 $('gear').addEventListener('click', openSettings);
 $('settings').addEventListener('click', function(e){
   if (e.target === $('settings')) { $('settings').hidden = true; return; }
-  var th = e.target.closest('[data-theme]');
+  // ★button 을 반드시 붙인다 — <html data-theme="dark"> 가 있어서 앵커가 없으면
+  //   닫기 ✕ 까지 이 갈래로 새어 창이 안 닫혔다(2026-09-09 교사 신고, 브라우저에서 재현)
+  var th = e.target.closest('button[data-theme]');
   if (th) { tmTheme.set(th.dataset.theme); applyTheme(th.dataset.theme); openSettings(); return; }
   var b = e.target.closest('[data-act]'); if (!b) return;
   if (b.dataset.act === 'close') $('settings').hidden = true;
   else if (b.dataset.act === 'json') copyText(JSON.stringify(store.load(), null, 2));
   else if (b.dataset.act === 'md') copyText(toMarkdown(store.load()));
   else if (b.dataset.act === 'logout') sync.signOut();
-});
-$('settings').addEventListener('change', function(e){
-  if (e.target.id !== 'ex-s' && e.target.id !== 'ex-e') return;
-  store.update({ 'meta/exam': { start: $('ex-s').value || null, end: $('ex-e').value || null } });
-  render();
 });
 function toMarkdown(d){
   var rows = sortAll(d.tasks).filter(isListed);
@@ -1224,14 +1226,13 @@ function placeToast(){
   if (isPC() || $('inbar').hidden) { el.style.bottom = ''; return; }
   el.style.bottom = (($('inbar').offsetHeight || 0) + (document.querySelector('nav').offsetHeight || 0) + 16) + 'px';
 }
-function toast(msg, undo){
+function toast(msg){
   var el = $('toast');
-  el.innerHTML = '<span>' + esc(msg) + '</span>' + (undo ? '<button id="undo">되돌리기</button>' : '<span style="width:6px"></span>');
+  el.innerHTML = '<span>' + esc(msg) + '</span><span style="width:6px"></span>';
   el.hidden = false;
   placeToast();
-  if (undo) $('undo').addEventListener('click', function(){ undo(); el.hidden = true; render(); });
   clearTimeout(undoTimer);
-  undoTimer = setTimeout(function(){ el.hidden = true; }, undo ? 5000 : 1500);   // 되돌리기 5초
+  undoTimer = setTimeout(function(){ el.hidden = true; }, 1500);
 }
 
 applyTheme(tmTheme.get());
@@ -1239,10 +1240,9 @@ if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme:dark)'
   matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function(){ applyTheme(tmTheme.get()); });
 }
 store.subscribe(function(){ render(); });
-window.addEventListener('resize', chipFade);
 
 /* 로그인 뒤에 그린다. firebaseConfig 가 없으면(M1 판) 예전처럼 바로 연다. */
-function open_(){ $('login').hidden = true; render(); chipFade(); sync.paint(); $('in').focus(); }
+function open_(){ $('login').hidden = true; render(); sync.paint(); $('in').focus(); }
 function askLogin(msg){
   $('login').hidden = false; $('lg-msg').textContent = msg || '';
   $('main').innerHTML = ''; $('sub').textContent = ''; $('review').hidden = true;

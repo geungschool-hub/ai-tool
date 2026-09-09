@@ -31,7 +31,7 @@
         }
       },
       "log": {
-        "$id": { ".write": "auth != null && !data.exists() && (auth.uid === 'xmj4YNqWfLfLXTQJRDUjbmYKG6l1' || (auth.uid === 'ts8VlEyKrtM4kA939VmdKkClUzl2' && newData.child('by').val() === 'claude' && newData.child('via').val() === 'bot'))" }
+        "$id": { ".write": "auth != null && (auth.uid === 'xmj4YNqWfLfLXTQJRDUjbmYKG6l1' || (auth.uid === 'ts8VlEyKrtM4kA939VmdKkClUzl2' && !data.exists() && newData.child('by').val() === 'claude' && newData.child('via').val() === 'bot'))" }
       },
       "reviews": {
         "$id": { ".write": "auth != null && (auth.uid === 'xmj4YNqWfLfLXTQJRDUjbmYKG6l1' || (auth.uid === 'ts8VlEyKrtM4kA939VmdKkClUzl2' && !data.exists()))" }

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>브로콜리 DNA 추출 실험 기록지 — 생물의 유전 1-4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC;
+  --blue-dark:#1255A0;   --green-dark:#2A7A38;
+  --red-accent:#C0392B;  --amber:#E67E22;
+  --text-main:#1A1A1A;   --text-light:#555;
+  --line:#BBBBBB;        --white:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;font-size:10pt;color:var(--text-main);
+     background:#d0d0d0;display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px;}
+.page{width:210mm;height:297mm;background:var(--white);box-shadow:0 2px 14px rgba(0,0,0,.18);
+      display:flex;flex-direction:column;padding:8mm 12mm 7mm 12mm;overflow:hidden;}
+
+.page-header{display:flex;justify-content:space-between;align-items:flex-end;
+             padding-bottom:5px;border-bottom:2.5px solid var(--blue-dark);margin-bottom:8px;flex-shrink:0;}
+.header-left{min-width:0;}
+.header-left .subject{font-size:13pt;font-weight:700;color:var(--blue-dark);}
+.header-left .breadcrumb{font-size:7.5pt;color:var(--text-light);margin-top:2px;
+                         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-right{display:flex;gap:14px;flex-shrink:0;white-space:nowrap;}
+.input-field{font-size:9pt;display:flex;align-items:center;gap:5px;}
+.input-field .uline{display:inline-block;width:74px;height:15px;border-bottom:1.5px solid var(--text-main);}
+.input-field .uline.sm{width:40px;}
+
+.page-footer{display:flex;justify-content:center;align-items:center;padding-top:5px;
+             border-top:1px solid var(--line);flex-shrink:0;margin-top:auto;}
+.page-badge{background:var(--blue-pastel);color:var(--blue-dark);font-size:8.5pt;
+            font-weight:700;padding:2px 14px;border-radius:12px;}
+
+.page-content{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:5px;}
+.section{display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+
+.section-title{font-size:11pt;font-weight:700;padding:4px 10px;border-radius:4px;
+               border-left:4px solid var(--blue-dark);background:var(--blue-pastel);color:var(--text-main);}
+.section-title.green{border-left-color:var(--green-dark);background:var(--green-pastel);}
+.section-title.amber{border-left-color:var(--amber);background:#FDE9C9;}
+.section-title.red  {border-left-color:var(--red-accent);background:#FDDEDE;}
+.section-title .sub {font-size:8.5pt;font-weight:400;color:var(--text-light);margin-left:8px;}
+
+.b{display:inline-block;min-width:72px;height:16px;border-bottom:1.8px solid var(--text-main);
+   vertical-align:bottom;margin:0 2px;}
+.b.sm{min-width:50px;}
+
+.info-box{border:1px solid var(--line);border-radius:4px;padding:7px 12px;
+          font-size:9.5pt;line-height:1.9;background:#FAFAFA;}
+.key-box{border:2px solid var(--blue-dark);border-radius:4px;padding:6px 11px;
+         font-size:9.5pt;line-height:1.9;background:var(--blue-pastel);}
+.key-box.amber{border-color:var(--amber);background:#FDE9C9;}
+
+.data-table{width:100%;border-collapse:collapse;font-size:9pt;}
+.data-table th{background:var(--blue-pastel);font-weight:700;padding:4px 6px;
+               border:1px solid var(--line);text-align:center;}
+.data-table th.g{background:var(--green-pastel);}
+.data-table th.y{background:#FDE9C9;}
+.data-table td{padding:4px 6px;border:1px solid var(--line);text-align:center;
+               vertical-align:middle;line-height:1.5;}
+.data-table td.hi{background:#EAF6EE;font-weight:700;}
+.data-table td.tall{height:29px;}
+.data-table td.big{height:40px;}
+
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.scale .lv{border:1.5px solid var(--line);border-radius:5px;padding:5px 4px;text-align:center;background:#FAFAFA;}
+.scale .lv .n{display:inline-block;width:19px;height:19px;line-height:19px;border-radius:50%;
+              background:var(--green-dark);color:#fff;font-size:9pt;font-weight:700;}
+.scale .lv .t{font-size:8.5pt;line-height:1.45;margin-top:3px;color:var(--text-main);}
+
+.wr{padding:4px 2px 0;}
+.wr div{border-bottom:1px solid #A9A9A9;height:6.8mm;}
+
+.q{font-size:9.5pt;line-height:1.6;}
+.q .num{font-weight:700;color:var(--blue-dark);margin-right:4px;}
+.q.green .num{color:var(--green-dark);}
+.q.amber .num{color:var(--amber);}
+.q.red .num{color:var(--red-accent);}
+
+.choice{display:inline-block;border:1.5px solid var(--text-main);border-radius:3px;
+        padding:1px 12px;margin:0 4px;font-size:9pt;}
+.gradebox{letter-spacing:14px;border:1px solid var(--line);padding:2px 10px;border-radius:4px;font-weight:700;}
+
+.grid2{display:grid;grid-template-columns:1.02fr 1fr;gap:10px;align-items:start;}
+.layerrow{display:grid;grid-template-columns:1fr 250px;gap:10px;align-items:center;}
+
+@media print{
+  body{background:none;padding:0;gap:0;}
+  .page{box-shadow:none;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page:last-child{page-break-after:avoid;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ PAGE 1 ══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="subject">생물의 유전</div>
+      <div class="breadcrumb">Ⅰ-04 유전물질과 유전체의 구성 › 브로콜리에서 DNA 추출하여 관찰하기 (교과서 40쪽)</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">모둠<span class="uline sm"></span></div>
+      <div class="input-field">학번<span class="uline"></span></div>
+      <div class="input-field">이름<span class="uline"></span></div>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="section">
+      <div class="section-title">① 모둠 조건 <span class="sub">모둠마다 얹는 에탄올의 농도와 온도가 다르다. 나머지 과정은 모두 같다.</span></div>
+      <table class="data-table">
+        <tr>
+          <th class="g" style="width:27%">얹은 에탄올의 농도</th>
+          <th class="y" style="width:31%">에탄올의 온도</th>
+          <th style="width:21%">추출액의 부피</th>
+          <th style="width:21%">얹은 에탄올의 부피</th>
+        </tr>
+        <tr>
+          <td class="tall hi"><span class="b sm"></span> %</td>
+          <td class="tall"><span class="choice">차가움</span><span class="choice">미지근함</span></td>
+          <td class="tall">20 mL</td>
+          <td class="tall">40 mL</td>
+        </tr>
+      </table>
+      <div class="layerrow">
+        <div class="info-box" style="line-height:1.75">
+          에탄올은 추출액보다 가벼워 <b>섞이지 않고 위에 층을 이룬다.</b>
+          DNA는 물에는 녹지만 에탄올에는 녹지 않으므로,
+          <b>두 층이 맞닿는 경계에서 녹아 있지 못하고 실 모양으로 엉겨 나온다.</b><br>
+          <b style="color:var(--red-accent)">관찰하는 자리는 경계면이다. 절대 젓지 않는다.</b>
+        </div>
+        <svg viewBox="0 0 250 118" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+          <rect x="21" y="11" width="78" height="42" fill="#EAF3FB"/>
+          <rect x="21" y="53" width="78" height="55" fill="#E4F2E7"/>
+          <path d="M20,8 L20,109 L100,109 L100,8" fill="none" stroke="#1255A0" stroke-width="2.2" stroke-linejoin="round"/>
+          <line x1="21" y1="53" x2="99" y2="53" stroke="#C0392B" stroke-width="1.6" stroke-dasharray="4,3"/>
+          <g stroke="#8A8A8A" stroke-width="1.4" fill="none">
+            <path d="M30,52 q5,-5 10,0 q5,5 10,0"/>
+            <path d="M55,55 q5,-5 10,0 q5,5 9,0"/>
+            <path d="M38,57 q4,-4 8,0"/>
+          </g>
+          <g font-size="9" font-family="'Noto Sans KR',sans-serif" fill="#1A1A1A" text-anchor="middle">
+            <text x="60" y="35">에탄올</text>
+            <text x="60" y="85">추출액</text>
+          </g>
+          <line x1="99" y1="53" x2="132" y2="42" stroke="#C0392B" stroke-width="1.4"/>
+          <circle cx="99" cy="53" r="2.8" fill="#C0392B"/>
+          <g font-size="9" font-family="'Noto Sans KR',sans-serif" fill="#C0392B">
+            <text x="136" y="40" font-weight="700">경계면</text>
+            <text x="136" y="54" fill="#555">여기에서 실 모양</text>
+            <text x="136" y="67" fill="#555">물질이 생긴다</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title amber">② 실험 전 예측 <span class="sub">에탄올을 얹기 전에 작성하시오.</span></div>
+      <div class="q amber"><span class="num">1</span> 이 모둠의 조건에서 경계면에 감아올릴 수 있는 실 모양 물질이 생기겠는가?
+        <span class="choice">생긴다</span> <span class="choice">생기지 않는다</span></div>
+      <div class="q amber"><span class="num">2</span> 그렇게 예측한 까닭을 쓰시오.</div>
+      <div class="wr"><div></div><div></div><div></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title green">③ 관찰 <span class="sub">에탄올을 얹고 젓지 않은 채 2분 이상 기다린 뒤, 경계면을 보고 판정하시오.</span></div>
+      <div class="scale">
+        <div class="lv"><span class="n">0</span><div class="t">경계면에<br>변화가 없다</div></div>
+        <div class="lv"><span class="n">1</span><div class="t">경계면이<br>뿌옇게 흐려진다</div></div>
+        <div class="lv"><span class="n">2</span><div class="t">경계면에 작은<br>알갱이가 생긴다</div></div>
+        <div class="lv"><span class="n">3</span><div class="t">경계면에 실 모양<br>물질이 생긴다</div></div>
+        <div class="lv"><span class="n">4</span><div class="t">나무젓가락에<br>감아올려진다</div></div>
+      </div>
+      <div class="q green"><span class="num">1</span> 해당하는 등급에 ○표 하시오. &nbsp;<span class="gradebox">0 1 2 3 4</span></div>
+      <div class="q green"><span class="num">2</span> 경계면에 생긴 물질의 색과 형태를 서술하시오. 아무것도 생기지 않았다면 그렇게 쓰시오.</div>
+      <div class="wr"><div></div><div></div><div></div><div></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">④ 반 전체 결과 <span class="sub">여섯 모둠의 관찰 등급을 표에 옮겨 적고, 오른쪽 격자에 찬 것은 ●, 미지근한 것은 ○ 로 찍어 각각 선으로 이으시오.</span></div>
+      <div class="grid2">
+        <table class="data-table">
+          <tr>
+            <th style="width:34%">에탄올의 온도</th>
+            <th class="g" style="width:22%">95 %</th>
+            <th class="g" style="width:22%">75 %</th>
+            <th class="g" style="width:22%">55 %</th>
+          </tr>
+          <tr><td class="big hi">차가움 (냉장)</td><td class="big"></td><td class="big"></td><td class="big"></td></tr>
+          <tr><td class="big hi">미지근함 (실온)</td><td class="big"></td><td class="big"></td><td class="big"></td></tr>
+        </table>
+        <svg viewBox="0 0 300 196" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+          <g stroke="#CFCFCF" stroke-width="1">
+            <line x1="46" y1="24"  x2="288" y2="24"/>
+            <line x1="46" y1="59"  x2="288" y2="59"/>
+            <line x1="46" y1="94"  x2="288" y2="94"/>
+            <line x1="46" y1="129" x2="288" y2="129"/>
+            <line x1="167" y1="24" x2="167" y2="164"/>
+            <line x1="288" y1="24" x2="288" y2="164"/>
+          </g>
+          <line x1="46" y1="164" x2="288" y2="164" stroke="#1255A0" stroke-width="1.8"/>
+          <line x1="46" y1="24"  x2="46"  y2="164" stroke="#1255A0" stroke-width="1.8"/>
+          <g font-size="9" fill="#1A1A1A" text-anchor="end" font-family="'Noto Sans KR',sans-serif">
+            <text x="41" y="167">0</text><text x="41" y="132">1</text><text x="41" y="97">2</text>
+            <text x="41" y="62">3</text><text x="41" y="27">4</text>
+          </g>
+          <g font-size="8.5" fill="#1A1A1A" text-anchor="middle" font-family="'Noto Sans KR',sans-serif">
+            <text x="46" y="178">55</text><text x="167" y="178">75</text><text x="288" y="178">95</text>
+          </g>
+          <text x="288" y="192" font-size="8.5" fill="#555" text-anchor="end" font-family="'Noto Sans KR',sans-serif">얹은 에탄올의 농도 (%)</text>
+          <text x="14" y="96" font-size="8.5" fill="#555" text-anchor="middle" transform="rotate(-90 14 96)" font-family="'Noto Sans KR',sans-serif">관찰 등급</text>
+          <g font-size="8" font-family="'Noto Sans KR',sans-serif">
+            <circle cx="66" cy="16" r="3.4" fill="#1A1A1A"/>
+            <text x="73" y="19" fill="#555">차가움</text>
+            <circle cx="122" cy="16" r="3.4" fill="none" stroke="#1A1A1A" stroke-width="1.4"/>
+            <text x="129" y="19" fill="#555">미지근함</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="page-footer"><div class="page-badge">1-4 DNA 추출 실험 기록지 · 1 / 2</div></div>
+</div>
+
+<!-- ══════════════ PAGE 2 ══════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="subject">생물의 유전</div>
+      <div class="breadcrumb">Ⅰ-04 유전물질과 유전체의 구성 › 브로콜리에서 DNA 추출하여 관찰하기 (교과서 40쪽)</div>
+    </div>
+    <div class="header-right">
+      <div class="input-field">모둠<span class="uline sm"></span></div>
+      <div class="input-field">학번<span class="uline"></span></div>
+      <div class="input-field">이름<span class="uline"></span></div>
+    </div>
+  </div>
+
+  <div class="page-content">
+
+    <div class="section">
+      <div class="section-title green">⑤ 정리하기 <span class="sub">교과서 40쪽</span></div>
+      <div class="q green"><span class="num">1</span> 소금 – 세제액에 세제를 넣는 까닭은 무엇인지 설명하시오.</div>
+      <div class="wr"><div></div><div></div></div>
+      <div class="q green"><span class="num">2</span> 브로콜리 추출액에 에탄올을 얹었을 때 생기는 물질의 색과 형태를 서술하시오.</div>
+      <div class="wr"><div></div><div></div></div>
+      <div class="q green"><span class="num">3</span> 감아올린 물질이 DNA인지 확인하려면 어떤 실험을 수행해야 하는지 서술하시오.</div>
+      <div class="wr"><div></div><div></div><div></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title amber">⑥ 결과 해석 <span class="sub">1쪽 ④의 반 전체 결과를 근거로 답하시오.</span></div>
+      <div class="q amber"><span class="num">1</span> 실 모양 물질이 나타나기 시작하는 에탄올 농도는 어느 값과 어느 값 사이인가? 그렇게 판단한 근거를 함께 쓰시오.</div>
+      <div class="wr"><div></div><div></div><div></div></div>
+      <div class="q amber"><span class="num">2</span> 물질이 생기는 자리가 액체 속이 아니라 <b>두 층의 경계</b>인 까닭을 설명하시오.</div>
+      <div class="wr"><div></div><div></div></div>
+      <div class="q amber"><span class="num">3</span> 같은 농도에서 차가운 에탄올과 미지근한 에탄올의 결과를 견주시오. 차이가 있었다면 교과서가 <b>차가운 에탄올</b>을 쓰라고 한 까닭과 연결하여 설명하시오.</div>
+      <div class="wr"><div></div><div></div><div></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title red">⑦ 더 생각하기</div>
+      <div class="q red"><span class="num">1</span> 실험 전 예측(1쪽 ②)과 실제 결과가 어긋난 지점이 있었다면 무엇이며, 그 까닭을 어떻게 설명하겠는가? 어긋나지 않았다면 예측의 근거가 결과로 확인된 지점을 쓰시오.</div>
+      <div class="wr"><div></div><div></div><div></div></div>
+      <div class="q red"><span class="num">2</span> 여섯 모둠의 결과를 하나의 실험 결과로 묶어 읽으려면, 농도와 온도 말고는 모든 모둠이 똑같이 유지했어야 한다. 그런 조건을 두 가지 이상 쓰고, 그중 실제로는 지켜지지 않았다고 생각되는 것이 있다면 함께 쓰시오.</div>
+      <div class="wr"><div></div><div></div><div></div></div>
+    </div>
+
+  </div>
+
+  <div class="page-footer"><div class="page-badge">1-4 DNA 추출 실험 기록지 · 2 / 2</div></div>
+</div>
+
+</body>
+</html>

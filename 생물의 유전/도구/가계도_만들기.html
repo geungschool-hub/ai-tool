@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>가계도 만들기</title>
+<style>
+:root{
+  --blue:#1F4E79; --blue-l:#2E6DA4; --red:#C00000; --line:#d6d6d6;
+  --ok:#0a7d28; --warn:#B36B00; --bg:#f4f5f7;
+}
+*{ box-sizing:border-box; }
+body{ font-family:"맑은 고딕","Malgun Gothic",sans-serif; margin:0; color:#1a1a1a;
+      background:var(--bg); line-height:1.5; font-size:15px; }
+
+header{ background:var(--blue); color:#fff; padding:11px 18px; position:sticky; top:0; z-index:50;
+        box-shadow:0 2px 6px rgba(0,0,0,.15); }
+header h1{ font-size:18px; margin:0; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+header h1 .sub{ font-size:12px; font-weight:normal; color:#cfe0f0; }
+header h1 .saved{ font-size:11.5px; font-weight:normal; color:#bfe0c4; margin-left:auto; }
+.toolbar{ margin-top:9px; display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+.toolbar button{ font-family:inherit; font-size:14px; border:0; border-radius:6px; padding:9px 13px;
+      min-height:40px; cursor:pointer; background:#fff; color:var(--blue); font-weight:bold; }
+.toolbar button.warn{ background:#ffd9d9; color:#a00; }
+.toolbar button:hover{ opacity:.85; }
+.toolbar .sep{ width:1px; height:26px; background:rgba(255,255,255,.35); margin:0 3px; }
+
+.wrap{ max-width:1280px; margin:16px auto; padding:0 14px; display:flex; gap:14px; align-items:flex-start; }
+.pane-l{ flex:1 1 auto; min-width:0; position:sticky; top:118px; }
+.pane-r{ flex:0 0 440px; min-width:0; }
+@media (max-width:1180px){
+  .wrap{ display:block; }
+  .pane-l{ position:static; }
+  .pane-r{ width:auto; }
+}
+
+.sec{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:0 0 12px;
+      box-shadow:0 1px 2px rgba(0,0,0,.04); }
+.sec h2{ color:var(--blue); font-size:15.5px; margin:0 0 9px; display:flex; align-items:center; gap:8px;
+      flex-wrap:wrap; }
+.sec h2 .mini{ font-size:12px; color:#666; font-weight:normal; }
+
+/* 미리보기 */
+#stagebox{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px;
+      box-shadow:0 1px 2px rgba(0,0,0,.04); }
+#stage{ width:100%; overflow-x:auto; }
+#stage svg{ display:block; margin:0 auto; max-width:100%; height:auto; touch-action:none; }
+.stagefoot{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:8px;
+      font-size:12.5px; color:#555; }
+.chip{ display:inline-block; padding:3px 8px; border-radius:11px; font-size:12px; }
+.chip.w{ background:#FFF3D6; color:#8a5a00; border:1px solid #EBC97F; }
+.chip.g{ background:#E7F5EA; color:#1a6b2c; border:1px solid #A8D9B4; }
+.chip.r{ background:#FDE7E7; color:#a00; border:1px solid #E7A9A9; }
+
+/* 단추·입력 */
+button.b{ font-family:inherit; font-size:14px; min-height:40px; padding:8px 12px; border-radius:7px;
+      border:1px solid #c3ccd6; background:#fff; color:#22303c; cursor:pointer; font-weight:bold; }
+button.b:hover{ background:#eef3f8; }
+button.b.p{ background:var(--blue); border-color:var(--blue); color:#fff; }
+button.b.d{ background:#fff0f0; border-color:#e4b3b3; color:#a00; }
+button.b:disabled{ opacity:.45; cursor:default; }
+button.b.sm{ min-height:34px; padding:5px 9px; font-size:13px; }
+.row{ display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin:6px 0; }
+.row .lab{ font-size:13px; color:#555; min-width:66px; }
+/* 한 줄에 라벨+입력이 둘 이상일 때 뒤엣것 — 앞 입력과 떼고 자기 입력에 붙인다.
+   min-width 를 그대로 두면 라벨이 자기 입력에서 멀어져 왼쪽 것과 한 묶음처럼 보인다. */
+.row .lab.mid{ min-width:0; margin-left:18px; }
+input[type=text], input[type=number], select{ font-family:inherit; font-size:15px; padding:6px 8px;
+      border:1px solid #c3ccd6; border-radius:6px; background:#fff; min-height:36px; }
+input[type=number]{ width:78px; }
+label.ck{ display:inline-flex; align-items:center; gap:5px; font-size:14px; cursor:pointer;
+      padding:5px 9px; border:1px solid #c3ccd6; border-radius:7px; background:#fff; min-height:38px; }
+label.ck input{ width:18px; height:18px; }
+label.ck.on{ background:#E8F0F8; border-color:var(--blue-l); color:var(--blue); font-weight:bold; }
+.hint{ font-size:12.5px; color:#666; margin:5px 0 0; }
+.none{ font-size:13.5px; color:#777; padding:6px 2px; }
+
+/* 무늬 팔레트 */
+.pal{ display:flex; gap:3px; flex-wrap:wrap; justify-content:center; }
+.pal button{ width:32px; height:32px; border:2px solid #c3ccd6; border-radius:6px; background:#fff;
+      cursor:pointer; padding:0; }
+.pal button.on{ border-color:var(--blue); box-shadow:0 0 0 2px #cfe0f2; }
+.pal button svg{ display:block; width:100%; height:100%; pointer-events:none; }
+table.io{ border-collapse:collapse; width:100%; font-size:13.5px; }
+table.io th, table.io td{ border:1px solid var(--line); padding:5px 6px; text-align:center;
+      vertical-align:middle; }
+table.io th{ background:#eef1f5; color:#333; font-size:12.5px; }
+.tblscroll{ overflow-x:auto; }
+
+/* 판정 */
+.tabs{ display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+.tabs button{ font-family:inherit; font-size:14px; min-height:38px; padding:6px 13px; border-radius:7px;
+      border:1px solid #c3ccd6; background:#fff; cursor:pointer; font-weight:bold; color:#445; }
+.tabs button.on{ background:var(--blue); border-color:var(--blue); color:#fff; }
+.hyp{ border:1px solid var(--line); border-radius:8px; padding:7px 10px; margin:5px 0; font-size:13.5px; }
+.hyp.yes{ background:#F1F8F2; border-color:#A8D9B4; }
+.hyp.no{ background:#FAFAFA; color:#666; }
+.hyp .h{ font-weight:bold; }
+.hyp.yes .h{ color:var(--ok); }
+.hyp.no .h{ color:#999; }
+.hyp .why{ font-size:12.5px; color:#666; margin-top:2px; }
+.verdict{ font-size:14.5px; font-weight:bold; padding:8px 10px; border-radius:8px; margin:8px 0; }
+.verdict.one{ background:#E7F5EA; color:#14612a; border:1px solid #A8D9B4; }
+.verdict.many{ background:#FFF3D6; color:#8a5a00; border:1px solid #EBC97F; }
+.verdict.bad{ background:#FDE7E7; color:#a00; border:1px solid #E7A9A9; }
+
+#toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#222; color:#fff;
+      padding:11px 18px; border-radius:9px; font-size:14px; z-index:200; max-width:88vw; }
+textarea.out{ width:100%; font-family:Consolas,"D2Coding",monospace; font-size:12px; height:120px;
+      border:1px solid #c3ccd6; border-radius:6px; padding:7px; }
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌳 가계도 만들기 <span class="sub">시험 문항용 · 흑백 무늬</span>
+      <span class="saved" id="savedTag"></span></h1>
+  <div class="toolbar">
+    <button id="btnPngCopy">📋 PNG 복사</button>
+    <button id="btnPngDown">⬇ PNG 내려받기</button>
+    <button id="btnQuiz">퀴즈 데이터</button>
+    <span class="sep"></span>
+    <button id="btnJsonOut">JSON 저장</button>
+    <button id="btnJsonIn">불러오기</button>
+    <span class="sep"></span>
+    <button id="btnSample">예시 불러오기</button>
+    <button id="btnClear" class="warn">전체 지우기</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="pane-l">
+    <div id="stagebox">
+      <div id="stage"></div>
+      <div class="stagefoot" id="stagefoot"></div>
+    </div>
+  </div>
+
+  <div class="pane-r">
+    <div class="sec" id="secSel">
+      <h2>선택한 사람 <span class="mini">가계도에서 도형을 누르면 선택됩니다</span></h2>
+      <div id="selBody"></div>
+    </div>
+
+    <div class="sec">
+      <h2>형질과 무늬</h2>
+      <div id="traitBody"></div>
+    </div>
+
+    <div class="sec">
+      <h2>그림 설정</h2>
+      <div id="viewBody"></div>
+    </div>
+
+    <div class="sec">
+      <h2>판정 도우미 <span class="mini">그린 가계도를 프로그램이 직접 풉니다</span></h2>
+      <div id="anaBody"></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileIn" accept="application/json" style="display:none">
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   §0  상수
+   ────────────────────────────────────────────────────────── */
+var LS_KEY = 'pedigree_maker_v1';
+
+/* 기하 — 출처: 생물의 유전/중간고사/_중간고사_원안_v2.html 262~300행·375~406행 실측
+   1 unit = 0.22 mm (viewBox 300 ↔ width 66mm) */
+var U_PER_MM   = 300 / 66;   // 4.545 units/mm
+var STROKE     = 1.8;
+var BUS_UP     = 22;         // 형제 가로선은 자녀 행보다 22 위
+var NUM_DY     = 19;         // 번호를 도형 아래 둘 때 기준선 = cy + 19
+var NUM_CLEAR  = 8;          // 번호 아래쪽과 형제 가로선 사이 최소 여유
+var NUM_DESC   = 3;          // 글자 내림폭
+var PAD_TOP    = 22, PAD_BOTTOM = 14, PAD_SIDE = 14;
+var ROMAN_W    = 26;         // 세대 로마숫자 자리
+/* 범례 크기는 도형에 견주어 정한다 — 도형을 키우면 범례도 같이 커져야 한다.
+   비율은 교사 예시 이미지 실측(2026-09-10): 견본 25px / 도형 36px = 0.70 ·
+   줄 간격 33/25 = 1.32 · 글자 왼쪽 여백 10/25 = 0.40 · 글자 ≈ 도형의 0.46 */
+var LEG_R_SW = 0.70, LEG_R_FS = 0.46, LEG_R_PITCH = 1.32, LEG_R_TEXT = 0.40, LEG_R_GAP = 1.10;
+var FS_NUM     = 9.5, FS_ROMAN = 10, FS_SIDE = 8.6;
+var FONT       = 'Batang, 바탕, serif';
+var PAT_BASE   = 20;         // 무늬 타일을 짜 둔 기준 도형 크기
+var GAP_MIN    = 8;          // 같은 세대 두 도형 사이 최소 빈틈
+
+/* ★번호를 도형 아래 두면 ROW 가 이만큼은 되어야 형제 가로선을 안 밟는다.
+   중간고사 6번이 ROW=42 로 되어 있는 것은 번호를 도형 '안'에 넣었기 때문이다. */
+var ROW_MIN_BELOW = NUM_DY + NUM_DESC + NUM_CLEAR + BUS_UP;   // = 52
+
+/* 무늬 — 조합 비트마스크(가=1 나=2 다=4)가 그대로 무늬 번호가 된다.
+   ★3번이 '회색 채움'이어야 (가)+(나) = 회색 이라는 평가원 양식과 맞는다. */
+var PATTERNS = [
+  { k:'none',   n:'없음(흰색)' },
+  { k:'hatch',  n:'／ 빗금' },
+  { k:'grid',   n:'⊞ 격자' },
+  { k:'gray',   n:'회색 채움' },
+  { k:'dots',   n:'⋯ 점무늬' },
+  { k:'bhatch', n:'＼ 역빗금' },
+  { k:'hline',  n:'═ 가로줄' },
+  { k:'black',  n:'■ 검정 채움' }
+];
+var SOLID = { none:'#FFFFFF', gray:'#D3D3D3', black:'#000000' };
+
+var ROMAN = ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ'];
+
+/* 네 가정 */
+var HYPS = [
+  { k:'AD', name:'상염색체 우성', locus:'A', dom:true  },
+  { k:'AR', name:'상염색체 열성', locus:'A', dom:false },
+  { k:'XD', name:'X염색체 우성',  locus:'X', dom:true  },
+  { k:'XR', name:'X염색체 열성',  locus:'X', dom:false }
+];
+
+var PRESETS = {
+  example: { symbol:20, col:36, spouse:46, row:52, numberPos:'below',  roman:false },
+  exam:    { symbol:20, col:70, spouse:70, row:44, numberPos:'inside', roman:true  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   §1  상태
+   ────────────────────────────────────────────────────────── */
+function freshState(){
+  return {
+    seq: 1,
+    nextId: 1,
+    people: [],
+    unions: [],
+    traitCount: 2,
+    traitNames: ['(가)','(나)','(다)'],
+    fillOverride: {},                 /* {마스크: 무늬번호} — 기본 규칙과 다를 때만 */
+    legend: { show:true, pos:'right', texts:{} },
+    view: {
+      symbol:20, col:36, spouse:46, row:52,
+      numberPos:'below', roman:false, pngScale:3, legendScale:1
+    }
+  };
+}
+
+function normalizeState(o){
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  var f = freshState();
+  var s = {
+    seq: (typeof o.seq === 'number' && o.seq > 0) ? o.seq : 1,
+    nextId: (typeof o.nextId === 'number' && o.nextId > 0) ? o.nextId : 1,
+    people: [], unions: [],
+    traitCount: (o.traitCount === 1 || o.traitCount === 2 || o.traitCount === 3) ? o.traitCount : 2,
+    traitNames: f.traitNames.slice(),
+    fillOverride: {},
+    legend: { show:true, pos:'right', texts:{} },
+    view: {}
+  };
+  if (Array.isArray(o.traitNames)) for (var i=0;i<3;i++)
+    if (typeof o.traitNames[i] === 'string' && o.traitNames[i]) s.traitNames[i] = o.traitNames[i];
+
+  var seen = {};
+  (Array.isArray(o.people) ? o.people : []).forEach(function(p){
+    if (!p || typeof p !== 'object') return;
+    var id = String(p.id || '');
+    if (!id || seen[id]) return;
+    seen[id] = 1;
+    var tr = [false,false,false];
+    if (Array.isArray(p.traits)) for (var i=0;i<3;i++) tr[i] = !!p.traits[i];
+    s.people.push({
+      id: id,
+      sex: (p.sex === 'F') ? 'F' : 'M',
+      traits: tr,
+      label: (typeof p.label === 'string' && p.label !== '') ? p.label : null,
+      inText: typeof p.inText === 'string' ? p.inText : '',
+      sidePos: ['top','bottom','left','right'].indexOf(p.sidePos) >= 0 ? p.sidePos : 'top',
+      sideText: typeof p.sideText === 'string' ? p.sideText : '',
+      dead: !!p.dead,
+      dx: (typeof p.dx === 'number' && isFinite(p.dx)) ? p.dx : 0
+    });
+  });
+  var pset = {}; s.people.forEach(function(p){ pset[p.id] = 1; });
+
+  (Array.isArray(o.unions) ? o.unions : []).forEach(function(u){
+    if (!u || typeof u !== 'object') return;
+    var a = String(u.a || ''), b = String(u.b || '');
+    if (!pset[a] || !pset[b] || a === b) return;
+    var kids = (Array.isArray(u.children) ? u.children : [])
+      .map(String).filter(function(c){ return pset[c] && c !== a && c !== b; });
+    s.unions.push({ id: String(u.id || ('u'+s.unions.length)), a:a, b:b,
+                    children: kids, consang: !!u.consang });
+  });
+  /* 한 사람이 두 부모쌍을 갖는 일은 없다 — 뒤에 나온 것을 버린다 */
+  var hasParent = {};
+  s.unions.forEach(function(u){
+    u.children = u.children.filter(function(c){
+      if (hasParent[c]) return false;
+      hasParent[c] = 1; return true;
+    });
+  });
+
+  if (o.fillOverride && typeof o.fillOverride === 'object')
+    for (var k in o.fillOverride){
+      var v = o.fillOverride[k];
+      if (typeof v === 'number' && v >= 0 && v < PATTERNS.length) s.fillOverride[k] = v;
+    }
+  if (o.legend && typeof o.legend === 'object'){
+    s.legend.show = o.legend.show !== false;
+    s.legend.pos  = (o.legend.pos === 'bottom' || o.legend.pos === 'none') ? o.legend.pos : 'right';
+    if (o.legend.texts && typeof o.legend.texts === 'object')
+      for (var t in o.legend.texts)
+        if (typeof o.legend.texts[t] === 'string') s.legend.texts[t] = o.legend.texts[t];
+  }
+  var v = (o.view && typeof o.view === 'object') ? o.view : {};
+  s.view = {
+    symbol: num(v.symbol, f.view.symbol, 8, 60),
+    col:    num(v.col,    f.view.col,    16, 200),
+    spouse: num(v.spouse, f.view.spouse, 16, 200),
+    row:    num(v.row,    f.view.row,    20, 200),
+    numberPos: (v.numberPos === 'inside' || v.numberPos === 'none') ? v.numberPos : 'below',
+    roman: !!v.roman,
+    pngScale: num(v.pngScale, 3, 1, 8),
+    legendScale: num(v.legendScale, 1, 0.5, 2.5)
+  };
+  return s;
+}
+function num(x, dflt, lo, hi){
+  var n = Number(x);
+  if (!isFinite(n)) return dflt;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+function saveState(st){
+  try {
+    var prev = null;
+    try { prev = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){}
+    /* 두 탭이 서로를 지우지 않게 — 저장소의 seq 가 더 크면 덮지 않는다 */
+    if (prev && typeof prev.seq === 'number' && prev.seq > st.seq) return false;
+    st.seq++;
+    localStorage.setItem(LS_KEY, JSON.stringify(st));
+    return true;
+  } catch(e){ return false; }
+}
+function loadState(){
+  try { return normalizeState(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); }
+  catch(e){ return null; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   §2  모델 — 관계를 매번 새로 유도한다(두 벌로 두지 않는다)
+   ────────────────────────────────────────────────────────── */
+function index(st){
+  var byId = {}, parentUnion = {}, spouseUnions = {}, unionById = {};
+  st.people.forEach(function(p){ byId[p.id] = p; spouseUnions[p.id] = []; });
+  st.unions.forEach(function(u){
+    unionById[u.id] = u;
+    if (spouseUnions[u.a]) spouseUnions[u.a].push(u.id);
+    if (spouseUnions[u.b]) spouseUnions[u.b].push(u.id);
+    u.children.forEach(function(c){ parentUnion[c] = u.id; });
+  });
+  var gen = computeGens(st, parentUnion, unionById);
+  return { byId:byId, parentUnion:parentUnion, spouseUnions:spouseUnions,
+           unionById:unionById, gen:gen.gen, genOk:gen.ok };
+}
+
+function computeGens(st, parentUnion, unionById){
+  var gen = {};
+  st.people.forEach(function(p){ gen[p.id] = 0; });
+  var guard = st.people.length * 4 + 8, changed = true;
+  while (changed && guard-- > 0){
+    changed = false;
+    st.unions.forEach(function(u){
+      var g = Math.max(gen[u.a], gen[u.b]);
+      if (gen[u.a] !== g){ gen[u.a] = g; changed = true; }
+      if (gen[u.b] !== g){ gen[u.b] = g; changed = true; }
+      u.children.forEach(function(c){
+        if (gen[c] < g + 1){ gen[c] = g + 1; changed = true; }
+      });
+    });
+  }
+  return { gen: gen, ok: !changed };   /* ok=false → 순환(자기 조상과 결혼 등) */
+}
+
+function fatherMotherOf(st, ix, id){
+  var uid = ix.parentUnion[id];
+  if (!uid) return null;
+  var u = ix.unionById[uid];
+  var A = ix.byId[u.a], B = ix.byId[u.b];
+  return { father: (A.sex === 'M' ? A : B), mother: (A.sex === 'F' ? A : B), union: u };
+}
+
+/* ══════════════════════════════════════════════════════════
+   §3  배치 — ① 세대마다 읽는 차례를 정하고 ② 「오른쪽으로만」 밀어서 맞춘다
+   ★오른쪽으로만 움직이므로 반드시 멈춘다. 그리고 이 방식이
+     교사가 준 예시 이미지 2번(집안을 잇는 결혼)을 좌표까지 그대로 재현한다 —
+     그 그림은 부부 6—7 의 간격을 형제 간격보다 넓혀서(124 대 82) 문제를 풀었는데,
+     아래 ②가 바로 그 해법을 스스로 찾아낸다.
+   ────────────────────────────────────────────────────────── */
+
+/* 배우자의 친가를 통째로 오른쪽에 데려오는 읽기 차례.
+   ★1단계 DFS 로 「집안이 늘어서는 차례」(seq)를 얻고,
+     2단계에서 세대마다 **부모의 차례를 따라** 줄을 다시 세운다.
+     DFS 차례를 그대로 쓰면 아랫세대가 윗세대와 뒤집히는 경우가 생기고,
+     그러면 「오른쪽으로만 밀기」가 서로를 영원히 쫓는다(실측: 폭이 5,000 을 넘겼다). */
+function walkOrder(st, ix){
+  var placed = {}, walkedU = {}, seq = [];
+  function push(id){
+    if (placed[id]) return;
+    placed[id] = 1;
+    seq.push(id);
+  }
+  function crossMarried(id){
+    if (!ix.parentUnion[id]) return false;
+    return (ix.spouseUnions[id] || []).some(function(uid){
+      var u = ix.unionById[uid];
+      return !!ix.parentUnion[(u.a === id) ? u.b : u.a];
+    });
+  }
+  function upChain(id){
+    var out = {}, cur = id, guard = 0;
+    while (guard++ < 60){
+      out[cur] = 1;
+      var pu = ix.parentUnion[cur];
+      if (!pu) return { set: out, top: cur };
+      cur = ix.unionById[pu].a;
+    }
+    return { set: out, top: cur };
+  }
+  function walk(p, prefer){
+    if (placed[p]) return;
+    push(p);
+    (ix.spouseUnions[p] || []).forEach(function(uid){
+      if (walkedU[uid]) return;
+      walkedU[uid] = 1;
+      var u = ix.unionById[uid];
+      var s = (u.a === p) ? u.b : u.a;
+      if (!placed[s]){
+        if (ix.parentUnion[s]){
+          var ch = upChain(s);
+          walk(ch.top, s);            /* 배우자의 집안을 통째로 — 배우자가 앞줄에 오도록 */
+        }
+        if (!placed[s]) push(s);
+      }
+      /* 형제 차례: 이어 줄 자녀를 끝으로 보낸다(부부선이 남을 안 지나게) */
+      var pset = prefer ? upChain(prefer).set : null;
+      var kids = u.children.slice().map(function(c, i){ return { c:c, i:i }; });
+      kids.sort(function(A, B){
+        var ka = (pset && pset[A.c]) ? -1 : (crossMarried(A.c) ? 1 : 0);
+        var kb = (pset && pset[B.c]) ? -1 : (crossMarried(B.c) ? 1 : 0);
+        return (ka - kb) || (A.i - B.i);
+      });
+      kids.forEach(function(k){ walk(k.c, prefer); });
+    });
+  }
+  var root = null, best = -1;
+  st.unions.forEach(function(u){
+    if (ix.parentUnion[u.a] || ix.parentUnion[u.b]) return;
+    if (u.children.length > best){ best = u.children.length; root = u.a; }
+  });
+  if (root) walk(root, null);
+  st.people.forEach(function(p){ if (!placed[p.id]) walk(p.id, null); });
+
+  /* ── 2단계: 세대마다 부모의 차례를 따라 줄을 다시 세운다 ── */
+  var seqIdx = {};
+  seq.forEach(function(id, i){ seqIdx[id] = i; });
+  var maxGen = 0;
+  st.people.forEach(function(p){ maxGen = Math.max(maxGen, ix.gen[p.id]); });
+
+  var order = {}, done = {};
+  order[0] = seq.filter(function(id){ return ix.gen[id] === 0; });
+  order[0].forEach(function(id){ done[id] = 1; });
+
+  for (var g = 1; g <= maxGen; g++){
+    var prev = order[g-1] || [];
+    var pidx = {};
+    prev.forEach(function(id, i){ pidx[id] = i; });
+
+    /* 이 세대의 자녀를 낳은 부부들을, 부모가 윗줄에서 놓인 차례대로 */
+    var us = st.unions.filter(function(u){
+      return ix.gen[u.a] === g-1 && u.children.some(function(c){ return ix.gen[c] === g && !done[c]; });
+    });
+    var rank = {};
+    us.forEach(function(u){
+      var ia = (u.a in pidx) ? pidx[u.a] : 1e6 + seqIdx[u.a];
+      var ib = (u.b in pidx) ? pidx[u.b] : 1e6 + seqIdx[u.b];
+      rank[u.id] = Math.min(ia, ib);
+    });
+    us.sort(function(A, B){ return rank[A.id] - rank[B.id]; });
+
+    var row = [];
+    function put(id){ if (!done[id]){ done[id] = 1; row.push(id); } }
+    us.forEach(function(u){
+      /* 잇는 결혼을 한 자녀는 상대 집안 쪽 끝으로 보낸다 */
+      var kids = u.children.filter(function(c){ return ix.gen[c] === g; })
+                           .map(function(c, i){ return { c:c, i:i }; });
+      kids.forEach(function(K){
+        K.s = 0;
+        (ix.spouseUnions[K.c] || []).some(function(vid){
+          var v = ix.unionById[vid];
+          var other = (v.a === K.c) ? v.b : v.a;
+          var opu = ix.parentUnion[other];
+          if (!opu || !(opu in rank)) return false;
+          K.s = (rank[opu] > rank[u.id]) ? 1 : -1;
+          return true;
+        });
+      });
+      kids.sort(function(A, B){ return (A.s - B.s) || (A.i - B.i); });
+      kids.forEach(function(K){
+        put(K.c);
+        /* 결혼해 들어온 배우자(부모가 없는 쪽)는 바로 옆에 붙인다 */
+        (ix.spouseUnions[K.c] || []).forEach(function(vid){
+          var v = ix.unionById[vid];
+          var other = (v.a === K.c) ? v.b : v.a;
+          if (!ix.parentUnion[other] && ix.gen[other] === g) put(other);
+        });
+      });
+    });
+    /* 남은 사람(어디에도 안 걸린 배우자·홀로 있는 사람)은 seq 차례대로 */
+    seq.forEach(function(id){
+      if (ix.gen[id] !== g || done[id]) return;
+      put(id);
+      (ix.spouseUnions[id] || []).forEach(function(vid){
+        var v = ix.unionById[vid];
+        var other = (v.a === id) ? v.b : v.a;
+        if (ix.gen[other] === g) put(other);
+      });
+    });
+    order[g] = row;
+  }
+  return order;
+}
+
+function layout(st){
+  var ix = index(st);
+  var V = st.view, COL = V.col, SP = V.spouse, R = V.symbol/2;
+  var MIN = V.symbol + GAP_MIN;
+  var warn = [];
+  var order = walkOrder(st, ix);
+
+  /* 부부는 부부 간격, 그 밖은 형제 간격 */
+  var spousePair = {};
+  st.unions.forEach(function(u){
+    spousePair[u.a + '|' + u.b] = 1;
+    spousePair[u.b + '|' + u.a] = 1;
+  });
+  function gapOf(a, b){
+    return Math.max(MIN, spousePair[a + '|' + b] ? SP : COL);
+  }
+
+  /* ① 읽는 차례대로 한 줄씩 늘어놓는다 */
+  var x = {};
+  Object.keys(order).forEach(function(g){
+    var row = order[g], cx = 0;
+    row.forEach(function(id, i){
+      if (i > 0) cx += gapOf(row[i-1], id);
+      x[id] = cx;
+    });
+  });
+
+  /* ② 오른쪽으로만 밀어 맞춘다 */
+  function separate(){
+    var moved = false;
+    Object.keys(order).forEach(function(g){
+      var row = order[g];
+      for (var i=1;i<row.length;i++){
+        var need = x[row[i-1]] + gapOf(row[i-1], row[i]);
+        if (x[row[i]] < need - 0.01){ x[row[i]] = need; moved = true; }
+      }
+    });
+    return moved;
+  }
+  var kidUnions = st.unions.filter(function(u){ return u.children.length > 0; });
+  for (var it=0; it<80; it++){
+    var moved = false;
+    kidUnions.forEach(function(u){
+      var mc = (x[u.a] + x[u.b]) / 2;
+      var cs = u.children.map(function(c){ return x[c]; });
+      var mk = (Math.min.apply(null, cs) + Math.max.apply(null, cs)) / 2;
+      var d = mk - mc;
+      if (d > 0.01){ x[u.a] += d; x[u.b] += d; moved = true; }          /* 부부를 자녀 중심으로 */
+      else if (d < -0.01){ u.children.forEach(function(c){ x[c] -= d; }); moved = true; }
+    });
+    if (separate()) moved = true;
+    if (!moved) break;
+    if (it === 79) warn.push('자동 배치가 안정되지 않았습니다 — 좌우 이동 단추로 놓아 주십시오.');
+  }
+
+  /* 교사가 손본 오프셋을 마지막에 얹는다 — 자동 배치를 이긴다 */
+  var pos = {}, maxGen = 0;
+  st.people.forEach(function(p){
+    var g = ix.gen[p.id];
+    if (g > maxGen) maxGen = g;
+    pos[p.id] = { x: (x[p.id] || 0) + (p.dx || 0), gen: g };
+  });
+
+  /* 왼쪽 끝을 0 으로 */
+  var minX = Infinity;
+  st.people.forEach(function(p){ minX = Math.min(minX, pos[p.id].x); });
+  if (!isFinite(minX)) minX = 0;
+  st.people.forEach(function(p){
+    pos[p.id].x -= minX;
+    pos[p.id].y = PAD_TOP + R + pos[p.id].gen * V.row;
+  });
+
+  if (!ix.genOk) warn.push('세대를 정할 수 없습니다 — 자기 조상과 이어진 곳이 있는지 확인하십시오.');
+  return { pos:pos, ix:ix, maxGen:maxGen, warn:warn, labels:autoLabels(st, pos) };
+}
+
+/* 번호 — 세대 → x 순으로 읽는 차례대로 (예시 이미지가 그렇게 매긴다) */
+function autoLabels(st, pos){
+  var order = st.people.slice().sort(function(a,b){
+    var ga = pos[a.id].gen, gb = pos[b.id].gen;
+    if (ga !== gb) return ga - gb;
+    if (pos[a.id].x !== pos[b.id].x) return pos[a.id].x - pos[b.id].x;
+    return a.id < b.id ? -1 : 1;
+  });
+  var lab = {}, n = 1;
+  order.forEach(function(p){ lab[p.id] = (p.label !== null) ? p.label : String(n); n++; });
+  return lab;
+}
+
+/* 겹침·선 가로지름 점검 — 손본 좌표에서도 돈다 */
+function checkLayout(st, lay){
+  var out = [], V = st.view, need = V.symbol + GAP_MIN;
+  var byGen = {};
+  st.people.forEach(function(p){
+    var g = lay.pos[p.id].gen;
+    (byGen[g] = byGen[g] || []).push(p);
+  });
+  Object.keys(byGen).forEach(function(g){
+    var row = byGen[g].slice().sort(function(a,b){ return lay.pos[a.id].x - lay.pos[b.id].x; });
+    for (var i=1;i<row.length;i++){
+      var d = lay.pos[row[i].id].x - lay.pos[row[i-1].id].x;
+      if (d < need - 0.01)
+        out.push(J(lay.labels[row[i-1].id],'과 ','와 ') + J(lay.labels[row[i].id],'이 ','가 ') + '너무 가깝습니다');
+    }
+  });
+  st.unions.forEach(function(u){
+    var xa = lay.pos[u.a].x, xb = lay.pos[u.b].x, g = lay.pos[u.a].gen;
+    var lo = Math.min(xa,xb), hi = Math.max(xa,xb);
+    (byGen[g] || []).forEach(function(p){
+      if (p.id === u.a || p.id === u.b) return;
+      if (lay.pos[p.id].x > lo + 0.01 && lay.pos[p.id].x < hi - 0.01)
+        out.push('부부선이 ' + lay.labels[p.id] + ' 위를 지납니다');
+    });
+    if (!u.children.length) return;
+    var cg = g + 1;
+    var cx = u.children.map(function(c){ return lay.pos[c].x; });
+    var clo = Math.min.apply(null,cx), chi = Math.max.apply(null,cx);
+    (byGen[cg] || []).forEach(function(p){
+      if (u.children.indexOf(p.id) >= 0) return;
+      /* 결혼해 들어온 사람은 위로 올라가는 선이 없으므로 가로선 아래를 지나도 오해가 없다.
+         부모가 있는 남이 그 안에 들어오면 그 사람의 내림선이 가로선과 얽힌다 — 그때만 짚는다. */
+      if (!lay.ix.parentUnion[p.id]) return;
+      if (lay.pos[p.id].x > clo + 0.01 && lay.pos[p.id].x < chi - 0.01)
+        out.push('형제 가로선이 ' + J(lay.labels[p.id], '과 ', '와 ') + '얽힙니다');
+    });
+  });
+  if (st.view.numberPos === 'below' && st.view.row < ROW_MIN_BELOW)
+    out.push('번호를 도형 아래 두려면 세대 간격이 ' + ROW_MIN_BELOW + ' 이상이어야 합니다');
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════
+   §4  무늬·범례
+   ────────────────────────────────────────────────────────── */
+function maskOf(st, p){
+  var m = 0;
+  for (var i=0;i<st.traitCount;i++) if (p.traits[i]) m |= (1 << i);
+  return m;
+}
+/* 기본 규칙: 마스크 = 무늬 번호. 형질이 하나뿐이면 발현을 검정으로(중간고사 양식). */
+function defaultFillIndex(st, mask){
+  if (st.traitCount === 1) return mask === 1 ? 7 : 0;
+  return mask;
+}
+function fillIndex(st, mask){
+  if (Object.prototype.hasOwnProperty.call(st.fillOverride, String(mask)))
+    return st.fillOverride[String(mask)];
+  return defaultFillIndex(st, mask);
+}
+function fillKeyOf(st, mask){ return PATTERNS[fillIndex(st, mask)].k; }
+
+function maskName(st, mask){
+  if (mask === 0) return '정상';
+  var ns = [];
+  for (var i=0;i<st.traitCount;i++) if (mask & (1<<i)) ns.push(st.traitNames[i]);
+  return ns.join(', ') + ' 발현';
+}
+function legendItems(st){
+  var used = {};
+  st.people.forEach(function(p){
+    used[maskOf(st,p) + '|' + p.sex] = 1;
+  });
+  var out = [];
+  var n = 1 << st.traitCount;
+  var order = [];
+  for (var m=0;m<n;m++) order.push(m);
+  order.sort(function(a,b){
+    var pa = popcount(a), pb = popcount(b);
+    if (pa !== pb) return pa - pb;
+    return a - b;
+  });
+  order.forEach(function(m){
+    ['M','F'].forEach(function(sx){
+      if (!used[m + '|' + sx]) return;
+      var key = m + '|' + sx;
+      var dflt = maskName(st, m) + ' ' + (sx === 'M' ? '남자' : '여자');
+      out.push({ key:key, mask:m, sex:sx, text: st.legend.texts[key] || dflt });
+    });
+  });
+  return out;
+}
+function popcount(x){ var c=0; while(x){ c += x&1; x >>= 1; } return c; }
+
+/* 범례 크기 — 도형 크기와 「범례 크기」 설정에서 나온다 */
+function legendGeom(st){
+  var sym = st.view.symbol, sc = st.view.legendScale || 1;
+  var sw = sym * LEG_R_SW * sc, fs = sym * LEG_R_FS * sc;
+  return { sw: sw, fs: fs,
+           pitch: Math.max(sw * LEG_R_PITCH, fs * 1.5),
+           tgap:  sw * LEG_R_TEXT,
+           gap:   sym * LEG_R_GAP };
+}
+
+/* ══════════════════════════════════════════════════════════
+   §5  그리기 — SVG 문자열 하나. PNG 는 이것을 래스터화한다.
+   ────────────────────────────────────────────────────────── */
+var renderSeq = 0;
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function textW(s, fs){
+  var w = 0;
+  for (var i=0;i<s.length;i++){
+    var c = s.charCodeAt(i);
+    w += (c > 0x2000) ? 1.0 : 0.55;      /* 한글·전각은 한 칸, 나머지는 0.55칸 */
+  }
+  return w * fs;
+}
+
+/* ★타일 크기는 도형 크기를 따라간다 — 작은 견본에는 작은 무늬가 들어가야 한다.
+   본문은 PAT_BASE(20units) 기준으로 짜 두고 `patternTransform="scale(u)"` 로 줄이고 늘린다.
+   scale 은 원점을 그대로 두므로 「타일 원점 = 도형 한가운데」가 유지된다. */
+function patternDefs(pfx, keys, u){
+  var tf = (u && Math.abs(u - 1) > 0.001) ? ' patternTransform="scale('+r2(u)+')"' : '';
+  var d = [];
+  keys.forEach(function(k){
+    var id = pfx + '-' + k;
+    if (k === 'hatch')
+      d.push('<pattern id="'+id+'" width="6" height="6" patternUnits="userSpaceOnUse"'+tf+'>' +
+             '<rect width="6" height="6" fill="#FFFFFF"/>' +
+             '<path d="M0,6 L6,0 M-1,1 L1,-1 M5,7 L7,5" stroke="#000000" stroke-width="1" fill="none"/></pattern>');
+    else if (k === 'bhatch')
+      d.push('<pattern id="'+id+'" width="6" height="6" patternUnits="userSpaceOnUse"'+tf+'>' +
+             '<rect width="6" height="6" fill="#FFFFFF"/>' +
+             '<path d="M0,0 L6,6 M-1,5 L1,7 M5,-1 L7,1" stroke="#000000" stroke-width="1" fill="none"/></pattern>');
+    else if (k === 'grid')
+      /* ★타일 가장자리 선은 절반이 잘린다 — 마주 보는 변에도 그어야 굵기가 온전해진다 */
+      d.push('<pattern id="'+id+'" width="6" height="6" patternUnits="userSpaceOnUse"'+tf+'>' +
+             '<rect width="6" height="6" fill="#FFFFFF"/>' +
+             '<path d="M0,0 L0,6 M6,0 L6,6 M0,0 L6,0 M0,6 L6,6" ' +
+             'stroke="#000000" stroke-width="1" fill="none"/></pattern>');
+    else if (k === 'hline')
+      d.push('<pattern id="'+id+'" width="6" height="5" patternUnits="userSpaceOnUse"'+tf+'>' +
+             '<rect width="6" height="5" fill="#FFFFFF"/>' +
+             '<path d="M0,0 L6,0 M0,5 L6,5" stroke="#000000" stroke-width="1.1" fill="none"/></pattern>');
+    else if (k === 'dots')
+      /* 점 하나가 타일 원점(=도형 한가운데)에 오도록 네 귀퉁이에 나눠 그린다 */
+      d.push('<pattern id="'+id+'" width="5" height="5" patternUnits="userSpaceOnUse"'+tf+'>' +
+             '<rect width="5" height="5" fill="#FFFFFF"/>' +
+             '<g fill="#000000"><circle cx="0" cy="0" r="1.15"/><circle cx="5" cy="0" r="1.15"/>' +
+             '<circle cx="0" cy="5" r="1.15"/><circle cx="5" cy="5" r="1.15"/></g></pattern>');
+  });
+  return d.length ? ('<defs>' + d.join('') + '</defs>') : '';
+}
+function fillAttr(pfx, key){
+  if (SOLID[key]) return SOLID[key];
+  return 'url(#' + pfx + '-' + key + ')';
+}
+
+/* ★도형은 언제나 원점에 그리고 <g> 로 옮긴다.
+   `patternUnits="userSpaceOnUse"` 는 **그 도형의 좌표계**를 기준으로 타일을 깔므로,
+   이렇게 해야 무늬가 도형 한가운데를 원점으로 삼는다.
+   그냥 절대좌표로 그리면 타일이 그림 전체 원점에서부터 깔려
+   도형마다 무늬 위상이 제각각이 된다(2026-09-10 교사 지적). */
+function shapeSVG(sex, cx, cy, R, fill, sw){
+  var s = (sex === 'M')
+    ? '<rect x="'+r2(-R)+'" y="'+r2(-R)+'" width="'+r2(R*2)+'" height="'+r2(R*2)+
+      '" fill="'+fill+'" stroke="#000000" stroke-width="'+(sw||STROKE)+'"/>'
+    : '<circle cx="0" cy="0" r="'+r2(R)+
+      '" fill="'+fill+'" stroke="#000000" stroke-width="'+(sw||STROKE)+'"/>';
+  return '<g transform="translate('+r2(cx)+','+r2(cy)+')">' + s + '</g>';
+}
+function r2(n){ return Math.round(n*100)/100; }
+function line(x1,y1,x2,y2){
+  return '<line x1="'+r2(x1)+'" y1="'+r2(y1)+'" x2="'+r2(x2)+'" y2="'+r2(y2)+
+         '" stroke="#000000" stroke-width="'+STROKE+'"/>';
+}
+
+function pedSVG(st, lay, opts){
+  opts = opts || {};
+  var pfx = 'pm' + (++renderSeq);          /* ★렌더마다 다른 id — pattern 은 첫 정의만 잡힌다 */
+  var V = st.view, R = V.symbol/2;
+  var pos = lay.pos, lab = lay.labels;
+  var body = [], usedB = {}, usedL = {};
+
+  /* 선 먼저(도형 아래로 깔린다) */
+  st.unions.forEach(function(u){
+    var a = pos[u.a], b = pos[u.b];
+    var lo = Math.min(a.x,b.x), hi = Math.max(a.x,b.x), y = a.y;
+    if (u.consang){
+      body.push(line(lo+R, y-2.5, hi-R, y-2.5));
+      body.push(line(lo+R, y+2.5, hi-R, y+2.5));
+    } else {
+      body.push(line(lo+R, y, hi-R, y));
+    }
+    if (!u.children.length) return;
+    var mid = (a.x + b.x)/2;
+    var cy0 = pos[u.children[0]].y;
+    if (u.children.length === 1){
+      var c0 = pos[u.children[0]];
+      body.push(line(mid, y, mid, c0.y - R));
+      if (Math.abs(c0.x - mid) > 0.5){          /* 자녀가 중점 아래가 아니면 꺾어 내린다 */
+        var by = cy0 - BUS_UP;
+        body.length--;
+        body.push(line(mid, y, mid, by));
+        body.push(line(mid, by, c0.x, by));
+        body.push(line(c0.x, by, c0.x, c0.y - R));
+      }
+      return;
+    }
+    var busY = cy0 - BUS_UP;
+    var xs = u.children.map(function(c){ return pos[c].x; });
+    body.push(line(mid, y, mid, busY));
+    body.push(line(Math.min.apply(null,xs), busY, Math.max.apply(null,xs), busY));
+    u.children.forEach(function(c){
+      body.push(line(pos[c].x, busY, pos[c].x, pos[c].y - R));
+    });
+  });
+
+  /* 사람 */
+  st.people.forEach(function(p){
+    var P = pos[p.id], m = maskOf(st,p), key = fillKeyOf(st,m);
+    usedB[key] = 1;
+    body.push(shapeSVG(p.sex, P.x, P.y, R, fillAttr(pfx, key)));
+    if (p.dead){
+      var d = R * 1.4;
+      body.push(line(P.x-d, P.y+d, P.x+d, P.y-d));
+    }
+    if (p.inText){
+      body.push('<text x="'+r2(P.x)+'" y="'+r2(P.y + FS_NUM*0.36)+'" text-anchor="middle" font-size="'+
+                FS_NUM+'" font-family="'+FONT+'" fill="'+(key==='black'?'#FFFFFF':'#000000')+
+                '">'+esc(p.inText)+'</text>');
+    }
+    if (V.numberPos === 'below'){
+      body.push('<text x="'+r2(P.x)+'" y="'+r2(P.y + NUM_DY)+'" text-anchor="middle" font-size="'+
+                FS_NUM+'" font-family="'+FONT+'" fill="#000000">'+esc(lab[p.id])+'</text>');
+    } else if (V.numberPos === 'inside' && !p.inText){
+      body.push('<text x="'+r2(P.x)+'" y="'+r2(P.y + FS_NUM*0.36)+'" text-anchor="middle" font-size="'+
+                FS_NUM+'" font-family="'+FONT+'" fill="'+(key==='black'?'#FFFFFF':'#000000')+
+                '">'+esc(lab[p.id])+'</text>');
+    }
+    if (p.sideText){
+      var tx = P.x, ty = P.y, anc = 'middle';
+      if (p.sidePos === 'top')    ty = P.y - R - 4;
+      if (p.sidePos === 'bottom') ty = P.y + R + FS_SIDE + (V.numberPos==='below' ? NUM_DY-R+2 : 4);
+      if (p.sidePos === 'left')  { tx = P.x - R - 3; ty = P.y + 3; anc = 'end'; }
+      if (p.sidePos === 'right') { tx = P.x + R + 3; ty = P.y + 3; anc = 'start'; }
+      body.push('<text x="'+r2(tx)+'" y="'+r2(ty)+'" text-anchor="'+anc+'" font-size="'+FS_SIDE+
+                '" font-family="'+FONT+'" fill="#000000">'+esc(p.sideText)+'</text>');
+    }
+  });
+
+  /* 내용 상자 */
+  var minX = Infinity, maxX = -Infinity;
+  st.people.forEach(function(p){
+    var P = pos[p.id];
+    var l = P.x - R, r = P.x + R;
+    if (p.sideText){
+      var w = textW(p.sideText, FS_SIDE);
+      if (p.sidePos === 'left')  l = Math.min(l, P.x - R - 3 - w);
+      if (p.sidePos === 'right') r = Math.max(r, P.x + R + 3 + w);
+      if (p.sidePos === 'top' || p.sidePos === 'bottom'){
+        l = Math.min(l, P.x - w/2); r = Math.max(r, P.x + w/2);
+      }
+    }
+    minX = Math.min(minX, l); maxX = Math.max(maxX, r);
+  });
+  if (!isFinite(minX)){ minX = 0; maxX = 40; }
+
+  var left = PAD_SIDE + (V.roman ? ROMAN_W : 0);
+  var ox = left - minX;
+  var contentW = (maxX - minX);
+  var bodyH = PAD_TOP + V.symbol/2 + lay.maxGen * V.row + R +
+              (V.numberPos === 'below' ? NUM_DY - R + NUM_DESC : 0) + PAD_BOTTOM;
+
+  var head = [];
+  if (V.roman){
+    for (var g=0; g<=lay.maxGen; g++)
+      head.push('<text x="'+PAD_SIDE+'" y="'+r2(PAD_TOP + R + g*V.row + 4)+'" font-size="'+FS_ROMAN+
+                '" font-family="'+FONT+'" fill="#000000">'+ROMAN[g]+'</text>');
+  }
+
+  /* 범례 */
+  var LG = legendGeom(st);
+  var legend = [], legW = 0, legH = 0;
+  var items = st.legend.show && st.legend.pos !== 'none' ? legendItems(st) : [];
+  if (items.length){
+    var tw = 0;
+    items.forEach(function(it){ tw = Math.max(tw, textW(it.text, LG.fs)); });
+    legW = LG.sw + LG.tgap + tw;
+    legH = items.length * LG.pitch;
+  }
+
+  var totalW, totalH, legX, legY;
+  if (items.length && st.legend.pos === 'right'){
+    legX = left + contentW + LG.gap;
+    legY = PAD_TOP;
+    totalW = legX + legW + PAD_SIDE;
+    totalH = Math.max(bodyH, legY + legH + PAD_BOTTOM);
+  } else if (items.length){
+    legX = left;
+    legY = bodyH;
+    totalW = Math.max(left + contentW + PAD_SIDE, legX + legW + PAD_SIDE);
+    totalH = legY + legH + PAD_BOTTOM;
+  } else {
+    totalW = left + contentW + PAD_SIDE;
+    totalH = bodyH;
+  }
+
+  items.forEach(function(it, i){
+    var mid = legY + LG.pitch/2 + i*LG.pitch, key = fillKeyOf(st, it.mask);
+    usedL[key] = 1;
+    var f = fillAttr(pfx + 'l', key);
+    /* 범례 견본도 같은 방식으로 — 무늬가 견본 한가운데를 기준으로 깔린다 */
+    legend.push(shapeSVG(it.sex, legX + LG.sw/2, mid, LG.sw/2, f, STROKE));
+    legend.push('<text x="'+r2(legX+LG.sw+LG.tgap)+'" y="'+r2(mid + LG.fs*0.36)+'" font-size="'+r2(LG.fs)+
+                '" font-family="'+FONT+'" fill="#000000">'+esc(it.text)+'</text>');
+  });
+
+  /* 조작용 투명 히트 영역 (미리보기에서만) */
+  var hits = [];
+  if (opts.interactive){
+    st.people.forEach(function(p){
+      var P = pos[p.id];
+      var h = Math.max(V.symbol * 1.5, 26);
+      hits.push('<rect data-pid="'+esc(p.id)+'" x="'+r2(P.x-h/2)+'" y="'+r2(P.y-h/2)+'" width="'+r2(h)+
+                '" height="'+r2(h)+'" fill="transparent" style="cursor:pointer"/>');
+    });
+    /* 고른 사람 표시는 **언제나 그려 두고** 자리만 옮긴다 — 아래 markSel() 이 쓴다 */
+    var selP = (opts.selected && pos[opts.selected]) ? pos[opts.selected] : null;
+    hits.unshift('<rect class="pm-sel" x="'+r2(selP ? selP.x-R-5 : 0)+'" y="'+r2(selP ? selP.y-R-5 : 0)+
+                 '" width="'+r2(R*2+10)+'" height="'+r2(R*2+10)+
+                 '" fill="none" stroke="#1F4E79" stroke-width="1.6" stroke-dasharray="4,3"' +
+                 (selP ? '' : ' style="display:none"') + '/>');
+  }
+
+  var pat = function(o){ return Object.keys(o).filter(function(k){ return !SOLID[k]; }); };
+  var size = opts.explicitSize
+    ? ' width="'+r2(totalW*(opts.scale||1))+'" height="'+r2(totalH*(opts.scale||1))+'"'
+    : '';
+  var sty = opts.explicitSize ? '' : ' style="width:100%;max-width:'+r2(totalW*1.9)+'px;height:auto"';
+
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+r2(totalW)+' '+r2(totalH)+'"'+
+         size + sty + ' role="img" aria-label="가계도">' +
+         patternDefs(pfx, pat(usedB), V.symbol / PAT_BASE) +
+         patternDefs(pfx + 'l', pat(usedL), LG.sw / PAT_BASE) +
+         '<g transform="translate('+r2(ox)+',0)">' + body.join('') + hits.join('') + '</g>' +
+         head.join('') + legend.join('') +
+         '</svg>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   §6  판정 엔진
+   ────────────────────────────────────────────────────────── */
+function domainOf(hyp, sex){
+  if (hyp.locus === 'A') return ['DD','Dr','rr'];
+  return sex === 'F' ? ['DD','Dr','rr'] : ['D','r'];
+}
+function affOf(hyp, g){
+  var hasD = g.indexOf('D') >= 0;
+  return hyp.dom ? hasD : !hasD;
+}
+function allelesOf(g){ return g.length === 1 ? [g] : [g.charAt(0), g.charAt(1)]; }
+function comboG(a,b){ return (a === 'D' && b === 'D') ? 'DD' : (a === 'r' && b === 'r') ? 'rr' : 'Dr'; }
+
+function legalChild(hyp, gF, gM, gC, sexC){
+  var i, j, fa, ma;
+  if (hyp.locus === 'A'){
+    fa = allelesOf(gF); ma = allelesOf(gM);
+    for (i=0;i<fa.length;i++) for (j=0;j<ma.length;j++)
+      if (comboG(fa[i], ma[j]) === gC) return true;
+    return false;
+  }
+  ma = allelesOf(gM);
+  if (sexC === 'M'){
+    for (j=0;j<ma.length;j++) if (ma[j] === gC) return true;
+    return false;
+  }
+  var fx = gF;                       /* 아버지의 X 는 한 글자 */
+  for (j=0;j<ma.length;j++) if (comboG(fx, ma[j]) === gC) return true;
+  return false;
+}
+
+/* 한 형질에 대해 한 가정이 성립하는가 + 가능한 유전자형 모음 */
+function solveHyp(st, ix, ti, hyp){
+  var order = st.people.slice().sort(function(a,b){ return ix.gen[a.id] - ix.gen[b.id]; });
+  var doms = order.map(function(p){
+    return domainOf(hyp, p.sex).filter(function(g){ return affOf(hyp, g) === !!p.traits[ti]; });
+  });
+  var parent = {};
+  order.forEach(function(p){
+    var fm = fatherMotherOf(st, ix, p.id);
+    if (fm) parent[p.id] = fm;
+  });
+  var idx = {}; order.forEach(function(p,i){ idx[p.id] = i; });
+  var cur = new Array(order.length);
+  var poss = {}; order.forEach(function(p){ poss[p.id] = {}; });
+  var found = 0, nodes = 0, CAP = 400000, SOLCAP = 20000;
+
+  function rec(i){
+    if (nodes++ > CAP) return;
+    if (i === order.length){
+      found++;
+      for (var k=0;k<order.length;k++) poss[order[k].id][cur[k]] = 1;
+      return found < SOLCAP;
+    }
+    var p = order[i], dm = doms[i];
+    for (var d=0; d<dm.length; d++){
+      var g = dm[d];
+      var fm = parent[p.id];
+      if (fm){
+        var gF = cur[idx[fm.father.id]], gM = cur[idx[fm.mother.id]];
+        if (!legalChild(hyp, gF, gM, g, p.sex)) continue;
+      }
+      cur[i] = g;
+      if (rec(i+1) === false) return false;
+    }
+    return true;
+  }
+  if (doms.some(function(d){ return d.length === 0; })) return { ok:false, poss:null };
+  rec(0);
+  if (!found) return { ok:false, poss:null };
+  var out = {};
+  order.forEach(function(p){ out[p.id] = Object.keys(poss[p.id]).sort(); });
+  return { ok:true, poss:out, count:found, capped: nodes > CAP };
+}
+
+/* 조사 고르기 — 번호를 소리 내어 읽었을 때 받침이 있는가 (일 삼 육 칠 팔 십) */
+function batchim(s){
+  s = String(s == null ? '' : s).trim();
+  if (!s) return false;
+  var last = s.charAt(s.length - 1);
+  if (last >= '0' && last <= '9'){
+    var digits = s.replace(/[^0-9]/g, '');
+    var n = parseInt(digits.slice(-2), 10);
+    if (!isFinite(n)) return false;
+    if (n % 10 === 0) return true;                        /* 십·이십 → ㅂ */
+    return [1,3,6,7,8].indexOf(n % 10) >= 0;              /* 일 삼 육 칠 팔 */
+  }
+  var c = last.charCodeAt(0);
+  if (c >= 0xAC00 && c <= 0xD7A3) return ((c - 0xAC00) % 28) !== 0;
+  return false;
+}
+function J(s, withB, withoutB){ return s + (batchim(s) ? withB : withoutB); }
+
+/* 교과서 국소 규칙 — '어느 구성원 때문인지'를 말하기 위한 것 */
+function ruleBattery(st, ix, ti, lab){
+  var kill = { AD:null, AR:null, XD:null, XR:null };
+  function set(k, msg){ if (!kill[k]) kill[k] = msg; }
+  var A = function(p){ return !!p.traits[ti]; };
+  st.unions.forEach(function(u){
+    var pa = ix.byId[u.a], pb = ix.byId[u.b];
+    var F = pa.sex === 'M' ? pa : pb, M = pa.sex === 'F' ? pa : pb;
+    u.children.forEach(function(cid){
+      var C = ix.byId[cid];
+      if (!A(F) && !A(M) && A(C)){
+        var m = J(lab[F.id],'과 ','와 ') + J(lab[M.id],'은 ','는 ') + '정상인데 자녀 ' +
+                lab[C.id] + '에게서 발현되었습니다 → 우성일 수 없습니다';
+        set('AD', m); set('XD', m);
+      }
+      if (A(F) && A(M) && !A(C)){
+        var m2 = J(lab[F.id],'과 ','와 ') + J(lab[M.id],'은 ','는 ') + '발현인데 자녀 ' +
+                 J(lab[C.id],'이 ','가 ') + '정상입니다 → 열성일 수 없습니다';
+        set('AR', m2); set('XR', m2);
+      }
+      if (C.sex === 'F'){
+        if (A(F) && !A(C))
+          set('XD', '아버지 ' + J(lab[F.id],'이 ','가 ') + '발현인데 딸 ' + J(lab[C.id],'이 ','가 ') +
+                    '정상입니다 → 딸은 아버지의 X를 반드시 받으므로 X 우성일 수 없습니다');
+        if (!A(F) && A(C))
+          set('XR', '아버지 ' + J(lab[F.id],'이 ','가 ') + '정상인데 딸 ' + J(lab[C.id],'이 ','가 ') +
+                    '발현입니다 → X 열성일 수 없습니다');
+      } else {
+        if (!A(M) && A(C))
+          set('XD', '어머니 ' + J(lab[M.id],'이 ','가 ') + '정상인데 아들 ' + J(lab[C.id],'이 ','가 ') +
+                    '발현입니다 → 아들의 X는 어머니에게서 오므로 X 우성일 수 없습니다');
+        if (A(M) && !A(C))
+          set('XR', '어머니 ' + J(lab[M.id],'이 ','가 ') + '발현인데 아들 ' + J(lab[C.id],'이 ','가 ') +
+                    '정상입니다 → X 열성일 수 없습니다');
+      }
+    });
+  });
+  return kill;
+}
+
+function verdict(st, ti, lay){
+  var ix = (lay && lay.ix) || index(st);
+  var lab = (lay && lay.labels) || autoLabels(st, layout(st).pos);
+  var affN = st.people.filter(function(p){ return p.traits[ti]; }).length;
+  var rules = ruleBattery(st, ix, ti, lab);
+  var hyps = HYPS.map(function(h){
+    var r = solveHyp(st, ix, ti, h);
+    return { k:h.k, name:h.name, ok:r.ok, poss:r.poss,
+             why: r.ok ? '' : (rules[h.k] || '유전자형을 모순 없이 배정할 수 없습니다') };
+  });
+  var okList = hyps.filter(function(h){ return h.ok; });
+  return {
+    affN: affN, hyps: hyps, lab: lab, ix: ix,
+    unique: okList.length === 1 ? okList[0] : null,
+    okCount: okList.length,
+    bad: okList.length === 0 && st.people.length > 0
+  };
+}
+
+/* 유전자형 표기 */
+function genoText(hyp, g, sex){
+  if (hyp.locus === 'A')
+    return g === 'DD' ? 'AA' : g === 'Dr' ? 'Aa' : 'aa';
+  if (sex === 'M') return (g === 'D' ? 'XᴬY' : 'XᵃY');
+  return g === 'DD' ? 'XᴬXᴬ' : g === 'Dr' ? 'XᴬXᵃ' : 'XᵃXᵃ';
+}
+
+function gcd(a,b){ while(b){ var t=a%b; a=b; b=t; } return a; }
+function frac(n, d){
+  if (n === 0) return '0';
+  var g = gcd(n, d);
+  n /= g; d /= g;
+  return d === 1 ? String(n) : (n + '/' + d);
+}
+
+/* 다음 자녀 확률 — 부모 유전자형이 둘 다 확정될 때만 낸다 */
+function nextChild(st, ti, uid, V){
+  if (!V.unique) return { ok:false, msg:'가능한 가정이 ' + V.okCount + '가지 남아 확률을 단정할 수 없습니다.' };
+  var hyp = null;
+  HYPS.forEach(function(h){ if (h.k === V.unique.k) hyp = h; });
+  var u = V.ix.unionById[uid];
+  if (!u) return { ok:false, msg:'부부를 고르십시오.' };
+  var pa = V.ix.byId[u.a], pb = V.ix.byId[u.b];
+  var F = pa.sex === 'M' ? pa : pb, M = pa.sex === 'F' ? pa : pb;
+  var gF = V.unique.poss[F.id], gM = V.unique.poss[M.id];
+  if (gF.length !== 1)
+    return { ok:false, msg: V.lab[F.id] + '의 유전자형이 확정되지 않아 확률을 단정할 수 없습니다.' };
+  if (gM.length !== 1)
+    return { ok:false, msg: V.lab[M.id] + '의 유전자형이 확정되지 않아 확률을 단정할 수 없습니다.' };
+
+  var fa = allelesOf(gF[0]), ma = allelesOf(gM[0]);
+  var tot = 0, aff = 0, affM = 0, affF = 0;
+  ['M','F'].forEach(function(sx){
+    if (hyp.locus === 'A'){
+      fa.forEach(function(x){ ma.forEach(function(y){
+        tot++;
+        var g = comboG(x,y);
+        if (affOf(hyp, g)){ aff++; if (sx==='M') affM++; else affF++; }
+      }); });
+    } else {
+      ma.forEach(function(y){
+        tot++;
+        var g = (sx === 'M') ? y : comboG(gF[0], y);
+        if (affOf(hyp, g)){ aff++; if (sx==='M') affM++; else affF++; }
+      });
+    }
+  });
+  return { ok:true, hyp:hyp,
+           father:F, mother:M,
+           gF: genoText(hyp, gF[0], 'M'), gM: genoText(hyp, gM[0], 'F'),
+           pAff: frac(aff, tot), pAffM: frac(affM, tot), pAffF: frac(affF, tot),
+           pNorm: frac(tot-aff, tot) };
+}
+
+/* ══════════════════════════════════════════════════════════
+   §7  내보내기
+   ────────────────────────────────────────────────────────── */
+/* 복습 퀴즈용 데이터 — 생물의 유전/활동/_pedigree_svg.js 규격 */
+function toQuizData(st, lay, ti){
+  var rows = [];
+  st.people.forEach(function(p){
+    var g = lay.pos[p.id].gen;
+    (rows[g] = rows[g] || []).push(p);
+  });
+  var gens = [];
+  for (var g=0; g<rows.length; g++){
+    var row = (rows[g] || []).slice().sort(function(a,b){ return lay.pos[a.id].x - lay.pos[b.id].x; });
+    gens.push(row.map(function(p){
+      return { id: String(lay.labels[p.id]), sex: p.sex, aff: !!p.traits[ti] };
+    }));
+  }
+  var L = lay.labels;
+  return {
+    gens: gens,
+    couples: st.unions.map(function(u){ return [String(L[u.a]), String(L[u.b])]; }),
+    sibs: st.unions.filter(function(u){ return u.children.length; }).map(function(u){
+      return { p:[String(L[u.a]), String(L[u.b])], c: u.children.map(function(c){ return String(L[c]); }) };
+    })
+  };
+}
+/* ★_pedigree_svg.js 는 좌표를 안 받고 행 순서만 보고 다시 배치한다 —
+   부부가 붙어 있지 않거나 형제가 연속이 아니면 선이 남의 위로 지나간다. */
+function quizWarnings(ped){
+  var out = [], idx = {};
+  ped.gens.forEach(function(row, g){
+    row.forEach(function(m,i){ idx[m.id] = { g:g, i:i }; });
+  });
+  ped.couples.forEach(function(cp){
+    var a = idx[cp[0]], b = idx[cp[1]];
+    if (!a || !b) return;
+    if (a.g !== b.g){ out.push('부부 ' + cp[0] + '—' + cp[1] + '이(가) 다른 세대에 있습니다'); return; }
+    if (Math.abs(a.i - b.i) !== 1)
+      out.push('부부 ' + cp[0] + '—' + cp[1] + '이(가) 떨어져 있습니다 — 퀴즈 렌더러가 부부선을 남의 위로 긋습니다');
+  });
+  ped.sibs.forEach(function(sb){
+    var gs = sb.c.map(function(c){ return idx[c]; }).filter(Boolean);
+    if (gs.length < 2) return;
+    var is = gs.map(function(x){ return x.i; }).sort(function(a,b){ return a-b; });
+    if (is[is.length-1] - is[0] !== is.length - 1)
+      out.push('형제 ' + sb.c.join('·') + '이(가) 연속이 아닙니다 — 형제 가로선이 남을 덮습니다');
+  });
+  return out;
+}
+function quizLiteral(ped){
+  var L = [];
+  L.push('const M = (id, sex, aff) => ({ id: String(id), sex, aff: !!aff });');
+  L.push('/* 가계도 — 「가계도 만들기」 도구에서 내보냄 */');
+  var g = ped.gens.map(function(row){
+    return '[' + row.map(function(m){
+      return "M(" + m.id + ",'" + m.sex + "'," + (m.aff ? 1 : 0) + ")";
+    }).join(', ') + ']';
+  }).join(',\n         ');
+  L.push('{ gens: [' + g + '],');
+  L.push('  couples: [' + ped.couples.map(function(c){
+    return "['" + c[0] + "','" + c[1] + "']"; }).join(', ') + '],');
+  L.push('  sibs: [' + ped.sibs.map(function(s){
+    return "{ p:['" + s.p[0] + "','" + s.p[1] + "'], c:[" +
+           s.c.map(function(c){ return "'"+c+"'"; }).join(',') + "] }"; }).join(', ') + '] }');
+  return L.join('\n');
+}
+
+function svgToPNG(svgText, scale, cb){
+  var img = new Image();
+  var url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+  img.onload = function(){
+    try {
+      var cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(img.width || 100));
+      cv.height = Math.max(1, Math.round(img.height || 100));
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      cv.toBlob(function(b){ cb(b); }, 'image/png');
+    } catch(e){ cb(null, e); }
+  };
+  img.onerror = function(e){ cb(null, e); };
+  img.src = url;
+}
+
+function downloadBlob(blob, name){
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
+}
+function stamp(){
+  var d = new Date(), p = function(n){ return (n<10?'0':'')+n; };
+  return '' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate());
+}
+
+/* ══════════════════════════════════════════════════════════
+   §8  화면
+   ────────────────────────────────────────────────────────── */
+var S = loadState() || sampleState();
+var sel = null;      /* 선택된 사람 id */
+var anaTab = 0;      /* 판정 탭(형질 index) */
+var LAY = null;
+
+function $(id){ return document.getElementById(id); }
+
+function toast(msg, ms){
+  var t = $('toast');
+  if (!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.style.display = 'none'; }, ms || 2600);
+}
+
+function touch(){
+  if (saveState(S)) $('savedTag').textContent = '저장됨 ✓';
+  else $('savedTag').textContent = '다른 탭이 더 최신입니다 — 저장하지 않았습니다';
+  render();
+}
+
+function newId(){ return 'p' + (S.nextId++); }
+function addPerson(sex){
+  var p = { id:newId(), sex:sex, traits:[false,false,false], label:null, inText:'',
+            sidePos:'top', sideText:'', dead:false, dx:0 };
+  S.people.push(p);
+  return p;
+}
+function unionsOf(id){
+  return S.unions.filter(function(u){ return u.a === id || u.b === id; });
+}
+function parentUnionOf(id){
+  for (var i=0;i<S.unions.length;i++)
+    if (S.unions[i].children.indexOf(id) >= 0) return S.unions[i];
+  return null;
+}
+function addUnion(a, b){
+  var u = { id:'u'+(S.nextId++), a:a, b:b, children:[], consang:false };
+  S.unions.push(u);
+  return u;
+}
+
+/* ── 조작 ── */
+function opCouple(){
+  var m = addPerson('M'), f = addPerson('F');
+  addUnion(m.id, f.id);
+  sel = m.id;
+  touch();
+}
+function opChild(sex){
+  if (!sel) return;
+  var us = unionsOf(sel);
+  var u;
+  if (!us.length){
+    var sp = addPerson(S.people.filter(function(p){return p.id===sel;})[0].sex === 'M' ? 'F' : 'M');
+    u = addUnion(sel, sp.id);
+    toast('배우자가 없어 함께 놓았습니다.');
+  } else u = us[0];
+  var c = addPerson(sex);
+  u.children.push(c.id);
+  /* ★선택은 그대로 둔다 — 연달아 누르면 자손이 아니라 형제가 늘어야 한다 */
+  touch();
+}
+function opSpouse(){
+  if (!sel) return;
+  var me = S.people.filter(function(p){return p.id===sel;})[0];
+  var sp = addPerson(me.sex === 'M' ? 'F' : 'M');
+  addUnion(sel, sp.id);
+  touch();
+}
+function opSibling(){
+  if (!sel) return;
+  var pu = parentUnionOf(sel);
+  if (!pu){ toast('부모가 없습니다 — 먼저 「＋부모」로 윗세대를 놓으십시오.'); return; }
+  var me = S.people.filter(function(p){return p.id===sel;})[0];
+  var c = addPerson(me.sex);
+  pu.children.push(c.id);
+  touch();
+}
+function opParents(){
+  if (!sel) return;
+  if (parentUnionOf(sel)){ toast('이미 부모가 있습니다.'); return; }
+  var f = addPerson('M'), m = addPerson('F');
+  var u = addUnion(f.id, m.id);
+  u.children.push(sel);
+  touch();
+}
+function opDelete(){
+  if (!sel) return;
+  var kids = 0;
+  unionsOf(sel).forEach(function(u){ kids += u.children.length; });
+  if (kids && !confirm('자녀 ' + kids + '명의 연결도 함께 끊깁니다. 삭제하시겠습니까?')) return;
+  S.unions = S.unions.filter(function(u){ return u.a !== sel && u.b !== sel; });
+  S.unions.forEach(function(u){
+    u.children = u.children.filter(function(c){ return c !== sel; });
+  });
+  S.people = S.people.filter(function(p){ return p.id !== sel; });
+  sel = S.people.length ? S.people[0].id : null;
+  touch();
+}
+/* 「이 칸 기본값으로」 — 그 칸이 다루는 것만 되돌린다. 가계도 자체는 건드리지 않는다. */
+function resetTraits(){
+  var f0 = freshState();
+  S.traitNames = f0.traitNames.slice();
+  S.fillOverride = {};
+  S.legend = { show:S.legend.show, pos:S.legend.pos, texts:{} };
+  toast('형질 이름·무늬·범례 문구를 기본값으로 되돌렸습니다.');
+  touch();
+}
+function resetView(){
+  S.view = freshState().view;
+  toast('그림 설정을 기본값으로 되돌렸습니다.');
+  touch();
+}
+
+/* 가계도에서 더블클릭 → 그 사람을 지운다 (교사 요청 2026-09-10).
+   딸린 자녀가 있으면 opDelete() 가 먼저 물어본다. */
+function dblDelete(pid){
+  if (!pid) return false;
+  var who = (LAY && LAY.labels) ? LAY.labels[pid] : '';
+  var n0 = S.people.length;
+  sel = pid;
+  opDelete();
+  var gone = S.people.length < n0;
+  if (gone) toast(who + '번을 지웠습니다.');
+  return gone;
+}
+
+function opMove(d){
+  if (!sel) return;
+  var p = S.people.filter(function(x){return x.id===sel;})[0];
+  p.dx = (p.dx || 0) + d * (S.view.col / 4);
+  touch();
+}
+
+/* ── 렌더 ── */
+function render(){
+  LAY = layout(S);
+  var svg = pedSVG(S, LAY, { interactive:true, selected:sel });
+  $('stage').innerHTML = svg;
+  bindStage();
+  renderFoot();
+  renderSel();
+  renderTraits();
+  renderView();
+  renderAna();
+}
+
+function renderFoot(){
+  var warns = LAY.warn.concat(checkLayout(S, LAY));
+  var mm = 0;
+  var m = $('stage').querySelector('svg');
+  if (m){
+    var vb = m.getAttribute('viewBox').split(' ');
+    mm = Math.round(Number(vb[2]) / U_PER_MM * 10) / 10;
+  }
+  var h = '<span class="chip g">가로 약 ' + mm + ' mm · 도형 ' +
+          (Math.round(S.view.symbol / U_PER_MM * 10)/10) + ' mm</span>';
+  h += '<span class="chip g">' + S.people.length + '명</span>';
+  warns.forEach(function(w){ h += '<span class="chip w">⚠ ' + esc(w) + '</span>'; });
+  if (!S.people.length) h += '<span class="chip w">아래 「＋ 부부 놓기」로 시작하십시오</span>';
+  $('stagefoot').innerHTML = h;
+}
+
+/* 고른 사람 표시만 옮긴다 — 무대를 다시 그리지 않는다 */
+function markSel(){
+  var svg = $('stage').querySelector('svg');
+  if (!svg || !svg.querySelector) return;
+  var box = svg.querySelector('.pm-sel');
+  if (!box) return;
+  var P = (LAY && LAY.pos) ? LAY.pos[sel] : null;
+  if (!P){ box.style.display = 'none'; return; }
+  var R = S.view.symbol / 2;
+  box.setAttribute('x', r2(P.x - R - 5));
+  box.setAttribute('y', r2(P.y - R - 5));
+  box.style.display = '';
+}
+
+/* ★사람을 고를 때 가계도를 통째로 다시 그리면 안 된다.
+   누른 도형이 그 자리에서 사라지므로 **더블클릭이 성립하지 않는다**(2026-09-10 실측).
+   표시만 옮기고 오른쪽 칸만 새로 그린다. */
+function selectPerson(pid){
+  sel = pid;
+  markSel();
+  renderSel();
+}
+
+function bindStage(){
+  var svg = $('stage').querySelector('svg');
+  if (!svg) return;
+  svg.addEventListener('pointerdown', function(e){
+    var pid = e.target && e.target.getAttribute && e.target.getAttribute('data-pid');
+    if (!pid) return;
+    selectPerson(pid);
+    startDrag(pid, e);
+  });
+  svg.addEventListener('dblclick', function(e){
+    var pid = e.target && e.target.getAttribute && e.target.getAttribute('data-pid');
+    if (pid) dblDelete(pid);
+  });
+}
+
+function startDrag(pid, e){
+  var svg = $('stage').querySelector('svg');
+  if (!svg) return;
+  var rect = svg.getBoundingClientRect();
+  var vb = svg.getAttribute('viewBox').split(' ');
+  var unitsPerPx = Number(vb[2]) / rect.width;
+  var p = S.people.filter(function(x){return x.id===pid;})[0];
+  if (!p) return;
+  var x0 = e.clientX, dx0 = p.dx || 0, moved = false;
+  function mv(ev){
+    var d = (ev.clientX - x0) * unitsPerPx;
+    if (Math.abs(d) < 2 && !moved) return;
+    moved = true;
+    p.dx = Math.round((dx0 + d) * 2) / 2;
+    render();
+  }
+  function up(){
+    window.removeEventListener('pointermove', mv);
+    window.removeEventListener('pointerup', up);
+    if (moved) touch();
+  }
+  window.addEventListener('pointermove', mv);
+  window.addEventListener('pointerup', up);
+}
+
+function renderSel(){
+  var b = $('selBody');
+  var h = '<div class="row">' +
+    '<button class="b p" id="opCouple">＋ 부부 놓기</button>' +
+    (sel ? '<button class="b" id="opParents">＋ 부모</button>' : '') +
+    '</div>';
+  if (!sel || !S.people.some(function(p){return p.id===sel;})){
+    b.innerHTML = h + '<p class="none">가계도에서 도형을 누르면 그 사람을 고칠 수 있습니다.</p>';
+    wire();
+    return;
+  }
+  var p = S.people.filter(function(x){return x.id===sel;})[0];
+  var lab = LAY.labels[sel];
+  h += '<div class="row"><span class="lab">지금</span><b style="font-size:16px">' + esc(lab) +
+       '번 · ' + (p.sex === 'M' ? '남자 □' : '여자 ○') + '</b></div>';
+  h += '<div class="row">' +
+       '<button class="b" id="opSon">＋ 아들</button>' +
+       '<button class="b" id="opDau">＋ 딸</button>' +
+       '<button class="b" id="opSpouse">＋ 배우자</button>' +
+       '<button class="b" id="opSib">＋ 형제</button>' +
+       '</div>';
+  h += '<div class="row">' +
+       '<button class="b sm" id="mvL">◀ 왼쪽</button>' +
+       '<button class="b sm" id="mvR">오른쪽 ▶</button>' +
+       '<button class="b sm" id="mvA">⇱ 자동으로</button>' +
+       '<button class="b sm d" id="opDel">삭제</button></div>';
+  h += '<div class="row"><span class="lab">성별</span>' +
+       '<button class="b sm' + (p.sex==='M'?' p':'') + '" id="sxM">□ 남자</button>' +
+       '<button class="b sm' + (p.sex==='F'?' p':'') + '" id="sxF">○ 여자</button></div>';
+  h += '<div class="row"><span class="lab">형질</span>';
+  for (var i=0;i<S.traitCount;i++)
+    h += '<label class="ck' + (p.traits[i]?' on':'') + '"><input type="checkbox" data-tr="'+i+'"'+
+         (p.traits[i]?' checked':'') + '>' + esc(S.traitNames[i]) + ' 발현</label>';
+  h += '</div>';
+  h += '<div class="row"><span class="lab">번호</span>' +
+       '<input type="text" id="fLabel" value="' + esc(p.label === null ? '' : p.label) +
+       '" placeholder="자동(' + esc(lab) + ')" style="width:100px">' +
+       '<span class="lab mid">안 글자</span>' +
+       '<input type="text" id="fIn" value="' + esc(p.inText) + '" placeholder="예: A" style="width:70px"></div>';
+  h += '<div class="row"><span class="lab">옆 글자</span>' +
+       '<input type="text" id="fSide" value="' + esc(p.sideText) + '" placeholder="예: O형" style="width:110px">' +
+       '<select id="fSidePos">' +
+       ['top:위','bottom:아래','left:왼쪽','right:오른쪽'].map(function(o){
+         var kv = o.split(':');
+         return '<option value="'+kv[0]+'"'+(p.sidePos===kv[0]?' selected':'')+'>'+kv[1]+'</option>';
+       }).join('') + '</select>' +
+       '<label class="ck' + (p.dead?' on':'') + '"><input type="checkbox" id="fDead"' +
+       (p.dead?' checked':'') + '>사망</label></div>';
+
+  var us = unionsOf(sel);
+  if (us.length){
+    h += '<div class="row"><span class="lab">부부</span>';
+    us.forEach(function(u){
+      var other = (u.a === sel) ? u.b : u.a;
+      h += '<label class="ck' + (u.consang?' on':'') + '"><input type="checkbox" data-cs="'+u.id+'"' +
+           (u.consang?' checked':'') + '>' + esc(LAY.labels[other]) + '와 근친</label>';
+    });
+    h += '</div>';
+  }
+  b.innerHTML = h;
+  wire();
+
+  function wire(){}
+}
+
+function renderTraits(){
+  var b = $('traitBody');
+  var h = '<div class="row"><span class="lab">형질 수</span>';
+  [1,2,3].forEach(function(n){
+    h += '<button class="b sm' + (S.traitCount===n?' p':'') + '" data-tc="'+n+'">'+n+'개</button>';
+  });
+  h += '</div>';
+  for (var i=0;i<S.traitCount;i++)
+    h += '<div class="row"><span class="lab">형질 ' + (i+1) + '</span>' +
+         '<input type="text" data-tn="'+i+'" value="' + esc(S.traitNames[i]) + '" style="width:110px"></div>';
+
+  h += '<p class="hint">조합마다 무늬를 고르십시오. 흑백 인쇄를 기준으로 합니다.</p>';
+  h += '<div class="tblscroll"><table class="io"><tr><th>조합</th><th>무늬</th></tr>';
+  var n = 1 << S.traitCount;
+  var usedMask = {};
+  S.people.forEach(function(p){ usedMask[maskOf(S,p)] = 1; });
+  for (var m=0;m<n;m++){
+    h += '<tr><td style="text-align:left' + (usedMask[m] ? ';font-weight:bold' : ';color:#999') + '">' +
+         esc(maskName(S,m)) + (usedMask[m] ? '' : ' <span style="font-size:11px">(안 쓰임)</span>') + '</td><td>' +
+         '<div class="pal">' + PATTERNS.map(function(pt, pi){
+           return '<button data-fm="'+m+'" data-fi="'+pi+'" title="'+esc(pt.n)+'"' +
+                  (fillIndex(S,m)===pi ? ' class="on"' : '') + '>' + swatch(pt.k) + '</button>';
+         }).join('') + '</div></td></tr>';
+  }
+  h += '</table></div>';
+
+  h += '<div class="row"><span class="lab">범례</span>' +
+       ['right:오른쪽','bottom:아래','none:없음'].map(function(o){
+         var kv = o.split(':');
+         return '<button class="b sm' + (S.legend.pos===kv[0]?' p':'') + '" data-lg="'+kv[0]+'">'+kv[1]+'</button>';
+       }).join('') + '</div>';
+  var items = legendItems(S);
+  if (items.length && S.legend.pos !== 'none'){
+    h += '<div class="tblscroll"><table class="io"><tr><th>범례 문구</th></tr>';
+    items.forEach(function(it){
+      h += '<tr><td><input type="text" data-lt="' + esc(it.key) + '" value="' + esc(it.text) +
+           '" style="width:96%"></td></tr>';
+    });
+    h += '</table></div>';
+  }
+  h += '<div class="row" style="margin-top:10px">' +
+       '<button class="b sm" id="traitReset">⟲ 이 칸 기본값으로</button>' +
+       '<span class="lab" style="min-width:0">형질 이름 · 무늬 배정 · 범례 문구</span></div>';
+  b.innerHTML = h;
+}
+
+function swatch(k){
+  var f = SOLID[k] ? SOLID[k] : 'url(#sw-' + k + ')';
+  var defs = SOLID[k] ? '' : patternDefs('sw', [k], 18 / PAT_BASE);
+  /* 고르는 자리도 나오는 그림과 같아야 한다 — 무늬를 견본 한가운데 기준으로 */
+  return '<svg viewBox="0 0 24 24">' + defs + shapeSVG('M', 12, 12, 9, f, 1.6) + '</svg>';
+}
+
+function renderView(){
+  var V = S.view;
+  var h = '<div class="row">' +
+    '<button class="b sm" data-ps="example">예시 이미지 양식</button>' +
+    '<button class="b sm" data-ps="exam">중간고사 원안 양식</button></div>';
+  h += '<div class="row"><span class="lab">도형</span><input type="number" data-v="symbol" value="'+V.symbol+
+       '"><span class="lab mid">형제 간격</span><input type="number" data-v="col" value="'+V.col+'"></div>';
+  h += '<div class="row"><span class="lab">부부 간격</span><input type="number" data-v="spouse" value="'+V.spouse+
+       '"><span class="lab mid">세대 간격</span><input type="number" data-v="row" value="'+V.row+'"></div>';
+  h += '<div class="row"><span class="lab">번호</span>' +
+       ['below:도형 아래','inside:도형 안','none:없음'].map(function(o){
+         var kv = o.split(':');
+         return '<button class="b sm' + (V.numberPos===kv[0]?' p':'') + '" data-np="'+kv[0]+'">'+kv[1]+'</button>';
+       }).join('') +
+       '<label class="ck' + (V.roman?' on':'') + '"><input type="checkbox" id="vRoman"' +
+       (V.roman?' checked':'') + '>Ⅰ Ⅱ Ⅲ</label></div>';
+  h += '<div class="row"><span class="lab">범례 크기</span>' +
+       [0.8,1,1.2,1.5].map(function(z){
+         return '<button class="b sm' + (Math.abs(V.legendScale-z)<0.01?' p':'') + '" data-ls="'+z+'">' +
+                Math.round(z*100) + '%</button>';
+       }).join('') + '<span class="lab" style="min-width:0">견본 ' +
+       (Math.round(legendGeom(S).sw / U_PER_MM * 10)/10) + ' mm</span></div>';
+  h += '<div class="row"><span class="lab">PNG 배율</span>' +
+       [2,3,4,6].map(function(s){
+         return '<button class="b sm' + (V.pngScale===s?' p':'') + '" data-sc="'+s+'">×'+s+'</button>';
+       }).join('') + '</div>';
+  if (V.numberPos === 'below' && V.row < ROW_MIN_BELOW)
+    h += '<p class="hint" style="color:#a00">번호를 도형 아래 두면 세대 간격이 ' + ROW_MIN_BELOW +
+         ' 이상이어야 형제 가로선을 밟지 않는다.</p>';
+  h += '<div class="row" style="margin-top:10px">' +
+       '<button class="b sm" id="viewReset">⟲ 이 칸 기본값으로</button>' +
+       '<span class="lab" style="min-width:0">크기 · 간격 · 번호 · 범례 크기</span></div>';
+  $('viewBody').innerHTML = h;
+}
+
+function renderAna(){
+  var b = $('anaBody');
+  if (!S.people.length){ b.innerHTML = '<p class="none">가계도를 먼저 만드십시오.</p>'; return; }
+  var h = '';
+  if (S.traitCount > 1){
+    h += '<div class="tabs">';
+    for (var i=0;i<S.traitCount;i++)
+      h += '<button data-at="'+i+'"' + (anaTab===i?' class="on"':'') + '>' + esc(S.traitNames[i]) + '</button>';
+    h += '</div>';
+  }
+  if (anaTab >= S.traitCount) anaTab = 0;
+  var V = verdict(S, anaTab, LAY);
+
+  if (V.affN === 0){
+    h += '<p class="none">' + esc(S.traitNames[anaTab]) + ' 발현으로 표시된 사람이 없어 판정할 수 없습니다.</p>';
+    b.innerHTML = h; return;
+  }
+  V.hyps.forEach(function(x){
+    h += '<div class="hyp ' + (x.ok?'yes':'no') + '"><span class="h">' +
+         (x.ok ? '✔ ' : '✗ ') + esc(x.name) + '</span>' +
+         (x.ok ? '' : '<div class="why">' + esc(x.why) + '</div>') + '</div>';
+  });
+  if (V.bad)
+    h += '<div class="verdict bad">어느 가정으로도 설명되지 않습니다 — 형질 표시를 다시 보십시오.</div>';
+  else if (V.unique)
+    h += '<div class="verdict one">' + esc(V.unique.name) + '으로 확정됩니다.</div>';
+  else
+    h += '<div class="verdict many">' + V.okCount + '가지가 남습니다 — 이 가계도로는 확정되지 않습니다.</div>';
+
+  if (V.unique){
+    var hyp = null;
+    HYPS.forEach(function(x){ if (x.k === V.unique.k) hyp = x; });
+    h += '<div class="tblscroll"><table class="io"><tr><th>번호</th><th>유전자형</th></tr>';
+    S.people.slice().sort(function(a,b2){
+      return Number(V.lab[a.id]) - Number(V.lab[b2.id]);
+    }).forEach(function(p){
+      var gs = V.unique.poss[p.id] || [];
+      var txt = gs.map(function(g){ return genoText(hyp, g, p.sex); }).join(' 또는 ');
+      h += '<tr><td>' + esc(V.lab[p.id]) + '</td><td' + (gs.length===1 ? ' style="font-weight:bold"' : '') +
+           '>' + esc(txt) + (gs.length===1 ? '' : ' <span style="font-size:11px;color:#888">(미확정)</span>') +
+           '</td></tr>';
+    });
+    h += '</table></div>';
+
+    var withKids = S.unions;
+    if (withKids.length){
+      h += '<div class="row"><span class="lab">다음 자녀</span><select id="anaU">' +
+           withKids.map(function(u){
+             return '<option value="'+u.id+'">' + esc(V.lab[u.a]) + ' × ' + esc(V.lab[u.b]) + '</option>';
+           }).join('') + '</select></div><div id="anaProb"></div>';
+    }
+  }
+  b.innerHTML = h;
+  if ($('anaU')){
+    $('anaU').addEventListener('change', function(){ showProb(this.value); });
+    showProb($('anaU').value);
+  }
+
+  function showProb(uid){
+    var R = nextChild(S, anaTab, uid, V);
+    var el = $('anaProb');
+    if (!R.ok){ el.innerHTML = '<p class="hint">' + esc(R.msg) + '</p>'; return; }
+    el.innerHTML = '<div class="tblscroll"><table class="io">' +
+      '<tr><th>부모</th><th>발현</th><th>발현된 남자</th><th>발현된 여자</th><th>정상</th></tr>' +
+      '<tr><td>' + esc(R.gF) + ' × ' + esc(R.gM) + '</td><td><b>' + R.pAff + '</b></td><td>' +
+      R.pAffM + '</td><td>' + R.pAffF + '</td><td>' + R.pNorm + '</td></tr></table></div>';
+  }
+}
+
+/* ── 이벤트 (위임) ──
+   ★누른 자리에서 「무엇을 하라는 것인지」 붙은 조상을 찾아 올라간다.
+     `!t.dataset` 로 멈추게 하면 안 된다 — dataset 은 모든 원소에 있어서 한 칸도 못 올라간다.
+     무늬 단추는 안에 <svg><rect> 가 들어 있어 그대로 두면 눌러도 아무 일이 안 일어났다. */
+var ACT_KEYS = ['fm','tc','lg','ps','np','sc','at','ls'];
+function actTarget(t){
+  for (var n = 0; t && n < 12; n++){
+    if (t.dataset) for (var i = 0; i < ACT_KEYS.length; i++)
+      if (t.dataset[ACT_KEYS[i]] !== undefined) return t;
+    if (t.id) return t;
+    t = t.parentNode;
+  }
+  return null;
+}
+document.addEventListener('click', function(e){
+  var t = actTarget(e.target);
+  if (!t) return;
+  var id = t.id, d = t.dataset || {};
+
+  if (id === 'traitReset') return resetTraits();
+  if (id === 'viewReset') return resetView();
+  if (id === 'opCouple') return opCouple();
+  if (id === 'opSon') return opChild('M');
+  if (id === 'opDau') return opChild('F');
+  if (id === 'opSpouse') return opSpouse();
+  if (id === 'opSib') return opSibling();
+  if (id === 'opParents') return opParents();
+  if (id === 'opDel') return opDelete();
+  if (id === 'mvL') return opMove(-1);
+  if (id === 'mvR') return opMove(1);
+  if (id === 'mvA'){
+    var p = S.people.filter(function(x){return x.id===sel;})[0];
+    if (p){ p.dx = 0; touch(); }
+    return;
+  }
+  if (id === 'sxM' || id === 'sxF'){
+    var q = S.people.filter(function(x){return x.id===sel;})[0];
+    if (q){ q.sex = (id === 'sxM') ? 'M' : 'F'; touch(); }
+    return;
+  }
+  if (d.tc){ S.traitCount = Number(d.tc); if (anaTab >= S.traitCount) anaTab = 0; return touch(); }
+  if (d.fm !== undefined && d.fi !== undefined){
+    var mk = String(d.fm), fi = Number(d.fi);
+    /* 기본 무늬를 고르면 지정을 지운다(상태를 깨끗이). 그 밖에는 지정한다. */
+    if (fi === defaultFillIndex(S, Number(mk))) delete S.fillOverride[mk];
+    else S.fillOverride[mk] = fi;
+    return touch();
+  }
+  if (d.lg){ S.legend.pos = d.lg; S.legend.show = (d.lg !== 'none'); return touch(); }
+  if (d.ps){
+    var pr = PRESETS[d.ps];
+    for (var k in pr) S.view[k] = pr[k];
+    return touch();
+  }
+  if (d.np){ S.view.numberPos = d.np; return touch(); }
+  if (d.ls){ S.view.legendScale = Number(d.ls); return touch(); }
+  if (d.sc){ S.view.pngScale = Number(d.sc); return touch(); }
+  if (d.at !== undefined){ anaTab = Number(d.at); return renderAna(); }
+});
+
+document.addEventListener('change', function(e){
+  var t = e.target, d = t.dataset || {};
+  if (t.id === 'fDead'){
+    var p = S.people.filter(function(x){return x.id===sel;})[0];
+    if (p){ p.dead = t.checked; touch(); } return;
+  }
+  if (t.id === 'vRoman'){ S.view.roman = t.checked; return touch(); }
+  if (d.tr !== undefined){
+    var q = S.people.filter(function(x){return x.id===sel;})[0];
+    if (q){ q.traits[Number(d.tr)] = t.checked; touch(); } return;
+  }
+  if (d.cs){
+    S.unions.forEach(function(u){ if (u.id === d.cs) u.consang = t.checked; });
+    return touch();
+  }
+});
+
+document.addEventListener('input', function(e){
+  var t = e.target, d = t.dataset || {};
+  var p = S.people.filter(function(x){return x.id===sel;})[0];
+  if (t.id === 'fLabel' && p){ p.label = t.value.trim() === '' ? null : t.value.trim(); return soft(); }
+  if (t.id === 'fIn' && p){ p.inText = t.value; return soft(); }
+  if (t.id === 'fSide' && p){ p.sideText = t.value; return soft(); }
+  if (d.tn !== undefined){ S.traitNames[Number(d.tn)] = t.value || '(?)' ; return soft(); }
+  if (d.lt !== undefined){ S.legend.texts[d.lt] = t.value; return soft(); }
+  if (d.v !== undefined){
+    var n = Number(t.value);
+    if (isFinite(n) && n > 0){ S.view[d.v] = n; soft(); }
+    return;
+  }
+});
+document.addEventListener('change', function(e){
+  if (e.target.id === 'fSidePos'){
+    var p = S.people.filter(function(x){return x.id===sel;})[0];
+    if (p){ p.sidePos = e.target.value; touch(); }
+  }
+});
+
+/* 글자를 치는 중에는 화면 전체를 다시 그리지 않는다(입력 칸이 튄다) */
+function soft(){
+  saveState(S);
+  $('savedTag').textContent = '저장됨 ✓';
+  LAY = layout(S);
+  $('stage').innerHTML = pedSVG(S, LAY, { interactive:true, selected:sel });
+  bindStage();
+  renderFoot();
+}
+
+/* ── 머리 단추 ── */
+$('btnPngCopy').addEventListener('click', function(){ png(true); });
+$('btnPngDown').addEventListener('click', function(){ png(false); });
+function png(toClip){
+  if (!S.people.length){ toast('가계도가 비어 있습니다.'); return; }
+  var lay = layout(S);
+  var svg = pedSVG(S, lay, { interactive:false, explicitSize:true, scale:S.view.pngScale });
+  svgToPNG(svg, S.view.pngScale, function(blob, err){
+    if (!blob){ toast('PNG를 만들지 못했습니다. 다시 시도해 주십시오.'); return; }
+    if (!toClip){ downloadBlob(blob, '가계도_' + stamp() + '.png'); toast('내려받았습니다.'); return; }
+    try {
+      navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]).then(function(){
+        toast('클립보드에 복사했습니다. 한글에서 Ctrl+V 하십시오.');
+      }, function(){
+        downloadBlob(blob, '가계도_' + stamp() + '.png');
+        toast('클립보드가 막혀 있어 파일로 내려받았습니다.');
+      });
+    } catch(e){
+      downloadBlob(blob, '가계도_' + stamp() + '.png');
+      toast('클립보드가 막혀 있어 파일로 내려받았습니다.');
+    }
+  });
+}
+
+$('btnQuiz').addEventListener('click', function(){
+  if (!S.people.length){ toast('가계도가 비어 있습니다.'); return; }
+  var lay = layout(S);
+  var ti = anaTab;
+  var ped = toQuizData(S, lay, ti);
+  var warns = quizWarnings(ped);
+  var box = document.createElement('div');
+  box.className = 'sec';
+  box.innerHTML = '<h2>복습 퀴즈용 데이터 <span class="mini">' + esc(S.traitNames[ti]) +
+    ' 기준 · _pedigree_svg.js 규격</span></h2>' +
+    (warns.length ? warns.map(function(w){ return '<div class="chip w">⚠ ' + esc(w) + '</div>'; }).join(' ') : '') +
+    '<textarea class="out" id="quizOut" readonly>' + esc(quizLiteral(ped)) + '</textarea>' +
+    '<div class="row"><button class="b p" id="quizCopy">복사</button>' +
+    '<button class="b" id="quizClose">닫기</button></div>';
+  var old = document.getElementById('quizBox');
+  if (old) old.remove();
+  box.id = 'quizBox';
+  $('secSel').parentNode.insertBefore(box, $('secSel'));
+  $('quizCopy').addEventListener('click', function(){
+    var ta = $('quizOut'); ta.select();
+    try { document.execCommand('copy'); toast('복사했습니다.'); } catch(e){ toast('직접 선택해 복사해 주십시오.'); }
+  });
+  $('quizClose').addEventListener('click', function(){ box.remove(); });
+});
+
+$('btnJsonOut').addEventListener('click', function(){
+  var blob = new Blob([JSON.stringify(S, null, 2)], { type:'application/json' });
+  downloadBlob(blob, '가계도_' + stamp() + '.json');
+});
+$('btnJsonIn').addEventListener('click', function(){ $('fileIn').click(); });
+$('fileIn').addEventListener('change', function(e){
+  var f = e.target.files && e.target.files[0];
+  if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var o = null;
+    try { o = normalizeState(JSON.parse(rd.result)); } catch(err){ o = null; }
+    if (!o){ toast('올바른 가계도 파일이 아닙니다.'); return; }
+    if (S.people.length && !confirm('지금 그린 가계도를 덮어씁니다. 불러오시겠습니까?')) return;
+    S = o; sel = S.people.length ? S.people[0].id : null;
+    touch();
+    toast('불러왔습니다.');
+  };
+  rd.readAsText(f, 'utf-8');
+  e.target.value = '';
+});
+$('btnClear').addEventListener('click', function(){
+  if (!confirm('가계도를 모두 지웁니다. 계속하시겠습니까?')) return;
+  var v = S.view, tn = S.traitNames, tc = S.traitCount;
+  S = freshState();
+  S.view = v; S.traitNames = tn; S.traitCount = tc;
+  sel = null;
+  touch();
+});
+$('btnSample').addEventListener('click', function(){
+  if (S.people.length && !confirm('지금 그린 가계도를 덮어씁니다. 예시를 불러오시겠습니까?')) return;
+  S = sampleState(); sel = null; touch();
+});
+
+/* 예시 — 교사가 준 「가계도 예시 이미지」 2번(집안을 잇는 결혼) */
+function sampleState(){
+  var s = freshState();
+  var mk = function(id, sex, t){
+    s.people.push({ id:id, sex:sex, traits:t, label:null, inText:'', sidePos:'top',
+                    sideText:'', dead:false, dx:0 });
+  };
+  mk('a1','M',[false,false,false]); mk('a2','F',[true,true,false]);
+  mk('b1','M',[false,true,false]);  mk('b2','F',[false,false,false]);
+  mk('c1','M',[true,true,false]);   mk('c2','M',[false,false,false]);
+  mk('d1','F',[false,true,false]);
+  mk('e1','F',[true,true,false]);
+  s.unions.push({ id:'u1', a:'a1', b:'a2', children:['c1','c2'], consang:false });
+  s.unions.push({ id:'u2', a:'b1', b:'b2', children:['d1'], consang:false });
+  s.unions.push({ id:'u3', a:'c2', b:'d1', children:['e1'], consang:false });
+  s.nextId = 20;
+  return s;
+}
+
+render();
+if (!S.people.length) toast('「＋ 부부 놓기」로 시작하십시오.');
+</script>
+</body>
+</html>

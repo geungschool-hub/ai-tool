@@ -378,8 +378,9 @@ M1·M2 각 반나절~하루. M3 이후는 각 반나절. 배포는 M2에서 먼�
    - 옛 데이터 10건(2026-04~05 · 전부 미완료)은 **버리기 전에 받아 두었다** —
      `_backup/my-tasks-e28cb-20260910.json` + 홈 폴더. 옮길 것이 있으면 거기서 가져온다.
    - **남은 것은 교사 몫** — 그것만은 내 권한으로 안 된다:
-     ① GitHub 레포 `todo-geung`·`my-tasks` 삭제(이 PC 토큰에 `delete_repo` 권한이 없다.
-        `gh auth refresh -h github.com -s delete_repo` 를 한 번 하면 내가 지울 수 있다)
+     ① ~~GitHub 레포 `todo-geung`·`my-tasks` 삭제~~ → **2026-09-10 지움.**
+        교사가 `gh auth refresh -s delete_repo` 로 권한을 열어 줌. 지우기 전에 둘 다
+        `%USERPROFILE%	askboard-backup\old-*.git` 으로 **mirror 복제**해 둔다(이력 포함)
      ② Firebase 프로젝트 `my-tasks-e28cb` 삭제(firebase CLI 에 삭제 명령이 없다 · 콘솔에서 · 30일 소프트 삭제)
      ③ 개인허브 화면의 「할 일 관리」 카드 직접 삭제(목록이 AES-GCM 으로 그 기기에만 있어 내가 못 연다)
 ---

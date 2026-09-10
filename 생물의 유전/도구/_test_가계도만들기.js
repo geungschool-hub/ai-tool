@@ -475,6 +475,56 @@ console.log('[7] 무늬·범례');
     ok(w(svgB) > w(svgA), '범례를 키우면 그림 폭도 는다');
   }
 
+  /* ★범례만 따로 뽑기 (교사 요청 2026-09-10) — 렌더러는 그림 안 범례와 같은 하나여야 한다 */
+  {
+    const one = S.legendSVG(st, {});
+    ok(/^<svg /.test(one) && /<\/svg>$/.test(one), '범례만 담은 SVG 가 나온다');
+    ok(one.indexOf('xmlns=') > 0, 'xmlns 있음(PNG 경로가 이걸 요구한다)');
+    ok(one.indexOf('NaN') < 0 && one.indexOf('undefined') < 0, 'NaN·undefined 0건');
+    const items = S.legendItems(st);
+    /* 견본 개수 = 범례 줄 수 (사람 도형은 하나도 안 들어간다) */
+    const shapes = (one.match(/<g transform="translate\([^)]*\)"><(rect|circle)/g) || []).length;
+    eq(shapes, items.length, '★범례 줄 수만큼만 그린다 — 가계도 도형은 안 들어간다');
+    eq((one.match(/<text /g) || []).length, items.length, '글자도 줄 수만큼');
+    ok(one.indexOf('data-pid') < 0, '조작용 히트 영역이 안 들어간다');
+    ok(one.indexOf('<line ') < 0, '부부선·형제선이 안 들어간다');
+    /* 크기가 내용에 맞는다 */
+    const vb = one.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    const g = S.legendGeom(st);
+    ok(Number(vb[2]) >= items.length * g.pitch, '높이가 줄 수에 맞는다');
+    ok(Number(vb[1]) > g.sw, '폭이 견본보다 넓다(글자 자리)');
+    /* ★그려진 좌표까지 문다 — geometry 객체만 물면 실제 그림이 어긋나도 통과한다 */
+    const pad = Math.max(4, g.sw * 0.35);
+    const wantX = Math.round((pad + g.sw + g.tgap) * 100) / 100;
+    ok(one.indexOf('<text x="' + wantX + '"') > 0,
+       '★범례 글자가 견본에서 tgap 만큼 떨어져 그려진다 (x=' + wantX + ')');
+    /* ★그림에서 「범례 없음」으로 빼 두어도 따로는 뽑힌다 — 이게 이 기능의 요점 */
+    const off = JSON.parse(JSON.stringify(st));
+    off.legend.pos = 'none'; off.legend.show = false;
+    ok(S.pedSVG(off, S.layout(off), {}).indexOf('정상 남자') < 0, '그림에서는 범례가 빠진다');
+    ok(S.legendSVG(off, {}) !== null, '★그래도 범례만 따로는 뽑힌다');
+    /* 무늬는 견본 크기 배율을 쓴다 */
+    ok(one.indexOf('scale(' + Math.round(g.sw / S.PAT_BASE * 100) / 100 + ')') > 0,
+       '범례 무늬가 견본 크기 배율로 (' + (g.sw / S.PAT_BASE).toFixed(2) + ')');
+    /* 사람이 없으면 뽑을 것이 없다 */
+    const empty = S.freshState();
+    ok(S.legendSVG(empty, {}) === null, '사람이 없으면 null 을 돌려준다(단추가 알려 준다)');
+    /* PNG 용 크기 명시 */
+    ok(/^<svg[^>]* width="[\d.]+" height="[\d.]+"/.test(S.legendSVG(st, {explicitSize:true, scale:3})),
+       'PNG 용에는 width/height 를 명시한다');
+    /* 크기를 안 주면 viewBox 만으로는 납작해진다(헤드리스 렌더로 실제로 겪었다) */
+    ok(/style="width:100%;max-width:[\d.]+px;height:auto"/.test(one),
+       '★크기를 안 주면 미리보기용 기본 크기가 붙는다');
+    ok(!/style="width:100%/.test(S.legendSVG(st, {explicitSize:true, scale:3})),
+       'PNG 용에는 그 style 을 붙이지 않는다');
+    /* 그림 안 범례와 글자·차례가 같다(렌더러가 하나라는 증거) */
+    const withLeg = S.pedSVG(st, S.layout(st), {});
+    items.forEach(it => {
+      ok(one.indexOf(S.esc ? S.esc(it.text) : it.text) > 0, '범례 문구 「' + it.text + '」 가 들어간다');
+      ok(withLeg.indexOf(it.text) > 0, '그림 안 범례에도 같은 문구');
+    });
+  }
+
   /* ★새 단추를 위임에 등록하는 것을 잊으면 눌러도 아무 일이 안 일어난다.
      실제로 무늬 단추에서 그 부류의 사고가 났다 — 화면에 그려진 단추의
      data-* 가 모두 ACT_KEYS 에 있는지 기계로 훑는다. */

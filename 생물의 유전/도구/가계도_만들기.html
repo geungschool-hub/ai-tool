@@ -712,6 +712,44 @@ function legendItems(st){
 }
 function popcount(x){ var c=0; while(x){ c += x&1; x >>= 1; } return c; }
 
+/* 범례 한 벌 그리기 — ★렌더러는 하나다.
+   그림 안에 붙일 때도, 범례만 따로 뽑을 때도 이 함수가 그린다. */
+function legendBlock(st, LG, pfx, x0, y0, items){
+  var out = [], used = {}, tw = 0;
+  items.forEach(function(it){ tw = Math.max(tw, textW(it.text, LG.fs)); });
+  items.forEach(function(it, i){
+    var mid = y0 + LG.pitch/2 + i*LG.pitch, key = fillKeyOf(st, it.mask);
+    used[key] = 1;
+    /* 견본도 원점에 그리고 옮긴다 — 무늬가 견본 한가운데를 기준으로 깔린다 */
+    out.push(shapeSVG(it.sex, x0 + LG.sw/2, mid, LG.sw/2, fillAttr(pfx, key), STROKE));
+    out.push('<text x="'+r2(x0+LG.sw+LG.tgap)+'" y="'+r2(mid + LG.fs*0.36)+'" font-size="'+r2(LG.fs)+
+             '" font-family="'+FONT+'" fill="#000000">'+esc(it.text)+'</text>');
+  });
+  return { svg: out, used: used, n: items.length,
+           w: items.length ? LG.sw + LG.tgap + tw : 0,
+           h: items.length * LG.pitch };
+}
+
+/* 범례만 따로 — 그림에서 「범례 없음」으로 빼 두고 여기서 뽑아 쓸 수 있다 */
+function legendSVG(st, opts){
+  opts = opts || {};
+  var items = legendItems(st);
+  if (!items.length) return null;
+  var pfx = 'lg' + (++renderSeq);
+  var LG = legendGeom(st);
+  var pad = Math.max(4, LG.sw * 0.35);
+  var B = legendBlock(st, LG, pfx, pad, pad - LG.pitch/2 + LG.sw/2, items);
+  var W = pad * 2 + B.w, H = B.h + (pad - LG.pitch/2 + LG.sw/2) * 2;
+  var keys = Object.keys(B.used).filter(function(k){ return !SOLID[k]; });
+  var size = opts.explicitSize
+    ? ' width="'+r2(W*(opts.scale||1))+'" height="'+r2(H*(opts.scale||1))+'"' : '';
+  /* ★크기를 안 주면 viewBox 만으로는 납작해진다 — 미리보기용 기본 크기를 함께 준다 */
+  var sty = opts.explicitSize ? '' : ' style="width:100%;max-width:'+r2(W*1.9)+'px;height:auto"';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+r2(W)+' '+r2(H)+'"'+ size + sty +
+         ' role="img" aria-label="가계도 범례">' +
+         patternDefs(pfx, keys, LG.sw / PAT_BASE) + B.svg.join('') + '</svg>';
+}
+
 /* 범례 크기 — 도형 크기와 「범례 크기」 설정에서 나온다 */
 function legendGeom(st){
   var sym = st.view.symbol, sc = st.view.legendScale || 1;
@@ -929,15 +967,11 @@ function pedSVG(st, lay, opts){
     totalH = bodyH;
   }
 
-  items.forEach(function(it, i){
-    var mid = legY + LG.pitch/2 + i*LG.pitch, key = fillKeyOf(st, it.mask);
-    usedL[key] = 1;
-    var f = fillAttr(pfx + 'l', key);
-    /* 범례 견본도 같은 방식으로 — 무늬가 견본 한가운데를 기준으로 깔린다 */
-    legend.push(shapeSVG(it.sex, legX + LG.sw/2, mid, LG.sw/2, f, STROKE));
-    legend.push('<text x="'+r2(legX+LG.sw+LG.tgap)+'" y="'+r2(mid + LG.fs*0.36)+'" font-size="'+r2(LG.fs)+
-                '" font-family="'+FONT+'" fill="#000000">'+esc(it.text)+'</text>');
-  });
+  if (items.length){
+    var LB = legendBlock(st, LG, pfx + 'l', legX, legY, items);
+    legend = LB.svg;
+    for (var uk in LB.used) usedL[uk] = 1;
+  }
 
   /* 조작용 투명 히트 영역 (미리보기에서만) */
   var hits = [];
@@ -1606,6 +1640,9 @@ function renderTraits(){
          var kv = o.split(':');
          return '<button class="b sm' + (S.legend.pos===kv[0]?' p':'') + '" data-lg="'+kv[0]+'">'+kv[1]+'</button>';
        }).join('') + '</div>';
+  h += '<div class="row"><button class="b sm" id="legCopy">📋 범례만 복사</button>' +
+       '<button class="b sm" id="legDown">⬇ 범례만 내려받기</button>' +
+       '<span class="lab" style="min-width:0">그림에서 빼 두고 따로 붙일 때</span></div>';
   var items = legendItems(S);
   if (items.length && S.legend.pos !== 'none'){
     h += '<div class="tblscroll"><table class="io"><tr><th>범례 문구</th></tr>';
@@ -1751,6 +1788,8 @@ document.addEventListener('click', function(e){
   if (!t) return;
   var id = t.id, d = t.dataset || {};
 
+  if (id === 'legCopy') return pngLegend(true);
+  if (id === 'legDown') return pngLegend(false);
   if (id === 'traitReset') return resetTraits();
   if (id === 'viewReset') return resetView();
   if (id === 'opCouple') return opCouple();
@@ -1843,25 +1882,35 @@ function soft(){
 /* ── 머리 단추 ── */
 $('btnPngCopy').addEventListener('click', function(){ png(true); });
 $('btnPngDown').addEventListener('click', function(){ png(false); });
-function png(toClip){
-  if (!S.people.length){ toast('가계도가 비어 있습니다.'); return; }
-  var lay = layout(S);
-  var svg = pedSVG(S, lay, { interactive:false, explicitSize:true, scale:S.view.pngScale });
-  svgToPNG(svg, S.view.pngScale, function(blob, err){
+/* SVG 한 장 → PNG. 클립보드가 막히면 조용히 넘기지 않고 파일로 물러선다. */
+function outPNG(svgText, name, toClip){
+  svgToPNG(svgText, S.view.pngScale, function(blob){
     if (!blob){ toast('PNG를 만들지 못했습니다. 다시 시도해 주십시오.'); return; }
-    if (!toClip){ downloadBlob(blob, '가계도_' + stamp() + '.png'); toast('내려받았습니다.'); return; }
+    if (!toClip){ downloadBlob(blob, name); toast('내려받았습니다.'); return; }
     try {
       navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]).then(function(){
         toast('클립보드에 복사했습니다. 한글에서 Ctrl+V 하십시오.');
       }, function(){
-        downloadBlob(blob, '가계도_' + stamp() + '.png');
+        downloadBlob(blob, name);
         toast('클립보드가 막혀 있어 파일로 내려받았습니다.');
       });
     } catch(e){
-      downloadBlob(blob, '가계도_' + stamp() + '.png');
+      downloadBlob(blob, name);
       toast('클립보드가 막혀 있어 파일로 내려받았습니다.');
     }
   });
+}
+function png(toClip){
+  if (!S.people.length){ toast('가계도가 비어 있습니다.'); return; }
+  var lay = layout(S);
+  outPNG(pedSVG(S, lay, { interactive:false, explicitSize:true, scale:S.view.pngScale }),
+         '가계도_' + stamp() + '.png', toClip);
+}
+/* 범례만 따로 — 그림의 「범례 자리」를 없음으로 두어도 여기서는 뽑힌다 */
+function pngLegend(toClip){
+  var svg = legendSVG(S, { explicitSize:true, scale:S.view.pngScale });
+  if (!svg){ toast('범례에 넣을 것이 없습니다 — 가계도를 먼저 만드십시오.'); return; }
+  outPNG(svg, '가계도범례_' + stamp() + '.png', toClip);
 }
 
 $('btnQuiz').addEventListener('click', function(){

@@ -1217,6 +1217,11 @@ sec('[20] 아이콘·manifest · 마감일 판');
   // 이사해 온 완료 항목엔 완료일이 없다 — 폰에서 「–」 대신 마감일을 보인다
   ok(/doneKo\(t\) \+ '<\/span>'[\s\S]{0,20}\(t\.due \?/.test(APP), '완료인데 완료일이 없으면 마감일로 대신한다');
 
+  // 보드 칸은 몇 개든 화면을 나눠 갖는다(교사 지시 2026-09-10 — 버림을 없애자 오른쪽이 텀 비었다)
+  ok(pcBlocks(CSS).some(b => /\.bcol\{[^}]*flex:1 1 0/.test(b)), 'PC 보드 칸은 고정 폭이 아니다');
+  ok(pcBlocks(CSS).some(b => /\.bcol\{[^}]*max-width:none/.test(b)), 'PC 에서는 300px 상한을 푼다');
+  ok(/\.bcol\{flex:none;width:78vw/.test(CSS), '폰은 그대로 78vw — 옆으로 쓸어 본다');
+
   // 판 이름 — 큰 제목을 눌러 고친다(교사 지시 2026-09-10)
   ok(/<h1><input id="pagetitle"/.test(src), '큰 제목이 입력칸이다');
   ok(/#pagetitle\{[^}]*font-size:inherit/.test(CSS), '입력칸이 h1 크기를 물려받는다');

@@ -372,7 +372,8 @@ details summary::-webkit-details-marker{display:none}
   .empty{text-align:left;padding:16px 8px}
 
   .board{padding:16px 24px 8px}
-  .bcol{width:264px}
+  /* 칸이 몇 개든 화면을 나눠 갖는다 — 「버림」을 없애 셋이 되자 오른쪽이 텅 비었다(교사 지시 2026-09-10) */
+  .bcol{flex:1 1 0;width:auto;max-width:none;min-width:0}
   .bhead{height:34px}
   .card{font-size:14px}
   .sheet{align-items:center;padding:24px}
@@ -453,7 +454,7 @@ var firebaseConfig = {
 };
 var T_UID = "xmj4YNqWfLfLXTQJRDUjbmYKG6l1";   // 교사 계정 uid (비밀 아님 — 방어는 서버 규칙이 한다)
 /*CONFIG-END*/
-var BUILD = 'v2026-09-10b';
+var BUILD = 'v2026-09-10c';
 
 /*PARSE-START*/
 var AREA_TOKENS = {'행':'admin','행정':'admin','사':'event','행사':'event','교':'class','교과':'class'};

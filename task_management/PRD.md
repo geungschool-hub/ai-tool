@@ -299,7 +299,10 @@ tm/
         ".write": "auth != null && auth.uid === 'B_UID' && newData.child('by').val() === 'claude' && (!data.exists() || newData.child('text').val() === data.child('text').val())"
       } }
     } },
-    "log": { "$id": { ".write": "auth != null && !data.exists() && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && newData.child('by').val() === 'claude' && newData.child('via').val() === 'bot'))" } },
+    "log": { "$id": { ".write": "auth != null && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && !data.exists() && newData.child('by').val() === 'claude' && newData.child('via').val() === 'bot'))" } },
+                     ★2026-09-09 정정: `!data.exists()` 를 괄호 밖에 두면 **교사도 기록을 못 지워**
+                       되돌리기·삭제가 통째로 반려된다(다중 경로 쓰기는 원자적이다).
+                       덧붙이기 전용은 **봇에게만** 건다. 라이브 규칙과 맞춰 둔 것이 이 줄이다.
     "reviews": { "$id": { ".write": "auth != null && (auth.uid === 'T_UID' || (auth.uid === 'B_UID' && !data.exists()))" } }
   }
 } }
@@ -370,7 +373,15 @@ M1·M2 각 반나절~하루. M3 이후는 각 반나절. 배포는 M2에서 먼�
 6. ~~**이름**~~ → **`geung-taskboard` · 「업무판」**(2026-09-03). 허브 카드에 올릴지, 개인허브의 옛 「할 일 관리」 카드를 바꿀지는 미정.
 7. **「이번 주」가 두 뜻이다** — 토큰 `@이번주` = 이번 주 금요일 / 오늘 화면의 「이번 주」 묶음 = 오늘+1~+7일. 묶음을 7일 창으로 둘지 「이번 주 금까지」로 맞출지.
 8. **주 시작 요일** — 지금은 월요일 가정(일요일에 `@다음주`·`@담주월` = 내일). 맞는가.
-9. 옛 도구 둘(레포 `my-tasks`·`todo-geung`, 프로젝트 `my-tasks-e28cb`)을 **보관하는가 지우는가**(`my-tasks-e28cb`는 6-대안이므로 프로젝트 생성이 끝날 때까지 두는 게 안전).
+9. ~~옛 도구 둘을 보관하는가 지우는가~~ → **지운다**(2026-09-10 교사 결정 — 「앞으론 이거 쓸 거 같아」).
+   - 로컬 `교사업무/todo_geung/` 삭제 · 개인허브 기본 목록의 「할 일 관리」 → 「업무판」 교체(push 됨)
+   - 옛 데이터 10건(2026-04~05 · 전부 미완료)은 **버리기 전에 받아 두었다** —
+     `_backup/my-tasks-e28cb-20260910.json` + 홈 폴더. 옮길 것이 있으면 거기서 가져온다.
+   - **남은 것은 교사 몫** — 그것만은 내 권한으로 안 된다:
+     ① GitHub 레포 `todo-geung`·`my-tasks` 삭제(이 PC 토큰에 `delete_repo` 권한이 없다.
+        `gh auth refresh -h github.com -s delete_repo` 를 한 번 하면 내가 지울 수 있다)
+     ② Firebase 프로젝트 `my-tasks-e28cb` 삭제(firebase CLI 에 삭제 명령이 없다 · 콘솔에서 · 30일 소프트 삭제)
+     ③ 개인허브 화면의 「할 일 관리」 카드 직접 삭제(목록이 AES-GCM 으로 그 기기에만 있어 내가 못 연다)
 ---
 
 ## 10. 진행 기록

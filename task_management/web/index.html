@@ -7,7 +7,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="업무판">
 <meta name="theme-color" content="#ffffff">
-<title>학교업무</title>
+<!-- 아이콘 한 벌로 탭·폰 홈 화면·PC 바로가기를 다 덮는다(2026-09-10).
+     manifest 가 있어야 크롬이 「설치」를 띄우고 안드로이드 홈 화면 아이콘이 제 모양으로 붙는다. -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>업무판</title>
 <style>
 /* ── 노션 토큰 ─────────────────────────────────────────────────────────
    글자는 따뜻한 먹빛 #37352F 이고 순검정은 쓰지 않는다. 선은 거의 안 보이는 굵기.
@@ -35,7 +41,7 @@
   /* 영역 — 노션에서 쓰시던 색 */
   --admin:#D9730D; --event:#E03E3E; --class:#0B6E99;
   /* 상태 점 */
-  --todo:#91918E; --doing:#337EA9; --done:#448361; --dropped:#9B9A97;
+  --todo:#91918E; --doing:#337EA9; --done:#448361;
 
   --nav-h:56px; --row-h:48px;
 }
@@ -59,7 +65,7 @@
   --t-pink-b:#69314C;   --t-pink-f:rgba(255,255,255,.88);
   --t-red-b:#6E3630;    --t-red-f:rgba(255,255,255,.88);
   --admin:#C77D48; --event:#DF5452; --class:#5E97C0;
-  --todo:#979797; --doing:#5E97C0; --done:#6E9B78; --dropped:#787774;
+  --todo:#979797; --doing:#5E97C0; --done:#6E9B78;
 } }
 :root[data-theme="dark"]{
   --bg:#191919; --ink:rgba(255,255,255,.81);
@@ -78,7 +84,7 @@
   --t-pink-b:#69314C;   --t-pink-f:rgba(255,255,255,.88);
   --t-red-b:#6E3630;    --t-red-f:rgba(255,255,255,.88);
   --admin:#C77D48; --event:#DF5452; --class:#5E97C0;
-  --todo:#979797; --doing:#5E97C0; --done:#6E9B78; --dropped:#787774;
+  --todo:#979797; --doing:#5E97C0; --done:#6E9B78;
 }
 *{box-sizing:border-box}
 html{font-size:16px;-webkit-text-size-adjust:100%}
@@ -99,6 +105,11 @@ ul,ol{margin:0;padding:0;list-style:none}
 header{padding:12px 16px 0;flex:none}
 .pageicon{font-size:32px;line-height:1;margin-bottom:2px}
 h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+/* 판 이름은 눌러서 고친다(교사 지시 2026-09-10). 평소엔 글자만 보이고 테두리는 없다 */
+#pagetitle{width:100%;font-size:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;
+  padding:0 4px;margin-left:-4px;border-radius:4px}
+#pagetitle:hover{background:var(--hover)}
+#pagetitle:focus{background:var(--hover);outline:none}
 .sub{color:var(--ink-45);font-size:16px;margin-top:2px}
 
 /* 보기 탭 — 노션은 밑줄 2px 하나로 지금 보기를 알린다 */
@@ -111,6 +122,8 @@ h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 .views button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
 .views .grow{flex:1;min-width:8px}
 .views .gear{color:var(--ink-45)}
+.views .gear:disabled{opacity:.3;cursor:default}
+.views .gear:disabled:hover{background:none}
 
 /* ── 입력줄 ─────────────────────────────────────────────────────────── */
 #inbar{order:1;flex:none;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 12px}
@@ -149,11 +162,9 @@ h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 .s-todo i{background:var(--todo)}
 .s-doing i{background:var(--doing)}
 .s-done i{background:var(--done)}
-.s-dropped i{background:var(--dropped)}
 .stat{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:4px;background:var(--t-gray-b);color:var(--t-gray-f);white-space:nowrap}
 .stat.s-doing{background:var(--t-blue-b);color:var(--t-blue-f)}
 .stat.s-done{background:var(--t-green-b);color:var(--t-green-f)}
-.stat.s-dropped{background:var(--t-gray-b);color:var(--ink-45)}
 
 /* ── 본문 ───────────────────────────────────────────────────────────── */
 main{flex:1 0 auto;padding:0 8px 24px}
@@ -175,6 +186,8 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .row.stale .main{opacity:.55}
 .row .dot{width:28px;height:44px;margin-left:-6px}
 .row .emo{flex:none;width:22px;text-align:center}
+/* 아이콘이 없으면 칸도 없앤다 — 이사해 온 항목은 전부 빈칸이라 들여쓰기만 넓어 보였다(2026-09-10) */
+.row .emo:empty,.card .emo:empty{display:none}
 /* 폰 행 = [점][이모지][제목] / 그 아래 메타 한 줄. 점·이모지는 두 줄에 걸친다.
    inline 이면 넷이 통째로 세로로 쌓여 행이 108px 가 된다(2026-09-09 실측) */
 .row .main{flex:1;min-width:0;display:grid;grid-template-columns:auto auto minmax(0,1fr);
@@ -184,7 +197,7 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .row .main>.ttl{grid-area:ttl}
 .row .main>.meta{grid-area:meta}
 .row .ttl{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row.s-done .ttl,.row.s-dropped .ttl{color:var(--ink-45);text-decoration:line-through}
+.row.s-done .ttl{color:var(--ink-45);text-decoration:line-through}
 .row .meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px;color:var(--ink-45)}
 .row .dn{color:var(--ink-45)}
 .row .dn.over{color:var(--event);font-weight:500}
@@ -206,6 +219,11 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .menu button{display:flex;align-items:center;justify-content:flex-start;min-height:44px;padding:0 8px;border-radius:4px}
 .menu button:hover{background:var(--hover)}
 .menu button.on{background:var(--hover);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+/* 마감일 판 — 빠른 날짜 넷 · 직접 고르기 · 마감 없음 */
+.menu b{margin-left:auto;padding-left:12px;color:var(--ink-45);font-weight:400}
+.menu .sep{height:1px;background:var(--line);margin:3px 0;flex:none}
+.menu input[type="date"]{width:100%;height:44px;padding:0 8px;background:var(--hover);border-radius:4px}
+.menu .none{color:var(--ink-60)}
 .cell-in{width:100%;min-width:0;height:28px;padding:0 6px;background:var(--hover);border-radius:4px;font-size:inherit}
 
 /* 표 머리 — PC 에서만 보인다 */
@@ -369,7 +387,7 @@ details summary::-webkit-details-marker{display:none}
 <div id="scroll">
 <header>
   <div class="pageicon" id="pageicon">🗂️</div>
-  <h1>학교업무</h1>
+  <h1><input id="pagetitle" value="학교업무" aria-label="판 이름" spellcheck="false" autocomplete="off"></h1>
   <div class="sub" id="sub"></div>
   <div class="views">
     <button data-view="all" class="on">전체</button>
@@ -377,7 +395,7 @@ details summary::-webkit-details-marker{display:none}
     <button data-view="review">검토</button>
     <span class="grow"></span>
     <span id="conn" hidden></span>
-    <button class="gear" id="undo-btn" aria-label="되돌리기" title="되돌리기" hidden>↺</button>
+    <button class="gear" id="undo-btn" aria-label="되돌리기" title="되돌릴 것이 없다" disabled>↺</button>
     <button class="gear" id="gear" aria-label="설정">⚙</button>
   </div>
 </header>
@@ -435,12 +453,12 @@ var firebaseConfig = {
 };
 var T_UID = "xmj4YNqWfLfLXTQJRDUjbmYKG6l1";   // 교사 계정 uid (비밀 아님 — 방어는 서버 규칙이 한다)
 /*CONFIG-END*/
-var BUILD = 'v2026-09-04b';
+var BUILD = 'v2026-09-10b';
 
 /*PARSE-START*/
 var AREA_TOKENS = {'행':'admin','행정':'admin','사':'event','행사':'event','교':'class','교과':'class'};
 var CLASS_CHECKS = ['제작','검사','배포','허브 카드'];
-var STATUS_WORDS = {'완료':'done','진행':'doing','대기':'todo','버림':'dropped'};
+var STATUS_WORDS = {'완료':'done','진행':'doing','대기':'todo'};
 var WD = {'일':0,'월':1,'화':2,'수':3,'목':4,'금':5,'토':6};
 var DAY = 86400000;
 
@@ -583,7 +601,7 @@ var tmSync = null;    // SYNC 블록이 { write: fn } 를 넣는다
 var tmHooks = {};     // STORE 가 SYNC 에게 건네는 것 — fromRemote · clearCache
 var store = (function(){
   var KEY = 'tm', SNAP = 'tm.snap', SNAP_TTL = 24 * 3600 * 1000, data = null, subs = [];
-  function fresh(){ return { meta: { schema: 1, reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin' }, tasks: {}, log: {} }; }
+  function fresh(){ return { meta: { schema: 1, title: '학교업무', reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin' }, tasks: {}, log: {} }; }
   function merge(d){   // 저장본을 기본값 위에 얹는다. meta 는 칸별로 — 통째로 덮으면 빠진 칸이 사라진다.
     var f = fresh(), r = d || {};
     return { meta: Object.assign(f.meta, r.meta || {}), tasks: r.tasks || {}, log: r.log || {} };
@@ -683,11 +701,11 @@ var $ = function(id){ return document.getElementById(id); };
 var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 var AREA_KO = { admin: '행정', event: '행사', class: '교과' };
 var AREA_TAG = { admin: 'orange', event: 'red', class: 'blue' };
-var STATUS_KO = { todo: '대기', doing: '진행', done: '완료', dropped: '버림' };
+var STATUS_KO = { todo: '대기', doing: '진행', done: '완료' };
 var PRI_KO = ['', '높음', '보통', '낮음'];
 var PRI_TAG = ['', 'red', 'yellow', 'gray'];
 var FIELD_KO = { title: '제목', status: '상태', area: '영역', priority: '중요도', due: '마감', memo: '메모', ref: 'ref', icon: '아이콘' };
-var STAT_GROUPS = [['todo', '대기'], ['doing', '진행'], ['done', '완료'], ['dropped', '버림']];
+var STAT_GROUPS = [['todo', '대기'], ['doing', '진행'], ['done', '완료']];
 var EMOJI = ('📋 📌 🗂️ 📁 📄 📝 ✏️ 🖊️ 📊 📈 📉 🧾 📑 🗒️ 📅 🗓️ ⏰ ⏳ ⌛ 🔔 🚨 ⚠️ ❗ ❓ ✅ ☑️ 🔥 ⭐ 💡 🎯 🏁 🚀 ' +
   '🏫 🎓 📚 📖 🧑‍🏫 👩‍🎓 🧒 👥 🗣️ 🤝 💬 📣 📢 🎤 🎫 🎪 🎉 🎂 🍰 ☕ 🍱 🧃 ' +
   '🧬 🔬 🧪 🧫 🦠 🧠 🫀 🌱 🌿 🍀 🐛 🐝 🦋 🌍 🔭 ⚗️ 🩺 💊 ' +
@@ -733,7 +751,6 @@ function commit(map, msg){
   Object.keys(map).forEach(function(p){ var v = getAt(d, p); inv[p] = v === undefined ? null : JSON.parse(JSON.stringify(v)); });
   store.update(map);
   undoPush(inv, typeof msg === 'string' ? msg : '');
-  if (msg !== false) toast(msg || '저장됨');
 }
 /* ── 되돌리기 — 한 시간 안이면 언제든(교사 지시 2026-09-09: 5초짜리는 무의미하다).
       되돌릴 거리는 이 기기에만 둔다. 한 시간이 지난 것은 읽을 때마다 버리므로 쌓이지 않는다. ── */
@@ -743,13 +760,16 @@ function undoPush(inv, msg){
   if (!inv || !Object.keys(inv).length) return;
   var a = undoLoad(); a.push({ ts: Date.now(), msg: msg || '', inv: inv }); undoSave(a); paintUndo();
 }
-function paintUndo(){ $('undo-btn').hidden = !undoLoad().length; }
+function paintUndo(){
+  var n = undoLoad().length, b = $('undo-btn');
+  b.hidden = false; b.disabled = !n;
+  b.title = n ? '되돌리기 ' + n + '칸' : '되돌릴 것이 없다';
+}
 function undoLast(){
   var a = undoLoad(), u = a.pop();
   undoSave(a); paintUndo();
   if (!u) return;
   store.update(u.inv); render();
-  toast('되돌렸다' + (u.msg ? ' — ' + u.msg : ''));
 }
 $('undo-btn').addEventListener('click', undoLast);
 function logEntry(map, id, field, from, to, ts){
@@ -812,18 +832,18 @@ function applyPatch(id, patch){
 }
 function cycleStatus(id){
   var t = store.load().tasks[id]; if (!t) return;
-  var next = { todo: 'doing', doing: 'done', done: 'todo', dropped: 'todo' }[t.status] || 'todo';
+  var next = { todo: 'doing', doing: 'done', done: 'todo' }[t.status] || 'todo';
   editTask(id, { status: next }, STATUS_KO[next] + ' ' + short(id));
 }
 
 /* ── 화면 상태 ── */
 var ui = { view: 'all', areaFilter: null, open: null, emoFor: null,
-           fold: { done: true, dropped: true } };
+           fold: { done: true } };
 
 /* ── 조각 ── */
 function tag(cls, text){ return '<span class="tg ' + cls + '">' + esc(text) + '</span>'; }
 function statTag(t){
-  var g = t.status === 'done' ? '✓' : t.status === 'dropped' ? '×' : '';
+  var g = t.status === 'done' ? '✓' : '';
   return '<span class="stat s-' + t.status + '"><span class="dot s-' + t.status + '"><i>' + g + '</i></span>' + STATUS_KO[t.status] + '</span>';
 }
 function ymdOf(ts){ var x = new Date(ts); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); }
@@ -840,7 +860,9 @@ function dueCell(t, today){
   return '<span class="dn' + (n < 0 ? ' over' : n === 0 ? ' now' : '') + '">' + dueKo(t.due) + '</span>';
 }
 function metaDue(t, today){
-  if (t.status === 'done') return t.doneAt ? '<span class="dn ok">' + doneKo(t) + '</span>' : '<span class="ph">–</span>';
+  // 이사해 온 완료 항목은 완료일이 없다 — 그럴 때는 마감일을 보여 준다(빈 「–」보다 낫다)
+  if (t.status === 'done') return t.doneAt ? '<span class="dn ok">' + doneKo(t) + '</span>'
+    : (t.due ? '<span class="dn">' + dueKo(t.due) + '</span>' : '<span class="ph">–</span>');
   if (!t.due) return '<span class="ph">–</span>';
   return '<span class="dn' + (dParse(t.due) < dParse(today) ? ' over' : t.due === today ? ' now' : '') + '">' + dLabel(t.due, today) + '</span>';
 }
@@ -851,7 +873,7 @@ function ckCells(t){
 // 표의 한 줄. PC 에서는 grid 로 6칸이 되고 폰에서는 두 줄짜리 목록이 된다.
 function rowHtml(t, today){
   var c = ckCount(t);
-  var glyph = t.status === 'done' ? '✓' : t.status === 'dropped' ? '×' : '';
+  var glyph = t.status === 'done' ? '✓' : '';
   return '<li class="row a-' + t.area + ' s-' + t.status + (isStale(t) ? ' stale' : '') + '" data-id="' + t.id + '">' +
     '<span class="main" data-act="open">' +
       '<button class="dot" data-act="cycle" aria-label="상태"><i>' + glyph + '</i></button>' +
@@ -888,6 +910,8 @@ function render(){
   var match = function(t){ return !filt || (t.title + ' ' + (t.memo || '')).toLowerCase().indexOf(filt) >= 0; };
   var open = taskList(d.tasks).filter(isOpen);
   $('sub').textContent = open.length ? '열린 업무 ' + open.length : '';
+  var pt = $('pagetitle');
+  if (document.activeElement !== pt) pt.value = d.meta.title || '학교업무';
   document.querySelectorAll('[data-view]').forEach(function(b){ b.classList.toggle('on', b.dataset.view === ui.view); });
   $('inbar').hidden = ui.view === 'review';
   $('review').hidden = ui.view !== 'review';
@@ -969,6 +993,12 @@ function submit(){
   else createTask(pr);
   inp.value = ''; render(); inp.focus();
 }
+$('pagetitle').addEventListener('change', function(){
+  var v = this.value.trim() || '학교업무';
+  this.value = v;
+  if (v !== (store.load().meta.title || '학교업무')) store.update({ 'meta/title': v });
+});
+$('pagetitle').addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); this.blur(); } });
 $('in').addEventListener('input', render);
 $('in').addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); submit(); } });
 $('go').addEventListener('click', submit);
@@ -991,8 +1021,7 @@ $('main').addEventListener('click', function(e){
   if (ed) {
     var eh = ed.closest('[data-id]');
     if (eh) {
-      if (ed.dataset.edit === 'due') editDue(ed, eh.dataset.id);
-      else if (ed.dataset.edit === 'checks') editChecks(ed, eh.dataset.id);
+      if (ed.dataset.edit === 'checks') editChecks(ed, eh.dataset.id);
       else openMenu(ed, eh.dataset.id, ed.dataset.edit);
       return;
     }
@@ -1009,7 +1038,7 @@ $('main').addEventListener('click', function(e){
 
 /* ── 표에서 바로 고치기 (교사 지시 2026-09-09 — 시트를 열지 않고 칸에서 끝낸다) ── */
 var EDIT_OPTS = {
-  status: [['todo', '대기'], ['doing', '진행'], ['done', '완료'], ['dropped', '버림']],
+  status: [['todo', '대기'], ['doing', '진행'], ['done', '완료']],
   area: [['admin', '행정'], ['event', '행사'], ['class', '교과']],
   priority: [[1, '높음'], [2, '보통'], [3, '낮음']]
 };
@@ -1019,10 +1048,25 @@ function optTag(f, v){
   return tag(PRI_TAG[v], PRI_KO[v]);
 }
 function closeMenu(){ var m = $('menu'); if (!m.hidden) { m.hidden = true; m.innerHTML = ''; } }
+/* 마감일 판 — 「무조건 날짜를 골라야 하고 취소할 길이 없다」(교사 지시 2026-09-10).
+   빠른 날짜는 파서의 resolveDate 를 그대로 불러 쓴다(문법과 화면이 같은 날을 가리키게). */
+var DUE_OPTS = [['오늘', '오늘'], ['내일', '내일'], ['이번 주 금', '이번주'], ['다음 주 월', '다음주']];
+function dueHtml(t){
+  var today = todayStr(), seen = {};
+  return DUE_OPTS.map(function(o){
+    var v = resolveDate(o[1], today);
+    if (!v || v === 'none' || seen[v]) return '';          // 겹치는 날은 한 줄만(금요일에 「내일 = 이번 주 금」)
+    seen[v] = 1;
+    return '<button data-due="' + v + '"' + (t.due === v ? ' class="on"' : '') + '>' + o[0] + '<b>' + dueKo(v) + '</b></button>';
+  }).join('') +
+  '<div class="sep"></div>' +
+  '<input type="date" data-due="pick" value="' + (t.due || '') + '" aria-label="날짜 고르기">' +
+  '<button class="none' + (t.due ? '' : ' on') + '" data-due="">마감 없음</button>';
+}
 function openMenu(cell, id, field){
-  var t = store.load().tasks[id]; if (!t || !EDIT_OPTS[field]) return;
+  var t = store.load().tasks[id]; if (!t || (field !== 'due' && !EDIT_OPTS[field])) return;
   var m = $('menu');
-  m.innerHTML = EDIT_OPTS[field].map(function(o){
+  m.innerHTML = field === 'due' ? dueHtml(t) : EDIT_OPTS[field].map(function(o){
     return '<button data-v="' + o[0] + '"' + (String(t[field]) === String(o[0]) ? ' class="on"' : '') + '>' +
       optTag(field, o[0]) + '</button>';
   }).join('');
@@ -1032,31 +1076,30 @@ function openMenu(cell, id, field){
   m.style.top = top + 'px';
   m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
 }
+function setDue(id, v){
+  closeMenu();
+  editTask(id, { due: v || null }, (v ? dueKo(v) : '마감 없음') + ' ' + short(id));
+  render();
+}
 $('menu').addEventListener('click', function(e){
-  var b = e.target.closest('[data-v]'); if (!b) return;
   var m = $('menu'), id = m.dataset.id, f = m.dataset.field;
+  // ★앵커를 꼭 붙인다 — button 을 빼면 판의 다른 요소까지 이 갈래로 샌다(2026-09-09 설정 ✕ 와 같은 함정)
+  var db = e.target.closest('button[data-due]');
+  if (db) { setDue(id, db.dataset.due); return; }
+  var b = e.target.closest('[data-v]'); if (!b) return;
   var v = f === 'priority' ? +b.dataset.v : b.dataset.v;
   closeMenu();
   var patch = {}; patch[f] = v;
   editTask(id, patch, kvLabel(f, v) + ' ' + short(id));
+});
+$('menu').addEventListener('change', function(e){
+  if (e.target && e.target.dataset && e.target.dataset.due === 'pick') setDue($('menu').dataset.id, e.target.value);
 });
 function kvLabel(f, v){
   if (f === 'status') return STATUS_KO[v] || v;
   if (f === 'area') return AREA_KO[v] || v;
   if (f === 'priority') return PRI_KO[v] || v;
   return String(v);
-}
-function editDue(cell, id){
-  var t = store.load().tasks[id]; if (!t) return;
-  cell.innerHTML = '<input type="date" class="cell-in" value="' + (t.due || '') + '">';
-  var inp = cell.firstChild, done = false;
-  inp.addEventListener('change', function(){
-    done = true;
-    editTask(id, { due: inp.value || null }, (inp.value ? dueKo(inp.value) : '마감 없음') + ' ' + short(id));
-  });
-  inp.addEventListener('blur', function(){ if (!done) render(); });
-  inp.focus();
-  if (inp.showPicker) { try { inp.showPicker(); } catch (x) {} }
 }
 function editChecks(cell, id){
   cell.innerHTML = '<input type="text" class="cell-in" placeholder="＋ 체크">';
@@ -1104,14 +1147,14 @@ function renderSheet(){
       '<input id="sh-title" value="' + esc(t.title) + '">' +
       '<span class="id">' + short(ui.open) + '</span>' +
       '<button class="x" data-act="close" aria-label="닫기">✕</button></div>' +
-    '<div class="lbl">상태</div><div class="seg">' + STAT_GROUPS.slice(0, 4).map(function(g){
+    '<div class="lbl">상태</div><div class="seg">' + STAT_GROUPS.map(function(g){
       return '<button data-set="status" data-v="' + g[0] + '" class="s-' + g[0] + (t.status === g[0] ? ' on' : '') + '">' + g[1] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">영역</div><div class="seg">' + Object.keys(AREA_KO).map(function(a){
       return '<button data-set="area" data-v="' + a + '" class="a-' + a + (t.area === a ? ' on' : '') + '">' + AREA_KO[a] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">중요도</div><div class="seg">' + [1, 2, 3].map(function(p){
       return '<button data-set="priority" data-v="' + p + '" class="p-' + p + (t.priority === p ? ' on' : '') + '">' + PRI_KO[p] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">마감일</div><div class="duerow"><input type="date" id="sh-due" value="' + (t.due || '') + '">' +
-      (t.due ? '<span class="dn">' + dLabel(t.due, today) + '</span>' : '') + '</div>' +
+      (t.due ? '<span class="dn">' + dLabel(t.due, today) + '</span><button class="rm" data-act="duenone" aria-label="마감일 지우기">✕</button>' : '') + '</div>' +
     '<div class="lbl">체크포인트</div>' + ckList(t).map(function(c){
       return '<div class="ck' + (c.done ? ' done' : '') + '"><button class="tg green" data-ck="' + c.id + '">' + (c.done ? '✓' : '☐') + '</button>' +
         '<span>' + esc(c.text) + '</span><button class="rm" data-ckrm="' + c.id + '" aria-label="빼기">✕</button></div>'; }).join('') +
@@ -1139,6 +1182,7 @@ $('sheet').addEventListener('click', function(e){
   if (b.dataset.act === 'close') { closeSheet(); return; }
   if (b.dataset.act === 'emo') { openEmoji(id); return; }
   if (b.dataset.act === 'del') { deleteTask(id); closeSheet(); render(); return; }
+  if (b.dataset.act === 'duenone') { editTask(id, { due: null }, '마감 없음 ' + short(id)); render(); return; }
   if (b.dataset.set) {
     var f = b.dataset.set, v = b.dataset.v;
     if (f === 'priority') v = +v;

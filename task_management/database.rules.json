@@ -15,7 +15,7 @@
           ".validate": "newData.hasChildren(['title','status','area','priority','createdBy','createdAt'])",
           "title":     { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200" },
           "status":    { ".write": "auth != null && auth.uid === 'ts8VlEyKrtM4kA939VmdKkClUzl2' && data.exists() && newData.val() === 'done'",
-                         ".validate": "newData.val() === 'todo' || newData.val() === 'doing' || newData.val() === 'done' || newData.val() === 'dropped'" },
+                         ".validate": "newData.val() === 'todo' || newData.val() === 'doing' || newData.val() === 'done'" },
           "doneAt":    { ".write": "auth != null && auth.uid === 'ts8VlEyKrtM4kA939VmdKkClUzl2' && data.parent().child('status').exists()" },
           "updatedAt": { ".write": "auth != null && auth.uid === 'ts8VlEyKrtM4kA939VmdKkClUzl2' && data.parent().child('status').exists()" },
           "area":      { ".validate": "newData.val() === 'admin' || newData.val() === 'event' || newData.val() === 'class'" },

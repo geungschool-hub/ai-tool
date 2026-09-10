@@ -139,8 +139,75 @@ sec('[3] 노션 행 → 항목');
 sec('[4] 표 자체가 어긋나지 않았는가');
 {
   eq(C.AREA, { 행정: 'admin', 행사: 'event', 교과: 'class' }, '영역 표 3칸');
-  eq(Object.values(C.STATUS).filter((v, i, a) => a.indexOf(v) === i).sort(), ['doing', 'done', 'dropped', 'todo'], '상태는 네 값뿐');
+  eq(Object.values(C.STATUS).filter((v, i, a) => a.indexOf(v) === i).sort(), ['doing', 'done', 'todo'], '상태는 세 값뿐(버림 폐지 2026-09-10)');
+  ok(!('취소' in C.STATUS), '노션의 「취소」는 갈 곳이 없다 — 경고를 내고 대기로 간다');
   eq(C.PRIO, { 높음: 1, 보통: 2, 낮음: 3 }, '중요도 표');
+}
+
+sec('[5] 봇 경로 (M3) — 라이브에 붙지 않는 부분만');
+{
+  const fs = require('fs'), path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '_cli.js'), 'utf8');
+
+  // 설정은 web/index.html 의 CONFIG 마커가 정본 — 따로 적어 두는 곳이 없어야 한다
+  const c = C.cfg();
+  ok(/^AIza/.test(c.apiKey), 'apiKey 를 CONFIG 마커에서 읽는다');
+  ok(/^https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.firebasedatabase\.app$/.test(c.databaseURL), 'databaseURL 도 같은 곳에서');
+  ok(!/AIzaSy[A-Za-z0-9_-]{20,}/.test(src.replace(/CONFIG/g, '')), '_cli.js 안에 키를 베껴 두지 않았다');
+
+  // ★비밀은 USB(레포) 밖에 있어야 한다
+  ok(!C.BOT_FILE.toLowerCase().startsWith(path.resolve(__dirname, '..').toLowerCase()),
+     '봇 자격 파일은 이 레포 밖에 있다 — ' + C.BOT_FILE.replace(process.env.USERPROFILE || '', '%USERPROFILE%'));
+  ok(/\.config[\\/]+taskboard/.test(C.BOT_FILE), '홈 폴더의 .config/taskboard 에 둔다');
+
+  // ★오류에도 URL·토큰을 찍지 않는다 (URL 에 ?auth= 가 붙는다)
+  const restBlk = src.slice(src.indexOf('async function rest('), src.indexOf('const botGet'));
+  ok(/throw new Error\('RTDB '/.test(restBlk), '오류를 던지긴 한다');
+  ok(!/\+ url/.test(restBlk) && !/\$\{url\}/.test(restBlk), '오류 문구에 url 을 싣지 않는다');
+  ok(!/console\.log\(url/.test(src) && !/console\.error\(url/.test(src), 'url 을 찍는 곳이 없다');
+  ok(!/console\.\w+\([^)]*password/.test(src), '비밀번호를 찍는 곳이 없다');
+  ok(!/console\.\w+\([^)]*idToken/.test(src) && !/console\.\w+\([^)]*TOKEN/.test(src), '토큰을 찍는 곳이 없다');
+
+  // 파서는 한 벌 — 앱의 마커를 그대로 읽는다(CLI 가 제 파서를 따로 갖지 않는다)
+  const S = C.parser();
+  ok(typeof S.parse === 'function' && typeof S.sortAll === 'function', '앱의 PARSE·GROUP 을 그대로 쓴다');
+  const pr = S.parse('감독 배정표 회신 @내일 #행 !', 'admin', '2026-09-10', {});
+  eq([pr.title, pr.due, pr.area, pr.priority], ['감독 배정표 회신', '2026-09-11', 'admin', 1], 'CLI 도 같은 문법으로 읽는다');
+
+  // 봇이 만드는 항목은 규칙이 정한 모양으로만 — 규칙과 코드가 어긋나면 라이브에서 403 이 난다
+  const addBlk = src.slice(src.indexOf('async function addTask('), src.indexOf('async function note('));
+  ok(/createdBy: 'claude'/.test(addBlk) && /ok: false/.test(addBlk) && /status: 'todo'/.test(addBlk),
+     "봇이 만드는 항목은 createdBy:claude · ok:false · status:todo");
+  ok(/`>id 수정` 은 봇 경로에 없다/.test(addBlk), '봇은 남의 항목을 문법으로 고치지 않는다');
+  const rules = JSON.parse(fs.readFileSync(path.join(__dirname, 'database.rules.json'), 'utf8'));
+  const taskRule = rules.rules.tm.tasks.$id['.write'];
+  ok(/createdBy'\)\.val\(\) === 'claude'/.test(taskRule) && /ok'\)\.val\(\) === false/.test(taskRule),
+     '규칙도 같은 세 값을 요구한다');
+
+  // 기록은 봇 표식으로만
+  ok(/by: 'claude', via: 'bot'/.test(src), "봇 기록은 by:'claude' · via:'bot'");
+  const logRule = rules.rules.tm.log.$id['.write'];
+  ok(/by'\)\.val\(\) === 'claude'/.test(logRule) && /via'\)\.val\(\) === 'bot'/.test(logRule), '규칙도 그 둘을 요구한다');
+
+  // done 은 규약이 있는 명령이다
+  ok(/★교사가 「완료」라고 한 뒤에만/.test(src), 'done 은 교사가 말한 뒤에만이라고 도움말에 적혀 있다');
+
+  // id 찾기 — 뒤 3자로도 찾되 겹치면 멈춘다
+  const T = { '260910abc': {}, '260909abc': {}, '260908xyz': {} };
+  eq(C.findTask(T, '260910abc'), '260910abc', '전체 id');
+  eq(C.findTask(T, 'xyz'), '260908xyz', '뒤 3자');
+  ok((() => { try { C.findTask(T, 'abc'); return false; } catch (e) { return /겹친다/.test(e.message); } })(), '★뒤 3자가 겹치면 멈춘다');
+  ok((() => { try { C.findTask(T, 'nope'); return false; } catch (e) { return /없다/.test(e.message); } })(), '없는 id 면 멈춘다');
+
+  // 표 — 한글은 두 칸으로 세야 줄이 안 어긋난다
+  eq(C.pad('가나', 6), '가나  ', '한글 두 칸');
+  eq(C.pad('ab', 6), 'ab    ', '영문 한 칸');
+  eq(C.pad('가나다', 4), '가나', '넘치면 자른다');
+  eq(C.dday('2026-09-11', '2026-09-10'), 'D-1', '디데이');
+  eq(C.dday('2026-09-10', '2026-09-10'), 'D-day', '오늘');
+  eq(C.dday('2026-09-04', '2026-09-10'), 'D+6', '지남');
+  eq(C.dday('', '2026-09-10'), '', '마감 없으면 빈 칸');
+  eq(Object.keys(C.KO_STATUS).sort(), ['doing', 'done', 'todo'], '상태 표기 셋(버림 폐지)');
 }
 
 console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');

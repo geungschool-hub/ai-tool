@@ -60,7 +60,11 @@ ok(!/localStorage/.test(outsideStore), 'localStorage 는 STORE 블록 밖에 없
   const SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\/\d+\.\d+\.\d+\/firebase-(app|auth|database)-compat\.js$/;
   const srcs = [...src.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1]);
   eq(srcs.filter(u => !SDK.test(u)), [], '외부 스크립트는 판 고정 firebase compat SDK 뿐');
-  ok(!/<link[^>]+href=/.test(src), '외부 스타일 없음');
+  // <link> 는 2026-09-10 부터 있다 — 아이콘·manifest. 바깥에서 끌어오는 것은 여전히 0 이어야 한다
+  const links = [...src.matchAll(/<link([^>]+)>/g)].map(m => m[1]);
+  eq(links.filter(a => /rel="stylesheet"/.test(a)), [], '외부 스타일시트 없음');
+  eq(links.map(a => (a.match(/href="([^"]+)"/) || [])[1]).filter(u => !/^\/[^/]/.test(u)), [],
+     '<link> 는 같은 주소의 아이콘·manifest 뿐');
   const OKU = /^https:\/\/(www\.w3\.org|www\.gstatic\.com\/firebasejs\/|[a-z0-9.-]+\.firebaseapp\.com|[a-z0-9.-]+\.firebasedatabase\.app|[a-z0-9.-]+\.firebasestorage\.app)/;
   const urls = [...src.matchAll(/https?:\/\/[^\s"'<>)]+/g)].map(m => m[0]).filter(u => !OKU.test(u));
   eq(urls, [], '그 밖의 외부 URL 없음');
@@ -309,7 +313,9 @@ sec('[6] >id 수정');
   r = P('>k3x 완료'); eq(r.patch, { status: 'done' }, '완료');
   r = P('>k3x 진행'); eq(r.patch, { status: 'doing' }, '진행');
   r = P('>k3x 대기'); eq(r.patch, { status: 'todo' }, '대기');
-  r = P('>k3x 버림'); eq(r.patch, { status: 'dropped' }, '버림');
+  // 「버림」은 폐지했다 — 이제 상태 토큰이 아니라 그냥 제목 글자다
+  r = P('>k3x 버림'); eq(r.patch, { title: '버림' }, '「버림」은 더 이상 상태 토큰이 아니다');
+  ok(!/dropped/.test(PARSE), '파서에 dropped 가 남지 않았다');
   r = P('>k3x +결재'); eq(r.patch, { 'checks+': ['결재'] }, '+체크 추가');
   r = P('>k3x +결재 +발송'); eq(r.patch['checks+'], ['결재', '발송'], '+체크 여러 개');
   r = P('>k3x 새 제목'); eq(r.patch, { title: '새 제목' }, '새 제목'); eq(r.title, '새 제목', '반환 title 도 새 제목');
@@ -442,6 +448,14 @@ sec('[11] 앱 규칙 (정규식)');
   ok(/todo: 'doing', doing: 'done', done: 'todo'/.test(app), '상태점 순환 todo→doing→done→todo');
   ok(/14 \* DAY/.test(app), '14일 무변경 흐림');
   ok(!/되돌리기<\/button>/.test(app), '토스트에는 되돌리기 단추가 없다');
+  // 남기는 알림은 둘뿐 — 달리 알 길이 없는 것들
+  ok(/toast\('제목을 적어야 한다'\)/.test(app), '토큰만 쳤을 때의 안내는 남는다');
+  ok(/toast\('복사됨'\)/.test(app), '복사됨은 남는다');
+  ok(!/toast\(msg \|\| '저장됨'\)/.test(app), '저장 확인 알림은 없다');
+  ok(!/toast\('되돌렸다'/.test(app), '되돌리기 확인 알림도 없다');
+  // 되돌리기 단추는 늘 보인다 — 비면 흐리게(교사: 「되돌리기 버튼이 안 보이는데?」)
+  ok(/b\.hidden = false; b\.disabled = !n;/.test(app), '되돌리기 단추는 숨지 않고 흐려진다');
+  ok(/\.views \.gear:disabled\{opacity/.test(CSS), '흐린 단추 CSS');
   ok(/id="undo-btn"/.test(src) && /aria-label="되돌리기"/.test(src), '되돌리기는 설정 왼쪽 붙박이 단추');
   ok(/MS = 3600000/.test(STORE), '되돌릴 수 있는 동안은 한 시간(STORE 블록 안 tmUndo)');
   ok(/'meta\/reviewReq': !d\.meta\.reviewReq/.test(app), '검토 요청 토글');
@@ -536,7 +550,7 @@ sec('[13] CSS 클래스 존재 · 군더더기');
   ok(/--ink:#37352F/i.test(CSS), '★글자는 순검정이 아니라 노션의 먹빛 #37352F');
   ok(!/color:\s*#000\b/i.test(CSS) && !/color:\s*black\b/i.test(CSS), '순검정 글자 없음');
   ok(/\.row\.stale/.test(CSS), '방치 흐림 클래스');
-  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 's-dropped', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'menu', 'cell-in', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'modal-body', 'stack', 'wide', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'emogrid', 'acct', 'msg']) {
+  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'menu', 'cell-in', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'modal-body', 'stack', 'wide', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'emogrid', 'acct', 'msg']) {
     ok(new RegExp('\\.' + c.replace(/-/g, '\\-') + '(?![\\w-])').test(CSS), 'CSS 에 .' + c);
   }
   ok(!/※/.test(src), '※ 안내문 없음');
@@ -565,7 +579,7 @@ try {
     eq(Object.keys(store).sort(), ['load', 'subscribe', 'update'], 'store 는 load/update/subscribe 셋뿐');
     const d = store.load();
     eq(Object.keys(d).sort(), ['log', 'meta', 'tasks'], '빈 저장소 모양 {meta, tasks, log}');
-    eq(Object.keys(d.meta).sort(), ['cutoverAt', 'lastArea', 'lastReview', 'reviewReq', 'schema'], 'meta 칸');
+    eq(Object.keys(d.meta).sort(), ['cutoverAt', 'lastArea', 'lastReview', 'reviewReq', 'schema', 'title'], 'meta 칸');
     eq(d.meta.schema, 1, 'schema 1'); eq(d.meta.reviewReq, false, 'reviewReq false'); eq(d.meta.lastArea, 'admin', 'lastArea admin');
     ok(store.load() === d, 'load 는 같은 객체');
     let calls = 0, got = null; store.subscribe(x => { calls++; got = x; });
@@ -686,8 +700,7 @@ try {
     eq(l1[0], { task: id1, field: 'create', from: null, to: '감독 배정표 회신', by: 'me', via: 'app', ts: clock.now }, '생성 log 내용');
     eq($('in').value, '', '저장 후 입력창 비움'); ok(A._doc.activeElement === $('in'), '저장 후 포커스 유지');
     ok(JSON.parse(A._mem.tm).tasks[id1].title === '감독 배정표 회신', 'localStorage 에 저장됨');
-    ok(!$('toast').hidden && /추가됨/.test($('toast').innerHTML), '추가 토스트');
-    ok(!/되돌리기<\/button>/.test($('toast').innerHTML), '토스트에는 되돌리기가 없다');
+    ok(!/추가됨|수정됨|지움|저장됨|되돌렸다/.test($('toast').innerHTML), '항목을 만들어도 작업 알림이 뜨지 않는다(교사 지시 2026-09-10)');
     ok($('undo-btn').hidden === false, '되돌리기 단추가 살아난다');
     ok(new RegExp('data-id="' + id1 + '"').test($('main').innerHTML), '목록에 새 항목');
     ok(/D-day/.test($('main').innerHTML), 'D-day 표시'); ok(/☑0\/1/.test($('main').innerHTML), '☑0/1');
@@ -720,7 +733,7 @@ try {
     eq(A.ckList(data().tasks[id1]).map(c => [c.text, c.order]), [['NEIS 추출', 1], ['결재', 2], ['발송', 3]], '체크 order 이어짐');
     const tsSet = new Set(Object.keys(data().log).slice(nLogBefore).map(k => data().log[k].ts));
     eq(tsSet.size, 1, '한 줄의 변경은 한 ts(커밋 한 번)');
-    ok(/수정됨/.test($('toast').innerHTML), '수정 토스트');
+    ok(!/추가됨|수정됨|지움|저장됨|되돌렸다/.test($('toast').innerHTML), '고쳐도 작업 알림이 뜨지 않는다');
     A.undoLast();
     eq(Object.keys(data().tasks[id1].checks).length, 1, '되돌리기 → 체크 원복'); ok(/-09-25$/.test(data().tasks[id1].due), '되돌리기 → 마감 원복');
     eq(Object.keys(data().log).length, nLogBefore, '되돌리기 → log 도 원복');
@@ -787,7 +800,11 @@ try {
       return { innerHTML: '', firstChild: inp, _inp: inp,
                getBoundingClientRect(){ return { top: 0, bottom: 0, left: 0, right: 0 }; },
                closest(){ return { dataset: { id: tid } }; } }; };
-    const pickIn = (v) => $('menu').fire('click', { target: { closest(){ return { dataset: { v: String(v) } }; } } });
+    // ★스텁의 closest 가 선택자를 무시하면 「판에서 고르기」가 엉뚱한 갈래로 새도 검사가 통과한다.
+    //   실제로 마감일 판을 붙일 때 이 구멍으로 세 단언이 조용히 죽었다(2026-09-10).
+    const menuClick = (sel, ds) => $('menu').fire('click', { target: { closest(q){ return q === sel ? { dataset: ds } : null; } } });
+    const pickIn = (v) => menuClick('[data-v]', { v: String(v) });
+    const pickDue = (v) => menuClick('button[data-due]', { due: v });
 
     A.openMenu(fakeCell(idM), idM, 'status');
     ok(!$('menu').hidden, '상태 칸을 누르면 고르는 판이 열린다');
@@ -801,10 +818,21 @@ try {
     A.openMenu(fakeCell(idM), idM, 'priority'); pickIn(1);
     eq(data().tasks[idM].priority, 1, '중요도는 숫자로 저장된다');
 
-    const dc = fakeCell(idM); A.editDue(dc, idM);
-    ok(/type="date"/.test(dc.innerHTML), '마감 칸은 날짜 입력칸이 된다');
-    dc._inp.value = '2031-06-30'; dc._inp.fire('change');
-    eq(data().tasks[idM].due, '2031-06-30', '마감 칸에서 고른 날짜가 저장된다');
+    // 마감일 — 날짜 입력칸이 아니라 고르는 판이다(교사 지시 2026-09-10: 「취소할 길이 없다」)
+    A.openMenu(fakeCell(idM), idM, 'due');
+    ok(!$('menu').hidden, '마감 칸을 누르면 고르는 판이 열린다');
+    ok(/data-due="/.test($('menu').innerHTML), '판에 빠른 날짜');
+    ok(/data-due=""/.test($('menu').innerHTML), '판에 「마감 없음」');
+    ok(/type="date" data-due="pick"/.test($('menu').innerHTML), '판에 직접 고르는 날짜칸');
+    pickDue('2031-06-30');
+    eq(data().tasks[idM].due, '2031-06-30', '판에서 고른 날짜가 저장된다');
+    ok($('menu').hidden, '고르면 판이 닫힌다');
+    A.openMenu(fakeCell(idM), idM, 'due'); pickDue('');
+    eq(data().tasks[idM].due, undefined, '「마감 없음」을 고르면 마감일이 지워진다');
+    A.openMenu(fakeCell(idM), idM, 'due');
+    $('menu').fire('change', { target: { dataset: { due: 'pick' }, value: '2032-01-05' } });
+    eq(data().tasks[idM].due, '2032-01-05', '직접 고른 날짜도 저장된다');
+    ok(typeof A.editDue !== 'function', '옛 editDue(칸 안 날짜입력)는 남지 않았다');
 
     const cc = fakeCell(idM); A.editChecks(cc, idM);
     cc._inp.value = '결재'; cc._inp.fire('keydown', { key: 'Enter' });
@@ -857,9 +885,10 @@ try {
     $('sh-memo').focus(); sh.contains = () => true; const before = sh.innerHTML; sh.innerHTML = 'DRAFT';
     A.renderSheet(); eq(sh.innerHTML, 'DRAFT', '메모 적는 중 알림이 와도 시트를 다시 그리지 않음');
     $('sh-memo').blur(); sh.contains = () => false; A.renderSheet(); ok(sh.innerHTML !== 'DRAFT' && sh.innerHTML.length > before.length / 2, '포커스 빠지면 다시 그림');
-    // 버리기 → dropped
-    sh.fire('click', { target: { closest: () => ({ dataset: { set: 'status', v: 'dropped' } }) } }); eq(data().tasks[idC].status, 'dropped', '버리기');
-    A.render(); ok(!new RegExp('data-id="' + idC + '"').test($('main').innerHTML), '버린 항목은 오늘 화면에 없음');
+    // 「버림」 폐지 — 시트 상태 단추는 셋뿐이고 dropped 라는 값 자체가 화면에 없다
+    ok(!/data-v="dropped"/.test(sh.innerHTML), '시트에 버리기 단추가 없다');
+    eq((sh.innerHTML.match(/data-set="status"/g) || []).length, 3, '시트 상태 단추 셋');
+    A.render(); ok(new RegExp('data-id="' + idC + '"').test($('main').innerHTML), '열린 항목은 목록에 그대로 있다');
     // 삭제 — 휴지통 없이 바로 지운다. 되돌리기 5초.
     clock.now += 1000;
     const nLogAll = Object.keys(data().log).length, nLogC = logsOf(idC).length;
@@ -869,7 +898,7 @@ try {
     eq(logsOf(idC).length, 0, '★그 항목의 기록도 함께 사라진다');
     eq(Object.keys(data().log).length, nLogAll - nLogC, '남의 기록은 안 건드린다');
     ok(sh.hidden, '삭제 뒤 시트 닫힘'); eq(A.ui.open, null, 'open 해제');
-    ok(!/지움/.test($('toast').hidden ? '' : $('toast').innerHTML) === false, '지움 토스트');
+    ok(!/추가됨|수정됨|지움|저장됨|되돌렸다/.test($('toast').innerHTML), '지워도 작업 알림이 뜨지 않는다');
     ok(!$('undo-btn').hidden, '되돌리기 단추가 켜져 있다');
     A.undoLast();
     ok(idC in data().tasks, '★되돌리면 항목이 돌아온다');
@@ -1046,7 +1075,7 @@ try {
   // 보드
   A2.ui.view = 'board'; A2.render();
   ok(/class="board"/.test(html()) && /class="bcol"/.test(html()), '★보드는 칸으로');
-  eq((html().match(/class="bcol"/g) || []).length, 4, '보드 칸 넷(대기·진행·완료·버림)');
+  eq((html().match(/class="bcol"/g) || []).length, 3, '보드 칸 셋(대기·진행·완료)');
   ok(/class="card/.test(html()), '보드는 카드로');
   ok(new RegExp('data-id="' + id1 + '"').test(html()), '보드에도 항목이 있다');
 
@@ -1148,6 +1177,54 @@ sec('[19] 화면 정리 · 표에서 바로 고치기');
   // ★설정 ✕ 가 안 먹던 버그 — <html data-theme="dark"> 때문에 앵커 없는 closest 가 그쪽으로 샜다
   ok(/closest\('button\[data-theme\]'\)/.test(APP), '테마 단추는 button[data-theme] 로 찾는다');
   ok(!/closest\('\[data-theme\]'\)/.test(APP), '앵커 없는 [data-theme] 는 <html> 까지 올라가므로 쓰지 않는다');
+}
+
+// ══ [20] 아이콘·바로가기 · 마감일 판 ══
+sec('[20] 아이콘·manifest · 마감일 판');
+{
+  const fs2 = require('fs'), dir = path.dirname(HTML);
+  // 바탕화면 바로가기·폰 홈 화면·탭 아이콘을 한 벌로 덮는다(교사 지시 2026-09-10)
+  for (const f of ['favicon-32.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'manifest.webmanifest'])
+    ok(fs2.existsSync(path.join(dir, f)), 'web/' + f + ' 있다');
+  for (const [rel, href] of [['icon', '/favicon-32.png'], ['icon', '/icon-192.png'],
+                             ['apple-touch-icon', '/apple-touch-icon.png'], ['manifest', '/manifest.webmanifest']])
+    ok(new RegExp('<link rel="' + rel + '"[^>]*href="' + href + '"').test(src), '<link rel=' + rel + ' → ' + href);
+  if (fs2.existsSync(path.join(dir, 'manifest.webmanifest'))) {
+    const mf = JSON.parse(fs2.readFileSync(path.join(dir, 'manifest.webmanifest'), 'utf8'));
+    eq(mf.short_name, '업무판', 'manifest 이름은 업무판');
+    eq(mf.display, 'standalone', '설치하면 창 하나로 열린다');
+    eq(mf.start_url, '/', '시작 주소는 뿌리');
+    eq(mf.icons.map(i => i.sizes).sort(), ['192x192', '512x512', '512x512'], '아이콘 세 벌');
+    ok(mf.icons.some(i => i.purpose === 'maskable'), '안드로이드용 maskable 한 벌');
+    for (const i of mf.icons) {
+      const f = path.join(dir, i.src.replace(/^\//, ''));
+      ok(fs2.existsSync(f), 'manifest 가 가리키는 ' + i.src + ' 이 있다');
+      const bin = fs2.readFileSync(f);
+      // PNG 머리(IHDR)에서 실제 크기를 읽는다 — 선언한 sizes 와 다르면 안드로이드가 흐리게 늘린다
+      eq([bin.readUInt32BE(16), bin.readUInt32BE(20)], [+i.sizes.split('x')[0], +i.sizes.split('x')[1]], i.src + ' 은 ' + i.sizes);
+    }
+  }
+  // 마감일 판 — 날짜를 고르지 않고도 빠져나올 길이 있어야 한다
+  ok(/function dueHtml/.test(APP), 'dueHtml 있다');
+  ok(/data-due=""/.test(APP), '「마감 없음」 단추');
+  ok(/resolveDate\(o\[1\], today\)/.test(APP), '빠른 날짜는 파서의 resolveDate 를 그대로 쓴다');
+  ok(/closest\('button\[data-due\]'\)/.test(APP), '마감 단추도 앵커를 붙여 찾는다');
+  ok(/data-act="duenone"/.test(APP), '시트에도 마감일 지우기 ✕');
+  ok(!/data-set="due"/.test(APP), '지우기를 옆문으로 달지 않는다(옛 미루기 4단추와 헷갈릴 자리)');
+  ok(/\.menu input\[type="date"\]\{[^}]*height:44px/.test(CSS), '판 안 날짜칸도 44px');
+  // 이모지가 없는 항목은 그 칸도 없앤다
+  ok(/\.row \.emo:empty,\.card \.emo:empty\{display:none\}/.test(CSS), '빈 아이콘 칸은 접힌다');
+  // 이사해 온 완료 항목엔 완료일이 없다 — 폰에서 「–」 대신 마감일을 보인다
+  ok(/doneKo\(t\) \+ '<\/span>'[\s\S]{0,20}\(t\.due \?/.test(APP), '완료인데 완료일이 없으면 마감일로 대신한다');
+
+  // 판 이름 — 큰 제목을 눌러 고친다(교사 지시 2026-09-10)
+  ok(/<h1><input id="pagetitle"/.test(src), '큰 제목이 입력칸이다');
+  ok(/#pagetitle\{[^}]*font-size:inherit/.test(CSS), '입력칸이 h1 크기를 물려받는다');
+  ok(/#pagetitle:hover\{background:var\(--hover\)\}/.test(CSS), '눌러 고칠 수 있다는 표시(hover)');
+  ok(/'meta\/title': v/.test(APP), 'meta.title 에 저장한다');
+  ok(/if \(document\.activeElement !== pt\)/.test(APP), '적는 중에는 덮어쓰지 않는다');
+  ok(/this\.value\.trim\(\) \|\| '학교업무'/.test(APP), '비우면 기본 이름으로 되돌아간다');
+  ok(/title: '학교업무'/.test(STORE), '기본값 meta.title');
 }
 
 console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');

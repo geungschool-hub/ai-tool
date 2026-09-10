@@ -93,7 +93,15 @@ const TASKS = {
   '260901m2p': { title: '중간고사 문항', status: 'doing', area: 'class', priority: 1, due: '2026-09-25', updatedAt: 20, createdAt: 5 },
   '260830q8a': { title: '1-3 심화 세트', status: 'done', area: 'class', priority: 2, updatedAt: 30, createdAt: 1 }
 };
-const P = (line, area, today, tasks) => S.parse(line, area || 'admin', today || T, tasks === undefined ? TASKS : tasks);
+// ★파서는 영역을 판에서 받는다(2026-09-10) — 영역이 판마다 다르므로 코드에 박을 수 없다.
+//   검사는 첫 판이 쓰는 셋을 그대로 넘긴다. 체크 4틀도 이제 영역에 딸린 값이다.
+const AREAS3 = [
+  { key: 'admin', name: '행정', color: 'orange', order: 1 },
+  { key: 'event', name: '행사', color: 'red',    order: 2 },
+  { key: 'class', name: '교과', color: 'blue',   order: 3, checks: ['제작', '검사', '배포', '허브 카드'] }
+];
+const P = (line, area, today, tasks, areas) =>
+  S.parse(line, area || 'admin', today || T, tasks === undefined ? TASKS : tasks, areas === undefined ? AREAS3 : areas);
 
 // ══ [2] PRD §4.2 예시 4줄 ══
 sec('[2] PRD §4.2 예시 4줄');
@@ -410,8 +418,8 @@ sec('[10] 필드 경로 규약 (store.update 인자)');
       const keys = [...arg.matchAll(/(?:^|[{,])\s*(?:'([^']+)'|"([^"]+)"|\[([^\]]+)\])\s*:/g)];
       fine = keys.length > 0 && keys.every(k => {
         const lit = k[1] || k[2];
-        if (lit) return /^(tasks|meta|log)\//.test(lit);
-        return /tp\(|'tasks\/'|'meta\/'|'log\/'/.test(k[3]);
+        if (lit) return /^(tasks|meta|log|boards)\//.test(lit);
+        return /tp\(|'tasks\/'|'meta\/'|'log\/'|'boards\/'/.test(k[3]);
       });
     }
     if (fine) good++; else console.error('    경로 규약 위반: store.update(' + arg.slice(0, 60) + ')');
@@ -421,13 +429,14 @@ sec('[10] 필드 경로 규약 (store.update 인자)');
   // map / inv 는 경로 키로만 채워진다
   const fills = [...app.matchAll(/\b(map|inv)\[([^\]]+)\]\s*=(?![=>])/g)].map(x => x[2]);
   ok(fills.length >= 8, 'map[…] = 채우기 ' + fills.length + '곳');
-  eq(fills.filter(k => !/^(tp\(|'(tasks|meta|log)\/|p\b)/.test(k)), [], 'map 키는 tasks/·meta/·log/ 경로');
+  eq(fills.filter(k => !/^(tp\(|'(tasks|meta|log|boards)\/|p\b)/.test(k)), [], 'map 키는 tasks/·meta/·log/·boards/ 경로');
   ok(/function tp\(id, f\)\{ return 'tasks\/' \+ id \+ '\/' \+ f; \}/.test(app), 'tp() 가 tasks/<id>/<field>');
   ok(/'log\/' \+ pushKey\(/.test(app), 'log 는 log/<push> 경로');
   ok(/map\['tasks\/' \+ id\] = t/.test(app), '새 항목은 tasks/<id> 통째로');
   const others = [...app.matchAll(/\bstore\.(\w+)/g)].map(x => x[1]).filter(x => !['load', 'update', 'subscribe'].includes(x));
   eq(others, [], 'store 의 다른 함수는 쓰지 않음');
-  ok(/'meta\/lastArea'/.test(app), '새 항목마다 meta/lastArea');
+  // 마지막에 쓴 영역은 판마다 따로 기억한다 — meta/lastArea 는 첫 판을 심을 때만 쓰는 레거시(2026-09-10)
+  ok(/'boards\/' \+ bid \+ '\/lastArea'/.test(app), '새 항목마다 그 판의 lastArea');
   ok(/'meta\/reviewReq'/.test(app), '검토 요청은 meta/reviewReq');
 }
 
@@ -461,7 +470,7 @@ sec('[11] 앱 규칙 (정규식)');
   ok(/'meta\/reviewReq': !d\.meta\.reviewReq/.test(app), '검토 요청 토글');
   ok(/if \(pr\.editId\) \{[^}]*applyPatch\(pr\.editId, pr\.patch\)/.test(app) && /else createTask\(pr\)/.test(app), 'submit: editId 면 applyPatch, 아니면 createTask');
   ok(/isComposing/.test(app), '한글 조합 중 Enter 무시');
-  ok(/\.filter\(function\(t\)\{ return t\.ok !== false/.test(app), '전체 탭도 ok:false 제외');
+  ok(/\.filter\(function\(t\)\{ return boardOf\(t, d\) === bid && t\.ok !== false/.test(app), '전체 탭도 지금 판만 · ok:false 제외');
   ok(/isPC\(\)\) \$\('in'\)\.focus\(\)/.test(app), '탭 전환 포커스는 PC 만');
   ok(/sh-\(title\|memo\|ref\)/.test(app), '시트 적는 중엔 다시 안 그림');
   ok(/scrollTop = st/.test(app), '시트 스크롤 복원');
@@ -539,9 +548,16 @@ sec('[12] 폰은 44px·16px / PC 는 노션 밀도');
 // ══ [13] CSS 클래스 존재 · 군더더기 ══
 sec('[13] CSS 클래스 존재 · 군더더기');
 {
-  ok(/--admin:#/.test(CSS) && /--event:#/.test(CSS) && /--class:#/.test(CSS), '영역 3색 변수');
+  // ★영역 색은 키가 아니라 이름표에 매인다 — 영역이 판마다 다르므로(2026-09-10)
+  for (const c of ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'])
+    ok(new RegExp('--ac-' + c + ':#').test(CSS), '영역 색 변수 --ac-' + c);
+  ok(!/--admin:#/.test(CSS) && !/--event:#/.test(CSS) && !/--class:#/.test(CSS), '영역 키에 매인 옛 색 변수는 없다');
   ok(/--todo:#/.test(CSS) && /--doing:#/.test(CSS) && /--done:#/.test(CSS), '상태색 변수');
-  ok(/\.row\.a-admin\{border-left-color:var\(--admin\)\}/.test(CSS), '폰 행의 영역 띠');
+  ok(/border-left:3px solid var\(--ac,transparent\)/.test(CSS), '폰 행의 영역 띠는 --ac 한 자리에서 온다');
+  // ★특정도 — `.menu button.on{background:var(--hover)}` 이 더 세서 고른 색칸이 회색이 됐다(2026-09-10 실측)
+  ok(/\.menu \.swatch button\.on\{background:var\(--ab\)/.test(CSS), '고른 색칸은 제 색을 지킨다');
+  ok(/\.a-orange\{--ac:var\(--ac-orange\);--ab:var\(--t-orange-b\);--af:var\(--t-orange-f\)\}/.test(CSS.replace(/ +/g, '')),
+     '색 클래스 하나가 --ac/--ab/--af 셋을 정한다');
   // 노션 태그 팔레트 — 배경·글자가 짝으로 있어야 대비가 산다
   for (const c of ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red']) {
     ok(new RegExp('--t-' + c + '-b:#').test(CSS) && new RegExp('--t-' + c + '-f:#').test(CSS), '태그색 ' + c + ' 짝');
@@ -550,7 +566,7 @@ sec('[13] CSS 클래스 존재 · 군더더기');
   ok(/--ink:#37352F/i.test(CSS), '★글자는 순검정이 아니라 노션의 먹빛 #37352F');
   ok(!/color:\s*#000\b/i.test(CSS) && !/color:\s*black\b/i.test(CSS), '순검정 글자 없음');
   ok(/\.row\.stale/.test(CSS), '방치 흐림 클래스');
-  for (const c of ['a-admin', 'a-event', 'a-class', 's-todo', 's-doing', 's-done', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'menu', 'cell-in', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'modal-body', 'stack', 'wide', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'emogrid', 'acct', 'msg']) {
+  for (const c of ['a-orange', 'a-red', 'a-blue', 'a-gray', 'boards', 'btab', 'nm', 'pen', 'swatch', 'nmin', 'rmv', 's-todo', 's-doing', 's-done', 'stale', 'gh', 'fold', 'closed', 'row', 'dot', 'off', 'main', 'meta', 'dn', 'over', 'now', 'id', 'chip', 'on', 'menu', 'cell-in', 'sheet-bg', 'sheet-body', 'sh-top', 'seg', 'lbl', 'duerow', 'ck', 'done', 'tg', 'rm', 'ckadd', 'ref', 'log', 'danger', 'modal-body', 'stack', 'wide', 'stamp', 'empty', 'stat', 'ttl', 'emo', 'thead', 'cnt', 'add', 'views', 'grow', 'gear', 'pageicon', 'sub', 'board', 'bcol', 'bhead', 'card', 'emogrid', 'acct', 'msg']) {
     ok(new RegExp('\\.' + c.replace(/-/g, '\\-') + '(?![\\w-])').test(CSS), 'CSS 에 .' + c);
   }
   ok(!/※/.test(src), '※ 안내문 없음');
@@ -578,9 +594,9 @@ try {
     const { C, mem } = st, store = C.store;
     eq(Object.keys(store).sort(), ['load', 'subscribe', 'update'], 'store 는 load/update/subscribe 셋뿐');
     const d = store.load();
-    eq(Object.keys(d).sort(), ['log', 'meta', 'tasks'], '빈 저장소 모양 {meta, tasks, log}');
-    eq(Object.keys(d.meta).sort(), ['cutoverAt', 'lastArea', 'lastReview', 'reviewReq', 'schema', 'title'], 'meta 칸');
-    eq(d.meta.schema, 1, 'schema 1'); eq(d.meta.reviewReq, false, 'reviewReq false'); eq(d.meta.lastArea, 'admin', 'lastArea admin');
+    eq(Object.keys(d).sort(), ['boards', 'log', 'meta', 'tasks'], '빈 저장소 모양 {meta, boards, tasks, log}');
+    eq(Object.keys(d.meta).sort(), ['board', 'cutoverAt', 'lastArea', 'lastReview', 'reviewReq', 'schema', 'title'], 'meta 칸');
+    eq(d.meta.schema, 2, 'schema 2 — boards 신설(2026-09-10)'); eq(d.meta.reviewReq, false, 'reviewReq false'); eq(d.meta.lastArea, 'admin', 'lastArea admin');
     ok(store.load() === d, 'load 는 같은 객체');
     let calls = 0, got = null; store.subscribe(x => { calls++; got = x; });
     const obj = { title: 'a', status: 'todo', checks: { c1: { text: 'x', done: false } } };
@@ -606,10 +622,10 @@ try {
     eq(d2.tasks.id2, { title: 't2', priority: 0, ok: false }, '새 컨텍스트가 같은 저장소를 읽음');
     eq(d2.meta.lastArea, 'class', 'meta 도 유지');
     // 망가진 저장소
-    const st3 = mkStore({ tm: '{oops' }); eq(Object.keys(st3.C.store.load()).sort(), ['log', 'meta', 'tasks'], '깨진 JSON 은 빈 저장소');
+    const st3 = mkStore({ tm: '{oops' }); eq(Object.keys(st3.C.store.load()).sort(), ['boards', 'log', 'meta', 'tasks'], '깨진 JSON 은 빈 저장소');
     const st4 = mkStore({ tm: '{"tasks":{"a":{"title":"x"}}}' }); const d4 = st4.C.store.load();
-    eq(d4.meta.schema, 1, '빠진 meta 는 채워짐'); eq(d4.tasks.a.title, 'x', '있는 tasks 는 유지'); eq(d4.log, {}, '빠진 log 는 빈 객체');
-    const st5 = mkStore({ tm: '"str"' }); eq(Object.keys(st5.C.store.load()).sort(), ['log', 'meta', 'tasks'], '객체 아닌 JSON 은 빈 저장소');
+    eq(d4.meta.schema, 2, '빠진 meta 는 채워짐'); eq(d4.tasks.a.title, 'x', '있는 tasks 는 유지'); eq(d4.log, {}, '빠진 log 는 빈 객체');
+    const st5 = mkStore({ tm: '"str"' }); eq(Object.keys(st5.C.store.load()).sort(), ['boards', 'log', 'meta', 'tasks'], '객체 아닌 JSON 은 빈 저장소');
   }
 } catch (e) { fail++; console.log('  X FAIL: [14] STORE 실행이 예외로 멈췄다 — ' + (e && e.message)); }
 
@@ -682,7 +698,7 @@ try {
     const id1 = only(), t1 = data().tasks[id1];
     ok(/^\d{6}[0-9a-z]{3}$/.test(id1), 'id = 6자리 날짜 + base36 3자 (' + id1 + ')');
     eq(id1.slice(0, 6), A.todayStr().replace(/-/g, '').slice(2), 'id 앞 6자 = 오늘');
-    const ALLOWED = ['title', 'status', 'area', 'priority', 'due', 'checks', 'memo', 'ref', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'doneAt', 'claude'];
+    const ALLOWED = ['title', 'status', 'area', 'priority', 'due', 'checks', 'memo', 'ref', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'doneAt', 'claude', 'board'];
     eq(Object.keys(t1).filter(k => !ALLOWED.includes(k)), [], '새 항목에 PRD §3 밖의 필드 없음');
     eq(['title', 'status', 'area', 'priority', 'createdBy', 'ok', 'createdAt', 'updatedAt', 'due', 'checks'].filter(k => !(k in t1)), [], '필수 필드 전부 있음');
     ok(!('id' in t1), '저장 값엔 id 없음(키가 id)');
@@ -757,7 +773,7 @@ try {
     eq(tC.area, 'class', '#교 → 교과');
     eq(A.ckList(tC).map(c => c.text), ['제작', '검사', '배포', '허브 카드'], '#교 → 4틀');
     eq(A.ckList(tC).map(c => c.order), [1, 2, 3, 4], '4틀 order');
-    eq(data().meta.lastArea, 'class', 'lastArea = class');
+    eq(data().boards.b1.lastArea, 'class', '이 판의 lastArea = class');
     A.ui.view = 'all'; A.ui.areaFilter = null; A.render();
     const idA = type('전체 탭 항목');
     eq(data().tasks[idA].area, 'class', '전체 탭·칩 없음 → 마지막 영역(class)');
@@ -765,7 +781,7 @@ try {
     A.ui.areaFilter = 'event'; A.render();
     const idE = type('전체 탭 행사 칩');
     eq(data().tasks[idE].area, 'event', '전체 탭·행사 칩 → 행사');
-    eq(data().meta.lastArea, 'event', 'lastArea = event');
+    eq(data().boards.b1.lastArea, 'event', '이 판의 lastArea = event');
     A.ui.areaFilter = null; A.ui.view = 'board'; A.render();
     const idM = type('교육과정위원회 회의 @9/7');
     eq(data().tasks[idM].area, 'admin', '보드 탭은 lastArea(event) 를 안 따르고 행정');
@@ -844,9 +860,9 @@ try {
     A.ui.open = idC; A.renderSheet();
     const sh = $('sheet');
     ok(!sh.hidden, '시트 열림');
-    ok(new RegExp('<span class="id">' + idC.slice(-3) + '</span>').test(sh.innerHTML), '시트에 id 뒤 3자');
+    ok(!/<span class="id">/.test(sh.innerHTML), '시트에도 id 를 그리지 않는다(교사 지시 2026-09-10)');
     ok(/value="1-3 심화 세트"/.test(sh.innerHTML), '시트 제목');
-    ok(/data-set="area" data-v="class" class="a-class on"/.test(sh.innerHTML), '영역 교과 켜짐');
+    ok(/data-set="area" data-v="class" class="a-blue on"/.test(sh.innerHTML), '영역 교과 켜짐 — 클래스는 색 이름이다');
     ok(/허브 카드/.test(sh.innerHTML), '체크 목록');
     ok(!/data-set="due"/.test(sh.innerHTML) && !/class="push"/.test(sh.innerHTML), '미루기 4단추는 폐지됐다(교사 지시 2026-09-09)');
     ok(typeof A.pushDates !== 'function', 'pushDates 함수도 남지 않았다');
@@ -1156,13 +1172,17 @@ sec('[19] 화면 정리 · 표에서 바로 고치기');
   ok(/\.sheet-body,\.modal-body\{[^}]*max-width:760px/.test(CSS), '시트 폭 760px');
   ok(/\.modal-body\{max-width:560px\}/.test(CSS), '설정 창은 560px 그대로');
   ok(!/\.push\{/.test(CSS), '미루기 CSS 없음');
-  for (const [sel, v] of [['s-doing', 't-blue'], ['s-done', 't-green'], ['a-admin', 't-orange'],
-                          ['a-event', 't-red'], ['a-class', 't-blue'], ['p-1', 't-red'], ['p-2', 't-yellow']])
+  for (const [sel, v] of [['s-doing', 't-blue'], ['s-done', 't-green'], ['p-1', 't-red'], ['p-2', 't-yellow']])
     ok(new RegExp('\\.seg button\\.on\\.' + sel + '\\{background:var\\(--' + v + '-b\\)').test(CSS), '시트에서 고른 ' + sel + ' 은 태그 색');
+  // 영역은 키가 아니라 색 클래스가 정한다 — .seg button.on 이 --ab/--af 를 그대로 쓴다
+  ok(/\.seg button\.on\{[^}]*background:var\(--ab,var\(--t-gray-b\)\);color:var\(--af,var\(--t-gray-f\)\)/.test(CSS),
+     '시트에서 고른 영역은 그 영역 색으로 칠해진다');
   ok(!/\.seg button\.on\{background:var\(--ink\)/.test(CSS), '고른 것이 회색 먹빛으로 덮이지 않는다');
-  // ★목록에서 id 를 감춘다 — 「정체불명의 숫자와 영문자」(교사 지시 2026-09-09). 시트에는 남긴다(>id 수정에 쓴다)
+  // ★화면 어디에도 id 를 그리지 않는다 — 「정체불명의 숫자와 영문자」(목록 2026-09-09 · 시트 2026-09-10).
+  //   `>id 수정` 문법은 그대로 살아 있고, id 는 MD 복사와 CLI 로만 본다.
   ok(!/'<span class="id">' \+ short\(t\.id\)/.test(APP), '목록 행에 id 를 그리지 않는다');
-  ok(/short\(ui\.open\)/.test(APP), '시트에는 id 가 남는다');
+  ok(!APP.includes('short(ui.open)'), '시트에도 id 를 그리지 않는다');
+  ok(APP.includes('short(t.id)'), '★id 는 MD 복사에는 남는다 — 없애면 >id 수정 을 칠 길이 사라진다');
   // 완료한 것
   ok(/function sortDone/.test(APP) && (APP.match(/if \(g\[0\] === 'done'\) sortDone\(items\);/g) || []).length === 2,
      '전체·보드 두 곳 모두 완료는 완료일 내림차순');
@@ -1226,10 +1246,136 @@ sec('[20] 아이콘·manifest · 마감일 판');
   ok(/<h1><input id="pagetitle"/.test(src), '큰 제목이 입력칸이다');
   ok(/#pagetitle\{[^}]*font-size:inherit/.test(CSS), '입력칸이 h1 크기를 물려받는다');
   ok(/#pagetitle:hover\{background:var\(--hover\)\}/.test(CSS), '눌러 고칠 수 있다는 표시(hover)');
-  ok(/'meta\/title': v/.test(APP), 'meta.title 에 저장한다');
+  ok(/editBoard\(bid, \{ name: v \}/.test(APP), '판 이름은 지금 판에 저장한다(meta.title 은 레거시)');
   ok(/if \(document\.activeElement !== pt\)/.test(APP), '적는 중에는 덮어쓰지 않는다');
-  ok(/this\.value\.trim\(\) \|\| '학교업무'/.test(APP), '비우면 기본 이름으로 되돌아간다');
+  ok(/this\.value\.trim\(\) \|\| b\.name \|\| '학교업무'/.test(APP), '비우면 그 판의 원래 이름으로 되돌아간다');
   ok(/title: '학교업무'/.test(STORE), '기본값 meta.title');
+}
+
+// ══ [21] 판(board) · 판마다 영역 ══
+// 교사 지시 2026-09-10 — 판을 여럿으로 나누고 영역을 판마다 두기로 했다(경위는 PRD §10 M2-i).
+sec('[21] 판 · 판마다 영역');
+{
+  const clock = { now: Date.UTC(2031, 5, 15, 3, 0, 0) };
+  let A = null, err = null;
+  try { A = makeApp(null, clock); } catch (e) { err = e; }
+  ok(!err, '앱이 뜬다' + (err ? ' — ' + err.stack.split('\n').slice(0, 2).join(' ') : ''));
+  if (A) {
+    const $ = id => A._els[id] || A._doc.getElementById(id);
+    const data = () => A.store.load();
+    const type = (line) => { const was = Object.keys(data().tasks); $('in').value = line; A.submit(); const now = Object.keys(data().tasks).filter(k => !was.includes(k)); return now[0] || null; };
+
+    // ── 첫 판 심기 — 판이 없으면 render 가 한 번 만든다
+    A.render();
+    eq(Object.keys(data().boards), ['b1'], '판이 없으면 첫 판 b1 을 심는다');
+    const b1 = data().boards.b1;
+    eq(b1.name, '학교업무', '이름은 옛 meta.title 에서 물려받는다');
+    eq(Object.keys(b1.areas).sort(), ['admin', 'class', 'event'], '영역 셋을 그대로 데려온다');
+    eq(b1.areas.class.checks, ['제작', '검사', '배포', '허브 카드'], '★교과 4틀은 이제 영역에 딸린 값이다');
+    eq(data().meta.board, 'b1', '보고 있는 판을 meta 에 적는다');
+    eq(A.curBoardId(data()), 'b1', 'curBoardId');
+    ok(/data-board="b1"/.test($('boards').innerHTML) && /btab add/.test($('boards').innerHTML), '판 탭 줄과 ＋ 를 그린다');
+    ok(/\.btab\.add\{[^}]*position:sticky;right:0/.test(CSS), '＋ 는 오른쪽 끝에 붙어 있다(판이 늘어도 폰에서 닿는다)');
+
+    // ── board 칸이 없는 옛 항목은 첫 판의 것이다 (이사해 온 36건을 건드리지 않으려는 규약)
+    A.store.update({ 'tasks/old1': { title: '이사해 온 것', status: 'todo', area: 'admin', priority: 2, createdBy: 'notion', ok: true, createdAt: 1, updatedAt: 1 } });
+    ok(!('board' in data().tasks.old1), 'board 칸이 아예 없다');
+    eq(A.boardOf(data().tasks.old1, data()), 'b1', 'board 칸이 없으면 첫 판');
+    A.render();
+    ok(/data-id="old1"/.test($('main').innerHTML), '첫 판 목록에 보인다');
+
+    // ── 새 항목은 지금 판에 들어간다
+    const idA = type('첫 판 항목 #교');
+    eq(data().tasks[idA].board, 'b1', '새 항목에 board 가 박힌다');
+    eq(data().tasks[idA].area, 'class', '#교 토큰');
+    eq(A.ckList(data().tasks[idA]).map(c => c.text), ['제작', '검사', '배포', '허브 카드'], '영역에 딸린 체크 틀이 붙는다');
+    eq(data().boards.b1.lastArea, 'class', '마지막에 쓴 영역은 판마다 따로');
+
+    // ── 판 더하기
+    const b2 = A.addBoard();
+    ok(b2 && b2 !== 'b1', '새 판 id (' + b2 + ')');
+    eq(data().boards[b2].name, '새 판', '새 판은 「새 판」으로 태어난다');
+    eq(A.areaList(data(), b2).map(a => a.name), ['일반'], '★새 판은 영역 하나를 달고 태어난다 — 영역이 0이면 아무것도 못 적는다');
+    eq(A.curBoardId(data()), b2, '만들면 그 판으로 넘어간다');
+    eq(data().boards[b2].order, 2, '뒤에 붙는다');
+    // ★연달아 만들어도 id 가 겹치면 안 된다 — 시각으로 짓다가 앞 판을 덮었다(2026-09-10 브라우저 실측)
+    const b3 = A.addBoard(), b4 = A.addBoard();
+    eq(new Set([b2, b3, b4]).size, 3, '연달아 만든 판 셋의 id 가 다르다');
+    eq(Object.keys(data().boards).length, 4, '판 넷이 다 남아 있다');
+    A.goBoard(b3); A.delBoard();          // delBoard 는 지금 보고 있는 판을 지운다
+    A.goBoard(b4); A.delBoard();
+    A.goBoard(b2);
+    eq(Object.keys(data().boards).sort(), ['b1', b2].sort(), '군더더기 판을 치웠다');
+
+    // ── 판마다 다른 영역 · 판마다 다른 목록
+    A.render();
+    ok(!/data-id="old1"/.test($('main').innerHTML), '다른 판의 항목은 안 보인다');
+    ok(!new RegExp('data-id="' + idA + '"').test($('main').innerHTML), '새 판은 앞 판 항목을 안 보인다');
+    const gen = A.areaList(data(), b2)[0].key;
+    const idB = type('둘째 판 항목');
+    eq(data().tasks[idB].board, b2, '둘째 판에 들어간다');
+    eq(data().tasks[idB].area, gen, '그 판의 영역으로 들어간다');
+    A.render();
+    ok(new RegExp('data-id="' + idB + '"').test($('main').innerHTML), '둘째 판에는 보인다');
+    A.goBoard('b1'); A.render();
+    ok(!new RegExp('data-id="' + idB + '"').test($('main').innerHTML), '첫 판으로 돌아오면 안 보인다');
+    ok(/data-id="old1"/.test($('main').innerHTML), '첫 판 항목이 돌아온다');
+    A.goBoard(b2); A.render();
+    eq(A.taskCount(data(), 'b1'), 2, '첫 판 2개');
+    eq(A.taskCount(data(), b2), 1, '둘째 판 1개');
+
+    // 문법도 그 판의 이름을 본다 — #교 는 둘째 판에 없다
+    const idC = type('둘째 판에서 #교');
+    eq(data().tasks[idC].area, gen, '없는 영역 토큰은 안 먹는다');
+    eq(data().tasks[idC].title, '둘째 판에서 #교', '못 알아본 토큰은 제목에 남는다');
+
+    // ── 영역 만들고 이름·색 고치기
+    const k2 = A.addArea();
+    ok(!!k2 && k2 !== gen, '새 영역 키 (' + k2 + ')');
+    eq(A.areaList(data(), b2).map(a => a.name), ['일반', '새 영역'], '뒤에 붙는다');
+    ok(A.areaList(data(), b2)[1].color !== A.areaList(data(), b2)[0].color, '색은 안 쓴 것으로 고른다');
+    A.renameArea(k2, '집안일');
+    eq(A.areaKo(data(), b2, k2), '집안일', '이름을 고친다');
+    A.recolorArea(k2, 'purple');
+    eq(A.areaColor(data(), b2, k2), 'purple', '색을 고친다');
+    A.ui.areaFilter = null; A.render();
+    ok(new RegExp('data-area="' + k2 + '"').test($('main').innerHTML), '칩 줄에 새 영역');
+    ok(/집안일/.test($('main').innerHTML), '고친 이름으로 그린다');
+    ok(/chip a-purple/.test($('main').innerHTML), '고친 색으로 그린다');
+    ok(/chip add/.test($('main').innerHTML), '칩 줄 끝에 ＋');
+
+    // 고친 이름이 곧 문법이 된다
+    const idD = type('집 청소 #집');
+    eq(data().tasks[idD].area, k2, '★고친 이름의 첫 글자가 그대로 토큰이 된다');
+
+    // ── 영역은 비어 있을 때만 뺀다
+    ok(A.removeArea(k2) === false, '항목이 있는 영역은 못 뺀다');
+    ok(!!A.areaDef(data(), b2, k2), '그대로 남아 있다');
+    A.deleteTask(idD);
+    ok(A.removeArea(k2) === true, '비면 뺄 수 있다');
+    ok(!A.areaDef(data(), b2, k2), '빠졌다');
+    ok(A.removeArea(gen) === false, '영역이 하나뿐이면 못 뺀다');
+
+    // ── 판도 비어 있을 때만 지운다
+    ok(A.delBoard() === false, '항목이 남은 판은 못 지운다');
+    A.deleteTask(idB); A.deleteTask(idC);
+    eq(A.taskCount(data(), b2), 0, '둘째 판을 비웠다');
+    ok(A.delBoard() === true, '비면 지울 수 있다');
+    eq(Object.keys(data().boards), ['b1'], '판이 하나 남았다');
+    eq(A.curBoardId(data()), 'b1', '남은 판으로 돌아온다');
+    ok(A.delBoard() === false, '★판이 하나뿐이면 못 지운다 — 옛 항목이 갈 곳을 잃는다');
+
+    // ── 판 이름·아이콘
+    A.editBoard('b1', { name: '학교', icon: '🏫' }, false);
+    A.render();
+    eq($('pageicon').textContent, '🏫', '큰 아이콘이 판을 따라간다');
+    ok(/🏫/.test($('boards').innerHTML) && /학교/.test($('boards').innerHTML), '탭에도 아이콘과 이름');
+
+    // ── MD 복사에 판 열
+    const md = A.toMarkdown(data());
+    ok(/\| id \| 판 \|/.test(md), 'MD 복사에 판 열이 있다');
+    ok(/\| 학교 \|/.test(md), '판 이름이 줄마다 붙는다');
+  }
 }
 
 console.log('결과: ' + pass + ' 통과, ' + fail + ' 실패');

@@ -38,8 +38,11 @@
   --t-pink-b:#F5E0E9;   --t-pink-f:#4C2337;
   --t-red-b:#FFE2DD;    --t-red-f:#5D1715;
 
-  /* 영역 — 노션에서 쓰시던 색 */
-  --admin:#D9730D; --event:#E03E3E; --class:#0B6E99;
+  /* 영역 색 아홉 — 노션 팔레트. ★영역 키(admin…)가 아니라 색 이름(orange…)에 매인다.
+     영역은 판마다 다르고 교사가 만들므로 키를 CSS 에 박을 수 없다(2026-09-10) */
+  --ac-gray:#787774;   --ac-brown:#9F6B53;  --ac-orange:#D9730D;
+  --ac-yellow:#CB912F; --ac-green:#448361;  --ac-blue:#0B6E99;
+  --ac-purple:#6940A5; --ac-pink:#AD1A72;   --ac-red:#E03E3E;
   /* 상태 점 */
   --todo:#91918E; --doing:#337EA9; --done:#448361;
 
@@ -64,7 +67,9 @@
   --t-purple-b:#492F64; --t-purple-f:rgba(255,255,255,.88);
   --t-pink-b:#69314C;   --t-pink-f:rgba(255,255,255,.88);
   --t-red-b:#6E3630;    --t-red-f:rgba(255,255,255,.88);
-  --admin:#C77D48; --event:#DF5452; --class:#5E97C0;
+  --ac-gray:#979A9B;   --ac-brown:#BA856F;  --ac-orange:#C77D48;
+  --ac-yellow:#CA9849; --ac-green:#529E72;  --ac-blue:#5E97C0;
+  --ac-purple:#9A6DD7; --ac-pink:#E255A1;   --ac-red:#DF5452;
   --todo:#979797; --doing:#5E97C0; --done:#6E9B78;
 } }
 :root[data-theme="dark"]{
@@ -83,7 +88,9 @@
   --t-purple-b:#492F64; --t-purple-f:rgba(255,255,255,.88);
   --t-pink-b:#69314C;   --t-pink-f:rgba(255,255,255,.88);
   --t-red-b:#6E3630;    --t-red-f:rgba(255,255,255,.88);
-  --admin:#C77D48; --event:#DF5452; --class:#5E97C0;
+  --ac-gray:#979A9B;   --ac-brown:#BA856F;  --ac-orange:#C77D48;
+  --ac-yellow:#CA9849; --ac-green:#529E72;  --ac-blue:#5E97C0;
+  --ac-purple:#9A6DD7; --ac-pink:#E255A1;   --ac-red:#DF5452;
   --todo:#979797; --doing:#5E97C0; --done:#6E9B78;
 }
 *{box-sizing:border-box}
@@ -112,6 +119,20 @@ h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 #pagetitle:focus{background:var(--hover);outline:none}
 .sub{color:var(--ink-45);font-size:16px;margin-top:2px}
 
+/* 판 탭 — 제목 위 한 줄. 판이 몇이든 옆으로 쓸어 본다(교사 지시 2026-09-10) */
+.boards{display:flex;gap:2px;align-items:center;overflow-x:auto;scrollbar-width:none;flex:none;margin-bottom:4px}
+.boards::-webkit-scrollbar{display:none}
+.boards:empty{display:none}
+.btab{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 10px;border-radius:6px;
+      color:var(--ink-45);white-space:nowrap;flex:none;max-width:220px}
+.btab:hover{background:var(--hover)}
+.btab.on{background:var(--hover);color:var(--ink);font-weight:600}
+.btab .nm{overflow:hidden;text-overflow:ellipsis}
+/* ＋ 는 오른쪽 끝에 붙여 둔다 — 판이 셋만 돼도 폰에서는 화면 밖으로 밀렸다(2026-09-10 390px 실측) */
+.btab.add{color:var(--ink-30);min-width:44px;justify-content:center;position:sticky;right:0;background:var(--bg)}
+#pageicon{padding:0;border-radius:6px;display:block;text-align:left;min-height:0;min-width:0}
+#pageicon:hover{background:var(--hover)}
+
 /* 보기 탭 — 노션은 밑줄 2px 하나로 지금 보기를 알린다 */
 .views{display:flex;gap:2px;align-items:center;margin-top:12px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;
   position:sticky;top:0;z-index:5;background:var(--bg);flex:none}
@@ -137,12 +158,24 @@ h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2
 .chips{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 /* 영역 거르개 칩(본문). 입력창 아래 토큰 칩 줄은 폐지했다 — 교사 지시 2026-09-09 */
-.chip{min-width:44px;height:44px;padding:0 10px;color:var(--ink-60);white-space:nowrap;flex:none;border-radius:4px}
+.chip{min-width:44px;height:44px;padding:0 10px;color:var(--ac,var(--ink-60));white-space:nowrap;flex:none;border-radius:4px;
+      display:inline-flex;align-items:center;gap:4px}
 .chip:hover{background:var(--hover)}
 .chip.on{background:var(--hover);font-weight:500}
-.chip.a-admin{color:var(--admin)}
-.chip.a-event{color:var(--event)}
-.chip.a-class{color:var(--class)}
+.chip .pen{color:var(--ink-45)}
+.chip.add{color:var(--ink-30)}
+
+/* ★영역 색 — 클래스 하나가 세 변수를 정하고, 쓰는 쪽은 var() 한 번이면 된다.
+   .chip 은 --ac(진한 글자색), .row 는 --ac(왼쪽 띠), .seg button.on 은 --ab/--af(태그 색). */
+.a-gray  {--ac:var(--ac-gray);  --ab:var(--t-gray-b);  --af:var(--t-gray-f)}
+.a-brown {--ac:var(--ac-brown); --ab:var(--t-brown-b); --af:var(--t-brown-f)}
+.a-orange{--ac:var(--ac-orange);--ab:var(--t-orange-b);--af:var(--t-orange-f)}
+.a-yellow{--ac:var(--ac-yellow);--ab:var(--t-yellow-b);--af:var(--t-yellow-f)}
+.a-green {--ac:var(--ac-green); --ab:var(--t-green-b); --af:var(--t-green-f)}
+.a-blue  {--ac:var(--ac-blue);  --ab:var(--t-blue-b);  --af:var(--t-blue-f)}
+.a-purple{--ac:var(--ac-purple);--ab:var(--t-purple-b);--af:var(--t-purple-f)}
+.a-pink  {--ac:var(--ac-pink);  --ab:var(--t-pink-b);  --af:var(--t-pink-f)}
+.a-red   {--ac:var(--ac-red);   --ab:var(--t-red-b);   --af:var(--t-red-f)}
 
 /* ── 태그 칩 ────────────────────────────────────────────────────────── */
 .tg{display:inline-flex;align-items:center;max-width:100%;height:24px;padding:0 8px;border-radius:4px;
@@ -178,11 +211,8 @@ main{flex:1 0 auto;padding:0 8px 24px}
 
 /* 행 — 폰에서는 두 줄짜리 목록, PC 에서는 표의 한 줄 */
 .row{display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 8px;border-bottom:1px solid var(--line);
-     border-left:3px solid transparent;cursor:pointer}
+     border-left:3px solid var(--ac,transparent);cursor:pointer}
 .row:hover{background:var(--hover)}
-.row.a-admin{border-left-color:var(--admin)}
-.row.a-event{border-left-color:var(--event)}
-.row.a-class{border-left-color:var(--class)}
 .row.stale .main{opacity:.55}
 .row .dot{width:28px;height:44px;margin-left:-6px}
 .row .emo{flex:none;width:22px;text-align:center}
@@ -200,8 +230,9 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .row.s-done .ttl{color:var(--ink-45);text-decoration:line-through}
 .row .meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px;color:var(--ink-45)}
 .row .dn{color:var(--ink-45)}
-.row .dn.over{color:var(--event);font-weight:500}
-.row .dn.now{color:var(--admin);font-weight:500}
+/* 마감 지남·오늘 — 영역과 뜻이 다르니 팔레트 색을 직접 박는다(--ac 를 빌려 쓰지 않는다) */
+.row .dn.over{color:var(--ac-red);font-weight:500}
+.row .dn.now{color:var(--ac-orange);font-weight:500}
 .row .id{color:var(--ink-30);font-variant-numeric:tabular-nums}
 .dn.ok{color:var(--done)}
 .ph{color:var(--ink-30)}
@@ -224,6 +255,16 @@ main{flex:1 0 auto;padding:0 8px 24px}
 .menu .sep{height:1px;background:var(--line);margin:3px 0;flex:none}
 .menu input[type="date"]{width:100%;height:44px;padding:0 8px;background:var(--hover);border-radius:4px}
 .menu .none{color:var(--ink-60)}
+/* 영역 고치는 작은 판 — 이름 · 색 아홉 · 빼기 */
+.menu .nmin{width:100%;height:44px;padding:0 8px;background:var(--hover);border-radius:4px}
+.swatch{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px 0}
+.swatch button{min-width:0;min-height:44px;height:44px;border-radius:4px;background:var(--ab);color:var(--af)}
+/* ★특정도 — 위의 `.menu button.on{background:var(--hover)}` 가 더 세서 고른 색칸이 회색이 됐다
+   (2026-09-10 브라우저 실측). 같은 깊이를 줘야 제 색이 남는다 */
+.menu .swatch button.on{background:var(--ab);box-shadow:inset 0 0 0 2px var(--ink-45)}
+.menu .rmv{color:var(--ac-red)}
+.menu .rmv:disabled{color:var(--ink-30);cursor:default}
+.menu .rmv:disabled:hover{background:none}
 .cell-in{width:100%;min-width:0;height:28px;padding:0 6px;background:var(--hover);border-radius:4px;font-size:inherit}
 
 /* 표 머리 — PC 에서만 보인다 */
@@ -267,12 +308,9 @@ h2 button{margin-left:auto;width:44px;height:44px;color:var(--ink-45)}
 .seg{display:flex;gap:4px;flex-wrap:wrap}
 .seg button{min-height:44px;padding:0 12px;border-radius:4px;background:var(--hover);color:var(--ink-60)}
 /* 고른 것은 본 화면에서 쓰는 태그 색 그대로 — 회색이면 무엇을 골랐는지 안 보인다(교사 지시 2026-09-09) */
-.seg button.on{box-shadow:inset 0 0 0 1.5px var(--ink-45);background:var(--t-gray-b);color:var(--t-gray-f)}
+.seg button.on{box-shadow:inset 0 0 0 1.5px var(--ink-45);background:var(--ab,var(--t-gray-b));color:var(--af,var(--t-gray-f))}
 .seg button.on.s-doing{background:var(--t-blue-b);color:var(--t-blue-f)}
 .seg button.on.s-done{background:var(--t-green-b);color:var(--t-green-f)}
-.seg button.on.a-admin{background:var(--t-orange-b);color:var(--t-orange-f)}
-.seg button.on.a-event{background:var(--t-red-b);color:var(--t-red-f)}
-.seg button.on.a-class{background:var(--t-blue-b);color:var(--t-blue-f)}
 .seg button.on.p-1{background:var(--t-red-b);color:var(--t-red-f)}
 .seg button.on.p-2{background:var(--t-yellow-b);color:var(--t-yellow-f)}
 .seg button.on.p-3{background:var(--t-gray-b);color:var(--t-gray-f)}
@@ -292,10 +330,13 @@ h2 button{margin-left:auto;width:44px;height:44px;color:var(--ink-45)}
 details summary{min-height:44px;display:flex;align-items:center;color:var(--ink-45);cursor:pointer;list-style:none}
 details summary::-webkit-details-marker{display:none}
 .danger{display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
-.danger button{flex:1;min-height:44px;color:var(--event);border-radius:4px;background:var(--hover)}
+.danger button{flex:1;min-height:44px;color:var(--ac-red);border-radius:4px;background:var(--hover)}
 .danger button{font-weight:500}
 .stack{display:flex;flex-direction:column}
 .wide{width:100%;min-height:44px;background:var(--hover);border-radius:4px;margin-top:8px;text-align:center}
+.wide.danger-w{color:var(--ac-red)}
+.wide:disabled{color:var(--ink-30);cursor:default}
+.wide:disabled:hover{background:var(--hover)}
 .acct{color:var(--ink-45)}
 .stamp{color:var(--ink-30);padding-top:16px;text-align:center}
 
@@ -316,7 +357,7 @@ details summary::-webkit-details-marker{display:none}
 #login .pageicon{margin-bottom:0}
 #login input{height:48px;padding:0 12px;background:var(--hover);border-radius:6px}
 #login button{height:48px;border-radius:6px;background:var(--blue);color:#fff;font-weight:600;margin-top:8px}
-#login .msg{min-height:24px;color:var(--event)}
+#login .msg{min-height:24px;color:var(--ac-red)}
 
 /* 연결 배지 · 토스트 */
 #conn{padding:2px 8px;border-radius:4px;background:var(--t-yellow-b);color:var(--t-yellow-f);white-space:nowrap;margin-left:8px}
@@ -335,6 +376,7 @@ details summary::-webkit-details-marker{display:none}
   header>*{padding-left:24px;padding-right:24px}
   .views{width:100%;max-width:1120px;margin:10px auto 0;padding:0 24px}
   .pageicon{font-size:38px;margin-bottom:4px}
+  .btab{height:34px;font-size:14px}
   h1{font-size:30px}
   .sub{font-size:14px}
   .views button{height:36px;min-height:36px;font-size:14px}
@@ -387,7 +429,8 @@ details summary::-webkit-details-marker{display:none}
 
 <div id="scroll">
 <header>
-  <div class="pageicon" id="pageicon">🗂️</div>
+  <div class="boards" id="boards"></div>
+  <button class="pageicon" id="pageicon" aria-label="판 아이콘">🗂️</button>
   <h1><input id="pagetitle" value="학교업무" aria-label="판 이름" spellcheck="false" autocomplete="off"></h1>
   <div class="sub" id="sub"></div>
   <div class="views">
@@ -454,12 +497,32 @@ var firebaseConfig = {
 };
 var T_UID = "xmj4YNqWfLfLXTQJRDUjbmYKG6l1";   // 교사 계정 uid (비밀 아님 — 방어는 서버 규칙이 한다)
 /*CONFIG-END*/
-var BUILD = 'v2026-09-10c';
+var BUILD = 'v2026-09-10d';
 
 /*PARSE-START*/
-var AREA_TOKENS = {'행':'admin','행정':'admin','사':'event','행사':'event','교':'class','교과':'class'};
-var CLASS_CHECKS = ['제작','검사','배포','허브 카드'];
 var STATUS_WORDS = {'완료':'done','진행':'doing','대기':'todo'};
+// ★영역 토큰은 판마다 다르다 — 이름에서 만든다(2026-09-10).
+// 전체 이름은 늘 토큰이 되고, 짧은 토큰은 이름의 글자를 앞에서부터 훑어 아직 안 쓴 것 하나를 집는다.
+// 「행정→행 · 행사→사(행은 이미 찼다) · 교과→교」가 이 규칙에서 그대로 나온다.
+function areaTokens(areas){
+  var m = {}, taken = {};
+  (areas || []).forEach(function(a){
+    var n = a && (a.name || a.key); if (!n || m.hasOwnProperty(n)) return;
+    m[n] = a.key; taken[n] = 1;
+  });
+  (areas || []).forEach(function(a){
+    var n = a && (a.name || a.key); if (!n) return;
+    for (var i = 0; i < n.length; i++) {
+      var c = n.charAt(i);
+      if (c !== ' ' && !taken[c]) { m[c] = a.key; taken[c] = 1; return; }
+    }
+  });
+  return m;
+}
+function areaByKey(areas, key){
+  var hit = (areas || []).filter(function(a){ return a && a.key === key; });
+  return hit.length ? hit[0] : null;
+}
 var WD = {'일':0,'월':1,'화':2,'수':3,'목':4,'금':5,'토':6};
 var DAY = 86400000;
 
@@ -511,9 +574,12 @@ function findTaskId(tasks, tok){
   if (hit.length > 1) { var live = hit.filter(function(t){ return t.ok !== false; }); if (live.length) hit = live; }
   return hit.length ? hit[0].id : null;
 }
-// parse(line, defaultArea, today, tasks) — 순수. 토큰은 앞에 공백(또는 줄 머리)이 있을 때만. 실패 없음.
-function parse(line, defaultArea, today, tasks){
+// parse(line, defaultArea, today, tasks, areas) — 순수. 토큰은 앞에 공백(또는 줄 머리)이 있을 때만. 실패 없음.
+// areas = [{key,name,color,checks}] — 지금 판의 영역. 없으면 #토큰이 안 먹고 defaultArea 로 떨어진다.
+function parse(line, defaultArea, today, tasks, areas){
   line = String(line == null ? '' : line);
+  var TOK = areaTokens(areas);
+  var firstArea = (areas && areas.length && areas[0].key) || 'admin';
   var head = line, memo;
   var mi = line.search(/(^|\s)\/\//);
   if (mi >= 0) { var cut = line.indexOf('//', mi); memo = line.slice(cut + 2).trim() || undefined; head = line.slice(0, mi); }
@@ -528,7 +594,7 @@ function parse(line, defaultArea, today, tasks){
     }
     if (w === '!') { priority = 1; sink = titleW; continue; }
     if (w === '~') { priority = 3; sink = titleW; continue; }
-    if (c === '#' && AREA_TOKENS.hasOwnProperty(w.slice(1))) { area = AREA_TOKENS[w.slice(1)]; sink = titleW; continue; }
+    if (c === '#' && TOK.hasOwnProperty(w.slice(1))) { area = TOK[w.slice(1)]; sink = titleW; continue; }
     if (c === '+' && w.length > 1) { var ck = [w.slice(1)]; checks.push(ck); sink = ck; continue; }
     if (c === '>' && !editId && /^>[0-9a-z]{3}(?:[0-9a-z]{6})?$/i.test(w)) {
       var id = findTaskId(tasks, w.slice(1));
@@ -546,12 +612,13 @@ function parse(line, defaultArea, today, tasks){
     if (checkTexts.length) patch['checks+'] = checkTexts;
     if (memo !== undefined) patch.memo = memo;
     if (title) { if (STATUS_WORDS.hasOwnProperty(title)) patch.status = STATUS_WORDS[title]; else patch.title = title; }
-    return { title: patch.title || '', due: undefined, priority: priority, area: area || defaultArea || 'admin',
+    return { title: patch.title || '', due: undefined, priority: priority, area: area || defaultArea || firstArea,
              checks: checkTexts, memo: memo, editId: editId, patch: patch, fallback: false };
   }
-  // 교과 4틀은 #교 토큰을 직접 쳤을 때만 — 탭·마지막 영역으로 조용히 붙지 않는다
-  if (area === 'class' && !checkTexts.length) checkTexts = CLASS_CHECKS.slice();
-  area = area || defaultArea || 'admin';
+  // 영역에 딸린 체크 틀(교과 4틀 같은 것)은 #토큰을 직접 쳤을 때만 — 탭·마지막 영역으로 조용히 붙지 않는다
+  var adef = area ? areaByKey(areas, area) : null;
+  if (adef && adef.checks && adef.checks.length && !checkTexts.length) checkTexts = adef.checks.slice();
+  area = area || defaultArea || firstArea;
   var fallback = false;
   if (!title) { title = line.trim(); fallback = true; }
   return { title: title, due: due, priority: priority, area: area, checks: checkTexts, memo: memo,
@@ -602,10 +669,11 @@ var tmSync = null;    // SYNC 블록이 { write: fn } 를 넣는다
 var tmHooks = {};     // STORE 가 SYNC 에게 건네는 것 — fromRemote · clearCache
 var store = (function(){
   var KEY = 'tm', SNAP = 'tm.snap', SNAP_TTL = 24 * 3600 * 1000, data = null, subs = [];
-  function fresh(){ return { meta: { schema: 1, title: '학교업무', reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin' }, tasks: {}, log: {} }; }
+  // schema 2 (2026-09-10) — boards 신설. meta.title·lastArea 는 첫 판을 심을 때 물려주고 레거시로 남는다.
+  function fresh(){ return { meta: { schema: 2, title: '학교업무', reviewReq: false, lastReview: null, cutoverAt: null, lastArea: 'admin', board: null }, boards: {}, tasks: {}, log: {} }; }
   function merge(d){   // 저장본을 기본값 위에 얹는다. meta 는 칸별로 — 통째로 덮으면 빠진 칸이 사라진다.
     var f = fresh(), r = d || {};
-    return { meta: Object.assign(f.meta, r.meta || {}), tasks: r.tasks || {}, log: r.log || {} };
+    return { meta: Object.assign(f.meta, r.meta || {}), boards: r.boards || {}, tasks: r.tasks || {}, log: r.log || {} };
   }
   function strip(d){   // 스냅샷에서 memo 를 뺀다 — 폰을 잃어버려도 내용까지 남지는 않게
     var o = JSON.parse(JSON.stringify(d));
@@ -700,12 +768,17 @@ var sync = (function(){
 /* ── 앱 ── */
 var $ = function(id){ return document.getElementById(id); };
 var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-var AREA_KO = { admin: '행정', event: '행사', class: '교과' };
-var AREA_TAG = { admin: 'orange', event: 'red', class: 'blue' };
+// 첫 판을 심을 때 쓰는 영역 셋 — 이사해 온 판이 쓰던 그대로다. 이 뒤로는 데이터가 정본이다.
+var DEF_AREAS = { admin: { name: '행정', color: 'orange', order: 1 },
+                  event: { name: '행사', color: 'red',    order: 2 },
+                  class: { name: '교과', color: 'blue',   order: 3, checks: ['제작', '검사', '배포', '허브 카드'] } };
+var COLORS = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'];
+var COLOR_KO = { gray: '회색', brown: '갈색', orange: '주황', yellow: '노랑', green: '초록',
+                 blue: '파랑', purple: '보라', pink: '분홍', red: '빨강' };
 var STATUS_KO = { todo: '대기', doing: '진행', done: '완료' };
 var PRI_KO = ['', '높음', '보통', '낮음'];
 var PRI_TAG = ['', 'red', 'yellow', 'gray'];
-var FIELD_KO = { title: '제목', status: '상태', area: '영역', priority: '중요도', due: '마감', memo: '메모', ref: 'ref', icon: '아이콘' };
+var FIELD_KO = { title: '제목', status: '상태', area: '영역', priority: '중요도', due: '마감', memo: '메모', ref: 'ref', icon: '아이콘', board: '판' };
 var STAT_GROUPS = [['todo', '대기'], ['doing', '진행'], ['done', '완료']];
 var EMOJI = ('📋 📌 🗂️ 📁 📄 📝 ✏️ 🖊️ 📊 📈 📉 🧾 📑 🗒️ 📅 🗓️ ⏰ ⏳ ⌛ 🔔 🚨 ⚠️ ❗ ❓ ✅ ☑️ 🔥 ⭐ 💡 🎯 🏁 🚀 ' +
   '🏫 🎓 📚 📖 🧑‍🏫 👩‍🎓 🧒 👥 🗣️ 🤝 💬 📣 📢 🎤 🎫 🎪 🎉 🎂 🍰 ☕ 🍱 🧃 ' +
@@ -721,6 +794,47 @@ function applyTheme(v){
   if (v === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', v);
   var dark = v === 'dark' || (v === 'system' && typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme:dark)').matches);
   var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', dark ? '#191919' : '#ffffff');
+}
+/* ── 판(board)과 영역 ──────────────────────────────────────────────────
+   판은 여럿이다. 항목은 tasks 에 평평하게 있고 board 칸으로 어느 판인지 가리킨다
+   (경로를 tm/boards/<b>/tasks/… 로 한 단계 더 파면 tp()·규칙·CLI 의 모든 경로가 흔들린다).
+   ★board 칸이 없는 항목은 첫 판의 것이다 — 이사해 온 옛 항목을 건드리지 않으려고 그렇게 뒀다(2026-09-10). */
+function boardList(d){
+  var b = d.boards || {};
+  return Object.keys(b).map(function(k){ var o = Object.assign({}, b[k]); o.id = k; return o; })
+    .sort(function(x, y){ return (x.order || 0) - (y.order || 0) || (x.id < y.id ? -1 : 1); });
+}
+function firstBoardId(d){ var l = boardList(d); return l.length ? l[0].id : null; }
+function curBoardId(d){
+  var l = boardList(d); if (!l.length) return null;
+  var id = ui.board || d.meta.board;
+  return (id && d.boards[id]) ? id : l[0].id;
+}
+function boardOf(t, d){ return (t.board && d.boards && d.boards[t.board]) ? t.board : firstBoardId(d); }
+function areaList(d, bid){
+  var a = ((d.boards || {})[bid] || {}).areas || {};
+  return Object.keys(a).map(function(k){ var o = Object.assign({}, a[k]); o.key = k; return o; })
+    .sort(function(x, y){ return (x.order || 0) - (y.order || 0) || (x.key < y.key ? -1 : 1); });
+}
+function areaDef(d, bid, key){ var b = (d.boards || {})[bid]; return (b && b.areas && b.areas[key]) || null; }
+function areaKo(d, bid, key){ var a = areaDef(d, bid, key); return a ? (a.name || key) : (key || ''); }
+function areaColor(d, bid, key){ var a = areaDef(d, bid, key); return (a && a.color) || 'gray'; }
+function curAreas(){ var d = store.load(); return areaList(d, curBoardId(d)); }
+// 항목 하나의 영역 태그 — 그 항목이 속한 판에서 이름과 색을 찾는다
+function areaTagOf(t){ var d = store.load(), b = boardOf(t, d); return tag(areaColor(d, b, t.area), areaKo(d, b, t.area)); }
+function areaClassOf(t){ var d = store.load(), b = boardOf(t, d); return 'a-' + areaColor(d, b, t.area); }
+function taskCount(d, bid){ return taskList(d.tasks).filter(function(t){ return boardOf(t, d) === bid; }).length; }
+function areaCount(d, bid, key){ return taskList(d.tasks).filter(function(t){ return boardOf(t, d) === bid && t.area === key; }).length; }
+// 판이 하나도 없으면 첫 판을 심는다 — 이름·마지막 영역은 옛 meta 에서 물려받는다.
+function ensureBoards(){
+  var d = store.load();
+  if (Object.keys(d.boards || {}).length) return false;
+  if (tmSync && !sync.state.at) return false;   // 원격이 아직 안 왔다 — 빈 판을 서버에 심지 않게
+  store.update({ 'boards/b1': { name: d.meta.title || '학교업무', icon: '🗂️', order: 1,
+                                lastArea: d.meta.lastArea || 'admin',
+                                areas: JSON.parse(JSON.stringify(DEF_AREAS)) },
+                 'meta/board': 'b1' });
+  return true;
 }
 function isPC(){ return typeof matchMedia === 'function' && matchMedia('(min-width:768px)').matches; }
 function todayStr(){ var d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -804,15 +918,15 @@ function addChecks(id, texts, map, ts){
   map[tp(id, 'updatedAt')] = ts;
 }
 function createTask(p){
-  var ts = Date.now(), id = newId(), map = {};
-  var t = { title: p.title, status: 'todo', area: p.area, priority: p.priority,
+  var ts = Date.now(), id = newId(), map = {}, bid = curBoardId(store.load());
+  var t = { title: p.title, status: 'todo', area: p.area, priority: p.priority, board: bid,
             createdBy: 'me', ok: true, createdAt: ts, updatedAt: ts, doneAt: null };
   if (p.due) t.due = p.due;
   if (p.memo) t.memo = p.memo;
   if (p.checks.length) { t.checks = {}; p.checks.forEach(function(text, i){ t.checks['c' + pushKey(ts + i)] = { text: text, done: false, by: null, ts: null, order: i + 1 }; }); }
   map['tasks/' + id] = t;
   logEntry(map, id, 'create', null, p.title, ts);
-  map['meta/lastArea'] = p.area;
+  if (bid) map['boards/' + bid + '/lastArea'] = p.area;   // 마지막에 쓴 영역은 판마다 따로 기억한다
   commit(map, '추가됨 ' + short(id));
   return id;
 }
@@ -838,7 +952,7 @@ function cycleStatus(id){
 }
 
 /* ── 화면 상태 ── */
-var ui = { view: 'all', areaFilter: null, open: null, emoFor: null,
+var ui = { view: 'all', board: null, areaFilter: null, open: null, emoFor: null,
            fold: { done: true } };
 
 /* ── 조각 ── */
@@ -875,20 +989,20 @@ function ckCells(t){
 function rowHtml(t, today){
   var c = ckCount(t);
   var glyph = t.status === 'done' ? '✓' : '';
-  return '<li class="row a-' + t.area + ' s-' + t.status + (isStale(t) ? ' stale' : '') + '" data-id="' + t.id + '">' +
+  return '<li class="row ' + areaClassOf(t) + ' s-' + t.status + (isStale(t) ? ' stale' : '') + '" data-id="' + t.id + '">' +
     '<span class="main" data-act="open">' +
       '<button class="dot" data-act="cycle" aria-label="상태"><i>' + glyph + '</i></button>' +
       '<span class="emo">' + esc(t.icon || '') + '</span>' +
       '<span class="ttl">' + esc(t.title) + '</span>' +
       '<span class="meta">' +
-        '<span class="m-area" data-edit="area">' + tag(AREA_TAG[t.area], AREA_KO[t.area]) + '</span>' +
+        '<span class="m-area" data-edit="area">' + areaTagOf(t) + '</span>' +
         '<span class="m-pri" data-edit="priority">' + (t.priority !== 2 ? tag(PRI_TAG[t.priority], PRI_KO[t.priority]) : '<span class="ph">–</span>') + '</span>' +
         '<span class="m-due" data-edit="due">' + metaDue(t, today) + '</span>' +
         '<span class="m-ck' + (c.y ? ' has' : '') + '" data-edit="checks">☑' + (c.y ? c.x + '/' + c.y : '') + '</span></span>' +
     '</span>' +
     '<span class="c-stat" data-edit="status">' + statTag(t) + '</span>' +
     '<span class="c-due" data-edit="due">' + dueCell(t, today) + '</span>' +
-    '<span class="c-area" data-edit="area">' + tag(AREA_TAG[t.area], AREA_KO[t.area]) + '</span>' +
+    '<span class="c-area" data-edit="area">' + areaTagOf(t) + '</span>' +
     '<span class="c-pri" data-edit="priority">' + (t.priority !== 2 ? tag(PRI_TAG[t.priority], PRI_KO[t.priority]) : '') + '</span>' +
     '<span class="c-ck" data-edit="checks">' + ckCells(t) + '</span></li>';
 }
@@ -904,15 +1018,19 @@ function ghHtml(label, n, key, closed){
 function render(){
   closeMenu();
   paintUndo();
+  ensureBoards();
   var d = store.load(), today = todayStr();
   var q = $('in').value;
-  var pr = q.trim() ? parse(q, curArea(), today, d.tasks) : null;
+  var pr = q.trim() ? parse(q, curArea(), today, d.tasks, curAreas()) : null;
   var filt = pr && !pr.editId && !pr.fallback ? pr.title.toLowerCase() : '';
   var match = function(t){ return !filt || (t.title + ' ' + (t.memo || '')).toLowerCase().indexOf(filt) >= 0; };
-  var open = taskList(d.tasks).filter(isOpen);
+  var bid = curBoardId(d), board = (d.boards || {})[bid] || {};
+  var open = taskList(d.tasks).filter(function(t){ return isOpen(t) && boardOf(t, d) === bid; });
   $('sub').textContent = open.length ? '열린 업무 ' + open.length : '';
+  renderBoards(d, bid);
+  $('pageicon').textContent = board.icon || '🗂️';
   var pt = $('pagetitle');
-  if (document.activeElement !== pt) pt.value = d.meta.title || '학교업무';
+  if (document.activeElement !== pt) pt.value = board.name || d.meta.title || '학교업무';
   document.querySelectorAll('[data-view]').forEach(function(b){ b.classList.toggle('on', b.dataset.view === ui.view); });
   $('inbar').hidden = ui.view === 'review';
   $('review').hidden = ui.view !== 'review';
@@ -928,13 +1046,107 @@ function render(){
   if (ui.open) renderSheet();
   placeToast();
 }
+/* 판 탭 — 제목 위 한 줄. 맨 끝의 ＋ 로 판을 더한다 */
+function renderBoards(d, bid){
+  var el = $('boards'); if (!el) return;
+  el.innerHTML = boardList(d).map(function(b){
+    return '<button class="btab' + (b.id === bid ? ' on' : '') + '" data-board="' + b.id + '">' +
+      (b.icon ? '<span class="emo">' + esc(b.icon) + '</span>' : '') +
+      '<span class="nm">' + esc(b.name || '판') + '</span></button>';
+  }).join('') + '<button class="btab add" data-act="newboard" aria-label="판 더하기">＋</button>';
+}
+/* 영역 줄 — 한 번 누름 = 거르기 · 다시 = 풀기 · ✎ = 이름·색 고치기 · ＋ = 새 영역.
+   고르는 자리와 고치는 자리를 겹치지 않게 ✎ 를 따로 뒀다(2026-09-10) */
 function areaChips(){
-  return '<div class="chips" id="areachips">' + Object.keys(AREA_KO).map(function(a){
-    return '<button class="chip a-' + a + (ui.areaFilter === a ? ' on' : '') + '" data-area="' + a + '">' + AREA_KO[a] + '</button>';
-  }).join('') + '</div>';
+  var d = store.load(), bid = curBoardId(d);
+  return '<div class="chips" id="areachips">' + areaList(d, bid).map(function(a){
+    var on = ui.areaFilter === a.key;
+    return '<button class="chip a-' + (a.color || 'gray') + (on ? ' on' : '') + '" data-area="' + esc(a.key) + '">' +
+      esc(a.name || a.key) + (on ? '<span class="pen" data-arearef="' + esc(a.key) + '">✎</span>' : '') + '</button>';
+  }).join('') + '<button class="chip add" data-act="newarea" aria-label="영역 더하기">＋</button></div>';
+}
+/* ── 판·영역 손보기 ───────────────────────────────────────────────────
+   판 지우기·영역 빼기는 **비어 있을 때만** 된다. 항목을 품은 채 사라지는 길은 두지 않는다. */
+function editBoard(bid, fields, msg){
+  var map = {};
+  Object.keys(fields).forEach(function(f){ map['boards/' + bid + '/' + f] = fields[f]; });
+  commit(map, msg);
+}
+function goBoard(bid){
+  if (ui.open) closeSheet();
+  ui.board = bid; ui.areaFilter = null;
+  store.update({ 'meta/board': bid });
+  render();
+}
+// ★시각으로 짓지 않는다 — Date.now().toString(36) 은 앞자리가 47초에 한 번 바뀐다.
+//   앞 5자만 떼어 쓰다가 연달아 만든 판이 같은 id 로 태어나 앞 판을 덮었다(2026-09-10 브라우저 실측).
+function newBoardId(d){
+  var b = d.boards || {}, k;
+  do { k = 'b' + Math.random().toString(36).slice(2, 6); } while (b.hasOwnProperty(k));
+  return k;
+}
+function addBoard(){
+  var d = store.load(), list = boardList(d);
+  var bid = newBoardId(d);
+  var map = {};
+  map['boards/' + bid] = { name: '새 판', icon: '🗂️', order: (list.length ? (list[list.length - 1].order || list.length) : 0) + 1,
+                           lastArea: 'a1', areas: { a1: { name: '일반', color: 'gray', order: 1 } } };
+  map['meta/board'] = bid;
+  commit(map, '판 만듦');
+  ui.board = bid; ui.areaFilter = null; render();
+  var pt = $('pagetitle'); if (pt && pt.focus) { pt.focus(); if (pt.select) pt.select(); }   // 바로 이름을 적게
+  return bid;
+}
+function delBoard(){
+  var d = store.load(), bid = curBoardId(d), list = boardList(d);
+  if (list.length < 2) { toast('판이 하나뿐이다'); return false; }
+  var n = taskCount(d, bid);
+  if (n) { toast('항목 ' + n + '개가 남아 있다'); return false; }
+  var next = list.filter(function(b){ return b.id !== bid; })[0].id;
+  var map = {}; map['boards/' + bid] = null; map['meta/board'] = next;
+  commit(map, '판 지움');
+  ui.board = next; ui.areaFilter = null; render();
+  return true;
+}
+function newAreaKey(d, bid){
+  var a = ((d.boards || {})[bid] || {}).areas || {}, k;
+  do { k = 'a' + Math.random().toString(36).slice(2, 5); } while (a.hasOwnProperty(k));
+  return k;
+}
+function addArea(){
+  var d = store.load(), bid = curBoardId(d); if (!bid) return null;
+  var list = areaList(d, bid), key = newAreaKey(d, bid);
+  var color = COLORS.filter(function(c){ return !list.some(function(a){ return a.color === c; }); })[0] || 'gray';
+  var map = {};
+  map['boards/' + bid + '/areas/' + key] = { name: '새 영역', color: color, order: (list.length ? (list[list.length - 1].order || list.length) : 0) + 1 };
+  commit(map, '영역 만듦');
+  ui.areaFilter = key; render();
+  var pen = document.querySelector('[data-arearef="' + key + '"]');
+  if (pen) openAreaEdit(pen, key);
+  return key;
+}
+function renameArea(key, name){
+  var d = store.load(), bid = curBoardId(d), a = areaDef(d, bid, key); if (!a) return;
+  name = String(name || '').trim(); if (!name || name === a.name) return;
+  commit((function(o){ o['boards/' + bid + '/areas/' + key + '/name'] = name; return o; })({}), '영역 이름');
+}
+function recolorArea(key, color){
+  var d = store.load(), bid = curBoardId(d), a = areaDef(d, bid, key); if (!a || a.color === color) return;
+  commit((function(o){ o['boards/' + bid + '/areas/' + key + '/color'] = color; return o; })({}), '영역 색');
+}
+function removeArea(key){
+  var d = store.load(), bid = curBoardId(d), list = areaList(d, bid);
+  if (list.length < 2) { toast('영역이 하나뿐이다'); return false; }
+  var n = areaCount(d, bid, key);
+  if (n) { toast('항목 ' + n + '개가 이 영역에 있다'); return false; }
+  commit((function(o){ o['boards/' + bid + '/areas/' + key] = null; return o; })({}), '영역 뺌');
+  if (ui.areaFilter === key) ui.areaFilter = null;
+  render();
+  return true;
 }
 function viewTable(d, today, match){
-  var all = sortAll(d.tasks).filter(function(t){ return t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
+  var bid = curBoardId(d);
+  var all = sortAll(d.tasks).filter(function(t){ return boardOf(t, d) === bid && t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
   var html = THEAD;
   STAT_GROUPS.forEach(function(g){
     var items = all.filter(function(t){ return t.status === g[0]; });
@@ -948,7 +1160,8 @@ function viewTable(d, today, match){
   return areaChips() + '<ul id="list">' + html + '</ul>';
 }
 function viewBoard(d, today, match){
-  var all = sortAll(d.tasks).filter(function(t){ return t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
+  var bid = curBoardId(d);
+  var all = sortAll(d.tasks).filter(function(t){ return boardOf(t, d) === bid && t.ok !== false && (!ui.areaFilter || t.area === ui.areaFilter) && match(t); });
   var cols = STAT_GROUPS.map(function(g){
     var items = all.filter(function(t){ return t.status === g[0]; });
     if (g[0] === 'done') sortDone(items);
@@ -959,15 +1172,21 @@ function viewBoard(d, today, match){
         var c = ckCount(t);
         return '<div class="card' + (isStale(t) ? ' stale' : '') + '" data-id="' + t.id + '" data-act="open">' +
           '<div class="ttl"><span class="emo">' + esc(t.icon || '') + '</span><span>' + esc(t.title) + '</span></div>' +
-          '<div class="meta">' + dueCell(t, today) + tag(AREA_TAG[t.area], AREA_KO[t.area]) +
+          '<div class="meta">' + dueCell(t, today) + areaTagOf(t) +
           (t.priority !== 2 ? tag(PRI_TAG[t.priority], PRI_KO[t.priority]) : '') +
           (c.y ? '<span class="id">☑' + c.x + '/' + c.y + '</span>' : '') + '</div></div>';
       }).join('') + '</div>';
   }).join('');
   return areaChips() + '<div class="board">' + cols + '</div>';
 }
-// 새 항목의 영역: 보드 = 행정. 전체 탭 = 켜진 영역 칩, 없으면 마지막에 쓴 영역
-function curArea(){ var d = store.load(); return ui.view === 'all' ? (ui.areaFilter || d.meta.lastArea || 'admin') : 'admin'; }
+// 새 항목의 영역: 보드 = 이 판의 첫 영역. 전체 탭 = 켜진 영역 칩, 없으면 이 판에서 마지막에 쓴 영역
+function curArea(){
+  var d = store.load(), bid = curBoardId(d), b = (d.boards || {})[bid] || {}, list = areaList(d, bid);
+  var first = list.length ? list[0].key : 'admin';
+  if (ui.view !== 'all') return first;
+  var pick = ui.areaFilter || b.lastArea;
+  return (pick && areaDef(d, bid, pick)) ? pick : first;
+}
 function renderPreview(pr){
   var el = $('preview'); if (!pr) { el.innerHTML = ''; return; }
   var s = [];
@@ -976,7 +1195,7 @@ function renderPreview(pr){
   if (pr.editId && p.status) s.push(tag('gray', STATUS_KO[p.status]));
   if (pr.editId ? 'due' in p : !!pr.due) s.push(tag('gray', p.due ? dueKo(p.due) : '마감 없음'));
   var ar = pr.editId ? p.area : pr.area;
-  if (ar) s.push(tag(AREA_TAG[ar], AREA_KO[ar]));
+  if (ar) { var pd = store.load(), pb = curBoardId(pd); s.push(tag(areaColor(pd, pb, ar), areaKo(pd, pb, ar))); }
   var pri = pr.editId ? p.priority : pr.priority;
   if (pri === 1 || pri === 3) s.push(tag(PRI_TAG[pri], PRI_KO[pri]));
   if (pr.checks.length) s.push(tag('green', '☑ ' + pr.checks.length));
@@ -987,7 +1206,7 @@ function renderPreview(pr){
 /* ── 입력창 ── */
 function submit(){
   var inp = $('in'), line = inp.value; if (!line.trim()) return;
-  var d = store.load(), pr = parse(line, curArea(), todayStr(), d.tasks);
+  var d = store.load(), pr = parse(line, curArea(), todayStr(), d.tasks, curAreas());
   // 토큰만 치면 제목이 없다 — 「#교 !」 같은 항목이 생기지 않게 막는다
   if (pr.fallback) { toast('제목을 적어야 한다'); return; }
   if (pr.editId) { if (Object.keys(pr.patch).length) applyPatch(pr.editId, pr.patch); }
@@ -995,9 +1214,13 @@ function submit(){
   inp.value = ''; render(); inp.focus();
 }
 $('pagetitle').addEventListener('change', function(){
-  var v = this.value.trim() || '학교업무';
+  var d = store.load(), bid = curBoardId(d), b = (d.boards || {})[bid] || {};
+  var v = this.value.trim() || b.name || '학교업무';
   this.value = v;
-  if (v !== (store.load().meta.title || '학교업무')) store.update({ 'meta/title': v });
+  if (bid && v !== b.name) editBoard(bid, { name: v }, '판 이름');
+});
+$('pageicon').addEventListener('click', function(){
+  var bid = curBoardId(store.load()); if (bid) openEmoji('b:' + bid);
 });
 $('pagetitle').addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); this.blur(); } });
 $('in').addEventListener('input', render);
@@ -1013,6 +1236,11 @@ document.addEventListener('click', function(e){
   var b = e.target.closest('[data-view]'); if (!b) return;
   goView(b.dataset.view);
 });
+$('boards').addEventListener('click', function(e){
+  if (e.target.closest('[data-act="newboard"]')) { addBoard(); return; }
+  var b = e.target.closest('button[data-board]'); if (!b) return;
+  if (b.dataset.board !== curBoardId(store.load())) goBoard(b.dataset.board);
+});
 $('reqbtn').addEventListener('click', function(){
   var d = store.load(); store.update({ 'meta/reviewReq': !d.meta.reviewReq }); render();
 });
@@ -1027,10 +1255,14 @@ $('main').addEventListener('click', function(e){
       return;
     }
   }
+  // ✎ 는 칩 안에 있다 — 거르기보다 먼저 걸러 내야 「고르기」와 「고치기」가 안 섞인다
+  var pen = e.target.closest('[data-arearef]');
+  if (pen) { openAreaEdit(pen, pen.dataset.arearef); return; }
   var area = e.target.closest('[data-area]');
   if (area) { ui.areaFilter = ui.areaFilter === area.dataset.area ? null : area.dataset.area; render(); return; }
   var a = e.target.closest('[data-act]'); if (!a) return;
   var act = a.dataset.act;
+  if (act === 'newarea') { addArea(); return; }
   if (act === 'fold') { ui.fold[a.dataset.g] = !ui.fold[a.dataset.g]; render(); return; }
   var holder = a.closest('[data-id]'); if (!holder) return;
   if (act === 'cycle') cycleStatus(holder.dataset.id);
@@ -1040,15 +1272,43 @@ $('main').addEventListener('click', function(e){
 /* ── 표에서 바로 고치기 (교사 지시 2026-09-09 — 시트를 열지 않고 칸에서 끝낸다) ── */
 var EDIT_OPTS = {
   status: [['todo', '대기'], ['doing', '진행'], ['done', '완료']],
-  area: [['admin', '행정'], ['event', '행사'], ['class', '교과']],
   priority: [[1, '높음'], [2, '보통'], [3, '낮음']]
 };
+// 영역만은 판에서 읽는다 — 판마다 다르고 교사가 만든다
+function editOpts(field){
+  if (field !== 'area') return EDIT_OPTS[field];
+  var d = store.load();
+  return areaList(d, curBoardId(d)).map(function(a){ return [a.key, a.name || a.key]; });
+}
+function areaKoCur(v){ var d = store.load(); return areaKo(d, curBoardId(d), v) || v; }
 function optTag(f, v){
   if (f === 'status') return '<span class="stat s-' + v + '"><span class="dot s-' + v + '"><i></i></span>' + STATUS_KO[v] + '</span>';
-  if (f === 'area') return tag(AREA_TAG[v], AREA_KO[v]);
+  if (f === 'area') { var d = store.load(), b = curBoardId(d); return tag(areaColor(d, b, v), areaKo(d, b, v)); }
   return tag(PRI_TAG[v], PRI_KO[v]);
 }
-function closeMenu(){ var m = $('menu'); if (!m.hidden) { m.hidden = true; m.innerHTML = ''; } }
+function closeMenu(){ var m = $('menu'); if (!m.hidden) { m.hidden = true; m.innerHTML = ''; m.removeAttribute('data-area'); } }
+function placeMenu(m, anchor){
+  var r = anchor.getBoundingClientRect(), top = r.bottom + 4;
+  if (top + m.offsetHeight > innerHeight - 8) top = Math.max(8, r.top - m.offsetHeight - 4);
+  m.style.top = top + 'px';
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+}
+/* 영역 고치는 작은 판 — 이름 · 색 아홉 · 빼기. 칩의 ✎ 에서 연다 */
+function openAreaEdit(anchor, key){
+  var d = store.load(), bid = curBoardId(d), a = areaDef(d, bid, key); if (!a) return;
+  var n = areaCount(d, bid, key), only = areaList(d, bid).length < 2;
+  var why = only ? '영역이 하나뿐이다' : n ? '항목 ' + n + '개가 이 영역에 있다' : '';
+  var m = $('menu');
+  m.innerHTML = '<input class="nmin" id="area-nm" value="' + esc(a.name || key) + '" aria-label="영역 이름" spellcheck="false" autocomplete="off">' +
+    '<div class="swatch">' + COLORS.map(function(c){
+      return '<button class="a-' + c + (a.color === c ? ' on' : '') + '" data-color="' + c + '" aria-label="' + COLOR_KO[c] + '"></button>';
+    }).join('') + '</div><div class="sep"></div>' +
+    '<button class="rmv" data-act="rmarea"' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>빼기</button>';
+  m.dataset.area = key; m.dataset.id = ''; m.dataset.field = '';
+  m.hidden = false;
+  placeMenu(m, anchor);
+  var inp = $('area-nm'); if (inp && inp.focus) { inp.focus(); if (inp.select) inp.select(); }
+}
 /* 마감일 판 — 「무조건 날짜를 골라야 하고 취소할 길이 없다」(교사 지시 2026-09-10).
    빠른 날짜는 파서의 resolveDate 를 그대로 불러 쓴다(문법과 화면이 같은 날을 가리키게). */
 var DUE_OPTS = [['오늘', '오늘'], ['내일', '내일'], ['이번 주 금', '이번주'], ['다음 주 월', '다음주']];
@@ -1065,17 +1325,15 @@ function dueHtml(t){
   '<button class="none' + (t.due ? '' : ' on') + '" data-due="">마감 없음</button>';
 }
 function openMenu(cell, id, field){
-  var t = store.load().tasks[id]; if (!t || (field !== 'due' && !EDIT_OPTS[field])) return;
+  var t = store.load().tasks[id], opts = editOpts(field);
+  if (!t || (field !== 'due' && !opts)) return;
   var m = $('menu');
-  m.innerHTML = field === 'due' ? dueHtml(t) : EDIT_OPTS[field].map(function(o){
-    return '<button data-v="' + o[0] + '"' + (String(t[field]) === String(o[0]) ? ' class="on"' : '') + '>' +
+  m.innerHTML = field === 'due' ? dueHtml(t) : opts.map(function(o){
+    return '<button data-v="' + esc(o[0]) + '"' + (String(t[field]) === String(o[0]) ? ' class="on"' : '') + '>' +
       optTag(field, o[0]) + '</button>';
   }).join('');
-  m.dataset.id = id; m.dataset.field = field; m.hidden = false;
-  var r = cell.getBoundingClientRect(), top = r.bottom + 4;
-  if (top + m.offsetHeight > innerHeight - 8) top = Math.max(8, r.top - m.offsetHeight - 4);
-  m.style.top = top + 'px';
-  m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+  m.dataset.id = id; m.dataset.field = field; m.removeAttribute('data-area'); m.hidden = false;
+  placeMenu(m, cell);
 }
 function setDue(id, v){
   closeMenu();
@@ -1083,7 +1341,14 @@ function setDue(id, v){
   render();
 }
 $('menu').addEventListener('click', function(e){
-  var m = $('menu'), id = m.dataset.id, f = m.dataset.field;
+  var m = $('menu'), id = m.dataset.id, f = m.dataset.field, ak = m.dataset.area;
+  if (ak) {   // 영역 고치는 판
+    var col = e.target.closest('button[data-color]');
+    if (col) { closeMenu(); recolorArea(ak, col.dataset.color); render(); return; }
+    var rm = e.target.closest('button[data-act="rmarea"]');
+    if (rm && !rm.disabled) { closeMenu(); removeArea(ak); }
+    return;
+  }
   // ★앵커를 꼭 붙인다 — button 을 빼면 판의 다른 요소까지 이 갈래로 샌다(2026-09-09 설정 ✕ 와 같은 함정)
   var db = e.target.closest('button[data-due]');
   if (db) { setDue(id, db.dataset.due); return; }
@@ -1094,11 +1359,15 @@ $('menu').addEventListener('click', function(e){
   editTask(id, patch, kvLabel(f, v) + ' ' + short(id));
 });
 $('menu').addEventListener('change', function(e){
+  if (e.target && e.target.id === 'area-nm') { var ak = $('menu').dataset.area, v = e.target.value; closeMenu(); renameArea(ak, v); render(); return; }
   if (e.target && e.target.dataset && e.target.dataset.due === 'pick') setDue($('menu').dataset.id, e.target.value);
+});
+$('menu').addEventListener('keydown', function(e){
+  if (e.target && e.target.id === 'area-nm' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); e.target.blur(); }
 });
 function kvLabel(f, v){
   if (f === 'status') return STATUS_KO[v] || v;
-  if (f === 'area') return AREA_KO[v] || v;
+  if (f === 'area') return areaKoCur(v);
   if (f === 'priority') return PRI_KO[v] || v;
   return String(v);
 }
@@ -1116,7 +1385,9 @@ function editChecks(cell, id){
   inp.focus();
 }
 document.addEventListener('click', function(e){
-  if (!e.target.closest('#menu') && !e.target.closest('[data-edit]')) closeMenu();
+  // ✎ 와 ＋ 도 판을 여는 자리다 — 빼면 같은 클릭이 바로 닫아 버린다
+  if (!e.target.closest('#menu') && !e.target.closest('[data-edit]') &&
+      !e.target.closest('[data-arearef]') && !e.target.closest('[data-act="newarea"]')) closeMenu();
 });
 
 /* ── 상세 시트 ── */
@@ -1131,7 +1402,7 @@ function logLine(t, l){
   if (f === 'create') return '생성';
   if (f === 'icon') return l.to ? '아이콘 ' + l.to : '아이콘 지움';
   var kv = function(v){ if (v == null) return '—'; if (f === 'status') return STATUS_KO[v] || v;
-    if (f === 'area') return AREA_KO[v] || v; if (f === 'priority') return PRI_KO[v] || v;
+    if (f === 'area') return areaKoCur(v); if (f === 'priority') return PRI_KO[v] || v;
     if (f === 'due') return dueKo(v); return String(v); };
   return (FIELD_KO[f] || f) + ' ' + kv(l.from) + ' → ' + kv(l.to);
 }
@@ -1146,12 +1417,11 @@ function renderSheet(){
   sh.innerHTML = '<div class="sheet-bg" data-act="close"></div><div class="sheet-body">' +
     '<div class="sh-top"><button class="emo" data-act="emo" aria-label="아이콘">' + (t.icon || '＋') + '</button>' +
       '<input id="sh-title" value="' + esc(t.title) + '">' +
-      '<span class="id">' + short(ui.open) + '</span>' +
       '<button class="x" data-act="close" aria-label="닫기">✕</button></div>' +
     '<div class="lbl">상태</div><div class="seg">' + STAT_GROUPS.map(function(g){
       return '<button data-set="status" data-v="' + g[0] + '" class="s-' + g[0] + (t.status === g[0] ? ' on' : '') + '">' + g[1] + '</button>'; }).join('') + '</div>' +
-    '<div class="lbl">영역</div><div class="seg">' + Object.keys(AREA_KO).map(function(a){
-      return '<button data-set="area" data-v="' + a + '" class="a-' + a + (t.area === a ? ' on' : '') + '">' + AREA_KO[a] + '</button>'; }).join('') + '</div>' +
+    '<div class="lbl">영역</div><div class="seg">' + areaList(d, boardOf(t, d)).map(function(a){
+      return '<button data-set="area" data-v="' + esc(a.key) + '" class="a-' + (a.color || 'gray') + (t.area === a.key ? ' on' : '') + '">' + esc(a.name || a.key) + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">중요도</div><div class="seg">' + [1, 2, 3].map(function(p){
       return '<button data-set="priority" data-v="' + p + '" class="p-' + p + (t.priority === p ? ' on' : '') + '">' + PRI_KO[p] + '</button>'; }).join('') + '</div>' +
     '<div class="lbl">마감일</div><div class="duerow"><input type="date" id="sh-due" value="' + (t.due || '') + '">' +
@@ -1223,14 +1493,21 @@ function openEmoji(id){
 $('emopick').addEventListener('click', function(e){
   if (e.target === $('emopick') || e.target.closest('[data-act="close"]')) { $('emopick').hidden = true; return; }
   var b = e.target.closest('[data-e]'); if (!b) return;
-  editTask(ui.emoFor, { icon: b.dataset.e || null }, b.dataset.e ? '아이콘 ' + b.dataset.e : '아이콘 지움');
+  var msg = b.dataset.e ? '아이콘 ' + b.dataset.e : '아이콘 지움';
+  if (/^b:/.test(String(ui.emoFor))) editBoard(String(ui.emoFor).slice(2), { icon: b.dataset.e || null }, msg);
+  else editTask(ui.emoFor, { icon: b.dataset.e || null }, msg);
   $('emopick').hidden = true; render();
 });
 
 /* ── 설정 ── */
 function openSettings(){
+  var d = store.load(), bid = curBoardId(d), b = (d.boards || {})[bid] || {};
+  var n = bid ? taskCount(d, bid) : 0, only = boardList(d).length < 2;
+  var why = only ? '판이 하나뿐이다' : n ? '항목 ' + n + '개가 남아 있다' : '';
   $('settings').innerHTML = '<div class="modal-body"><h2>설정<button data-act="close" aria-label="닫기">✕</button></h2><div class="stack">' +
     '<button class="wide" data-act="json">JSON 복사</button><button class="wide" data-act="md">MD 복사</button>' +
+    (bid ? '<div class="lbl">이 판</div><div class="acct">' + esc((b.icon || '') + ' ' + (b.name || '')) + ' · 항목 ' + n + '</div>' +
+      '<button class="wide danger-w" data-act="delboard"' + (why ? ' disabled title="' + esc(why) + '"' : '') + '>이 판 지우기</button>' : '') +
     '<div class="lbl">화면</div><div class="seg">' + Object.keys(THEME_KO).map(function(k){
       return '<button data-theme="' + k + '"' + (tmTheme.get() === k ? ' class="on"' : '') + '>' + THEME_KO[k] + '</button>'; }).join('') + '</div>' +
     (sync.state.uid ? '<div class="lbl">계정</div><div class="acct">' + esc(sync.state.email || '') + '</div>' +
@@ -1247,14 +1524,16 @@ $('settings').addEventListener('click', function(e){
   if (th) { tmTheme.set(th.dataset.theme); applyTheme(th.dataset.theme); openSettings(); return; }
   var b = e.target.closest('[data-act]'); if (!b) return;
   if (b.dataset.act === 'close') $('settings').hidden = true;
+  else if (b.dataset.act === 'delboard') { if (!b.disabled && delBoard()) $('settings').hidden = true; }
   else if (b.dataset.act === 'json') copyText(JSON.stringify(store.load(), null, 2));
   else if (b.dataset.act === 'md') copyText(toMarkdown(store.load()));
   else if (b.dataset.act === 'logout') sync.signOut();
 });
 function toMarkdown(d){
   var rows = sortAll(d.tasks).filter(isListed);
-  var line = function(t){ var c = ckCount(t); return '| ' + short(t.id) + ' | ' + (t.icon || '') + ' | ' + STATUS_KO[t.status] + ' | ' + AREA_KO[t.area] + ' | ' + PRI_KO[t.priority] + ' | ' + (t.due || '') + ' | ' + t.title.replace(/\|/g, '\\|') + ' | ' + (c.y ? c.x + '/' + c.y : '') + ' | ' + (t.memo || '').replace(/\|/g, '\\|').replace(/\n/g, ' ') + ' |'; };
-  var head = '| id | 　 | 상태 | 영역 | 중요도 | 마감 | 제목 | 체크 | 메모 |\n|---|---|---|---|---|---|---|---|---|\n';
+  var bko = function(t){ var b = (d.boards || {})[boardOf(t, d)]; return (b && b.name) || ''; };
+  var line = function(t){ var c = ckCount(t), bd = boardOf(t, d); return '| ' + short(t.id) + ' | ' + bko(t) + ' | ' + (t.icon || '') + ' | ' + STATUS_KO[t.status] + ' | ' + areaKo(d, bd, t.area) + ' | ' + PRI_KO[t.priority] + ' | ' + (t.due || '') + ' | ' + t.title.replace(/\|/g, '\\|') + ' | ' + (c.y ? c.x + '/' + c.y : '') + ' | ' + (t.memo || '').replace(/\|/g, '\\|').replace(/\n/g, ' ') + ' |'; };
+  var head = '| id | 판 | 　 | 상태 | 영역 | 중요도 | 마감 | 제목 | 체크 | 메모 |\n|---|---|---|---|---|---|---|---|---|---|\n';
   var open = rows.filter(function(t){ return t.status === 'todo' || t.status === 'doing'; });
   var done = rows.filter(function(t){ return t.status === 'done'; });
   return '## 열린 항목 (' + open.length + ')\n\n' + head + open.map(line).join('\n') + '\n\n## 완료 항목 (' + done.length + ')\n\n' + head + done.map(line).join('\n') + '\n';

@@ -171,8 +171,14 @@ sec('[5] 봇 경로 (M3) — 라이브에 붙지 않는 부분만');
   // 파서는 한 벌 — 앱의 마커를 그대로 읽는다(CLI 가 제 파서를 따로 갖지 않는다)
   const S = C.parser();
   ok(typeof S.parse === 'function' && typeof S.sortAll === 'function', '앱의 PARSE·GROUP 을 그대로 쓴다');
-  const pr = S.parse('감독 배정표 회신 @내일 #행 !', 'admin', '2026-09-10', {});
+  // 영역은 판에서 온다(2026-09-10) — 첫 판의 영역을 그대로 넘겨 준다
+  const areas = C.areaArray(null);
+  eq(areas.map(a => a.key), ['admin', 'event', 'class'], '판을 못 읽으면 이사해 온 셋으로 떨어진다');
+  const pr = S.parse('감독 배정표 회신 @내일 #행 !', 'admin', '2026-09-10', {}, areas);
   eq([pr.title, pr.due, pr.area, pr.priority], ['감독 배정표 회신', '2026-09-11', 'admin', 1], 'CLI 도 같은 문법으로 읽는다');
+  const pr2 = S.parse('체육대회 #사', 'admin', '2026-09-10', {}, areas);
+  eq([pr2.title, pr2.area], ['체육대회', 'event'], '짧은 토큰도 이름에서 나온다(행정이 행을 차지해 행사는 사)');
+  ok(/t\.board = board\.id/.test(src), '★Claude 가 넣는 것은 첫 판 고정(교사 결정 2026-09-10)');
 
   // 봇이 만드는 항목은 규칙이 정한 모양으로만 — 규칙과 코드가 어긋나면 라이브에서 403 이 난다
   const addBlk = src.slice(src.indexOf('async function addTask('), src.indexOf('async function note('));

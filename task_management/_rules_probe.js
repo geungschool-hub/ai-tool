@@ -107,13 +107,33 @@ function ownerDelete(sub) {
   r = await req('DELETE', 'tasks/' + anyId);
   mark(denied(r), '봇은 항목을 못 지운다', 'status ' + r.status);
 
+  // ── 판(board) — 2026-09-10 신설. 판은 교사만 만들고 고친다.
+  r = await req('PATCH', 'boards', { ['probe' + badTs]: { name: '봇이 만든 판', areas: { a1: { name: '일반' } } } });
+  mark(denied(r), '봇은 판을 못 만든다', 'status ' + r.status);
+
+  const bid0 = Object.keys(d.boards || {})[0];
+  if (bid0) {
+    r = await req('PATCH', 'boards/' + bid0, { name: '봇이 바꾼 판 이름' });
+    mark(denied(r), '봇은 판 이름을 못 바꾼다', 'status ' + r.status);
+    r = await req('PATCH', 'boards/' + bid0 + '/areas', { probe: { name: '봇이 만든 영역' } });
+    mark(denied(r), '봇은 영역을 못 만든다', 'status ' + r.status);
+  } else {
+    console.log('  --   판이 아직 없어 건너뜀 (교사가 앱을 한 번 열면 심어진다)');
+  }
+
+  r = await req('PATCH', '', { ['tasks/probe' + badTs]: { title: '없는 판에 넣어 본다', status: 'todo', area: 'admin', priority: 2, board: 'nosuchboard', createdBy: 'claude', createdAt: badTs, ok: false } });
+  mark(denied(r), '없는 판 id 로는 항목을 못 만든다', 'status ' + r.status);
+
   if (!WRITE) {
     console.log('\n(읽기·거부만 봤다. 허락된 쓰기까지 보려면 --write)');
   } else {
     console.log('\n[3] 봇이 할 수 있어야 하는 쓰기 — 되고 나서 치운다');
     const id = 'probe' + Date.now().toString(36);
-    r = await req('PATCH', '', { ['tasks/' + id]: { title: '규칙 두드리기 임시 항목', status: 'todo', area: 'admin', priority: 2, createdBy: 'claude', createdAt: Date.now(), updatedAt: Date.now(), ok: false } });
-    mark(r.ok, "봇은 createdBy:'claude' · ok:false · status:todo 로는 만들 수 있다", 'status ' + r.status);
+    const bFirst = C.firstBoard(d);
+    const seed = { title: '규칙 두드리기 임시 항목', status: 'todo', area: 'admin', priority: 2, createdBy: 'claude', createdAt: Date.now(), updatedAt: Date.now(), ok: false };
+    if (bFirst) { seed.board = bFirst.id; seed.area = (C.areaArray(bFirst)[0] || {}).key || 'admin'; }
+    r = await req('PATCH', '', { ['tasks/' + id]: seed });
+    mark(r.ok, "봇은 createdBy:'claude' · ok:false · status:todo · 있는 판으로는 만들 수 있다", 'status ' + r.status);
 
     if (r.ok) {
       const t2 = await req('PATCH', 'tasks/' + id + '/claude', { text: '한마디', ts: Date.now() });

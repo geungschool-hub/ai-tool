@@ -71,16 +71,35 @@
 
 루트 노드 `tm/` 하나. 키 이름은 축약하지 않는다. 날짜 `YYYY-MM-DD`(KST), 시각 epoch ms.
 
+★schema 2 (2026-09-10) — **판(board)** 신설. 판은 여럿이고 **영역은 판마다 다르다.**
+경로를 `tm/boards/<b>/tasks/…` 로 한 단계 더 파면 `tp()`·규칙·CLI 의 모든 경로가 흔들리므로,
+**`tasks` 는 평평하게 두고 `board` 칸 하나만 더했다.**
+**`board` 칸이 없는 항목은 첫 판의 것**이다 — 이사해 온 36건을 건드리지 않으려는 규약이다(이사 스크립트 없음).
+
 ```jsonc
 tm/
-  meta: { "schema": 1, "reviewReq": false, "lastReview": "2026-09-07", "cutoverAt": null,
-          "lastArea": "admin",        // 전체 탭에서 마지막에 쓴 영역
+  meta: { "schema": 2, "reviewReq": false, "lastReview": "2026-09-07", "cutoverAt": null,
+          "board": "b1",              // 마지막에 본 판
+          "title": "학교업무",         // ★레거시 — 첫 판을 심을 때 물려주고 그대로 둔다(되돌릴 여지)
+          "lastArea": "admin",        // ★레거시 — 지금은 판마다 boards/<b>/lastArea
           "exam": null }              // { "start": "2026-09-25", "end": "2026-10-02" } | null — 미루기 「시험 뒤」
+
+  boards/<bid>: {                      // bid = "b" + base36 4자. 첫 판만 "b1"
+    "name": "학교업무", "icon": "🗂️", "order": 1,
+    "lastArea": "admin",               // 이 판에서 마지막에 쓴 영역
+    "areas": {                         // ★판마다 다르다. 교사가 만들고 이름·색을 고친다
+      "admin": { "name": "행정", "color": "orange", "order": 1 },
+      "event": { "name": "행사", "color": "red",    "order": 2 },
+      "class": { "name": "교과", "color": "blue",   "order": 3,
+                 "checks": ["제작","검사","배포","허브 카드"] }   // 그 영역으로 새 항목을 만들 때 붙는 체크 틀
+    }
+  }
 
   tasks/<id>: {                        // id = yymmdd + base36 3자 (예 "260903k3x"). 화면·대화에선 "k3x"
     "title": "감독 배정표 회신",
     "status": "todo",                  // todo | doing | done  (dropped 는 2026-09-10 폐지)
-    "area": "admin",                   // admin 행정 · event 행사 · class 교과
+    "board": "b1",                     // 어느 판의 것인가. ★없으면 첫 판(옛 항목)
+    "area": "admin",                   // 그 판의 areas 키. 값은 판마다 다르다
     "priority": 2,                     // 1 높음 · 2 보통 · 3 낮음
     "due": "2026-09-05",               // 없으면 키 자체가 없다
     "checks": {                        // 체크포인트. 객체 — 필드 경로 update 로 합쳐진다
@@ -139,7 +158,17 @@ tm/
 
 ## 4. 화면
 
-큰 제목(판 이름)은 눌러서 고친다 — `meta.title`, 기본 「학교업무」(2026-09-10).
+**판 탭 줄이 맨 위**(2026-09-10) — `[🗂️ 학교업무] [🏠 집안일] [＋]`. 폰에서는 옆으로 쓸어 보고, **＋ 는 오른쪽 끝에 붙어 있다**
+(판이 셋만 돼도 390px 에서 화면 밖으로 밀렸다). 큰 아이콘·큰 제목은 **지금 판**을 가리키고 눌러서 고친다
+(제목 → `boards/<b>/name`, 아이콘 → `boards/<b>/icon`. `meta.title` 은 레거시).
+
+**영역 줄** — 한 번 누름 = 거르기 · 다시 = 풀기 · **고른 칩의 ✎ = 이름·색 고치기** · **＋ = 새 영역**.
+★고르는 자리와 고치는 자리를 겹치지 않게 ✎ 를 따로 뒀다 — 칩은 다시 누르면 거르기가 풀리는 자리라
+거기에 「고치기」를 얹으면 풀 길이 사라진다. 색은 노션 팔레트 아홉 중에서 고른다.
+
+**판 지우기는 설정(⚙) 안 「이 판」** 절. **판 지우기·영역 빼기는 비어 있을 때만** 된다 —
+항목을 품은 채 사라지는 길은 두지 않는다(판이 하나뿐일 때도, 영역이 하나뿐일 때도 막는다).
+막힐 때는 까닭을 한 줄 띄운다(「항목 3개가 이 영역에 있다」) — 아무 일도 안 일어나면 고장으로 읽힌다.
 
 입력창은 **폰·PC 모두 맨 위**(교사 지시 2026-09-09 — 아래에 두니 「영 이상하다」). 폰은 아래에 탭 3개(전체·보드·검토)만 둔다. 행 48px, 글자 16px+, 단추 44px+. 범례·안내문 없음.
 
@@ -290,7 +319,8 @@ tm/
                     ".validate": "newData.val() === 'todo' || newData.val() === 'doing' || newData.val() === 'done'" },
       "doneAt":   { ".write": "auth != null && auth.uid === 'B_UID' && data.parent().child('status').exists()" },
       "updatedAt":{ ".write": "auth != null && auth.uid === 'B_UID' && data.parent().child('status').exists()" },
-      "area":     { ".validate": "newData.val() === 'admin' || newData.val() === 'event' || newData.val() === 'class'" },
+      "area":     { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24" },
+      "board":    { ".validate": "root.child('tm/boards').child(newData.val()).exists()" },
       "priority": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 3" },
       "due":      { ".validate": "newData.val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)" },
       "createdBy":{ ".validate": "newData.val() === 'me' || newData.val() === 'notion' || newData.val() === 'claude'" },
@@ -307,6 +337,12 @@ tm/
   }
 } }
 ```
+
+★2026-09-10 판 신설 — `tm/boards` 는 **교사만 쓴다**(봇은 읽기만). 규칙 전문은 `database.rules.json`.
+- `area` 는 **열거에서 문자열로 풀었다** — 영역 키가 판마다 다르고 교사가 만든다. 대신 `board` 가
+  **있는 판인지**를 규칙이 본다(`root.child('tm/boards')`). 봇이 만드는 항목도 이 검사를 지나야 한다.
+- 필수 필드 목록(`hasChildren`)에 `board` 는 **넣지 않는다** — 지금 있는 36건에 그 칸이 없어
+  넣으면 교사의 수정이 전부 반려된다.
 
 - `tm` 상위에 `.write`를 두지 않는다 — 상위 허용은 하위에서 못 거둔다.
 - 봇이 손대는 자리마다 **덮어쓰기 방향을 규칙이 막는다**: 교사 체크는 `text` 불변(done·by·ts만), `log`는 봇이 `by:claude·via:bot`로만, `reviewReq`는 T가 켜고 B는 끄기만(`review-write` 성공 시 `reviewReq:false`·`lastReview`를 한 update로), 봇 생성 항목은 `status:todo`로만 태어난다. 봇의 `status` 쓰기는 **이미 있는 항목에 `done` 값만**(+`doneAt`·`updatedAt`).
@@ -698,3 +734,48 @@ M2 에서 「봇 토큰을 못 만들어 권한을 두드리지 못했다」고 
 - `review-data`·`review-write`·`apply`·`check-note` 도 M4·M5.
 - 🔴 **봇 비밀번호가 대화창을 지나왔다.** 이 계정은 판 읽기와 좁은 쓰기만 되고 계정 공유도 아니지만,
   마음에 걸리면 콘솔에서 B 비밀번호를 바꾸고 `node _cli.js setup` 을 한 번 더 돌리면 된다(1분).
+
+### M2-i (2026-09-10) — 판(board) 나누기 · 판마다 영역 · 영역을 교사가 만든다
+
+교사가 판 안에 적어 둔 요청이 출발점이다(내용은 판에 있다 — 여기 옮겨 적지 않는다, §5.4).
+한 판에 모든 일이 섞여 있었고, 학교 업무가 아닌 일을 적으면 「행정·행사·교과」 중 하나를 억지로 붙여야 했다.
+
+| 갈림길 | 교사가 고른 것 |
+|---|---|
+| 판 고르는 자리 | **제목 위 탭 줄** |
+| 영역 | **판마다 따로** + 교사가 만들고 고칠 수 있게 |
+| 영역 손보는 자리 | **영역 줄 끝의 ＋** |
+| 항목을 다른 판으로 옮기기 | **나중에**(이번엔 안 만들었다) |
+| Claude 가 넣는 항목 | **첫 판 고정** |
+
+**경로를 한 단계 더 파지 않았다** — `tasks` 는 평평하게 두고 `board` 칸 하나만 더했다(§3).
+그래서 `tp()`·`store.update`·규칙 경로·CLI 의 REST 조립이 그대로 산다.
+**`board` 칸이 없으면 첫 판**이라 이사해 온 36건은 손대지 않았다. `boards` 가 없으면
+교사가 앱을 열 때 첫 판을 한 번 심는다(이름·마지막 영역은 옛 `meta` 에서 물려받는다).
+
+**색을 영역 키에서 떼어 냈다** — `--admin/--event/--class` 세 색·`.a-admin` 세 클래스로는
+임의의 영역을 칠할 수 없다. `--ac-gray … --ac-red` **아홉**과 색 이름 클래스 `.a-orange` 로 갈아탔고,
+**클래스 하나가 `--ac`(진한 색)·`--ab`/`--af`(태그 색) 셋을 정한다.** 쓰는 쪽은 `var()` 한 번이다.
+곁딸린 것 — `.dn.over`·`.dn.now`(마감 지남·오늘)가 영역색을 빌려 쓰고 있었다. 뜻이 다르니 팔레트 색을 직접 박았다.
+
+**교과 4틀이 데이터로 내려왔다** — `area === 'class'` 하드코딩이던 것이 영역 정의의 `checks` 가 됐다.
+**영역 토큰도 이름에서 만든다** — 전체 이름은 늘 토큰, 짧은 토큰은 이름의 글자를 앞에서부터 훑어 안 쓴 것 하나.
+「행정→행 · 행사→사(행은 이미 찼다) · 교과→교」가 이 규칙에서 그대로 나온다.
+**이름을 고치면 문법도 따라 바뀐다**(「수업」으로 고치니 `#수` 가 먹었다 — 브라우저에서 확인).
+
+**★브라우저에서만 잡힌 것 셋** — 검사 909개가 다 통과한 뒤에 나왔다.
+
+| 무엇 | 왜 |
+|---|---|
+| 고른 색칸이 회색이 됐다 | `.menu button.on{background:var(--hover)}` 가 `.swatch button` 보다 세다. **같은 깊이**(`.menu .swatch button.on`)를 줘야 제 색이 남는다 — M2-f 의 특정도 함정과 같은 자리 |
+| **연달아 만든 판이 앞 판을 덮었다** | id 를 `Date.now().toString(36).slice(0,5)` 로 지었다. 앞 5자는 **47초에 한 번** 바뀐다. 무작위로 짓고 겹치면 다시 뽑는다 |
+| 폰에서 ＋ 가 화면 밖으로 | 판이 셋만 돼도 390px 를 넘는다. `position:sticky;right:0` 으로 오른쪽에 붙였다 |
+
+**검사** — `[21] 판·영역` 신설(판 추가·전환·판별 거르기 · 영역 추가/이름/색/빼기 ·
+항목이 있으면 못 뺀다 · 판이 하나뿐이면 못 지운다 · board 없는 항목 = 첫 판 · 고친 이름이 곧 토큰).
+**변이 여섯**으로 무는지 확인했다(판별 거르기 제거 · 첫 판 폴백 제거 · 빼기 반려 제거 · 판 지우기 반려 제거 ·
+새 판을 영역 0으로 · board 안 박기) — 여섯 다 의도한 단언에서 걸렸다.
+`_test_taskboard.js` **909** · `_test_cli.js` **114** · 0 실패.
+
+**남은 것** — 항목을 다른 판으로 옮기는 길(교사: 「나중에」) · `pull` 이 판별로 끊어 내는 것은 붙였고
+`review-data`·`apply` 는 M4 그대로다.

@@ -30,7 +30,34 @@ const BACKUP_DIR = path.join(HERE, '_backup');
 const HOME_BACKUP = path.join(process.env.USERPROFILE || process.env.HOME || HERE, 'taskboard-backup');
 const KEEP = 30;
 
-const AREA = { 행정: 'admin', 행사: 'event', 교과: 'class' };
+// ★영역 이름표는 판(board)에서 온다 — 판마다 다르고 교사가 만든다(2026-09-10).
+//   아래는 **판을 아직 못 읽었을 때만** 쓰는 기본값이자 이사(import)가 CSV 를 맞춰 보는 표다.
+//   이름표가 여기 하나뿐이 되도록 AREA·KO_AREA 를 여기서 뽑아 쓴다(예전엔 세 군데에 흩어져 있었다).
+const AREA_FALLBACK = { admin: { name: '행정', color: 'orange', order: 1 },
+                        event: { name: '행사', color: 'red',    order: 2 },
+                        class: { name: '교과', color: 'blue',   order: 3, checks: ['제작', '검사', '배포', '허브 카드'] } };
+const koToKey = defs => Object.keys(defs).reduce((m, k) => (m[defs[k].name] = k, m), {});
+const keyToKo = defs => Object.keys(defs).reduce((m, k) => (m[k] = defs[k].name, m), {});
+const AREA = koToKey(AREA_FALLBACK);
+// 판 하나에서 영역을 배열로. Claude 가 넣는 것은 첫 판 고정이다(PRD §5).
+function areaArray(board) {
+  const a = (board && board.areas) || AREA_FALLBACK;
+  return Object.keys(a).map(k => Object.assign({ key: k }, a[k]))
+    .sort((x, y) => (x.order || 0) - (y.order || 0) || (x.key < y.key ? -1 : 1));
+}
+function boardArray(d) {
+  const b = (d && d.boards) || {};
+  return Object.keys(b).map(k => Object.assign({ id: k }, b[k]))
+    .sort((x, y) => (x.order || 0) - (y.order || 0) || (x.id < y.id ? -1 : 1));
+}
+function firstBoard(d) { const l = boardArray(d); return l.length ? l[0] : null; }
+// board 칸이 없는 항목은 첫 판의 것이다 — 이사해 온 옛 항목을 건드리지 않으려고 그렇게 뒀다
+function boardIdOf(t, d) { const b = (d && d.boards) || {}; const f = firstBoard(d); return (t.board && b[t.board]) ? t.board : (f && f.id) || null; }
+function areaKoOf(d, bid, key) {
+  const b = ((d && d.boards) || {})[bid];
+  const a = b && b.areas && b.areas[key];
+  return (a && a.name) || (AREA_FALLBACK[key] && AREA_FALLBACK[key].name) || key || '';
+}
 // 「버림」은 2026-09-10 에 폐지했다 — 노션의 「취소」는 갈 곳이 없어 경고를 내고 대기로 들어간다.
 const STATUS = { 대기: 'todo', 진행: 'doing', 완료: 'done', 보류: 'todo' };
 const PRIO = { 높음: 1, 보통: 2, 낮음: 3 };
@@ -233,7 +260,7 @@ function importCsv(file, write) {
   console.log('');
   Object.keys(tasks).sort().forEach(id => {
     const t = tasks[id];
-    console.log(`  ${id.slice(-3)}  ${t.status.padEnd(7)} ${(t.due || '—').padEnd(11)} ${({ admin: '행정', event: '행사', class: '교과' })[t.area]} ${'!·~'[t.priority - 1]} ` +
+    console.log(`  ${id.slice(-3)}  ${t.status.padEnd(7)} ${(t.due || '—').padEnd(11)} ${KO_AREA[t.area] || t.area} ${'!·~'[t.priority - 1]} ` +
                 `${t.checks ? '☑' + Object.keys(t.checks).length + ' ' : '   '}${t.title}`);
   });
   if (warn.length) { console.log('\n⚠ 살펴볼 것 ' + warn.length + '건'); warn.forEach(w => console.log('  ' + w)); }
@@ -394,7 +421,7 @@ function pad(s, n) {                                      // 한글은 두 칸�
 }
 
 const KO_STATUS = { todo: '대기', doing: '진행', done: '완료' };
-const KO_AREA = { admin: '행정', event: '행사', class: '교과' };
+const KO_AREA = keyToKo(AREA_FALLBACK);
 const KO_PRI = { 1: '높', 2: '  ', 3: '낮' };
 
 async function pull(asJson, fromFile) {
@@ -413,10 +440,8 @@ async function pull(asJson, fromFile) {
   console.log('업무판 ' + today + (fromFile ? ' (스냅샷 ' + path.basename(fromFile) + ')' : '') +
               ' · ' + rows.length + '개 · 열림 ' + open.length + ' · 지남 ' + late.length +
               (hidden ? ' · 제안 ' + hidden : ''));
-  console.log(' id  상태 중 마감        영역 ☑    묵힘  제목');
-  let cut = false;
-  for (const t of rows) {
-    if (!cut && t.status === 'done') { cut = true; console.log('  ─ 완료 ' + shut.length + ' ─'); }
+  const boards = boardArray(d);
+  const line = t => {
     const ck = Object.keys(t.checks || {});
     const ckn = ck.length ? ck.filter(k => t.checks[k].done).length + '/' + ck.length : '   ';
     const stale = Math.round((now - (t.updatedAt || now)) / 86400000);
@@ -424,9 +449,23 @@ async function pull(asJson, fromFile) {
     const when = t.status === 'done'
       ? (t.doneAt ? '✓' + ymd(t.doneAt).slice(5) : (t.due ? ' ' + t.due.slice(5) : ''))
       : (t.due ? t.due.slice(5) + '(' + dday(t.due, today) + ')' : '');
-    console.log(' ' + t.id.slice(-3) + ' ' + KO_STATUS[t.status] + ' ' + KO_PRI[t.priority] + ' ' +
-      pad(when, 12) + KO_AREA[t.area] + ' ' + ckn + ' ' +
-      String(t.status === 'done' ? '' : stale + '일').padStart(5) + '  ' + t.title);
+    return ' ' + t.id.slice(-3) + ' ' + KO_STATUS[t.status] + ' ' + KO_PRI[t.priority] + ' ' +
+      pad(when, 12) + pad(areaKoOf(d, boardIdOf(t, d), t.area), 5) + ckn + ' ' +
+      String(t.status === 'done' ? '' : stale + '일').padStart(5) + '  ' + t.title;
+  };
+  // 판이 여럿이면 판마다 끊어 낸다 — 어느 판의 일인지 모르면 지남을 잘못 읽는다
+  const groups = boards.length > 1
+    ? boards.map(b => ({ head: (b.icon ? b.icon + ' ' : '') + (b.name || b.id), rows: rows.filter(t => boardIdOf(t, d) === b.id) }))
+    : [{ head: null, rows: rows }];
+  for (const g of groups) {
+    if (!g.rows.length) continue;
+    if (g.head) console.log('\n【' + g.head + '】 ' + g.rows.length + '개');
+    console.log(' id  상태 중 마감        영역 ☑    묵힘  제목');
+    let cut = false, shutN = g.rows.filter(t => t.status === 'done').length;
+    for (const t of g.rows) {
+      if (!cut && t.status === 'done') { cut = true; console.log('  ─ 완료 ' + shutN + ' ─'); }
+      console.log(line(t));
+    }
   }
   if (d && d.meta && d.meta.reviewReq) console.log('\n★폰에서 「검토 요청」이 켜져 있다.');
 }
@@ -435,7 +474,10 @@ async function addTask(line) {
   if (!line) throw new Error('무엇을 넣을지 적어야 한다 — node _cli.js add "제목 @내일 #행"');
   const S = parser();
   const d = await botGet('');
-  const pr = S.parse(line, 'admin', ymd(Date.now()), (d && d.tasks) || {});
+  // ★Claude 가 넣는 것은 늘 첫 판이다(교사 결정 2026-09-10). 영역도 그 판의 것으로 읽는다.
+  const board = firstBoard(d);
+  const areas = areaArray(board);
+  const pr = S.parse(line, areas[0] && areas[0].key, ymd(Date.now()), (d && d.tasks) || {}, areas);
   if (pr.fallback) throw new Error('제목이 없다 — 토큰만으로는 만들지 않는다');
   if (pr.editId) throw new Error('`>id 수정` 은 봇 경로에 없다 — 교사가 앱에서 고친다');
   const ts = Date.now();
@@ -443,6 +485,7 @@ async function addTask(line) {
   // 규칙이 정한 대로만 태어난다 — createdBy:claude · ok:false · status:todo
   const t = { title: pr.title, status: 'todo', area: pr.area, priority: pr.priority,
               createdBy: 'claude', ok: false, createdAt: ts, updatedAt: ts, doneAt: null };
+  if (board) t.board = board.id;
   if (pr.due) t.due = pr.due;
   if (pr.memo) t.memo = pr.memo;
   if (pr.checks.length) { t.checks = {}; pr.checks.forEach((text, i) => { t.checks['c' + pushKey(ts + i)] = { text, done: false, by: 'claude', ts: null, order: i + 1 }; }); }
@@ -511,7 +554,8 @@ function setup() {                                        // 교사가 자기 �
 
 /* ── 검사용 내보내기 — require 하면 main 을 돌리지 않는다 ─────────────── */
 module.exports = { parseCsv, col, toDate, toMs, rowsToTasks, AREA, STATUS, PRIO,
-                   cfg, parser, findTask, dday, pad, BOT_FILE, KO_STATUS, KO_AREA, KO_PRI };
+                   cfg, parser, findTask, dday, pad, BOT_FILE, KO_STATUS, KO_AREA, KO_PRI,
+                   AREA_FALLBACK, areaArray, boardArray, firstBoard, boardIdOf, areaKoOf };
 
 /* ── main ─────────────────────────────────────────────────────────────── */
 if (require.main === module) main().catch(e => {

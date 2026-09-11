@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>중심원리와 유전부호 해독</title>
+<script>
+/* ══ 미완성 잠금 ══════════════════════════════════════════════
+   교사가 「완성」이라고 판단하기 전에는 학생이 들어올 수 없게 막는다.
+   ★이 스크립트는 <head>에 있어야 한다 — 본문보다 먼저 돌아야 잠긴 화면이 깜빡이지 않는다.
+   ★기본이 「잠김」이다(fail-closed). 조건이 맞을 때만 .unlocked 가 붙는다.
+   ⚠ 이것은 잠금이지 보안이 아니다. 공개 저장소라 소스를 보면 비밀번호가 보인다.       */
+var DRAFT_MODE = true;                    /* ◀ 교사 검토를 통과하면 false 로 바꿔 재배포한다 */
+var DRAFT_PASS = '7856';                  /* ★교사 지정. 모든 활동이 같은 값을 쓴다 — 작업노트/git백업_커밋정책.md */
+var DRAFT_KEY  = 'codon_sim_draft_ok';
+try {
+  if (!DRAFT_MODE || localStorage.getItem(DRAFT_KEY) === 'y') {
+    document.documentElement.className += ' unlocked';
+  }
+} catch (e) {
+  if (!DRAFT_MODE) document.documentElement.className += ' unlocked';
+}
+</script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   생물의 유전 2-1 — 중심원리와 유전부호 해독
+   교과서(이준규) 60~63쪽 · 62쪽 「해 보기 — 코돈표를 이용한 유전정보의 해독」
+   성취기준 12유전02-01 (중심원리·모형으로 유전자발현 설명) · 12유전02-02 (유전 부호 표로 해독)
+
+   ★이 활동의 심장은 하나다 — **아미노산은 앱이 말해 주지 않는다. 학생이 코돈표에서 찾아 탭한다.**
+     성취기준이 「유전 부호 표를 사용하여 해독」이므로, 표를 읽는 일을 앱이 대신하면 활동이 죽는다.
+   ★자매 활동: 2-1 단백질합성 모의실험(protein-sim)이 전사·번역 *기작*을 맡는다.
+     이 활동은 거기까지 가지 않는다 — 중심원리와 유전부호, 그리고 해독까지다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --red:#C0392B;   --red-bg:#FDECEA;
+  --blue:#1255A0;  --blue-bg:#E8F0FA;
+  --yellow:#B7791F;--yellow-bg:#FDF6E3;
+  --green:#2A7A38; --green-bg:#E9F5EB;
+  --amber:#E67E22; --amber-bg:#FDF0E3; --amber-ink:#8A4B08;
+  --teal:#0F766E;  --teal-bg:#E2F3F1;
+  --old:#6B7280;
+  --ink:#1A1A1A;   --sub:#555;  --line:#D5D8DE;  --paper:#fff;  --bg:#F4F6F9;
+
+  /* ★세 물질의 색 — 활동 전체에서 이 셋만 쓴다.
+     굳은 뜻이 있는 색(파랑=화면 · 초록=맞음 · 빨강=틀림 · 앰버=문항 · 회색=기구)은 자료에 쓰지 않는다.
+     ⚠ 채도를 낮춰 「연하게」 하지 말 것 — 최대 채널 − 최소 채널 ≥ 120 을 지킨다.
+     ⚠ 색만으로 구분시키지 않는다 — 물질마다 모양이 다르고 이름표를 함께 붙인다. */
+  --dna:#0F9B95;   --dna-bg:#DFF6F4;  --dna-ink:#0A6B67;   /* DNA — 청록. ★JS 의 C_DNA 와 같은 값 */
+  --rna:#6C2BD9;   --rna-bg:#EEE6FB;  --rna-ink:#5321A8;   /* RNA — 보라. ★JS 의 C_RNA 와 같은 값 */
+  --prot:#C2185B;  --prot-bg:#FCE4EC; --prot-ink:#8E1147;  /* 단백질 — 자홍. ★JS 의 C_PROT 와 같은 값 */
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.65;
+  font-family:"Malgun Gothic","맑은 고딕",AppleSDGothicNeo-Regular,"Apple SD Gothic Neo",sans-serif;
+  padding:14px 12px 60px; overflow-x:hidden;
+}
+.wrap{max-width:980px;margin:0 auto;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin-bottom:16px;}
+h1{font-size:24px;margin:0 0 4px;color:var(--blue);letter-spacing:-.5px;}
+h2{font-size:19px;margin:0 0 12px;padding:8px 12px;border-left:5px solid var(--blue);background:var(--blue-bg);border-radius:0 8px 8px 0;}
+h2.dna{border-left-color:var(--dna);background:var(--dna-bg);color:var(--dna-ink);}
+h2.rna{border-left-color:var(--rna);background:var(--rna-bg);color:var(--rna-ink);}
+h2.prot{border-left-color:var(--prot);background:var(--prot-bg);color:var(--prot-ink);}
+h2.green{border-left-color:var(--green);background:var(--green-bg);color:var(--green);}
+h2.amber{border-left-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink);}
+h2.teal{border-left-color:var(--teal);background:var(--teal-bg);color:var(--teal);}
+h3{font-size:16.5px;margin:16px 0 8px;color:var(--ink);}
+.sub{color:var(--sub);font-size:15px;margin:0 0 10px;}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{font-size:13px;background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:3px 11px;}
+.secreset{display:flex;justify-content:flex-end;margin-top:12px;}
+.secreset button{background:#fff;color:#666;border:1.5px solid #C8CDD4;border-radius:8px;
+  font-family:inherit;font-size:15px;font-weight:600;padding:9px 14px;min-height:44px;cursor:pointer;}
+.secreset button:hover{border-color:var(--blue);color:var(--blue);}
+.badge{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px;cursor:pointer;user-select:none;}
+.yr{display:inline-block;font-size:13.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;vertical-align:2px;
+    background:var(--blue-bg);color:var(--blue);}
+
+/* ── 단추 ── */
+.btn{
+  font:inherit;font-size:16px;font-weight:700;min-height:44px;padding:10px 18px;
+  border-radius:10px;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;
+}
+.btn.ghost{background:#fff;color:var(--blue);}
+.btn.gray{background:#fff;color:var(--old);border-color:var(--old);}
+.btn.rna{background:var(--rna);border-color:var(--rna);color:#fff;}
+.btn.rna.ghost{background:#fff;color:var(--rna);}
+.btn.prot{background:var(--prot);border-color:var(--prot);color:#fff;}
+.btn.prot.ghost{background:#fff;color:var(--prot);}
+.btn.sm{padding:8px 13px;}
+.btn:disabled{background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;cursor:not-allowed;}
+/* ★.btn.rna.ghost 는 클래스 3개라 .btn:disabled 를 이겨 꺼진 단추가 켜진 것처럼 보인다. 특이도를 올려 되찾는다. */
+.btn.rna:disabled,.btn.prot:disabled,.btn.ghost:disabled,
+.btn.rna.ghost:disabled,.btn.prot.ghost:disabled{
+  background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;
+}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+
+/* ── 진행 레일 ── */
+.rail{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px;}
+.rstep{flex:1 1 130px;border:2px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;font-weight:700;font-size:15px;color:var(--sub);background:#fff;}
+.rstep.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.rstep.ok{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.rstep .rsub{display:block;font-size:12.5px;font-weight:400;}
+
+/* ── 2단 배치 — 자료는 왼쪽에 고정, 조작·문항은 오른쪽에서만 스크롤한다 ──────────
+   본(本)은 1-5 메셀슨·스탈 활동이다(작업노트/방법_웹활동_제작표준.md §2).
+   ★경계는 1180px. 그 미만(태블릿 세로·휴대전화)에서는 한 줄로 쌓인다.
+   ★.card.split 의 음수 여백으로 이 카드들만 화면 쪽으로 넓힌다(최대 1280px).
+     transform 을 쓰지 않는다 — sticky 가 깨진다.
+   ★코돈표는 넓다(min-width 880px) — 반드시 **왼쪽 칸**에 둔다. 오른쪽 440px 칸에서는 잘린다. */
+@media (min-width:1180px){
+  .card.split{
+    margin-left:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+    margin-right:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+  }
+  .panes{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,440px);
+    gap:18px; align-items:start;   /* ★align-items:start 가 없으면 칸이 늘어나 sticky 가 듣지 않는다 */
+  }
+  .pane-l{position:sticky; top:10px; max-height:calc(100vh - 20px); overflow-y:auto;}
+  .pane-l svg.stage{min-width:0;}
+  .pane-r svg.stage{min-width:0;}
+}
+/* ★1179.98px — 정수로 끊으면 1179 초과 1180 미만의 소수 폭(브라우저 확대에서 실제로 생긴다)이
+   두 규칙 어디에도 안 걸려 .panes 가 그냥 쌓이고 order 보정이 빠진다. */
+@media (max-width:1179.98px){
+  .panes{display:flex;flex-direction:column;}
+  .pane-r{display:contents;}
+  .pr-do{order:1;}
+  .pane-l{order:2;}
+  .pr-q{order:3;}
+  /* ★min-width:0 이 없으면 flex 항목이 **내용 크기 아래로 줄지 않아**(min-width:auto 기본값)
+     660px 짜리 코돈표가 칸을 통째로 밀어내 카드 밖으로 빠져나간다.
+     .ctab-outer 의 가로 스크롤이 흡수해야 할 몫을 칸이 대신 떠안는 것이다(2026-09-11 브라우저 실측). */
+  /* ★width:100% 까지 있어야 한다. min-width:0 만으로는 부족하다 —
+     세로 flex 에서는 가로가 **교차축**이라 align-items:stretch 가 「줄의 크기」에 맞추는데,
+     줄의 크기는 가장 넓은 항목(660px 코돈표)을 따라 커진다. 그래서 칸이 카드 밖으로 빠져나갔다.
+     width:100% 로 못 박으면 .panes 의 확정된 폭을 따르고, 넘치는 몫은 .ctab-outer 가 스크롤로 흡수한다. */
+  .pane-l,.pr-do,.pr-q{min-width:0;width:100%;}
+}
+
+/* ── 무대 ── */
+.stage-wrap{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:8px;
+            overflow-x:auto;-webkit-overflow-scrolling:touch;}
+svg.stage{display:block;width:100%;min-width:520px;height:auto;touch-action:manipulation;}
+.stage-hint{font-size:14.5px;color:var(--sub);margin-top:8px;}
+.taskbar{
+  background:var(--yellow-bg);border-left:5px solid var(--yellow);color:var(--amber-ink);
+  border-radius:0 8px 8px 0;padding:9px 13px;font-weight:700;font-size:16px;margin-bottom:10px;
+}
+.msg{border-radius:9px;padding:10px 13px;margin-top:10px;font-size:15.5px;line-height:1.7;}
+.msg.warn{background:var(--amber-bg);border-left:4px solid var(--amber);}
+.msg.good{background:var(--green-bg);border-left:4px solid var(--green);}
+.msg.info{background:var(--blue-bg);border-left:4px solid var(--blue);}
+.msg.bad{background:var(--red-bg);border-left:4px solid var(--red);}
+.msg.hide{display:none;}
+
+/* ── 연출 제어 막대 (무대 바로 아래) ── */
+.anibar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:8px;}
+.anibar .btn{min-height:44px;padding:8px 12px;font-size:16px;}
+.anistep{font-size:14.5px;color:var(--sub);margin-left:2px;flex:1 1 170px;min-width:170px;}
+.anistep b{color:var(--ink);font-weight:700;}
+/* ── 염기 타일 (mRNA 가닥) ──────────────────────────────────────
+   ★SVG 로 만들지 않는다 — 칸이 좁아지면 글자까지 같이 줄어들어 못 읽는다.
+     HTML 로 두면 줄바꿈이 되고 글자 크기는 그대로다. */
+.strand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:2px;margin:8px 0 2px;}
+.strand .end{font-size:14px;font-weight:700;color:var(--sub);padding:0 4px 10px;}
+.cod{display:inline-flex;border-radius:8px;padding:3px;gap:1px;background:#F2F4F7;border:2px solid transparent;}
+.cod.g1{background:#E7EBF0;}
+.cod.off{opacity:.38;}
+.cod.now{border-color:var(--yellow);background:var(--yellow-bg);}
+.cod.done{border-color:var(--prot);background:var(--prot-bg);}
+.cod.stopcod{border-color:#333;background:#EDEDED;}
+.tile{
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:26px;min-height:38px;border-radius:5px;background:#fff;border:1px solid #C8CDD4;
+  font-weight:800;font-size:16px;color:var(--rna-ink);line-height:1.15;
+}
+.tile .tno{font-size:10px;font-weight:600;color:#98A0AC;}
+.tile.dnab{color:var(--dna-ink);}
+.tile.mut{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-ink);}
+.tile.changed{background:var(--prot-bg);border-color:var(--prot);color:var(--prot-ink);}
+
+/* 폴리펩타이드 구슬 — 색은 하나(자홍)로 둔다. 아미노산마다 색을 주면 「색=종류」가 하나 더 생긴다. */
+.pep{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:8px;min-height:40px;}
+.bead{background:var(--prot-bg);border:2px solid var(--prot);color:var(--prot-ink);
+      border-radius:999px;padding:5px 11px;font-weight:700;font-size:15px;}
+.bead.dim{background:#F2F4F7;border-color:var(--line);color:#9AA1AC;}
+.pbond{color:var(--prot);font-weight:800;}
+.stopmark{background:#EDEDED;border:2px solid #333;border-radius:8px;padding:5px 10px;font-weight:700;font-size:15px;}
+.pepempty{color:#9AA1AC;font-size:15px;}
+
+/* ── 코돈표 (교과서 62쪽 구조 그대로) ──────────────────────────
+   ★칸마다 코돈을 병기한다. 아미노산 이름만 있으면 표를 「읽는」 연습이 되지 않는다.
+   ★종결·개시 칸에 미리 색을 칠하지 않는다 — 찾기 과제가 색만 보고 끝나 버린다.
+     교과서 표에도 색이 없다. 학생이 찾은 칸에만 .found 가 붙는다. */
+.ctab-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+/* ★min-width 는 **실측으로 정했다**(2026-09-11 브라우저). 자연 폭이 642px 이므로 660px 로 둔다.
+   protein-sim 에서 물려받은 880px 은 왼쪽 칸(784px)을 넘겨, 학생이 탭해야 하는 표가
+   넓은 화면에서도 늘 가로 스크롤 상태였다 — 오른쪽 G 열이 잘려 보이지 않았다. */
+table.ctab{border-collapse:collapse;font-size:15px;min-width:660px;}
+table.ctab th,table.ctab td{border:1px solid #B9C2CC;text-align:center;vertical-align:middle;}
+table.ctab th.hdr{background:#EEF3F8;font-size:15px;font-weight:800;padding:3px 6px;}
+table.ctab th.axis{background:#E3EAF2;font-size:14px;font-weight:800;color:#3C5F86;padding:3px 6px;}
+table.ctab th.third{font-weight:700;color:var(--sub);line-height:30px;padding:0 4px;}
+table.ctab td{padding:0;}
+.ce{height:30px;line-height:30px;padding:0 6px;white-space:nowrap;cursor:pointer;user-select:none;}
+.ce .cd{font-family:'Consolas','Menlo',monospace;letter-spacing:.5px;color:var(--rna);font-weight:700;}
+.ce + .ce{border-top:1px dotted #DCE2E8;}
+.ce:hover{background:#F3F6FA;}
+.ce.found{background:var(--green-bg);font-weight:700;}
+.ce.found .cd{color:var(--green);}
+.ce.found::before{content:'✅ ';}
+.ce.cur{background:var(--yellow);color:#fff;font-weight:800;}
+.ce.cur .cd{color:#fff;}
+.ce.cur::before{content:'▶ ';}
+.ce.miss{background:var(--red-bg);}
+#ctNow,#ctNow4{font-size:16px;margin-bottom:8px;line-height:1.7;}
+.codbig{font-size:21px;letter-spacing:2px;color:var(--rna);font-weight:800;
+        font-family:'Consolas','Menlo',monospace;}
+.axishint{font-size:14px;color:var(--sub);}
+
+/* ── 칩 · 슬롯 (②의 RNA 배치, ⑤의 예상) ── */
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 2px;}
+.chip{
+  font:inherit;font-size:15.5px;font-weight:700;min-height:44px;padding:9px 14px;
+  border:2px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.chip.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.chip.ok{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.chip:disabled{cursor:not-allowed;opacity:.5;}
+.slotrow{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:10px 12px;margin-top:10px;}
+.slotrow .slabel{font-weight:700;font-size:16px;margin-bottom:6px;}
+.slotrow.filled{border-color:var(--green);background:var(--green-bg);}
+.slotrow .sdone{font-weight:800;color:var(--green);font-size:16px;}
+
+/* ── 표 ── */
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;}
+table.t{border-collapse:collapse;width:100%;min-width:460px;font-size:15px;}
+table.t th,table.t td{border:1px solid var(--line);padding:8px 9px;text-align:center;vertical-align:middle;}
+table.t th{background:var(--blue-bg);font-weight:700;}
+table.t th.rna{background:var(--rna-bg);color:var(--rna-ink);}
+table.t th.prot{background:var(--prot-bg);color:var(--prot-ink);}
+table.t td.wait{color:#9AA1AC;background:#FAFBFC;font-size:14px;}
+table.t td.out{background:#EDEDED;}
+table.t td.keep{background:var(--green-bg);font-weight:700;}
+table.t td.seqcell{font-family:'Consolas','Menlo',monospace;letter-spacing:1px;font-size:14.5px;}
+
+/* ── 선택형 ── */
+.choices{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
+.choice{
+  font:inherit;font-size:16px;text-align:left;min-height:44px;padding:11px 15px;
+  border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);font-weight:700;cursor:pointer;
+}
+.choice.picked{background:var(--blue);color:#fff;}
+.choice.right{background:var(--green);border-color:var(--green);color:#fff;}
+.choice.dim{border-color:var(--line);color:#9AA1AC;background:#FAFBFC;}
+.choice:disabled{cursor:default;}
+
+/* ── 문항 카드 ── */
+.pq-card{border:1px solid var(--line);border-radius:12px;background:#FCFDFE;padding:13px 14px 15px;margin-top:14px;}
+.pq-card .qtext{font-weight:700;font-size:16.5px;line-height:1.65;}
+.pq-card .qno{display:inline-block;background:var(--amber);color:#fff;border-radius:999px;
+              min-width:26px;padding:1px 9px;font-weight:700;font-size:14px;margin-right:7px;}
+.pq-card .qno.rna{background:var(--rna);} .pq-card .qno.prot{background:var(--prot);}
+.pq-card .qno.teal{background:var(--teal);} .pq-card .qno.dna{background:var(--dna);}
+.pq-card .lv{display:inline-block;font-size:12.5px;font-weight:700;color:var(--sub);background:#F0F2F5;
+             border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:2px;}
+.pq-card .expl{margin-top:11px;background:var(--amber-bg);border-left:4px solid var(--amber);
+               border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.pq-card .expl b{color:var(--amber-ink);}
+.datbox{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:0 9px 9px 0;
+        padding:10px 13px;font-size:15.5px;line-height:1.8;margin-top:10px;}
+.datbox ul{margin:6px 0 0;padding-left:20px;}
+.datbox li{margin:2px 0;}
+
+/* ── 힌트 2단 — 답 대신 볼 자리를 먼저 가리킨다. 기록하지 않는다. ── */
+.hintwrap{margin-top:10px;}
+.hintbtn{font:inherit;font-size:15px;min-height:44px;padding:9px 15px;margin-top:8px;
+         border:2px dashed var(--blue);border-radius:10px;background:#fff;color:var(--blue);
+         font-weight:700;cursor:pointer;}
+.hintbox{margin-top:8px;background:var(--blue-bg);border-left:4px solid var(--blue);
+         border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.hintbox b{color:var(--blue);}
+
+/* ── 판정 카드 ── */
+.verdict-card{border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:12px;background:#fff;}
+.verdict-card.good{border-color:var(--green);background:var(--green-bg);}
+.verdict-card.stop{border-color:#333;background:#F3F3F3;}
+.verdict-card .vh{font-weight:800;font-size:16.5px;margin-bottom:4px;}
+.verdict-card .vb{font-size:15.5px;line-height:1.75;}
+
+/* ── 서술 · 모범답안 ── */
+textarea{
+  width:100%;font:inherit;font-size:16px;line-height:1.7;padding:11px 13px;
+  border:2px solid var(--line);border-radius:10px;resize:vertical;min-height:96px;background:#fff;color:var(--ink);
+}
+.cnt{font-size:13.5px;color:var(--sub);margin-top:4px;}
+.ansbox{display:none;margin-top:10px;background:var(--green-bg);border-left:4px solid var(--green);border-radius:0 9px 9px 0;padding:11px 14px;font-size:15.5px;line-height:1.75;}
+.ansbox b{color:var(--green);}
+.qwrap{border:1px solid var(--line);border-radius:12px;padding:13px 14px 15px;margin-top:14px;background:#FCFDFE;}
+.qwrap .qh{font-weight:700;font-size:16.5px;line-height:1.6;margin-bottom:4px;}
+.qwrap .qk{font-size:14px;color:var(--sub);margin-bottom:9px;line-height:1.65;}
+.selfcheck{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:#FAFBFC;padding:13px 15px;}
+.selfcheck h3{margin-top:0;}
+.selfcheck label{display:flex;align-items:flex-start;gap:9px;font-size:15.5px;line-height:1.7;margin:7px 0;cursor:pointer;}
+.selfcheck input{width:22px;height:22px;margin-top:3px;flex:0 0 auto;}
+footer{text-align:center;margin-top:22px;}
+.src{font-size:13.5px;color:var(--sub);margin-top:12px;line-height:1.7;}
+
+/* ── 애니메이션 ──
+   ★모든 연출은 장식이다. 결과 상태는 애니메이션과 무관하게 즉시 확정된다.
+     (Node 헤드리스 검사에는 setTimeout 이 없다 — 앱의 typeof 가드 안에서만 돈다.) */
+.rfade{transition:opacity .45s ease;}
+.rmove{transition:transform .85s cubic-bezier(.4,0,.2,1), opacity .45s ease;}
+@media (prefers-reduced-motion: reduce){
+  .rfade,.rmove{transition:none !important;}
+}
+
+/* ── 미완성 잠금 화면 ── */
+html:not(.unlocked) body > .wrap{display:none;}
+html:not(.unlocked) #draftGate{display:flex;}
+#draftGate{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:var(--bg); align-items:center; justify-content:center; padding:20px;
+}
+#draftGate .box{
+  background:var(--paper); border:1px solid var(--line); border-radius:16px;
+  padding:26px 24px; max-width:420px; width:100%; text-align:center;
+}
+#draftGate h2{border-left:none; background:none; padding:0; margin:0 0 10px; color:var(--blue); font-size:20px;}
+#draftGate p{color:var(--sub); font-size:15.5px; margin:0 0 18px; line-height:1.7;}
+#draftGate input{
+  width:100%; font:inherit; font-size:22px; letter-spacing:6px; text-align:center;
+  min-height:52px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; margin-bottom:12px;
+}
+#draftGate .err{color:var(--red); font-size:15px; min-height:22px; margin-top:8px;}
+
+@media (max-width:640px){
+  body{font-size:16px;padding:10px 8px 50px;}
+  h1{font-size:21px;} h2{font-size:17px;}
+  .card{padding:14px 13px 16px;}
+  .tile{width:24px;font-size:15px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ★다른 탭이 더 새로운 것을 저장했을 때만 뜬다. 평소에는 숨어 있다. -->
+  <div class="msg bad hide" id="tabWarn"></div>
+
+  <!-- ══ 머리 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1>🔤 중심원리와 유전부호 해독</h1>
+        <p class="sub">DNA의 유전정보가 RNA를 거쳐 단백질로 흐르는 길을 따라가고, <b>코돈표를 직접 읽어</b> mRNA에 저장된 아미노산서열을 해독한다 (교과서 60~63쪽)</p>
+      </div>
+      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 5</span>
+    </div>
+    <div class="tagrow">
+      <span class="tag">중심원리</span><span class="tag">전사와 번역</span><span class="tag">mRNA·tRNA·rRNA</span>
+      <span class="tag">코돈</span><span class="tag">읽기틀</span><span class="tag">12유전02-01</span><span class="tag">12유전02-02</span>
+    </div>
+    <div class="rail" id="rail"></div>
+  </div>
+
+  <!-- ══ ① 4글자로 20종을 어떻게 적는가 ══ -->
+  <div class="card">
+    <h2 class="dna">① 4글자로 20종류를 어떻게 적는가<span class="yr">교과서 60쪽</span></h2>
+    <div class="datbox">
+      DNA는 <b>4종류</b>의 뉴클레오타이드로 이루어져 있고, 단백질은 <b>20종류</b>의 아미노산으로 이루어져 있다.
+      글자가 4개뿐인데 20가지를 적어야 한다. 그래서 <b>몇 개씩 묶어</b> 한 부호로 쓸 것인지가 문제가 된다.
+    </div>
+    <p class="sub" style="margin-top:10px;">묶음 크기를 골라 몇 가지를 지정할 수 있는지 확인하시오.</p>
+    <div class="chips" id="codeChips"></div>
+    <div class="stage-wrap" style="margin-top:10px;"><div id="codeStage"></div></div>
+    <div class="msg hide" id="fb_code"></div>
+    <div id="introQ"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('intro')">↻ ① 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ② 중심원리 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="rna" style="flex:1 1 300px;margin-bottom:0;">② 중심원리 — 유전정보는 어디로 흐르는가<span class="yr">교과서 60·63쪽</span></h2>
+      <span class="tag" id="rnaProg">놓은 RNA 0 / 3</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap"><div id="dogmaStage"></div></div>
+        <p class="stage-hint">DNA에 저장된 염기서열 정보가 먼저 RNA로 전달되고(<b>전사</b>), RNA의 염기서열 정보로 단백질이 합성된다(<b>번역</b>). 이 흐름을 <b>중심원리</b>라고 한다.</p>
+        <h3>보기 — 유전정보가 실제로 흐르는 모습 <span style="font-size:13.5px;font-weight:400;color:var(--sub);">(교과서 61쪽 그림 Ⅱ-2)</span></h3>
+        <div class="stage-wrap"><div id="demoStage"></div></div>
+        <div id="demoAni"></div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar" id="rnaTask">RNA 세 종류를 각자의 역할 자리에 놓으시오.</div>
+          <p class="sub">단백질합성에는 세 종류의 RNA가 함께 쓰인다. 아래 세 역할에 알맞은 RNA를 고르시오.</p>
+          <div id="rnaSlots"></div>
+          <div class="msg hide" id="fb_rna"></div>
+        </div>
+        <div class="pr-q">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="rnaQ"></div>
+        </div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('rna')">↻ ② 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ③ 유전부호의 규칙 ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">③ 유전부호의 규칙 — 코돈표를 펼치다<span class="yr">교과서 61·62쪽</span></h2>
+      <span class="tag" id="findProg">찾은 칸 0 / 10</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div id="ctNow"></div>
+        <div class="ctab-outer" id="codonTable3"></div>
+        <p class="stage-hint"><b>표를 읽는 길</b> — 코돈의 첫 번째 염기는 <b>왼쪽 세로축</b>, 두 번째 염기는 <b>위쪽 가로축</b>, 세 번째 염기는 <b>오른쪽 세로축</b>에서 찾는다.</p>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="datbox">
+            mRNA에서 하나의 아미노산을 지정하는 <b>세 자리의 연속된 염기</b>를 <b>코돈</b>이라고 한다.
+            코돈은 모두 4<sup>3</sup> = <b>64</b>가지이고, 그중 <b>61개</b>가 아미노산을 지정한다.
+          </div>
+          <div class="taskbar" id="findTask"></div>
+          <div id="findList"></div>
+          <div class="msg hide" id="fb_find"></div>
+        </div>
+        <div class="pr-q">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="findQ"></div>
+        </div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('find')">↻ ③ 찾은 칸 지우고 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ④ 유전정보의 해독 — 활동의 중심 (교과서 62쪽 해 보기) ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="prot" style="flex:1 1 300px;margin-bottom:0;">④ 유전정보를 해독하시오<span class="yr">교과서 62쪽 해 보기</span></h2>
+      <span class="tag" id="decProg">해독을 마친 읽기틀 0 / 3</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div id="ctNow4"></div>
+        <div class="ctab-outer" id="codonTable4"></div>
+        <h3>세 읽기틀의 결과</h3>
+        <div class="tbl-outer">
+          <table class="t" id="frameTable"></table>
+        </div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="datbox">
+            아래는 어떤 단백질의 아미노산서열 정보를 가지고 있는 <b>mRNA 염기서열의 일부분</b>이다.
+            코돈은 겹치지 않고 코돈 사이에 공백도 없으므로, <b>어느 염기에서 끊어 읽느냐</b>에 따라 세 가지로 번역될 수 있다.
+          </div>
+          <div class="taskbar" id="decTask">읽기틀을 하나 고르시오.</div>
+          <div class="chips" id="frameChips"></div>
+          <div id="decStrand"></div>
+          <h3 style="margin-top:12px;">폴리펩타이드</h3>
+          <div class="pep" id="decPep"></div>
+          <div class="msg hide" id="fb_dec"></div>
+          <div id="decVerdict"></div>
+        </div>
+        <div class="pr-q">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="decQ"></div>
+        </div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('dec')">↻ ④ 해독을 지우고 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ⑤ 염기 하나가 바뀌면 (교과서 62쪽 해 보기 3) ══ -->
+  <div class="card split">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="teal" style="flex:1 1 300px;margin-bottom:0;">⑤ 염기 하나가 바뀌면<span class="yr">교과서 62쪽 해 보기 3</span></h2>
+      <span class="tag" id="mutProg">확인한 자리 0 / 3</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <h3>원래 서열과 바뀐 서열</h3>
+        <div class="tbl-outer">
+          <table class="t" id="mutTable"></table>
+        </div>
+        <p class="stage-hint">세 자리 모두 <b>염기 하나만</b> 바뀐 것이다. 그런데 결과는 같지 않다.</p>
+        <div id="mutSummary"></div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">먼저 결과를 예상한 뒤에 바꾸어 확인하시오. 읽기틀은 첫 번째 염기부터이다.</div>
+          <div id="mutRows"></div>
+          <div class="msg hide" id="fb_mut"></div>
+        </div>
+        <div class="pr-q">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="mutQ"></div>
+        </div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('mut')">↻ ⑤ 예상과 결과를 지우고 다시 하기</button></div>
+  </div>
+
+  <!-- ══ 💪 더 풀어 보기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="teal" style="flex:1 1 300px;margin-bottom:0;">💪 더 풀어 보기</h2>
+      <span class="tag" id="pracProg">푼 문항 0 / 4</span>
+    </div>
+    <p class="sub">활동을 마친 뒤 푸는 문항이다. <b>풀지 않아도 활동은 완료된다.</b></p>
+    <div id="pracBody"><div id="pracBox"></div></div>
+    <div class="secreset"><button type="button" onclick="resetSec('prac')">↻ 💪 다시 풀기</button></div>
+  </div>
+
+  <!-- ══ ⑥ 정리하기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="green" style="flex:1 1 300px;margin-bottom:0;">⑥ 정리하기</h2>
+      <span class="tag" id="writeProg">작성한 문항 0 / 4</span>
+    </div>
+    <p class="sub">활동에서 확인한 것을 문장으로 옮기시오. 답안을 일정 길이 이상 쓰면 모범답안이 열린다.</p>
+    <div id="writeBox"></div>
+    <div class="selfcheck" id="selfBox"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('write')">↻ ⑥ 적은 답안 지우고 다시 하기</button></div>
+  </div>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+    <p class="src">
+      출처 — 고등학교 「생물의 유전」(이준규 외) 60~63쪽, 62쪽 해 보기 「코돈표를 이용한 유전정보의 해독」<br>
+      성취기준 12유전02-01 · 12유전02-02 &nbsp;|&nbsp; 전사·번역의 자세한 과정은 <b>단백질합성 모의실험</b>에서 다룬다.
+    </p>
+  </footer>
+
+</div>
+
+<!-- ══ 미완성 잠금 화면 ══ -->
+<div id="draftGate">
+  <div class="box">
+    <h2>🔒 아직 준비 중이다</h2>
+    <p>이 활동은 아직 검토 중이다.<br>교사용 비밀번호를 입력하시오.</p>
+    <input id="draftPass" type="password" inputmode="numeric" maxlength="8" placeholder="････">
+    <button class="btn" style="width:100%;" onclick="unlockDraft()">들어가기</button>
+    <div class="err" id="draftErr"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   1. 교과서에서 가져온 값 — 이 활동의 정본
+   ★모두 PDF 좌표로 글자 위치를 복원해 확정한 값이다. 손으로 바꾸지 말 것.
+   ══════════════════════════════════════════════════════════════ */
+
+/* 색 — CSS 변수와 **같은 값이어야 한다**. 검사가 이 짝을 문다. */
+var C_DNA  = '#0F9B95';
+var C_RNA  = '#6C2BD9';
+var C_PROT = '#C2185B';
+
+var BASES4 = ['U','C','A','G'];          /* 코돈표의 축 순서 (교과서 62쪽과 같다) */
+
+/* 코돈표 — 교과서 62쪽 (64개 전부).
+   ★사람이 읽고 고치는 정본은 이 21줄이고, 64칸짜리 CODON_TABLE 은 여기서 만든 역인덱스다. */
+var CODON_GROUPS = [
+  ['페닐알라닌',  ['UUU','UUC']],
+  ['류신',        ['UUA','UUG','CUU','CUC','CUA','CUG']],
+  ['아이소류신',  ['AUU','AUC','AUA']],
+  ['메싸이오닌',  ['AUG']],
+  ['발린',        ['GUU','GUC','GUA','GUG']],
+  ['세린',        ['UCU','UCC','UCA','UCG','AGU','AGC']],
+  ['프롤린',      ['CCU','CCC','CCA','CCG']],
+  ['트레오닌',    ['ACU','ACC','ACA','ACG']],
+  ['알라닌',      ['GCU','GCC','GCA','GCG']],
+  ['타이로신',    ['UAU','UAC']],
+  ['종결코돈',    ['UAA','UAG','UGA']],
+  ['히스티딘',    ['CAU','CAC']],
+  ['글루타민',    ['CAA','CAG']],
+  ['아스파라진',  ['AAU','AAC']],
+  ['라이신',      ['AAA','AAG']],
+  ['아스파트산',  ['GAU','GAC']],
+  ['글루탐산',    ['GAA','GAG']],
+  ['시스테인',    ['UGU','UGC']],
+  ['트립토판',    ['UGG']],
+  ['아르지닌',    ['CGU','CGC','CGA','CGG','AGA','AGG']],
+  ['글라이신',    ['GGU','GGC','GGA','GGG']]
+];
+function buildCodonTable(){
+  var t = {}, i, j;
+  for (i = 0; i < CODON_GROUPS.length; i++){
+    var name = CODON_GROUPS[i][0], list = CODON_GROUPS[i][1];
+    for (j = 0; j < list.length; j++) t[list[j]] = name;
+  }
+  return t;
+}
+var CODON_TABLE = buildCodonTable();     /* { 코돈 : 아미노산 이름 } 64칸 */
+
+function codonToAA(codon){ var aa = CODON_TABLE[codon]; return aa ? aa : null; }
+function isStopCodon(codon){ return CODON_TABLE[codon] === '종결코돈'; }
+function isStartCodon(codon){ return codon === 'AUG'; }
+function codonsOf(aaName){
+  var out = [];
+  for (var i = 0; i < CODON_GROUPS.length; i++){
+    if (CODON_GROUPS[i][0] === aaName) out = out.concat(CODON_GROUPS[i][1]);
+  }
+  return out;
+}
+var STOP_CODONS  = codonsOf('종결코돈');   /* UAA · UAG · UGA */
+var START_CODON  = 'AUG';
+var LEU_CODONS   = codonsOf('류신');       /* 6개 — 중복성을 눈으로 세는 자리 */
+
+/* ── 교과서 62쪽 해 보기 mRNA (24 염기) ────────────────────────
+   5′- C A U G G U A A C G U G A C U U C G A A U G C A -3′
+   ★1번째 염기부터 읽어야 종결코돈 없이 끝까지 아미노산을 지정한다.
+     2번째부터 읽으면 4번째 코돈이 UGA, 3번째부터 읽으면 2번째 코돈이 UAA 가 되어 번역이 중간에 끝난다.
+     이것이 교사용 교과서가 제시한 2번의 근거다. */
+var MRNA = 'CAUGGUAACGUGACUUCGAAUGCA';
+
+/* ── 교과서 61쪽 그림 Ⅱ-2 (보기로만 쓴다) ──────────────────── */
+var DEMO_TEMPLATE = 'ACCTACAACCGTCAT';   /* DNA 주형 가닥 3′→5′ */
+var DEMO_MRNA     = 'UGGAUGUUGGCAGUA';   /* mRNA 5′→3′ — 개시코돈 AUG 가 4번째 염기부터 */
+var DEMO_START    = 3;                   /* 0부터 센 개시코돈의 자리 */
+
+/* ── 순수 로직 — 검사가 직접 부른다 ──────────────────────────── */
+
+/* 읽기틀 frame(0·1·2)로 끊은 코돈 목록. 3개가 못 되는 꼬리는 버린다. */
+function splitCodons(seq, frame){
+  var f = Number(frame) || 0, out = [];
+  for (var i = f; i + 3 <= seq.length; i += 3) out.push(seq.substr(i, 3));
+  return out;
+}
+/* 해독 결과.
+   aas   — 종결코돈 앞까지 지정된 아미노산
+   stopAt— 종결코돈이 나온 코돈의 자리(0부터). 없으면 -1
+   need  — 학생이 코돈표에서 탭해야 하는 칸 수(종결코돈도 한 번 탭한다) */
+function decode(seq, frame){
+  var codons = splitCodons(seq, frame), aas = [], stopAt = -1;
+  for (var i = 0; i < codons.length; i++){
+    if (isStopCodon(codons[i])){ stopAt = i; break; }
+    aas.push(codonToAA(codons[i]));
+  }
+  return { codons:codons, aas:aas, stopAt:stopAt, need:(stopAt >= 0 ? stopAt + 1 : codons.length) };
+}
+/* 주형 DNA(3′→5′) → mRNA(5′→3′). ★DNA 복제와 달리 A 에는 U 를 쓴다. */
+var DNA_TO_RNA = { A:'U', T:'A', G:'C', C:'G' };
+function transcribe(dna){
+  var out = '';
+  for (var i = 0; i < dna.length; i++){
+    var r = DNA_TO_RNA[dna.charAt(i)];
+    if (!r) return null;
+    out += r;
+  }
+  return out;
+}
+
+/* ── 교과서 62쪽 해 보기 3 — 한 염기가 바뀌면 ────────────────────
+   ★10번은 교과서 문항 그대로다. 12번·17번은 「같은 한 염기 치환인데 결과가 갈린다」를
+     보이기 위해 같은 서열 위에서 고른 자리다(값은 검사가 계산으로 확인한다). */
+var MUTS = [
+  { pos:10, from:'G', to:'A', kind:'change' },   /* GUG → AUG  발린 → 메싸이오닌 */
+  { pos:12, from:'G', to:'A', kind:'same'   },   /* GUG → GUA  발린 → 발린 */
+  { pos:17, from:'C', to:'A', kind:'stop'   }    /* UCG → UAG  세린 → 종결코돈 */
+];
+var MUT_CHOICES = ['아미노산이 다른 아미노산으로 바뀐다', '아미노산서열이 바뀌지 않는다', '번역이 예정보다 일찍 끝난다'];
+function mutKindIndex(kind){ return kind === 'change' ? 0 : (kind === 'same' ? 1 : 2); }
+function mutById(pos){
+  for (var i = 0; i < MUTS.length; i++){ if (MUTS[i].pos === Number(pos)) return MUTS[i]; }
+  return null;
+}
+/* pos 는 1부터 센 자리다 */
+function mutSeq(pos){
+  var m = mutById(pos);
+  if (!m) return MRNA;
+  return MRNA.substring(0, m.pos - 1) + m.to + MRNA.substring(m.pos);
+}
+function mutResult(pos){ return decode(mutSeq(pos), 0); }
+/* 바뀐 결과가 실제로 어느 갈래인지 **계산으로** 판정한다 — kind 를 손으로 적어 둔 것과 맞는지 검사가 문다 */
+function mutKindOf(pos){
+  var base = decode(MRNA, 0), now = mutResult(pos);
+  if (now.stopAt >= 0 && base.stopAt < 0) return 'stop';
+  if (now.aas.join('/') === base.aas.join('/')) return 'same';
+  return 'change';
+}
+/* 바뀐 아미노산의 자리(0부터). 없으면 -1 */
+function mutChangedIndex(pos){
+  var base = decode(MRNA, 0), now = mutResult(pos), n = Math.min(base.aas.length, now.aas.length);
+  for (var i = 0; i < n; i++){ if (base.aas[i] !== now.aas[i]) return i; }
+  return -1;
+}
+
+/* ── ① 묶음 크기 → 지정할 수 있는 가짓수 ── */
+var CODE_SIZES = [1, 2, 3];
+var AA_KINDS = 20;
+function codeCount(n){ return Math.pow(4, n); }
+function codeEnough(n){ return codeCount(n) >= AA_KINDS; }
+
+/* ── ② RNA 세 종류 (교과서 63쪽) ── */
+var RNA_SLOTS = [
+  { id:'info',  aa:'mRNA', label:'단백질합성 정보를 라이보솜에 전달한다',              full:'전령 RNA' },
+  { id:'ribo',  aa:'rRNA', label:'라이보솜을 구성하는 주요 성분으로 단백질합성을 촉진한다', full:'라이보솜 RNA' },
+  { id:'carry', aa:'tRNA', label:'아미노산을 라이보솜으로 운반한다',                    full:'운반 RNA' }
+];
+var RNA_KINDS = ['mRNA', 'tRNA', 'rRNA'];
+function rnaSlotById(id){
+  for (var i = 0; i < RNA_SLOTS.length; i++){ if (RNA_SLOTS[i].id === id) return RNA_SLOTS[i]; }
+  return null;
+}
+/* ══════════════════════════════════════════════════════════════
+   2. 문항 — 선택형 · 서술형
+   ★id 는 활동 전체에서 유일해야 한다. **p 로 시작하면 💪 더 풀어 보기로 분류된다.**
+   ★오답 되돌림(no)은 정답 자리만 빈 문자열이고, 나머지는 「옳지 않다.」로 시작한다.
+   ══════════════════════════════════════════════════════════════ */
+var Q_INTRO = [
+  { id:'i1',
+    q:'4종류의 뉴클레오타이드로 20종류의 아미노산을 모두 지정하려면 적어도 몇 개씩 묶어 부호로 써야 하는가?',
+    ch:['1개씩 묶는다 — 4가지', '2개씩 묶는다 — 16가지', '3개씩 묶는다 — 64가지', '4개씩 묶는다 — 256가지'],
+    a:2,
+    no:['옳지 않다. 4가지뿐이라 20종류에 크게 모자란다.',
+        '옳지 않다. 16가지로는 20종류를 다 지정할 수 없다.',
+        '',
+        '옳지 않다. 256가지는 20종류를 지정하고도 남지만, 3개씩만 묶어도 이미 충분하므로 적어도 필요한 묶음은 3개이다.'],
+    ex:'4종류를 n개씩 묶으면 4<sup>n</sup>가지를 지정할 수 있다. 1개씩은 4가지, 2개씩은 16가지로 20종류에 모자라고, ' +
+       '3개씩 묶으면 64가지가 되어 20종류를 모두 지정할 수 있다. 실제로 유전부호는 <b>세 자리의 연속된 염기</b>, 곧 3염기조합으로 이루어져 있다.' }
+];
+
+var Q_RNA = [
+  { id:'r1',
+    q:'mRNA·tRNA·rRNA에 대한 설명으로 옳은 것은?',
+    ch:['mRNA는 아미노산을 라이보솜까지 운반하는 일을 맡는다.',
+        'tRNA는 라이보솜을 구성하는 주요 성분이다.',
+        'rRNA는 단백질합성 정보를 라이보솜에 전달한다.',
+        '세 종류의 RNA는 모두 단백질합성에 관여한다.'],
+    a:3,
+    no:['옳지 않다. 아미노산을 운반하는 것은 tRNA이다.',
+        '옳지 않다. 라이보솜을 구성하는 것은 rRNA이다.',
+        '옳지 않다. 정보를 전달하는 것은 mRNA이다.',
+        ''],
+    ex:'mRNA는 정보를 전달하고, rRNA는 라이보솜을 이루며, tRNA는 아미노산을 나른다. ' +
+       '맡은 일은 저마다 다르지만 <b>셋 다 번역, 곧 단백질합성에 관여한다.</b>' }
+];
+
+var Q_FIND = [
+  { id:'f1',
+    q:'64개의 코돈 중 61개가 아미노산을 지정하는데 아미노산은 20종류뿐이다. 이로부터 알 수 있는 것은?',
+    ch:['하나의 코돈이 경우에 따라 여러 종류의 아미노산을 지정한다.',
+        '아미노산을 지정하지 않는 코돈이 41개이다.',
+        '하나의 아미노산을 지정하는 코돈이 여러 개인 경우가 많다.',
+        '61개 중 41개의 코돈은 실제로 사용되지 않는다.'],
+    a:2,
+    no:['옳지 않다. 하나의 코돈은 언제나 한 종류의 아미노산만 지정한다. 그렇지 않다면 해독 자체가 불가능하다.',
+        '옳지 않다. 아미노산을 지정하지 않는 코돈은 종결코돈 3개뿐이다.',
+        '',
+        '옳지 않다. 61개는 모두 아미노산을 지정하는 데 쓰인다.'],
+    ex:'류신을 지정하는 코돈이 6개인 것처럼, 61개를 20종류에 나누어 맡기면 한 아미노산에 코돈이 여러 개 배정된다. ' +
+       '이것을 <b>유전부호의 중복성</b>이라고 한다.' }
+];
+
+var Q_DEC = [
+  { id:'d1', lv:'상',
+    q:'세 읽기틀을 모두 해 본 뒤 답하시오. 제시된 mRNA의 코돈이 <b>첫 번째 염기</b>부터 시작한다고 판단한 근거는 무엇인가?',
+    ch:['첫 번째 염기가 C이기 때문이다.',
+        '두 번째·세 번째 염기에서 시작하면 중간에 종결코돈이 생기기 때문이다.',
+        '개시코돈 AUG가 첫 번째 염기부터 시작하는 것이 표에서 확인되었기 때문이다.',
+        '코돈은 언제나 mRNA의 첫 번째 염기부터 세도록 정해져 있기 때문이다.'],
+    a:1,
+    no:['옳지 않다. 어떤 염기로 시작하는가는 읽기틀을 정하는 근거가 되지 않는다.',
+        '',
+        '옳지 않다. 이 mRNA의 AUG는 두 번째 염기부터 시작한다. 게다가 그 틀로 읽으면 네 번째 코돈이 종결코돈이 되어 단백질 정보가 중간에 끊긴다.',
+        '옳지 않다. 제시된 것은 mRNA의 일부분이므로 첫 번째 염기가 곧 코돈의 시작이라고 단정할 수 없다. 실제로 확인해 보아야 한다.'],
+    ex:'코돈은 겹치지 않고 코돈 사이에 공백도 없으므로, 어디서 끊어 읽느냐에 따라 세 가지로 번역될 수 있다. ' +
+       '두 번째 염기부터 읽으면 네 번째 코돈이 UGA, 세 번째 염기부터 읽으면 두 번째 코돈이 UAA가 되어 번역이 중간에 끝난다. ' +
+       '종결코돈 없이 끝까지 아미노산을 지정하는 읽기틀은 <b>첫 번째 염기부터 읽는 것</b>뿐이다.',
+    hint:['세 읽기틀의 결과표에서 「종결코돈」이 나온 자리를 견주어 보시오.',
+          '단백질 정보는 종결코돈에서 끝난다. 정보가 중간에 끊기는 틀은 이 조각의 읽기틀이 될 수 없다.'] }
+];
+
+var Q_MUT = [
+  { id:'m1',
+    q:'염기 하나가 바뀌었는데도 아미노산서열이 그대로인 경우가 있다. 그 까닭은 무엇인가?',
+    ch:['바뀐 염기가 어느 코돈에도 포함되지 않기 때문이다.',
+        '세포가 바뀐 염기를 곧바로 원래대로 고치기 때문이다.',
+        '아미노산이 바뀌어도 단백질의 기능은 언제나 같기 때문이다.',
+        '같은 아미노산을 지정하는 코돈이 여러 개이기 때문이다.'],
+    a:3,
+    no:['옳지 않다. 코돈은 겹치지 않고 사이에 공백도 없으므로 모든 염기가 어느 한 코돈에 들어간다.',
+        '옳지 않다. 수선이 일어나는 것과 무관하게, 바뀐 서열을 그대로 해독해도 같은 아미노산이 지정된다.',
+        '옳지 않다. 아미노산이 바뀌면 단백질의 기능이 달라질 수 있다.',
+        ''],
+    ex:'GUG와 GUA는 모두 발린을 지정한다. 유전부호에는 중복성이 있어서, ' +
+       '<b>코돈의 세 번째 염기가 바뀌어도 같은 아미노산이 지정되는 일</b>이 자주 있다.' }
+];
+
+var PRACTICE = [
+  { id:'p1', lv:'중',
+    q:'제시된 mRNA에서 첫 번째 염기 C가 없어져 두 번째 염기부터 읽게 되었다. 이때 일어나는 일로 옳은 것은?',
+    ch:['첫 번째 아미노산만 바뀌고 나머지 아미노산서열은 그대로 유지된다.',
+        '아미노산서열 전체가 바뀌고 네 번째 코돈에서 번역이 끝난다.',
+        '아미노산이 하나 줄어들 뿐 나머지 서열은 그대로이다.',
+        '번역이 아예 시작되지 않는다.'],
+    a:1,
+    no:['옳지 않다. 염기 하나가 빠지면 그 뒤의 코돈이 모두 한 칸씩 밀려 다시 묶인다.',
+        '',
+        '옳지 않다. 코돈이 통째로 밀리므로 뒤쪽 아미노산도 함께 바뀐다.',
+        '옳지 않다. 번역은 시작되며, 다만 네 번째 코돈에서 끝난다.'],
+    ex:'염기 하나가 없어지면 그 뒤가 모두 한 칸씩 밀려 AUG–GUA–ACG–UGA로 묶인다. ' +
+       '네 번째 코돈 UGA가 종결코돈이므로 아미노산 3개만 만들어지고 번역이 끝난다.' },
+
+  { id:'p2', lv:'중',
+    q:'유전부호가 거의 모든 생물에서 동일하게 사용된다는 사실에서 이끌어 낼 수 있는 것은?',
+    ch:['사람의 유전자를 세균에 넣어도 같은 단백질이 만들어질 수 있다.',
+        '생물마다 코돈표가 달라 종마다 따로 만들어 두어야 해독할 수 있다.',
+        '세균은 사람보다 적은 종류의 아미노산으로 단백질을 만든다.',
+        '코돈표는 사람의 유전정보를 해독할 때에만 사용할 수 있다.'],
+    a:0,
+    no:['',
+        '옳지 않다. 유전부호가 거의 모든 생물에서 같다는 것이 이 사실의 내용이다.',
+        '옳지 않다. 아미노산의 종류 수와는 관계가 없다.',
+        '옳지 않다. 코돈표를 사용하면 거의 모든 생물의 유전정보를 해독할 수 있다.'],
+    ex:'같은 코돈이 어느 생물에서나 같은 아미노산을 지정하므로, 한 생물의 유전자를 다른 생물에 넣어도 같은 아미노산서열이 만들어질 수 있다. ' +
+       '생명공학기술이 성립하는 밑돌이 되는 성질이다.' },
+
+  { id:'p3', lv:'상',
+    q:'어떤 가상의 생물이 5종류의 염기를 사용하고 코돈이 2염기조합이라면, 코돈은 모두 몇 가지가 되는가?',
+    ch:['10가지', '25가지', '32가지', '125가지'],
+    a:1,
+    no:['옳지 않다. 5 × 2를 계산한 값이다. 코돈은 자리마다 5가지가 올 수 있는 경우의 수이다.',
+        '',
+        '옳지 않다. 2<sup>5</sup>을 계산한 값이다. 밑과 지수가 뒤바뀌었다.',
+        '옳지 않다. 5<sup>3</sup>은 3염기조합일 때의 값이다.'],
+    ex:'코돈의 가짓수는 (염기의 종류 수)<sup>(코돈의 염기 수)</sup>이다. 따라서 5<sup>2</sup> = 25가지이다. ' +
+       '실제 생물에서 4<sup>3</sup> = 64가지가 나오는 것과 같은 계산이다.',
+    hint:['코돈의 가짓수는 염기의 종류 수를 코돈의 길이만큼 거듭제곱한 값이다.',
+          '자리가 두 개이고 각 자리에 5가지가 올 수 있다면 경우의 수는 5 × 5이다.'] },
+
+  { id:'p4', lv:'상',
+    q:'제시된 mRNA를 첫 번째 염기부터 읽을 때, 17번째 염기 C가 A로 바뀌면 만들어지는 폴리펩타이드는 어떠한가?',
+    ch:['아미노산 8개가 그대로 만들어진다.',
+        '아미노산 6개까지만 만들어지고 번역이 끝난다.',
+        '아미노산 5개까지만 만들어지고 번역이 끝난다.',
+        '아미노산이 하나도 만들어지지 않는다.'],
+    a:2,
+    no:['옳지 않다. 바뀐 코돈이 종결코돈이 되므로 서열이 끝까지 가지 못한다.',
+        '옳지 않다. 종결코돈이 된 코돈 자리에서는 아미노산이 붙지 않는다.',
+        '',
+        '옳지 않다. 앞쪽 코돈은 그대로이므로 아미노산이 만들어진다.'],
+    ex:'17번째 염기는 여섯 번째 코돈 UCG의 두 번째 자리이다. UCG가 UAG로 바뀌면 종결코돈이 되므로, ' +
+       '그 앞 다섯 번째 코돈까지 만들어진 <b>아미노산 5개</b>에서 번역이 끝난다.',
+    hint:['17번째 염기가 몇 번째 코돈의 몇 번째 자리인지 먼저 세어 보시오.',
+          '종결코돈이 된 자리에서는 아미노산이 붙지 않고 번역이 끝난다.'] }
+];
+
+/* ══════════════════ ⑥ 정리하기 — 서술 3 + 창의력 1 ══════════════════
+   ★1·2·3 은 교과서 62쪽 해 보기 1·2·3 그대로이고, 4는 69쪽 「나의 마무리 노트」 4번이다. */
+var WRITEQ = [
+  { id:'w1', min:60,
+    q:'유전정보를 mRNA에 저장할 때 <b>코돈이 사용되는 방식</b>을 설명하시오.',
+    need:['코돈이 세 자리의 연속된 염기라는 점', '코돈이 겹치지 않고 사이에 공백도 없다는 점',
+          '개시코돈에서 시작해 종결코돈에서 끝난다는 점'],
+    ans:'mRNA에서 하나의 아미노산을 지정하는 유전부호를 코돈이라고 하며, 코돈은 세 자리의 연속된 염기로 이루어진다. ' +
+        '코돈은 서로 겹치지 않고 코돈과 코돈 사이에 공백도 없다. 그래서 어느 염기에서 끊어 읽기 시작하느냐에 따라 ' +
+        '같은 서열이 세 가지로 번역될 수 있다. mRNA에서 단백질 정보가 저장된 부위는 언제나 개시코돈에서 시작해 ' +
+        '종결코돈에서 끝나며, 번역 또한 개시코돈에서 시작해 종결코돈에서 끝난다.' },
+
+  { id:'w2', min:80,
+    q:'제시된 mRNA에 저장된 <b>아미노산서열</b>을 쓰고, 왜 첫 번째 염기부터 읽어야 하는지 그 까닭을 설명하시오.',
+    need:['아미노산 8개의 서열', '세 읽기틀을 견주었다는 점',
+          '두 번째 염기부터 읽으면 네 번째 코돈이 UGA라는 점', '세 번째 염기부터 읽으면 두 번째 코돈이 UAA라는 점'],
+    ans:'아미노산서열은 히스티딘 – 글라이신 – 아스파라진 – 발린 – 트레오닌 – 세린 – 아스파라진 – 알라닌이다. ' +
+        '코돈은 겹치지 않고 사이에 공백도 없으므로 이 서열은 시작 위치에 따라 세 가지로 읽힌다. ' +
+        '두 번째 뉴클레오타이드에서 시작하면 AUG – GUA – ACG – UGA가 되어 네 번째 코돈이 종결코돈이고, ' +
+        '세 번째 뉴클레오타이드에서 시작하면 UGG – UAA가 되어 두 번째 코돈이 종결코돈이다. ' +
+        '두 경우 모두 중간에 종결코돈이 생겨 단백질 정보가 끊기므로, 이 부분의 코돈은 첫 번째 뉴클레오타이드에서 시작한다.' },
+
+  { id:'w3', min:60,
+    q:'mRNA 가닥의 <b>10번째 염기가 구아닌(G)에서 아데닌(A)으로</b> 바뀌는 돌연변이가 일어나면 어떤 결과가 나타나는지 쓰시오.',
+    need:['바뀐 코돈이 GUG에서 AUG로 바뀐다는 점', '발린이 메싸이오닌으로 바뀐다는 점',
+          '다른 아미노산은 그대로라는 점'],
+    ans:'10번째 염기는 네 번째 코돈 GUG의 첫 번째 자리이다. 이 염기가 G에서 A로 바뀌면 코돈이 AUG가 된다. ' +
+        'GUG는 발린을 지정하지만 AUG는 메싸이오닌을 지정하므로, 폴리펩타이드 사슬에서 네 번째 아미노산인 ' +
+        '발린이 메싸이오닌으로 바뀐다. 코돈은 겹치지 않으므로 나머지 코돈은 그대로이고 다른 아미노산은 바뀌지 않는다.' },
+
+  { id:'w4', min:100, creative:true,
+    q:'<b>💪 창의력.</b> 생물은 유전정보를 저장할 때와 그 정보로 생명 현상을 일으킬 때 서로 다른 물질을 사용한다. ' +
+      '그 까닭은 무엇이며, 한 종류의 물질만 사용하는 생물이 탄생할 수 있겠는지 예상하고 그 까닭을 쓰시오.',
+    need:['저장에 유리한 성질과 기능에 유리한 성질이 다르다는 점',
+          '핵산은 4종류, 단백질은 20종류라는 구성의 차이', '자기 예상과 그 근거'],
+    ans:'DNA는 네 종류의 뉴클레오타이드가 길게 이어진 물질이어서 서열로 정보를 담기에 알맞고, 이중나선이라 ' +
+        '한쪽 가닥을 주형으로 삼아 정확히 복사하고 손상을 고치기에도 유리하다. 반면 단백질은 스무 종류의 아미노산으로 ' +
+        '이루어져 접히는 입체 구조가 다양하므로 효소·수송체·구조단백질처럼 서로 다른 기능을 맡기에 알맞다. ' +
+        '곧 저장에 유리한 성질과 기능에 유리한 성질이 서로 달라서 두 물질이 나뉘어 쓰인다. ' +
+        '한 종류만 쓰는 생물이 아주 없으리라고 단정하기는 어렵다. RNA는 정보를 담으면서 스스로 반응을 촉매하기도 하므로 ' +
+        '초기 생명은 RNA 한 가지로 두 일을 겸했으리라고 보는 견해가 있다. 다만 정확한 복제와 다양한 기능을 함께 요구하는 ' +
+        '오늘날의 생물에서는 한 물질이 두 일을 모두 잘 해내기 어려울 것이다.' }
+];
+
+var SELFCHECK = [
+  { id:'s1', k:'지식·이해', t:'중심원리에 따른 유전정보의 흐름과 세 종류 RNA의 역할을 설명할 수 있는가?' },
+  { id:'s2', k:'과정·기능', t:'코돈표를 직접 읽어 주어진 mRNA의 아미노산서열을 해독하였는가?' },
+  { id:'s3', k:'가치·태도', t:'염기 하나의 변화가 서로 다른 결과로 이어질 수 있다는 점을 확인하고 그 뜻을 생각해 보았는가?' }
+];
+/* ══════════════════════════════════════════════════════════════
+   3. 공통 기계 — DOM 도우미 · 상태 · 저장 · 진행 레일
+   ★이 활동은 「연습」이다 → 정오를 기록하지 않는다. 고른 답은 새로고침 복원용으로만 남는다.
+     (정책 정본: 작업노트/방법_활동기록_어디에남길것인가.md)
+   ══════════════════════════════════════════════════════════════ */
+/* 조사 고르기 — 「히스티딘을(를)」처럼 두 개를 나란히 적지 않는다.
+   한글 음절의 종성 유무로 가른다. 아미노산 이름은 모두 받침으로 끝나지만, 값이 늘어나도 맞도록 계산해 둔다. */
+function hasJong(w){
+  var t = String(w || '');
+  if (!t) return false;
+  var c = t.charCodeAt(t.length - 1);
+  if (c < 0xAC00 || c > 0xD7A3) return false;
+  return (c - 0xAC00) % 28 !== 0;
+}
+function jo(w, withJong, without){ return w + (hasJong(w) ? withJong : without); }
+
+function setHTML(id, html){
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+function showFb(id, kind, html){
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (!html){ el.className = 'msg hide'; el.innerHTML = ''; return; }
+  el.className = 'msg ' + kind;
+  el.innerHTML = html;
+}
+
+var LS_KEY = 'codon_sim_v1';
+
+var STEPS = [
+  { key:'intro', no:'①', name:'4글자로 20종류', sub:'유전부호의 필요', cls:'dna'  },
+  { key:'rna',   no:'②', name:'중심원리',       sub:'흐름·RNA 3종',   cls:'rna'  },
+  { key:'find',  no:'③', name:'유전부호의 규칙', sub:'코돈표 읽기',    cls:''     },
+  { key:'dec',   no:'④', name:'유전정보의 해독', sub:'읽기틀·해독',    cls:'prot' },
+  { key:'mut',   no:'⑤', name:'염기 하나가 바뀌면', sub:'치환 3자리',  cls:'teal' }
+];
+
+function freshState(){
+  return {
+    codeRun:{},        /* ① 눌러 본 묶음 크기 {'1':true,…} */
+    codeLast:null,     /* ① 마지막으로 고른 묶음 크기 */
+    rnaSlot:{},        /* ② 자리마다 맞게 놓은 RNA {info:'mRNA',…} */
+    find:{},           /* ③ 찾은 칸 {stop:[…], start:[…], leu:[…]} */
+    frame:null,        /* ④ 지금 고른 읽기틀 0·1·2 */
+    decN:{},           /* ④ 읽기틀마다 해독을 마친 칸 수 {'0':n,…} */
+    hintCodon:null,    /* ④ 💡 로 공개한 코돈 — **단수**다 */
+    hintUsed:0,
+    mutGuess:{},       /* ⑤ 자리마다 고른 예상 {'10':0|1|2,…} */
+    mutRun:{},         /* ⑤ 바꾸어 확인한 자리 {'10':true,…} */
+    mutNow:null,       /* ⑤ 지금 화면에 적용된 자리 */
+    qPick:{},          /* ①②③④⑤ 결론 문항 */
+    pPick:{},          /* 💪 더 풀어 보기 */
+    ta:{},             /* ⑥ 서술형 */
+    self:{},           /* 자기평가 체크 */
+    teacherUnlock:false,
+    seq:0              /* ★저장할 때마다 하나씩 오른다 — 두 탭이 서로를 지우지 않게 하는 표다 */
+  };
+}
+var state = freshState();
+
+/* ★두 탭이 서로를 지우던 문제(1-4 검토에서 재현됨).
+   저장할 때마다 seq 를 올리고, **저장소의 seq 가 내 것보다 크면 덮어쓰지 않는다.** 대신 학생에게 알린다. */
+function saveState(){
+  try{
+    var ta = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) ta[w.id] = el.value;
+    });
+    state.ta = ta;
+
+    var mine = (typeof state.seq === 'number') ? state.seq : 0;
+    var newer = false;
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw){
+        var stored = JSON.parse(raw);
+        if (stored && typeof stored.seq === 'number' && stored.seq > mine) newer = true;
+      }
+    }catch(e2){ newer = false; }      /* 읽다 실패하면 막지 않는다 */
+
+    if (newer){ warnOtherTab(true); return; }
+    state.seq = mine + 1;
+
+    /* ★교사 해제는 저장하지 않는다 — 새로고침하면 도로 잠긴다. 화면의 state 는 건드리지 않는다. */
+    var toSave = {};
+    Object.keys(state).forEach(function(k){ toSave[k] = state[k]; });
+    toSave.teacherUnlock = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(toSave));
+  }catch(e){}
+}
+function warnOtherTab(on){
+  var el = document.getElementById('tabWarn');
+  if (!el) return;
+  el.className = 'msg bad' + (on ? '' : ' hide');
+  if (on){
+    el.innerHTML = '⚠ 이 활동이 <b>다른 탭에서도 열려 있다.</b> 이 탭에서 한 것은 저장되지 않는다.<br>' +
+                   '탭을 하나만 남기고 새로고침하시오.';
+  }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    return o;
+  }catch(e){ return null; }
+}
+
+/* ── 완료 판정 — 진행 레일·배지가 전부 여기서만 파생된다 ──
+   ★막는 데 쓰지 않는다. 카드는 처음부터 다 열려 있다(2026-09-01 규약). */
+function codeDoneCount(){
+  var n = 0;
+  CODE_SIZES.forEach(function(s){ if (state.codeRun[String(s)]) n++; });
+  return n;
+}
+function rnaDoneCount(){
+  var n = 0;
+  RNA_SLOTS.forEach(function(s){ if (state.rnaSlot[s.id] === s.aa) n++; });
+  return n;
+}
+function findListOf(k){ return (state.find && Array.isArray(state.find[k])) ? state.find[k] : []; }
+function findDoneCount(){ return findListOf('stop').length + findListOf('start').length + findListOf('leu').length; }
+function findTotal(){ return STOP_CODONS.length + 1 + LEU_CODONS.length; }   /* 3 + 1 + 6 = 10 */
+function frameDone(f){ return (Number(state.decN[String(f)]) || 0) >= decode(MRNA, f).need; }
+function decDoneCount(){
+  var n = 0;
+  [0,1,2].forEach(function(f){ if (frameDone(f)) n++; });
+  return n;
+}
+function mutDoneCount(){
+  var n = 0;
+  MUTS.forEach(function(m){ if (state.mutRun[String(m.pos)]) n++; });
+  return n;
+}
+function stepDone(k){
+  if (k === 'intro') return codeDoneCount() === CODE_SIZES.length && answeredOf(Q_INTRO, state.qPick) === Q_INTRO.length;
+  if (k === 'rna')   return rnaDoneCount() === RNA_SLOTS.length && answeredOf(Q_RNA, state.qPick) === Q_RNA.length;
+  if (k === 'find')  return findDoneCount() === findTotal() && answeredOf(Q_FIND, state.qPick) === Q_FIND.length;
+  if (k === 'dec')   return decDoneCount() === 3 && answeredOf(Q_DEC, state.qPick) === Q_DEC.length;
+  if (k === 'mut')   return mutDoneCount() === MUTS.length && answeredOf(Q_MUT, state.qPick) === Q_MUT.length;
+  return false;
+}
+function doneCount(){
+  var n = 0;
+  STEPS.forEach(function(s){ if (stepDone(s.key)) n++; });
+  return n;
+}
+function updateRail(){
+  var h = '';
+  STEPS.forEach(function(s){
+    var cls = 'rstep' + (stepDone(s.key) ? ' ok' : ' on');   /* ★잠긴 칸이 없다 — 마쳤는가만 보인다 */
+    h += '<div class="' + cls + '">' + s.no + ' ' + s.name +
+         '<span class="rsub">' + s.sub + '</span></div>';
+  });
+  setHTML('rail', h);
+  var b = document.getElementById('progress');
+  if (b) b.textContent = '진행 ' + doneCount() + ' / ' + STEPS.length;
+}
+/* ★잠금이 없어졌으므로 「늘 열어 둔다」만 한다. 감춰진 채 남는 사고를 막으려고 명시적으로 켠다. */
+function openAll(){
+  ['pracBody'].forEach(function(id){
+    var e = document.getElementById(id);
+    if (e) e.style.display = 'block';
+  });
+}
+
+/* ══════════════════ 연출 엔진 (② 보기 무대 하나뿐) ══════════════════
+   ★결과는 연출과 무관하게 즉시 확정된다. setTimeout 이 없는 환경(헤드리스 검사)에서는
+     ph 가 곧바로 마지막이 된다. 연출이 실패해도 수업이 멈추지 않는다.
+   ★aniLast 는 상수가 아니라 **함수**다. */
+var ANI_STEPS = {
+  demo:['① DNA 주형 가닥', '② 전사 — mRNA가 만들어진다', '③ 개시코돈 AUG를 찾는다',
+        '④ 번역 — 코돈마다 아미노산이 붙는다', '⑤ 폴리펩타이드가 완성된다']
+};
+var ANI_MS = { demo:[1100, 1600, 1400, 1800, 1500] };
+function aniSteps(st){ return ANI_STEPS[st] || []; }
+function aniLast(st){ return Math.max(0, aniSteps(st).length - 1); }
+function aniMs(st, ph){
+  var v = ANI_MS[st];
+  if (v == null) return 1000;
+  return (typeof v === 'number') ? v : (v[ph] != null ? v[ph] : 1000);
+}
+var ani = { st:null, ph:0, gen:0, auto:false };
+function aniOf(st){ return (ani.st === st) ? ani.ph : aniLast(st); }
+function aniStart(st, from){
+  ani = { st:st, ph:(from || 0), gen:ani.gen + 1, auto:true };
+  if (typeof setTimeout === 'undefined'){ ani.ph = aniLast(st); ani.auto = false; return; }
+  aniStep();
+}
+function aniStep(){
+  if (!ani.auto || ani.ph >= aniLast(ani.st)) return;
+  var gen = ani.gen;
+  setTimeout(function(){
+    /* ★손으로 단계를 넘겼으면 gen 이 달라져 여기서 조용히 끊긴다 */
+    if (gen !== ani.gen || !ani.auto || ani.ph >= aniLast(ani.st)) return;
+    ani.ph++;
+    renderStage(ani.st);
+    aniStep();
+  }, aniMs(ani.st, ani.ph + 1));
+}
+function aniHold(st){
+  if (ani.st !== st) ani = { st:st, ph:aniLast(st), gen:ani.gen + 1, auto:false };
+  ani.gen++;
+  ani.auto = false;
+}
+function aniSkip(st){ aniHold(st); ani.ph = aniLast(st); renderStage(st); }
+function aniReplay(st){ aniStart(st, 0); renderStage(st); }
+function aniGo(st, delta){
+  aniHold(st);
+  var p = ani.ph + delta, last = aniLast(st);
+  ani.ph = p < 0 ? 0 : (p > last ? last : p);
+  renderStage(st);
+}
+function aniBarHtml(st, cls){
+  var steps = aniSteps(st), ph = aniOf(st), atEnd = (ph >= aniLast(st));
+  function btn(label, on, act){
+    return '<button type="button" class="btn ' + cls + ' ghost"' + (on ? '' : ' disabled') +
+           ' onclick="' + act + '">' + label + '</button>';
+  }
+  return '<div class="anibar">' +
+    btn('⏮ 처음부터', true,  "aniReplay('" + st + "')") +
+    btn('◀ 이전',    ph > 0, "aniGo('" + st + "',-1)") +
+    btn('▶ 다음',    !atEnd, "aniGo('" + st + "',1)") +
+    btn('⏩ 끝까지',  !atEnd, "aniSkip('" + st + "')") +
+    '<span class="anistep">' + (steps[ph] || '') + ' <b>' + (ph + 1) + ' / ' + steps.length + '</b></span>' +
+  '</div>';
+}
+function renderStage(st){ if (st === 'demo') renderDemo(); }
+/* ══════════════════════════════════════════════════════════════
+   4. ① 4글자로 20종류를 어떻게 적는가
+   ══════════════════════════════════════════════════════════════ */
+function renderCodeChips(){
+  var h = '';
+  CODE_SIZES.forEach(function(n){
+    var on = (state.codeLast === n);
+    h += '<button type="button" class="chip' + (on ? ' on' : (state.codeRun[String(n)] ? ' ok' : '')) +
+         '" onclick="pickCode(' + n + ')">' + n + '개씩 묶는다</button>';
+  });
+  setHTML('codeChips', h);
+}
+/* 막대 높이는 가짓수에 정비례한다 — 「분율」로 그리지 않는다. */
+var CODE_MAXH = 130, CODE_MAXV = 64;
+function codeBarH(n){ return CODE_MAXH * codeCount(n) / CODE_MAXV; }
+function renderCodeStage(){
+  var base = 168, x0 = 96, gap = 128, y20 = base - CODE_MAXH * AA_KINDS / CODE_MAXV;
+  var s = '<svg class="stage" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg" role="img" ' +
+          'aria-label="묶음 크기에 따라 지정할 수 있는 가짓수를 나타낸 막대그래프">';
+  s += '<line x1="40" y1="' + base + '" x2="500" y2="' + base + '" stroke="#B9C2CC" stroke-width="2"/>';
+  /* 아미노산 20종류 기준선 */
+  s += '<line x1="40" y1="' + y20 + '" x2="500" y2="' + y20 + '" stroke="' + C_PROT +
+       '" stroke-width="2" stroke-dasharray="6,4"/>';
+  s += '<text x="44" y="' + (y20 - 7) + '" font-size="14" font-weight="700" fill="' + C_PROT +
+       '">아미노산 20종류</text>';
+  CODE_SIZES.forEach(function(n, i){
+    var x = x0 + gap * i, shown = !!state.codeRun[String(n)];
+    var h = codeBarH(n), y = base - h;
+    s += '<g id="cb_' + n + '" class="rfade" opacity="' + (shown ? 1 : 0.12) + '">';
+    s += '<rect x="' + (x - 36) + '" y="' + y + '" width="72" height="' + h + '" rx="6" fill="' +
+         (codeEnough(n) ? C_PROT : C_DNA) + '"/>';
+    if (shown){
+      s += '<text x="' + x + '" y="' + (y - 8) + '" text-anchor="middle" font-size="16" font-weight="800" fill="#1A1A1A">' +
+           codeCount(n) + '가지</text>';
+    }
+    s += '</g>';
+    s += '<text x="' + x + '" y="' + (base + 20) + '" text-anchor="middle" font-size="14" fill="#555">' +
+         n + '개씩</text>';
+    s += '<text x="' + x + '" y="' + (base + 37) + '" text-anchor="middle" font-size="13" fill="#98A0AC">4' +
+         ['', '¹', '²', '³'][n] + '</text>';
+  });
+  s += '</svg>';
+  setHTML('codeStage', s);
+}
+function pickCode(n){
+  state.codeRun[String(n)] = true;
+  state.codeLast = n;
+  saveState();
+  renderCodeChips(); renderCodeStage();
+  showFb('fb_code', codeEnough(n) ? 'good' : 'warn',
+    '4를 ' + n + '번 곱하면 <b>' + codeCount(n) + '가지</b>이다. ' +
+    (codeEnough(n)
+      ? '20종류를 모두 지정하고도 남는다. 유전부호가 <b>3염기조합</b>인 까닭이 여기에 있다.'
+      : '20종류에 <b>모자란다.</b> 이 크기로는 모든 아미노산을 지정할 수 없다.'));
+  updateAll();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   5. ② 중심원리 — 흐름도 · 보기 무대 · RNA 세 종류
+   ══════════════════════════════════════════════════════════════ */
+function renderDogma(){
+  function box(x, y, w, label, sub, color, bg){
+    return '<g><rect x="' + x + '" y="' + y + '" width="' + w + '" height="52" rx="10" fill="' + bg +
+           '" stroke="' + color + '" stroke-width="2.5"/>' +
+           '<text x="' + (x + w / 2) + '" y="' + (y + 24) + '" text-anchor="middle" font-size="17" font-weight="800" fill="' +
+           color + '">' + label + '</text>' +
+           '<text x="' + (x + w / 2) + '" y="' + (y + 42) + '" text-anchor="middle" font-size="12.5" fill="#555">' +
+           sub + '</text></g>';
+  }
+  function arrow(x1, x2, y, label){
+    return '<g><line x1="' + x1 + '" y1="' + y + '" x2="' + (x2 - 10) + '" y2="' + y +
+           '" stroke="#6B7280" stroke-width="2.5" marker-end="url(#ah)"/>' +
+           '<text x="' + ((x1 + x2) / 2) + '" y="' + (y - 9) + '" text-anchor="middle" font-size="15" font-weight="700" fill="#1A1A1A">' +
+           label + '</text></g>';
+  }
+  var s = '<svg class="stage" viewBox="0 0 560 150" xmlns="http://www.w3.org/2000/svg" role="img" ' +
+          'aria-label="중심원리 — DNA에서 RNA를 거쳐 단백질로 유전정보가 흐른다">' +
+    '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+    '<path d="M 0 0 L 10 5 L 0 10 z" fill="#6B7280"/></marker></defs>' +
+    box(30, 60, 130, 'DNA', '유전정보의 저장', C_DNA, '#DFF6F4') +
+    arrow(160, 230, 86, '전사') +
+    box(230, 60, 110, 'RNA', '정보의 전달', C_RNA, '#EEE6FB') +
+    arrow(340, 410, 86, '번역') +
+    box(410, 60, 140, '단백질', '폴리펩타이드', C_PROT, '#FCE4EC') +
+    /* 복제 고리 — DNA 위쪽 */
+    '<path d="M 55 58 C 55 18, 135 18, 135 58" fill="none" stroke="' + C_DNA +
+    '" stroke-width="2.5" marker-end="url(#ah)"/>' +
+    '<text x="95" y="22" text-anchor="middle" font-size="14" font-weight="700" fill="' + C_DNA + '">복제</text>' +
+    '<text x="280" y="130" text-anchor="middle" font-size="13.5" fill="#555">이 흐름을 중심원리라고 한다</text>' +
+    '</svg>';
+  setHTML('dogmaStage', s);
+}
+
+/* ── 보기 무대 (교과서 61쪽 그림 Ⅱ-2) ──
+   ★한 번만 짓고 국면이 바뀌면 opacity 만 바꾼다. 국면마다 다시 그리면 전환이 걸리지 않아 물체가 튀어나온다. */
+var DEMO_AA = ['메싸이오닌', '류신', '알라닌', '발린'];
+function demoLayout(ph){
+  var p = Number(ph) || 0;
+  return {
+    tpl:   1,
+    mrna:  p >= 1 ? 1 : 0,
+    start: p >= 2 ? 1 : 0,
+    dim:   p >= 3 ? 0.45 : 1,
+    aa:    [p >= 3 ? 1 : 0, p >= 3 ? 1 : 0, p >= 4 ? 1 : 0, p >= 4 ? 1 : 0]
+  };
+}
+var demoMounted = false;
+function demoHtml(){
+  /* ★개시코돈 자리는 화살표로 가리키지 않고 **그 세 칸을 묶어** 보인다.
+     글 앞에 ↑ 를 두면 4번째 염기가 아니라 줄 맨 앞을 가리키게 된다(2026-09-11 브라우저에서 실제로 그랬다). */
+  function row(id, label, seq, left, right, cls, mark){
+    var h = '<div id="' + id + '" class="rfade"><div style="font-size:13.5px;color:#555;font-weight:700;">' + label + '</div>' +
+            '<div class="strand"><span class="end">' + left + '</span>';
+    for (var i = 0; i < seq.length; i++){
+      var inMark = mark && i >= mark[0] && i < mark[0] + mark[1];
+      if (inMark && i === mark[0]) h += '<span class="cod now" style="padding:2px;">';
+      h += '<span class="tile ' + cls + '">' + seq.charAt(i) + '</span>';
+      if (inMark && i === mark[0] + mark[1] - 1) h += '</span>';
+    }
+    h += '<span class="end">' + right + '</span></div></div>';
+    return h;
+  }
+  var h = '<div style="padding:4px 2px;">';
+  h += row('d_tpl', 'DNA 주형 가닥', DEMO_TEMPLATE, '3′', '5′', 'dnab');
+  h += row('d_mrna', 'mRNA', DEMO_MRNA, '5′', '3′', '', [DEMO_START, 3]);
+  h += '<div id="d_start" class="rfade" style="font-size:14px;font-weight:700;color:' + C_RNA + ';margin-top:2px;">' +
+       '노란 테두리로 묶인 ' + (DEMO_START + 1) + '~' + (DEMO_START + 3) + '번째 염기 AUG 가 개시코돈이다 — 여기서부터 코돈을 끊어 읽는다</div>';
+  h += '<div style="font-size:13.5px;color:#555;font-weight:700;margin-top:10px;">폴리펩타이드</div><div class="pep">';
+  DEMO_AA.forEach(function(a, i){
+    h += '<span id="d_aa' + i + '" class="bead rfade">' + a + '</span>';
+  });
+  h += '</div></div>';
+  return h;
+}
+function applyDemo(ph){
+  var L = demoLayout(ph), i;
+  function op(id, v){
+    var e = document.getElementById(id);
+    if (e) e.style.opacity = String(v);
+  }
+  op('d_tpl', L.dim);
+  op('d_mrna', L.mrna);
+  op('d_start', L.start);
+  for (i = 0; i < 4; i++) op('d_aa' + i, L.aa[i]);
+}
+function renderDemo(){
+  if (!demoMounted){ setHTML('demoStage', demoHtml()); demoMounted = true; }
+  applyDemo(aniOf('demo'));
+  setHTML('demoAni', aniBarHtml('demo', 'rna'));
+}
+
+/* ── RNA 세 종류 놓기 ── */
+function renderRnaSlots(){
+  var h = '';
+  RNA_SLOTS.forEach(function(s){
+    var got = state.rnaSlot[s.id];
+    var ok = (got === s.aa);
+    h += '<div class="slotrow' + (ok ? ' filled' : '') + '">' +
+         '<div class="slabel">' + s.label + '</div>';
+    if (ok){
+      h += '<div class="sdone">✅ ' + s.aa + ' <span style="font-weight:600;color:var(--sub);font-size:14.5px;">(' + s.full + ')</span></div>';
+    } else {
+      h += '<div class="chips" style="margin:4px 0 0;">';
+      RNA_KINDS.forEach(function(k){
+        h += '<button type="button" class="chip" onclick="placeRna(\'' + s.id + '\',\'' + k + '\')">' + k + '</button>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+  setHTML('rnaSlots', h);
+  var t = document.getElementById('rnaProg');
+  if (t) t.textContent = '놓은 RNA ' + rnaDoneCount() + ' / ' + RNA_SLOTS.length;
+  var task = document.getElementById('rnaTask');
+  if (task){
+    task.innerHTML = (rnaDoneCount() === RNA_SLOTS.length)
+      ? '세 종류를 모두 제자리에 놓았다. 아래 문항에 답하시오.'
+      : 'RNA 세 종류를 각자의 역할 자리에 놓으시오.';
+  }
+}
+function placeRna(slotId, kind){
+  var s = rnaSlotById(slotId);
+  if (!s) return;
+  if (kind !== s.aa){
+    var wrong = rnaSlotById(slotId);
+    showFb('fb_rna', 'bad', '옳지 않다. ' + kind + '는 이 역할을 맡지 않는다. ' +
+      '<b>' + wrong.label + '</b>는 다른 RNA의 일이다.');
+    return;
+  }
+  state.rnaSlot[slotId] = kind;
+  saveState();
+  renderRnaSlots();
+  showFb('fb_rna', 'good', '옳다. <b>' + s.aa + '</b>(' + s.full + ')는 ' + s.label + '.');
+  updateAll();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   6. 코돈표 — ③과 ④가 같은 함수로 그린다(컨테이너와 접두사만 다르다)
+   ★교과서 62쪽 표와 같은 구조 — 칸마다 코돈을 함께 적고, 세 축의 이름을 표에 명시한다.
+   ★종결·개시 칸에 **미리 색을 칠하지 않는다.** 칠하면 ③의 찾기 과제가 색만 보고 끝난다.
+     교과서 표에도 색은 없다. 학생이 찾은 칸·해독한 칸에만 표시가 붙는다.
+   ══════════════════════════════════════════════════════════════ */
+function renderCodonTable(boxId, pfx, fn){
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  var html = '<table class="ctab"><thead>' +
+             '<tr><th class="axis" rowspan="2">첫 번째<br>염기</th>' +
+             '<th class="axis" colspan="4">두 번째 염기</th>' +
+             '<th class="axis" rowspan="2">세 번째<br>염기</th></tr><tr>';
+  var r, c, t;
+  for (c = 0; c < 4; c++) html += '<th class="hdr">' + BASES4[c] + '</th>';
+  html += '</tr></thead><tbody>';
+  for (r = 0; r < 4; r++){
+    html += '<tr><th class="hdr">' + BASES4[r] + '</th>';
+    for (c = 0; c < 4; c++){
+      html += '<td>';
+      for (t = 0; t < 4; t++){
+        var cod = BASES4[r] + BASES4[c] + BASES4[t];
+        html += '<div class="ce" id="' + pfx + '_' + cod + '" role="button" tabindex="0" ' +
+                'onclick="' + fn + '(\'' + cod + '\')">' +
+                '<b class="cd">' + cod + '</b> ' + CODON_TABLE[cod] +
+                (isStartCodon(cod) ? ' (개시코돈)' : '') + '</div>';
+      }
+      html += '</td>';
+    }
+    html += '<th class="hdr third">U<br>C<br>A<br>G</th></tr>';
+  }
+  html += '</tbody></table>';
+  box.innerHTML = html;
+}
+function ctMark(pfx, codon, cls){
+  var el = document.getElementById(pfx + '_' + codon);
+  if (el) el.classList.add(cls);
+}
+function ctClearAll(pfx, cls){
+  for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) for (var t = 0; t < 4; t++){
+    var el = document.getElementById(pfx + '_' + BASES4[r] + BASES4[c] + BASES4[t]);
+    if (el) el.classList.remove(cls);
+  }
+}
+/* ══════════════════════════════════════════════════════════════
+   7. ③ 코돈표를 읽는 연습 — 찾아서 탭한다
+   ══════════════════════════════════════════════════════════════ */
+var FIND_TASKS = [
+  { key:'stop',  need:STOP_CODONS,
+    text:'코돈표에서 <b>종결코돈</b>을 모두 찾아 탭하시오. (3개)',
+    done:'종결코돈은 UAA · UAG · UGA 세 개이다. 이 세 코돈은 아미노산을 지정하지 않으며, 여기서 단백질합성이 멈춘다.' },
+  { key:'start', need:[START_CODON],
+    text:'코돈표에서 <b>개시코돈</b>을 찾아 탭하시오. (1개)',
+    done:'개시코돈은 AUG이다. AUG는 <b>메싸이오닌을 지정하는 동시에</b> 단백질합성을 시작하는 개시코돈으로도 쓰인다.' },
+  { key:'leu',   need:LEU_CODONS,
+    text:'코돈표에서 <b>류신</b>을 지정하는 코돈을 모두 찾아 탭하시오. 몇 개인지 세어 보시오.',
+    done:'류신을 지정하는 코돈은 <b>6개</b>이다. 아미노산 하나에 코돈이 여러 개 배정되어 있다.' }
+];
+function findTaskByKey(k){
+  for (var i = 0; i < FIND_TASKS.length; i++){ if (FIND_TASKS[i].key === k) return FIND_TASKS[i]; }
+  return null;
+}
+function curFindTask(){
+  for (var i = 0; i < FIND_TASKS.length; i++){
+    if (findListOf(FIND_TASKS[i].key).length < FIND_TASKS[i].need.length) return FIND_TASKS[i];
+  }
+  return null;
+}
+function ctTap3(codon){
+  var task = curFindTask();
+  if (!task){
+    showFb('fb_find', 'info', '③ 의 찾기 과제를 모두 마쳤다. 아래 문항에 답하시오.');
+    return;
+  }
+  var got = findListOf(task.key);
+  if (got.indexOf(codon) >= 0){
+    showFb('fb_find', 'warn', '이미 찾은 칸이다. 남은 칸을 더 찾으시오.');
+    return;
+  }
+  if (task.need.indexOf(codon) < 0){
+    showFb('fb_find', 'bad', '옳지 않다. <b>' + codon + '</b>는 ' + jo(CODON_TABLE[codon], '을', '를') + ' 지정하는 코돈이다.');
+    return;
+  }
+  got = got.concat([codon]);
+  state.find[task.key] = got;
+  saveState();
+  renderFind();
+  var left = task.need.length - got.length;
+  showFb('fb_find', 'good',
+    '옳다. <b>' + codon + '</b>를 찾았다. ' + (left > 0 ? '남은 칸 ' + left + '개를 더 찾으시오.' : task.done));
+  updateAll();
+}
+function renderFind(){
+  ctClearAll('c3', 'found');
+  FIND_TASKS.forEach(function(t){
+    findListOf(t.key).forEach(function(cod){ ctMark('c3', cod, 'found'); });
+  });
+  var task = curFindTask();
+  var bar = document.getElementById('findTask');
+  if (bar) bar.innerHTML = task ? task.text : '세 가지 찾기를 모두 마쳤다. 아래 문항에 답하시오.';
+  var h = '';
+  FIND_TASKS.forEach(function(t){
+    var got = findListOf(t.key), all = (got.length === t.need.length);
+    h += '<div class="slotrow' + (all ? ' filled' : '') + '">' +
+         '<div class="slabel">' + (all ? '✅ ' : '') +
+         ({ stop:'종결코돈', start:'개시코돈', leu:'류신을 지정하는 코돈' })[t.key] +
+         ' <span style="font-weight:600;color:var(--sub);font-size:14.5px;">' + got.length + ' / ' + t.need.length + '</span></div>' +
+         '<div style="font-size:15.5px;">' + (got.length ? got.join(' · ') : '<span style="color:#9AA1AC;">아직 찾지 않았다</span>') + '</div>' +
+         '</div>';
+  });
+  setHTML('findList', h);
+  var p = document.getElementById('findProg');
+  if (p) p.textContent = '찾은 칸 ' + findDoneCount() + ' / ' + findTotal();
+  setHTML('ctNow', task
+    ? '<b>지금 할 일</b> — ' + task.text
+    : '<b>세 가지 찾기를 모두 마쳤다.</b> 64개 중 61개가 아미노산을 지정하고, 아미노산은 20종류뿐이다.');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   8. ④ 유전정보의 해독 — 이 활동의 중심
+   ★아미노산 이름은 앱이 말하지 않는다. 「지금 해독할 코돈」만 보여 주고,
+     학생이 코돈표에서 그 칸을 찾아 탭하면 그 칸에 적힌 아미노산이 붙는다.
+   ══════════════════════════════════════════════════════════════ */
+var FRAME_NAMES = ['1번째 염기부터', '2번째 염기부터', '3번째 염기부터'];
+function decN(f){ return Number(state.decN[String(f)]) || 0; }
+function curCodon(){
+  if (state.frame === null || state.frame === undefined) return null;
+  var D = decode(MRNA, state.frame), n = decN(state.frame);
+  return (n < D.need) ? D.codons[n] : null;
+}
+function pickFrame(f){
+  state.frame = f;
+  saveState();
+  renderDec();
+  showFb('fb_dec', 'info', '<b>' + FRAME_NAMES[f] + '</b> 끊어 읽는다. 코돈표에서 코돈을 하나씩 찾아 탭하시오.');
+}
+/* 염기 타일 — 고른 읽기틀로 3개씩 묶는다. 틀 밖으로 남는 앞쪽 염기는 흐리게 둔다. */
+function strandHtml(seq, frame, opt){
+  opt = opt || {};
+  var h = '<div class="strand"><span class="end">5′</span>';
+  var i = 0, gi = 0;
+  function tile(idx){
+    var cls = 'tile';
+    if (opt.mutPos && idx + 1 === opt.mutPos) cls += (opt.changed ? ' changed' : ' mut');
+    return '<span class="' + cls + '">' + seq.charAt(idx) +
+           '<span class="tno">' + (idx + 1) + '</span></span>';
+  }
+  var f = (frame === null || frame === undefined) ? 0 : Number(frame);
+  if (f > 0){
+    h += '<span class="cod off">';
+    for (i = 0; i < f; i++) h += tile(i);
+    h += '</span>';
+  }
+  var codons = splitCodons(seq, f), cur = opt.cursor, need = opt.need;
+  for (gi = 0; gi < codons.length; gi++){
+    var cls = 'cod ' + (gi % 2 ? 'g1' : 'g0');
+    if (need !== undefined && gi < need && cur !== undefined && gi < cur) cls += ' done';
+    if (cur !== undefined && gi === cur) cls += ' now';
+    if (opt.stopAt !== undefined && opt.stopAt === gi && cur !== undefined && gi < cur) cls += ' stopcod';
+    h += '<span class="' + cls + '">';
+    for (i = 0; i < 3; i++) h += tile(f + gi * 3 + i);
+    h += '</span>';
+  }
+  var rest = f + codons.length * 3;
+  if (rest < seq.length){
+    h += '<span class="cod off">';
+    for (i = rest; i < seq.length; i++) h += tile(i);
+    h += '</span>';
+  }
+  h += '<span class="end">3′</span></div>';
+  return h;
+}
+function pepHtml(aas, stopped, total){
+  if (!aas.length && !stopped) return '<span class="pepempty">아직 해독한 코돈이 없다.</span>';
+  var h = '';
+  aas.forEach(function(a, i){
+    if (i) h += '<span class="pbond">–</span>';
+    h += '<span class="bead">' + a + '</span>';
+  });
+  if (stopped) h += (aas.length ? '<span class="pbond">–</span>' : '') + '<span class="stopmark">🛑 종결코돈 — 여기서 끝난다</span>';
+  if (total !== undefined && !stopped && aas.length < total){
+    h += '<span class="pbond">–</span><span class="bead dim">남은 코돈 ' + (total - aas.length) + '개</span>';
+  }
+  return h;
+}
+function renderFrameChips(){
+  var h = '';
+  [0,1,2].forEach(function(f){
+    var on = (state.frame === f), ok = frameDone(f);
+    h += '<button type="button" class="chip' + (on ? ' on' : (ok ? ' ok' : '')) +
+         '" onclick="pickFrame(' + f + ')">' + (ok ? '✅ ' : '') + FRAME_NAMES[f] + '</button>';
+  });
+  setHTML('frameChips', h);
+}
+function renderFrameTable(){
+  var h = '<thead><tr><th>읽기틀</th><th class="rna">코돈</th><th class="prot">결과</th></tr></thead><tbody>';
+  [0,1,2].forEach(function(f){
+    var D = decode(MRNA, f), n = decN(f), done = frameDone(f);
+    h += '<tr><td>' + FRAME_NAMES[f] + '</td>';
+    if (n === 0){
+      h += '<td class="wait" colspan="2">아직 해 보지 않았다</td></tr>';
+      return;
+    }
+    var shown = D.codons.slice(0, n).join(' ');
+    h += '<td class="seqcell">' + shown + (done ? '' : ' …') + '</td>';
+    if (!done){
+      h += '<td class="wait">해독하는 중이다</td>';
+    } else if (D.stopAt >= 0){
+      h += '<td class="out"><b>' + (D.stopAt + 1) + '번째 코돈이 종결코돈</b><br>아미노산 ' + D.aas.length + '개에서 끊긴다</td>';
+    } else {
+      h += '<td class="keep">종결코돈 없이<br>아미노산 ' + D.aas.length + '개</td>';
+    }
+    h += '</tr>';
+  });
+  h += '</tbody>';
+  var t = document.getElementById('frameTable');
+  if (t) t.innerHTML = h;
+}
+function renderDecNow(){
+  var cod = curCodon();
+  if (state.frame === null || state.frame === undefined){
+    setHTML('ctNow4', '<span style="color:#888;">읽기틀을 고르면 해독할 코돈을 여기에 표시한다.</span>');
+    return;
+  }
+  if (!cod){
+    var D0 = decode(MRNA, state.frame);
+    setHTML('ctNow4', '<b>' + FRAME_NAMES[state.frame] + ' 읽은 결과의 해독을 마쳤다.</b> ' +
+      (D0.stopAt >= 0
+        ? '<span style="color:var(--amber-ink);font-weight:700;">' + (D0.stopAt + 1) + '번째 코돈이 종결코돈이라 여기서 끝난다.</span>'
+        : '<span style="color:var(--green);font-weight:700;">종결코돈 없이 끝까지 아미노산을 지정한다.</span>'));
+    return;
+  }
+  var revealed = (state.hintCodon === cod);
+  var h = '지금 해독할 코돈 <b class="codbig">' + cod + '</b> ';
+  if (revealed){
+    h += '→ <b>' + CODON_TABLE[cod] + '</b> <span class="axishint">— 코돈표에서 그 칸을 탭하시오.</span>';
+  } else {
+    h += '— <b>코돈표에서 직접 찾아 탭하시오.</b><br>' +
+         '<span class="axishint">첫 번째 염기 ' + cod.charAt(0) + ' 는 왼쪽 세로축, 두 번째 염기 ' +
+         cod.charAt(1) + ' 는 위쪽 가로축, 세 번째 염기 ' + cod.charAt(2) + ' 는 오른쪽 세로축에서 찾는다.</span> ' +
+         '<button type="button" class="btn ghost sm" onclick="showCodonHint()">💡 이 코돈만 확인하기</button>';
+  }
+  setHTML('ctNow4', h);
+}
+function showCodonHint(){
+  var cod = curCodon();
+  if (!cod) return;
+  state.hintCodon = cod;
+  state.hintUsed = (Number(state.hintUsed) || 0) + 1;
+  saveState();
+  renderDecNow();
+}
+function ctTap4(codon){
+  if (state.frame === null || state.frame === undefined){
+    showFb('fb_dec', 'warn', '먼저 읽기틀을 고르시오.');
+    return;
+  }
+  var f = state.frame, D = decode(MRNA, f), n = decN(f);
+  if (n >= D.need){
+    showFb('fb_dec', 'info', '이 읽기틀은 해독을 마쳤다. 다른 읽기틀을 골라 보시오.');
+    return;
+  }
+  var want = D.codons[n];
+  if (codon !== want){
+    showFb('fb_dec', 'bad', '옳지 않다. 지금 해독할 코돈은 <b>' + want + '</b>이다. ' +
+      '탭한 칸은 <b>' + codon + '</b>이다. 첫 번째 염기는 왼쪽 세로축, 두 번째 염기는 위쪽 가로축, ' +
+      '세 번째 염기는 오른쪽 세로축에서 찾는다.');
+    return;
+  }
+  state.decN[String(f)] = n + 1;
+  state.hintCodon = null;
+  saveState();
+  renderDec();
+  if (isStopCodon(want)){
+    showFb('fb_dec', 'warn', '<b>' + want + '</b>는 아미노산을 지정하지 않는 <b>종결코돈</b>이다. ' +
+      '이 읽기틀로 읽으면 ' + (D.stopAt + 1) + '번째 코돈에서 번역이 끝난다.');
+  } else {
+    showFb('fb_dec', 'good', '옳다. <b>' + want + '</b>는 <b>' + CODON_TABLE[want] + '</b>' +
+      (hasJong(CODON_TABLE[want]) ? '을' : '를') + ' 지정한다.');
+  }
+  updateAll();
+}
+function renderDecVerdict(){
+  if (decDoneCount() < 3){ setHTML('decVerdict', ''); return; }
+  var D0 = decode(MRNA, 0), D1 = decode(MRNA, 1), D2 = decode(MRNA, 2);
+  setHTML('decVerdict',
+    '<div class="verdict-card good"><div class="vh">🎉 세 읽기틀을 모두 확인하였다</div>' +
+    '<div class="vb">2번째 염기부터 읽으면 <b>' + (D1.stopAt + 1) + '번째 코돈이 ' + D1.codons[D1.stopAt] + '</b>, ' +
+    '3번째 염기부터 읽으면 <b>' + (D2.stopAt + 1) + '번째 코돈이 ' + D2.codons[D2.stopAt] + '</b>가 되어 번역이 중간에 끝난다. ' +
+    '종결코돈 없이 끝까지 아미노산을 지정하는 읽기틀은 <b>1번째 염기부터</b> 읽는 것뿐이며, ' +
+    '그때 아미노산서열은 <b>' + D0.aas.join(' – ') + '</b>이다.</div></div>');
+}
+function renderDec(){
+  renderFrameChips();
+  var f = state.frame, n = (f === null || f === undefined) ? 0 : decN(f);
+  var D = decode(MRNA, (f === null || f === undefined) ? 0 : f);
+  setHTML('decStrand', strandHtml(MRNA, f, { cursor:(f === null || f === undefined) ? undefined : n,
+                                             need:D.need, stopAt:D.stopAt }));
+  var stopped = (D.stopAt >= 0 && n > D.stopAt);
+  var shownAA = D.aas.slice(0, Math.min(n, D.aas.length));
+  setHTML('decPep', (f === null || f === undefined)
+    ? '<span class="pepempty">읽기틀을 고르면 여기에 아미노산이 붙는다.</span>'
+    : pepHtml(shownAA, stopped, D.stopAt >= 0 ? D.stopAt : D.codons.length));
+  /* 해독한 칸만 표에 표시한다 — 미리 강조하면 그 자체가 정답 공개다 */
+  ctClearAll('c4', 'cur');
+  if (f !== null && f !== undefined && n > 0) ctMark('c4', D.codons[n - 1], 'cur');
+  renderDecNow();
+  renderFrameTable();
+  renderDecVerdict();
+  var p = document.getElementById('decProg');
+  if (p) p.textContent = '해독을 마친 읽기틀 ' + decDoneCount() + ' / 3';
+  var task = document.getElementById('decTask');
+  if (task){
+    task.innerHTML = (decDoneCount() === 3)
+      ? '세 읽기틀을 모두 해독하였다. 아래 문항에 답하시오.'
+      : '읽기틀을 고르고, 코돈표에서 코돈을 하나씩 찾아 탭하시오.';
+  }
+}
+/* ══════════════════════════════════════════════════════════════
+   9. ⑤ 염기 하나가 바뀌면 (교과서 62쪽 해 보기 3)
+   ★먼저 예상하게 한 뒤에 바꾸어 확인한다. 예상 전에 결과를 보여 주면 확인할 것이 없어진다.
+   ══════════════════════════════════════════════════════════════ */
+function guessMut(pos, i){
+  if (state.mutRun[String(pos)]) return;      /* 이미 확인한 자리는 예상을 바꾸지 않는다 */
+  state.mutGuess[String(pos)] = i;
+  saveState();
+  renderMut();
+}
+function runMut(pos){
+  var m = mutById(pos);
+  if (!m) return;
+  var g = state.mutGuess[String(pos)];
+  if (g === undefined){
+    showFb('fb_mut', 'warn', '먼저 결과를 예상하시오.');
+    return;
+  }
+  state.mutRun[String(pos)] = true;
+  state.mutNow = Number(pos);
+  saveState();
+  renderMut();
+  var kind = mutKindOf(pos), right = (g === mutKindIndex(kind));
+  var D0 = decode(MRNA, 0), D1 = mutResult(pos), ci = mutChangedIndex(pos);
+  var body;
+  if (kind === 'change'){
+    body = (ci + 1) + '번째 아미노산이 <b>' + D0.aas[ci] + '</b>에서 <b>' + D1.aas[ci] + '</b>으로 바뀌었다. ' +
+           '코돈이 ' + D0.codons[ci] + '에서 ' + D1.codons[ci] + '로 바뀌었기 때문이다.';
+  } else if (kind === 'same'){
+    body = '아미노산서열이 바뀌지 않았다. 코돈은 ' + D0.codons[Math.floor((m.pos - 1) / 3)] + '에서 ' +
+           D1.codons[Math.floor((m.pos - 1) / 3)] + '로 바뀌었지만, <b>두 코돈이 같은 아미노산을 지정한다.</b>';
+  } else {
+    body = (D1.stopAt + 1) + '번째 코돈이 <b>' + D1.codons[D1.stopAt] + '</b>로 바뀌어 종결코돈이 되었다. ' +
+           '아미노산 <b>' + D1.aas.length + '개</b>에서 번역이 끝난다.';
+  }
+  showFb('fb_mut', right ? 'good' : 'bad',
+    (right ? '<b>예상대로이다.</b> ' : '<b>예상과 다르다.</b> ') + body);
+  updateAll();
+}
+function renderMut(){
+  var h = '';
+  MUTS.forEach(function(m){
+    var key = String(m.pos), ran = !!state.mutRun[key], g = state.mutGuess[key];
+    h += '<div class="slotrow' + (ran ? ' filled' : '') + '">' +
+         '<div class="slabel">' + (ran ? '✅ ' : '') + m.pos + '번째 염기 ' + m.from + ' → ' + m.to + '</div>';
+    h += '<div style="font-size:14.5px;color:var(--sub);">예상 — 어떤 결과가 나타나겠는가?</div>';
+    h += '<div class="chips" style="margin:4px 0 0;">';
+    MUT_CHOICES.forEach(function(c, i){
+      var on = (g === i);
+      h += '<button type="button" class="chip' + (on ? (ran ? ' ok' : ' on') : '') + '"' +
+           (ran ? ' disabled' : '') + ' onclick="guessMut(' + m.pos + ',' + i + ')">' + c + '</button>';
+    });
+    h += '</div>';
+    if (!ran){
+      h += '<div class="btnrow"><button type="button" class="btn teal' + (g === undefined ? ' ghost' : '') +
+           '" onclick="runMut(' + m.pos + ')">🔬 바꾸어 확인하기</button></div>';
+    }
+    h += '</div>';
+  });
+  setHTML('mutRows', h);
+
+  var t = '<thead><tr><th>무엇</th><th class="rna">mRNA 서열 (1번째 염기부터 읽는다)</th><th class="prot">아미노산서열</th></tr></thead><tbody>';
+  var D0 = decode(MRNA, 0);
+  t += '<tr><td>원래</td><td class="seqcell">' + MRNA + '</td><td class="keep">' + D0.aas.join(' – ') + '</td></tr>';
+  MUTS.forEach(function(m){
+    if (!state.mutRun[String(m.pos)]) return;
+    var D = mutResult(m.pos), seq = mutSeq(m.pos), kind = mutKindOf(m.pos);
+    var marked = seq.substring(0, m.pos - 1) + '<b style="color:var(--prot);">' + m.to + '</b>' + seq.substring(m.pos);
+    var res = (kind === 'stop')
+      ? D.aas.join(' – ') + ' <b>🛑 종결</b>'
+      : D.aas.join(' – ');
+    t += '<tr><td>' + m.pos + '번째 ' + m.from + '→' + m.to + '</td>' +
+         '<td class="seqcell">' + marked + '</td>' +
+         '<td class="' + (kind === 'same' ? 'keep' : 'out') + '">' + res + '</td></tr>';
+  });
+  t += '</tbody>';
+  var el = document.getElementById('mutTable');
+  if (el) el.innerHTML = t;
+
+  setHTML('mutSummary', (mutDoneCount() === MUTS.length)
+    ? '<div class="verdict-card good"><div class="vh">🎉 한 염기가 바뀌었을 뿐인데 결과는 셋으로 갈렸다</div>' +
+      '<div class="vb">아미노산이 <b>바뀌는</b> 경우, <b>바뀌지 않는</b> 경우, 번역이 <b>일찍 끝나는</b> 경우가 모두 나타났다. ' +
+      '바뀌지 않는 경우가 생기는 까닭은 <b>같은 아미노산을 지정하는 코돈이 여러 개</b>이기 때문이다.</div></div>'
+    : '');
+  var p = document.getElementById('mutProg');
+  if (p) p.textContent = '확인한 자리 ' + mutDoneCount() + ' / ' + MUTS.length;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   10. 선택형 문항 엔진
+   ★①②③④⑤ 결론 문항과 💪 가 모두 같은 기계를 쓴다. id 는 활동 전체에서 유일해야 한다.
+   ══════════════════════════════════════════════════════════════ */
+var qEls = {};
+function ALLQ(){ return [].concat(Q_INTRO, Q_RNA, Q_FIND, Q_DEC, Q_MUT, PRACTICE); }
+function qById(id){
+  var L = ALLQ();
+  for (var i = 0; i < L.length; i++){ if (L[i].id === id) return L[i]; }
+  return null;
+}
+function pickStore(id){ return (id.indexOf('p') === 0) ? state.pPick : state.qPick; }
+function answeredOf(list, store){
+  var n = 0;
+  list.forEach(function(p){ if (store[p.id] !== undefined) n++; });
+  return n;
+}
+function renderQuizInto(list, boxId, colorCls){
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.innerHTML = '';
+  list.forEach(function(p, idx){
+    var card = document.createElement('div');
+    card.className = 'pq-card';
+
+    var q = document.createElement('div');
+    q.className = 'qtext';
+    q.innerHTML = '<span class="qno' + (colorCls ? ' ' + colorCls : '') + '">' + (idx + 1) + '</span>' +
+                  (p.lv ? '<span class="lv">' + p.lv + '</span>' : '') + p.q;
+    card.appendChild(q);
+
+    if (p.dat){
+      var dat = document.createElement('div');
+      dat.className = 'datbox';
+      dat.innerHTML = '<b>[자료]</b><ul><li>' + p.dat.join('</li><li>') + '</li></ul>';
+      card.appendChild(dat);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'choices';
+    var btns = [];
+    p.ch.forEach(function(label, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.innerHTML = label;
+      b.onclick = (function(pid, k){ return function(){ pickQ(pid, k); }; })(p.id, i);
+      wrap.appendChild(b);
+      btns.push(b);
+    });
+    card.appendChild(wrap);
+
+    /* 힌트 2단 — 1단(어디를 볼 것인가)을 연 뒤에 2단(판단 기준)이 열린다. 기록하지 않는다. */
+    if (p.hint && p.hint.length === 2){
+      var hw = document.createElement('div');
+      hw.className = 'hintwrap';
+      var hb1 = document.createElement('button');
+      hb1.type = 'button'; hb1.className = 'hintbtn'; hb1.textContent = '💡 힌트 보기';
+      var hx1 = document.createElement('div');
+      hx1.className = 'hintbox'; hx1.style.display = 'none';
+      hx1.innerHTML = '<b>힌트 ① 어디를 볼 것인가</b><br>' + p.hint[0];
+      var hb2 = document.createElement('button');
+      hb2.type = 'button'; hb2.className = 'hintbtn'; hb2.textContent = '💡 힌트를 하나 더 보기';
+      hb2.style.display = 'none';
+      var hx2 = document.createElement('div');
+      hx2.className = 'hintbox'; hx2.style.display = 'none';
+      hx2.innerHTML = '<b>힌트 ② 판단 기준</b><br>' + p.hint[1];
+      hb1.onclick = function(){
+        hx1.style.display = 'block'; hb1.style.display = 'none'; hb2.style.display = 'inline-block';
+      };
+      hb2.onclick = function(){ hx2.style.display = 'block'; hb2.style.display = 'none'; };
+      hw.appendChild(hb1); hw.appendChild(hx1); hw.appendChild(hb2); hw.appendChild(hx2);
+      card.appendChild(hw);
+    }
+
+    var ex = document.createElement('div');
+    ex.className = 'expl';
+    ex.style.display = 'none';
+    card.appendChild(ex);
+
+    box.appendChild(card);
+    qEls[p.id] = { choices:btns, expl:ex };
+    paintQ(p.id);
+  });
+}
+function paintQ(id){
+  var p = qById(id), els = qEls[id];
+  if (!p || !els) return;
+  var picked = pickStore(id)[id];
+  els.choices.forEach(function(b, i){
+    var cls = 'choice';
+    if (picked === undefined){ b.className = cls; b.disabled = false; return; }
+    if (i === p.a) cls += ' right';
+    else if (i === picked) cls += ' picked';
+    else cls += ' dim';
+    b.className = cls;
+  });
+  if (picked === undefined){
+    els.expl.style.display = 'none';
+    els.expl.innerHTML = '';
+  } else {
+    var head = (picked === p.a)
+      ? '<b>✅ 옳다.</b> '
+      : '<b>❌ ' + (p.no && p.no[picked] ? p.no[picked] : '옳지 않다.') + '</b> ';
+    els.expl.style.display = 'block';
+    els.expl.innerHTML = head + p.ex;
+  }
+}
+function pickQ(id, i){
+  pickStore(id)[id] = i;      /* ★정오를 남기지 않는다 — 마지막 선택만 화면 복원용으로 저장한다 */
+  paintQ(id);
+  saveState();
+  updateAll();
+}
+function updateAll(){
+  updateRail();
+  openAll();
+  updateProgTags();
+  refreshAnsGates();
+}
+function updateProgTags(){
+  var t1 = document.getElementById('pracProg');
+  if (t1) t1.textContent = '푼 문항 ' + answeredOf(PRACTICE, state.pPick) + ' / ' + PRACTICE.length;
+  var t2 = document.getElementById('writeProg');
+  if (t2){
+    var n = 0;
+    WRITEQ.forEach(function(w){
+      if (String((state.ta && state.ta[w.id]) || '').replace(/\s/g, '').length > 0) n++;
+    });
+    t2.textContent = '작성한 문항 ' + n + ' / ' + WRITEQ.length;
+  }
+}
+/* ══════════════════ 11. ⑥ 서술형 그리기 ══════════════════
+   ★마크업을 손으로 적지 않는다 — WRITEQ 하나가 발문·요소·모범답안·저장 id 를 모두 정한다. */
+function renderWrite(){
+  var box = document.getElementById('writeBox');
+  if (!box) return;
+  box.innerHTML = '';
+  WRITEQ.forEach(function(w, i){
+    var d = document.createElement('div');
+    d.className = 'qwrap';
+    var head = w.creative ? w.q : '<b>서술형 ' + (i + 1) + '.</b> ' + w.q;
+    d.innerHTML =
+      '<div class="qh">' + head + '</div>' +
+      '<div class="qk">답안에 반드시 들어가야 할 것 — ' + w.need.join(' · ') + '</div>' +
+      '<textarea id="ta_' + w.id + '" placeholder="여기에 서술하시오." oninput="onTa(\'' + w.id + '\')"></textarea>' +
+      '<div class="cnt"><span id="cnt_' + w.id + '">0자</span> · 모범답안은 ' + w.min + '자 이상 서술하면 열린다</div>' +
+      '<div class="btnrow"><button type="button" class="btn ghost" id="ansBtn_' + w.id + '" onclick="toggleAns(\'' + w.id + '\')">모범답안</button></div>' +
+      '<div class="ansbox" id="ans_' + w.id + '"><b>모범답안</b><br>' + w.ans + '</div>';
+    box.appendChild(d);
+  });
+  var sc = document.getElementById('selfBox');
+  if (sc){
+    var h = '<h3>스스로 평가하기</h3>';
+    SELFCHECK.forEach(function(s){
+      h += '<label><input type="checkbox" id="self_' + s.id + '" onchange="onSelf(\'' + s.id + '\')">' +
+           '<span><b>' + s.k + '</b> ' + s.t + '</span></label>';
+    });
+    sc.innerHTML = h;
+  }
+}
+/* ★섹션 잠금이 없으므로 teacherUnlock 에 남은 일은 **모범답안의 자수 잠금 해제 하나뿐**이다. */
+function ansGate(id){
+  if (state.teacherUnlock) return { open:true, reason:'' };
+  var w = null;
+  WRITEQ.forEach(function(x){ if (x.id === id) w = x; });
+  if (!w) return { open:false, reason:'' };
+  var len = String((state.ta && state.ta[id]) || '').replace(/\s/g, '').length;
+  if (len >= w.min) return { open:true, reason:'' };
+  return { open:false, reason:w.min + '자 이상 서술해야 열린다' };
+}
+function refreshAnsGates(){
+  WRITEQ.forEach(function(w){
+    var btn = document.getElementById('ansBtn_' + w.id);
+    var box = document.getElementById('ans_' + w.id);
+    if (!btn) return;
+    var g = ansGate(w.id);
+    if (!g.open){
+      btn.textContent = '🔒 ' + g.reason;
+      btn.disabled = true;
+      if (box) box.style.display = 'none';
+    } else {
+      btn.disabled = false;
+      btn.textContent = (box && box.style.display === 'block') ? '모범답안 닫기' : '모범답안';
+    }
+  });
+}
+function toggleAns(id){
+  if (!ansGate(id).open) return;
+  var box = document.getElementById('ans_' + id);
+  if (!box) return;
+  box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+  refreshAnsGates();
+}
+function onTa(id){
+  var el = document.getElementById('ta_' + id);
+  if (!el) return;
+  var len = String(el.value || '').replace(/\s/g, '').length;
+  var c = document.getElementById('cnt_' + id);
+  if (c) c.textContent = len + '자';
+  saveState();
+  refreshAnsGates();
+  updateProgTags();
+}
+function onSelf(k){
+  var el = document.getElementById('self_' + k);
+  if (!el) return;
+  state.self[k] = !!el.checked;
+  saveState();
+}
+
+/* ══════════════════ 12. 교사용 해제 (진행 배지 5연타) ══════════════════ */
+var tapLog = [];
+function tapProgress(){
+  var t = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  tapLog.push(t);
+  if (tapLog.length > 5) tapLog.shift();
+  if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
+    tapLog = [];
+    if (confirm('교사용: 모범답안 잠금을 해제합니다.\n' +
+                '★이 화면에서만 풀린다 — 새로고침하면 도로 잠긴다.\n' +
+                '해제하시겠습니까?')){
+      state.teacherUnlock = true;
+      saveState();
+      restoreUI();
+    }
+  }
+}
+/* 미완성 잠금 해제 — 맞으면 이 기기에 기억해 교사가 다시 입력하지 않게 한다 */
+function unlockDraft(){
+  var el = document.getElementById('draftPass');
+  var err = document.getElementById('draftErr');
+  var v = (el && el.value ? el.value : '').trim();
+  if (v !== DRAFT_PASS){
+    if (err) err.textContent = '비밀번호가 옳지 않다.';
+    if (el){ el.value = ''; if (el.focus) el.focus(); }
+    return false;
+  }
+  try{ localStorage.setItem(DRAFT_KEY, 'y'); }catch(e){}
+  document.documentElement.className += ' unlocked';
+  var gate = document.getElementById('draftGate');
+  if (gate) gate.style.display = 'none';
+  if (err) err.textContent = '';
+  return true;
+}
+
+/* ══════════════════ 13. 섹션별 되돌리기 (교사 지시 2026-09-01) ══════════════════
+   ★칸마다 **자기가 만든 것만** 지운다. 다른 칸은 건드리지 않는다.
+   ★새로고침하지 않는다(resetAll 과 다른 점) — 다른 칸의 답이 살아 있어야 한다.
+   ★파생 관계는 함께 지운다 — ④ 를 지우면 ⑤ 의 예상·결과도 함께 지운다.
+     ⑤ 는 ④ 에서 확정한 「1번째 염기부터 읽는다」 위에서만 뜻이 있는 결과이기 때문이다.
+   ★확인 대화상자는 **잃을 것이 큰 칸에만** — 직접 조작한 ③④⑤ 와 손으로 적은 ⑥.
+     ①·② 와 💪 는 고르기만 한 것이라 그냥 지운다. */
+var SEC_DEF = {
+  intro: { qs:function(){ return Q_INTRO; }, ask:false, msg:'① 을 처음 상태로 되돌렸다.',
+           run:function(){ state.codeRun = {}; state.codeLast = null; } },
+  rna:   { qs:function(){ return Q_RNA; },   ask:false, msg:'② 에 놓은 RNA 와 문항을 지웠다.',
+           run:function(){ state.rnaSlot = {}; } },
+  find:  { qs:function(){ return Q_FIND; },  ask:true,  msg:'③ 에서 찾은 칸과 문항을 지웠다 — 다시 찾으시오.',
+           run:function(){ state.find = {}; } },
+  dec:   { qs:function(){ return Q_DEC; },   ask:true,  msg:'④ 의 해독과 문항을 지웠다 — 다시 해독하시오. ⑤ 도 함께 지웠다.',
+           run:function(){
+             state.frame = null; state.decN = {}; state.hintCodon = null;
+             /* ★④ 의 산물 위에서만 뜻이 있는 결과다 — 없는 것에 대한 결과가 남으면 거짓말이 된다 */
+             state.mutGuess = {}; state.mutRun = {}; state.mutNow = null;
+             Q_MUT.forEach(function(q){ delete state.qPick[q.id]; });
+           } },
+  mut:   { qs:function(){ return Q_MUT; },   ask:true,  msg:'⑤ 의 예상과 결과를 지웠다 — 다시 예상하시오.',
+           run:function(){ state.mutGuess = {}; state.mutRun = {}; state.mutNow = null; } },
+  prac:  { prac:true,  ask:false, msg:'💪 의 문항을 지웠다.' },
+  write: { write:true, ask:true,  msg:'⑥ 에 적은 답안과 자기평가를 지웠다.' }
+};
+var SEC_ASK = {
+  find: '③ 에서 찾은 칸과 문항의 답을 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  dec:  '④ 의 해독을 모두 지우고 이 단계만 다시 하시겠습니까? ⑤ 의 예상과 결과도 함께 지워진다.',
+  mut:  '⑤ 의 예상과 확인 결과를 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  write:'⑥ 에 적은 답안을 모두 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)'
+};
+function resetSec(key){
+  var d = SEC_DEF[key];
+  if (!d) return;
+  if (d.ask && !confirm(SEC_ASK[key])) return;
+  if (d.qs) d.qs().forEach(function(q){ delete state.qPick[q.id]; });
+  if (d.run) d.run();
+  if (d.prac) state.pPick = {};
+  if (d.write){
+    state.ta = {}; state.self = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) el.value = '';
+    });
+  }
+  ani = { st:null, ph:0, gen:ani.gen + 1, auto:false };   /* 돌던 연출을 gen 으로 끊는다 */
+  saveState();
+  restoreUI();
+  showFb('fb_' + (key === 'intro' ? 'code' : key), 'info', '↻ ' + d.msg);
+}
+function resetAll(){
+  if (!confirm('지금까지의 해독 결과와 서술을 모두 지우고 처음부터 다시 하시겠습니까?')) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  /* ★메모리도 함께 비운다 — 새로고침이 끝나기 전에 무엇이든 누르면
+     saveState() 가 옛 state 를 그대로 다시 써 버려 지운 것이 되살아난다(1-4 검토에서 겪었다). */
+  state = freshState();
+  demoMounted = false;
+  ani = { st:null, ph:0, gen:ani.gen + 1, auto:false };
+  if (typeof location !== 'undefined' && location.reload) location.reload();
+}
+
+/* ══════════════════ 14. 시작 ══════════════════ */
+function restoreUI(){
+  renderCodeChips(); renderCodeStage();
+  renderDogma(); renderDemo();
+  renderRnaSlots();
+  renderCodonTable('codonTable3', 'c3', 'ctTap3');
+  renderCodonTable('codonTable4', 'c4', 'ctTap4');
+  renderFind();
+  renderDec();
+  renderMut();
+  renderQuizInto(Q_INTRO, 'introQ', 'dna');
+  renderQuizInto(Q_RNA,  'rnaQ',   'rna');
+  renderQuizInto(Q_FIND, 'findQ',  '');
+  renderQuizInto(Q_DEC,  'decQ',   'prot');
+  renderQuizInto(Q_MUT,  'mutQ',   'teal');
+  renderQuizInto(PRACTICE, 'pracBox', 'teal');
+  renderWrite();
+  WRITEQ.forEach(function(w){
+    var el = document.getElementById('ta_' + w.id);
+    if (el && state.ta && state.ta[w.id]) el.value = String(state.ta[w.id]);
+    var c = document.getElementById('cnt_' + w.id);
+    if (c && el) c.textContent = String(el.value || '').replace(/\s/g, '').length + '자';
+  });
+  Object.keys(state.self || {}).forEach(function(k){
+    var s = document.getElementById('self_' + k);
+    if (s) s.checked = !!state.self[k];
+  });
+  updateAll();
+}
+function init(){
+  var saved = loadState();
+  state = freshState();
+  if (saved){
+    /* ★freshState() 가 정의한 칸만 복원한다 — 옛 저장분의 딴 칸은 되살아나지 않는다.
+       ★★`typeof null === 'object'` 다. 그래서 「객체 칸인가」를 typeof 로만 가르면
+         **초기값이 null 인 칸(frame·codeLast·hintCodon·mutNow)이 객체 칸으로 분류돼**
+         저장된 숫자·문자열이 「객체가 아니다」라는 이유로 통째로 버려진다.
+         decN 같은 진짜 객체 칸만 복원되어, 새로고침하면 고른 읽기틀은 사라졌는데
+         해독한 칸 수만 남는 어긋난 화면이 된다. null 을 명시적으로 걸러 낸다. */
+    Object.keys(state).forEach(function(k){
+      var sv = saved[k];
+      if (sv === undefined || sv === null) return;
+      var mineIsPlainObject = (state[k] !== null && typeof state[k] === 'object' && !Array.isArray(state[k]));
+      if (mineIsPlainObject){
+        if (sv !== null && typeof sv === 'object' && !Array.isArray(sv)) state[k] = sv;
+      } else {
+        state[k] = sv;
+      }
+    });
+  }
+  ['codeRun','rnaSlot','find','decN','mutGuess','mutRun','qPick','pPick','ta','self'].forEach(function(k){
+    if (!state[k] || typeof state[k] !== 'object' || Array.isArray(state[k])) state[k] = {};
+  });
+  /* ★범위 밖의 값·없는 이름은 걸러 낸다 — 저장분이 망가져도 화면이 비지 않게 한다 */
+  ['stop','start','leu'].forEach(function(k){
+    var t = findTaskByKey(k), got = state.find[k];
+    if (!Array.isArray(got)){ delete state.find[k]; return; }
+    state.find[k] = got.filter(function(c, i){ return t.need.indexOf(c) >= 0 && got.indexOf(c) === i; });
+  });
+  /* ★Number(null) 은 0 이다. Number() 로 먼저 바꾸면 **아무것도 고르지 않은 상태가 「1번째 염기부터」로 바뀐다** —
+     그 읽기틀이 곧 62쪽 해 보기 2의 답이라, 세 틀을 견주어 고르는 일이 활동에서 통째로 사라진다.
+     null·undefined 를 먼저 걸러 낸 뒤에 숫자로 바꾼다. */
+  var f = (state.frame === null || state.frame === undefined) ? null : Number(state.frame);
+  state.frame = (f === 0 || f === 1 || f === 2) ? f : null;
+  [0,1,2].forEach(function(k){
+    var n = Number(state.decN[String(k)]), max = decode(MRNA, k).need;
+    if (!(n > 0)) delete state.decN[String(k)];
+    else state.decN[String(k)] = Math.min(Math.round(n), max);
+  });
+  if (!CODON_TABLE[state.hintCodon]) state.hintCodon = null;
+  if (!mutById(state.mutNow)) state.mutNow = null;
+  var cl = Number(state.codeLast);
+  state.codeLast = (CODE_SIZES.indexOf(cl) >= 0) ? cl : null;
+  /* ★저장분에 teacherUnlock 이 남아 있어도 켜지 않는다 — 새로고침하면 언제나 잠긴 채로 시작한다. */
+  state.teacherUnlock = false;
+  /* ★복원한 무대는 연출을 재생하지 않고 **완료 국면**에서 시작한다 —
+     새로고침했을 뿐인데 애니메이션이 처음부터 도는 것은 결과를 도로 감추는 일이다. */
+  ani = { st:'demo', ph:aniLast('demo'), gen:ani.gen + 1, auto:false };
+  restoreUI();
+}
+
+if (typeof document !== 'undefined' && document.getElementById) init();
+</script>
+</body>
+</html>

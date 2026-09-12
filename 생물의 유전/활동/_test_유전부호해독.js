@@ -8,11 +8,14 @@
 //     → 코돈표 64칸·해독 결과·전사·치환 결과·무대 좌표 규칙을 이 파일이 **스스로 다시 계산**해 대조한다.
 //   · 「대략」이 아니라 규칙 자체를 문다(막대 높이는 「가짓수에 정비례」를 등식으로, 좌표는 등식·부등식으로).
 //   · setTimeout·Date 를 샌드박스에 **일부러 넣지 않는다** — 연출 없이도 결과가 나는지 여기서 갈린다.
-//   · 변이 확인(2026-09-12, 사본 18종 모두 FAIL · exit 1):
+//   · 카드 차례(2026-09-12 교사 재배열): ①-1 cell → ①-2 code(4ⁿ·코돈의 정의) → ② zoom → ③ find(코돈표 찾기) → ④ dec → ⑤ mut. STEPS 6 · SEC_DEF 8 · confirm 은 find/dec/mut/write.
+//   · 변이 확인(2026-09-12 재배열 뒤, 사본 23종 모두 FAIL · exit 1):
 //       [1] LS_KEY→v1 · setTimeout 삽입      [2] --trna CSS 만 바꿈       [3] 코돈표 UGG↔UGA · codeBarH 를 √ 로
 //       [4] pore.x+5 · csMrnaOut y 고정 · csStagger 0 · 이름표 전사 p≥1   [5] BLANK_IDX 바꿈 · p2 에서 ? 표시
 //       [8] autoFrame 서수 −1                 [9]/[16] 완료에 💪 요구        [10] no[] 「옳지 않다.」 삭제
-//       [12] init 의 null 가드 제거           [13] resetSec(dec) 가 mutRun 안 지움 · dec.ask=false   [15] 캡션에 「안티코돈」
+//       [12] init 의 null 가드 제거           [13] resetSec(dec) 가 mutRun 안 지움 · resetSec(mut) 가 mutGuess 안 지움 · resetSec(code) 가 find 를 지움 · dec.ask=false · code.ask=true
+//       [15] 캡션에 「안티코돈」               [7]/[16] find 가 code 를 요구 · #codonDef 상시 노출
+//       [7b] gbCombos 축 C/A 뒤바꿈 · gbGroups 꼬리 묶음 허용 · 괄호 너비 −10 빠짐 · 64칸 상시 op 1 · n=2 캡션 「다 가리킬 수 있다」
 // ════════════════════════════════════════════════════════════════════════
 const fs = require('fs');
 const vm = require('vm');
@@ -363,9 +366,9 @@ console.log('[1] 정적 구조 (단일 파일 · 잠금 · 저장 키 · 44px ·
   ok(/#ctNow,#ctNow4\s*\{[^}]*position:sticky/.test(css), '「지금 할 일」 줄이 sticky 다 (표가 길어도 늘 보인다)');
 
   // ── 무대 SVG 두 개 ──
-  ['csStage','zmStage'].forEach(id => {
+  ['csStage','zmStage','groupStage'].forEach(id => {
     const tag = (bodyHtml.match(new RegExp('<svg[^>]*id="' + id + '"[^>]*>')) || [''])[0];
-    ok(/viewBox="0 0 700 340"/.test(tag), id + ' viewBox 가 700×340 이다');
+    ok(new RegExp('viewBox="0 0 700 ' + (id === 'groupStage' ? 266 : 340) + '"').test(tag), id + ' viewBox 가 700×' + (id === 'groupStage' ? 266 : 340) + ' 이다');
     ok(/aria-label="[^"]{20,}"/.test(tag), id + ' 에 aria-label 이 있다');
     ok(/class="stage"/.test(tag), id + ' 가 .stage 다');
   });
@@ -381,7 +384,17 @@ console.log('[1] 정적 구조 (단일 파일 · 잠금 · 저장 키 · 44px ·
   eq((code.match(/location\.reload\(\)/g) || []).length, 1, 'location.reload() 는 파일에 한 번뿐이다 (resetAll)');
   ok(/function resetAll\(\)\{[\s\S]*?location\.reload\(\)/.test(code), '  → 그 한 번이 resetAll 안이다');
   ok(!/function card\w*Open\(/.test(code), '섹션 잠금 판정 함수(cardNOpen 류)가 없다 — 카드는 처음부터 다 열려 있다');
-  eq((bodyHtml.match(/onclick="resetSec\('/g) || []).length, 7, '↻ 되돌리기 단추가 7개다 (①②③④⑤ · 💪 · ⑥)');
+  eq((bodyHtml.match(/onclick="resetSec\('/g) || []).length, 8, '↻ 되돌리기 단추가 8개다 (①-1 ①-2 ② ③ ④ ⑤ · 💪 · ⑥)');
+  eqJ([...bodyHtml.matchAll(/onclick="resetSec\('(\w+)'\)"/g)].map(m => m[1]), ['cell','code','zoom','find','dec','mut','prac','write'], '  → 카드 차례대로 cell · code · zoom · find · dec · mut · prac · write');
+  eqJ([...bodyHtml.matchAll(/<div class="card split" id="(\w+)"/g)].map(m => m[1]), ['cardCell','cardCode','cardZoom','cardFind','cardDec','cardMut'], '★2단 카드 차례 — cardCell → cardCode → cardZoom → cardFind → cardDec → cardMut');
+  const h2s = [...bodyHtml.matchAll(/<h2[^>]*>([^<]*)/g)].map(m => m[1].trim());
+  ['①-1 세포 한 바퀴 — 유전정보는 어디서 어디로 가는가', '①-2 글자 몇 개로 무엇을 적는가 — 유전부호', '② 염기서열에 집중하기', '③ 번역에는 사전이 필요하다 — 코돈표', '④ 해독 — 코돈표로 mRNA 를 읽는다', '⑤ 염기 하나가 바뀌면', '💪 더 풀어 보기', '⑥ 정리하기']
+    .forEach((t, i) => eq(h2s[i], t, '★카드 제목 ' + (i + 1) + ' = 「' + t + '」'));
+  ['↻ ①-1 처음 국면부터 다시 보기', '↻ ①-2 다시 하기', '↻ ② 빈칸 지우고 다시 하기', '↻ ③ 찾은 칸 지우고 다시 하기', '↻ ④ 해독을 지우고 다시 하기', '↻ ⑤ 예상과 결과를 지우고 다시 하기', '↻ 💪 다시 풀기', '↻ ⑥ 적은 답안 지우고 다시 하기']
+    .forEach(t => ok(bodyHtml.indexOf('>' + t + '</button>') >= 0, '  되돌리기 단추 「' + t + '」'));
+  ok(/<div class="verdict-card good" id="codonDef" style="[^"]*display:none;?"/.test(bodyHtml), '★코돈 결론(#codonDef)은 마크업에서 숨겨져 있다 (셋을 다 눌러 본 뒤에만)');
+  ok(/id="codonDef"[^>]*>[\s\S]*?세 자리의 연속된 염기[\s\S]*?<b>코돈<\/b>이라고 한다/.test(bodyHtml), '  → 그 안에 「세 자리의 연속된 염기 … 코돈이라고 한다」');
+  ok(bodyHtml.indexOf('id="codonDef"') < bodyHtml.indexOf('id="cardZoom"'), '  → 코돈의 정의가 ②보다 앞(①-2)에 있다');
   eq((bodyHtml.match(/onclick="resetAll\(\)"/g) || []).length, 1, '전체 되돌리기 단추는 맨 아래 하나다');
 }
 
@@ -891,7 +904,8 @@ console.log('[5] ② 줌 무대 — zoomWorld · zoomLayout 불변식 (빈칸 �
   ok(/개시코돈 AUG<\/text>/.test(gOf(svg, 'zm_k_0')), '첫 괄호에 「개시코돈 AUG」');
   ok(/코돈 2<\/text>/.test(gOf(svg, 'zm_k_1')), '둘째 괄호에 「코돈 2」');
   REF_DEMO_AA.forEach((a, k) => ok(new RegExp('>' + a + '</text>').test(gOf(svg, 'zm_a_' + k)), '아미노산 구슬 ' + k + ' 에 ' + a));
-  ok(/>이 부분을 확대한다<\/text>/.test(svg), '세포 축척의 확대 표시 문구');
+  ok(!/이 부분을 확대한다/.test(svg), '세포 축척의 확대 표시에 글이 없다 (교사 2026-09-12: 군더더기)');
+  ok(/id="zl_ring"/.test(svg), '세포 축척의 확대 표시 테두리는 있다');
 
   // 렌더 — 국면 넘김
   eq(S.ANI.zm.ph, 0, '처음 국면 0');
@@ -1027,7 +1041,7 @@ console.log('[6] ② 조작 — 연출을 마치기 전엔 못 채운다 · 5′
 }
 
 // ══ 7. ③ 사전 ══
-console.log('[7] ③ 사전 — 4ⁿ 칩 · 코돈표 64칸(미리 칠하지 않는다) · 종결 3 + 개시 1 찾기');
+console.log('[7] ①-2 4ⁿ 칩 · 코돈의 정의 공개 시점 / ③ 사전 — 코돈표 64칸(미리 칠하지 않는다) · 종결 3 + 개시 1 찾기');
 {
   const S = makeSandbox();
   // 코돈표 두 벌
@@ -1049,27 +1063,40 @@ console.log('[7] ③ 사전 — 4ⁿ 칩 · 코돈표 64칸(미리 칠하지 않
   eqJ(badCells, [], '★64칸마다 코돈과 교과서의 아미노산 이름이 함께 적혀 있고 ctTap3 로 간다 (어긋난 칸 목록)');
   ok(/onclick="ctTap4\('CAU'\)"/.test(html(S, 'codonTable4')), '④ 표는 ctTap4 로 간다');
 
-  // 4ⁿ 칩
+  // 4ⁿ 칩 (①-2)
   eq(S.codeDoneCount(), 0, '처음엔 눌러 본 묶음 0');
+  eq(txt(S, 'codeProg'), '눌러 본 묶음 0 / 3', '★꼬리표 「눌러 본 묶음 0 / 3」');
+  eq(S._store['codonDef'].style.display, 'none', '★코돈의 정의는 처음에 숨어 있다');
   eq((html(S, 'codeChips').match(/class="chip"/g) || []).length, 3, '묶음 칩 3개 (아직 표시 없음)');
-  ok(/opacity="0.12"/.test(html(S, 'codeStage')) && !/가지<\/text>/.test(html(S, 'codeStage')), '누르기 전 막대는 흐리고 가짓수 글이 없다');
+  ok(/<g id="cb_[123]" class="rfade" opacity="0">/.test(html(S, 'codeStage')) && !/opacity="0\.\d+"/.test(html(S, 'codeStage')) && !/가지<\/text>/.test(html(S, 'codeStage')), '누르기 전 막대는 아예 보이지 않고(흐림 금지 — 높이가 답이다) 가짓수 글이 없다');
+  ok(!/[¹²³]/.test(html(S, 'codeStage')), '4ⁿ 표기는 무대에 없다(잘려 보였다 — 교사 2026-09-12)');
   S.pickCode(1);
   eq(S.state.codeRun['1'], true, 'pickCode(1) 기록'); eq(S.state.codeLast, 1, '  → codeLast 1');
   eq(S._store['fb_code'].className, 'msg warn', '  → 4가지는 모자란다 (warn)');
   ok(/4<sup>1<\/sup> = <b>4가지<\/b>/.test(html(S, 'fb_code')) && /모자란다/.test(html(S, 'fb_code')), '  → 4¹ = 4가지, 모자란다');
   ok(/class="chip on"/.test(html(S, 'codeChips')), '  → 고른 칩에 on');
   ok(/<g id="cb_1" class="rfade" opacity="1">/.test(html(S, 'codeStage')) && /4가지<\/text>/.test(html(S, 'codeStage')), '  → 막대가 켜지고 가짓수를 글로 적는다');
+  eq(txt(S, 'codeProg'), '눌러 본 묶음 1 / 3', '  → 꼬리표 1 / 3');
+  eq(S._store['codonDef'].style.display, 'none', '  → 1개씩만으로는 코돈의 정의가 열리지 않는다');
   S.pickCode(2);
   ok(/16가지/.test(html(S, 'fb_code')) && /모자란다/.test(html(S, 'fb_code')), '16가지도 모자란다');
+  eq(S._store['codonDef'].style.display, 'none', '  → 2개씩까지도 닫혀 있다');
   ok(/class="chip ok"[^>]*>1개씩/.test(html(S, 'codeChips')), '  → 앞서 누른 칩은 ok');
   S.pickCode(3);
   eq(S._store['fb_code'].className, 'msg good', '64가지는 넉넉하다 (good)');
   ok(/64가지/.test(html(S, 'fb_code')) && /3염기조합/.test(html(S, 'fb_code')), '  → 3염기조합인 까닭을 말한다');
+  ok(/<b>코돈<\/b>/.test(html(S, 'fb_code')), '★3개씩의 되돌림이 「코돈」을 말한다');
+  eq(S._store['codonDef'].style.display, 'block', '★셋을 다 눌러 본 뒤에 코돈 결론이 열린다');
+  { const S3 = makeSandbox(); S3.pickCode(3); eq(S3._store['codonDef'].style.display, 'none', '★3개씩만 눌러서는 결론이 열리지 않는다 — 1·2개씩이 모자란 것을 봐야 한다'); }
   eq(S.codeDoneCount(), 3, '★codeDoneCount 3');
+  eq(txt(S, 'codeProg'), '눌러 본 묶음 3 / 3', '  → 꼬리표 3 / 3');
+  eq(S.stepDone('code'), false, '문항 i1 전엔 ①-2 미완');
+  S.pickQ('i1', 2); eq(S.stepDone('code'), true, '★칩 3 + i1 로 ①-2 완료 (찾기와 무관)');
+  eq(S.stepDone('find'), false, '  → ③ 은 아직 (찾기 전)');
   S.pickCode(3);
   eq(S.codeDoneCount(), 3, '  → 같은 칩을 다시 눌러도 3');
 
-  // 찾기
+  // 찾기 (③)
   eq(S.findTotal(), 4, '찾을 칸 4');
   eq(html(S, 'findTask'), S.FIND_TASKS[0].text, '처음 지시 = 종결코돈 찾기');
   ok(/지금 할 일/.test(html(S, 'ctNow')) && /종결코돈/.test(html(S, 'ctNow')), '표 위 「지금 할 일」도 종결코돈');
@@ -1114,19 +1141,163 @@ console.log('[7] ③ 사전 — 4ⁿ 칩 · 코돈표 64칸(미리 칠하지 않
   eq(S._store['fb_find'].className, 'msg info', '  → 안내만');
   eq(ALL_CODONS.filter(c => hasCls(S, 'c3_' + c, 'found')).length, 4, '★found 칸이 정확히 4개');
   eqJ(ALL_CODONS.filter(c => hasCls(S, 'c3_' + c, 'found')).sort(), ['AUG','UAA','UAG','UGA'], '  → 그 넷');
-  eq(S.stepDone('code'), false, '문항 전엔 ③ 미완');
-  S.pickQ('i1', 2); S.pickQ('f1', 2);
-  eq(S.stepDone('code'), true, '★칩 3 + 찾기 4 + 문항 2 로 ③ 완료');
-  // 찾기만 하고 칩을 안 누르면 미완
+  eq(S.stepDone('find'), false, '문항 f1 전엔 ③ 미완');
+  S.pickQ('f1', 2);
+  eq(S.stepDone('find'), true, '★찾기 4 + f1 로 ③ 완료');
+  // ③ 은 ①-2 와 독립 — 칩을 안 눌러도 찾기 4 + f1 이면 완료
   const T = makeSandbox();
   T.FIND_TASKS.forEach(t => t.need.forEach(c => T.ctTap3(c)));
-  T.pickQ('i1', 2); T.pickQ('f1', 2);
-  eq(T.stepDone('code'), false, '★칩을 안 누르면 ③ 미완');
-  T.pickCode(1); T.pickCode(2);
-  eq(T.stepDone('code'), false, '  → 둘만 눌러도 미완');
+  T.pickQ('f1', 2);
+  eq(T.stepDone('find'), true, '★칩을 안 눌러도 ③ 은 완료 (①-2 와 독립)');
+  eq(T.stepDone('code'), false, '  → ①-2 는 미완');
+  T.pickCode(1); T.pickCode(2); T.pickQ('i1', 2);
+  eq(T.stepDone('code'), false, '  → 둘만 눌러도 ①-2 미완');
   T.pickCode(3);
-  eq(T.stepDone('code'), true, '  → 셋 다 누르면 완료');
+  eq(T.stepDone('code'), true, '  → 셋 다 누르면 ①-2 완료');
   eq(S._missing.join(','), '', '★③ 동안 없는 id 를 찾은 일이 없다');
+}
+
+// ══ 7b. ①-2 묶기 무대 ══
+console.log('[7b] ①-2 묶기 무대 — gbCombos(4ⁿ · 축 차례) · gbGroups(꼬리 없음 · 평균 x) · gbLayout(괄호·구슬·64칸·캡션) · 마운트 SVG');
+{
+  const S = makeSandbox();
+  const GB = S.GB;
+  eq(GB.seq, 'CAUGGUAACGUG', '★묶기 무대의 mRNA 12염기 = 62쪽 서열의 앞 12자');
+  eq(GB.seq, REF_MRNA.slice(0, 12), '  → 검사의 정본 앞 12자와 같다');
+  eq(GB.seq.length, 12, '  → 12 = 1·2·3 의 공배수 (어느 크기로도 꼬리 없이 묶인다)');
+  eq(GB.cols, 16, '종류 칸은 16열');
+  ok(GB.pitch >= 34, '타일 간격(' + GB.pitch + ')이 타일 너비(32)보다 넓다');
+  ok(GB.gpitch >= 36, '종류 칸 간격(' + GB.gpitch + ')이 칸 너비(36)보다 넓거나 같다');
+  ok(GB.yS < GB.yK && GB.yK < GB.yB && GB.yB < GB.gy0, 'mRNA → 괄호 → 구슬 → 종류 칸이 위에서 아래로');
+  ok(GB.gy0 + GB.gdy * 3 + 10 <= 266, '64칸(4줄)이 viewBox 높이 266 안에 든다');
+  // gbCombos
+  eqJ(S.gbCombos(1), ['U','C','A','G'], '★gbCombos(1) = U · C · A · G (축 차례)');
+  const c2 = S.gbCombos(2);
+  eq(c2.length, 16, '★gbCombos(2) 16개'); eq(c2[0], 'UU', '  → 첫째 UU'); eq(c2[15], 'GG', '  → 마지막 GG'); eq(new Set(c2).size, 16, '  → 서로 다르다');
+  eqJ(c2.slice(0, 4), ['UU','UC','UA','UG'], '  → 앞 넷은 두 번째 글자가 U·C·A·G 로 돈다');
+  eqJ(c2, REF_AXIS.flatMap(a => REF_AXIS.map(b => a + b)), '  → 검사가 스스로 만든 16개와 차례까지 같다');
+  const c3 = S.gbCombos(3);
+  eq(c3.length, 64, '★gbCombos(3) 64개'); eq(new Set(c3).size, 64, '  → 서로 다르다');
+  eqJ(c3.slice().sort(), ALL_CODONS.slice().sort(), '★gbCombos(3) 의 집합 = 검사 코돈표 64칸의 키');
+  eqJ(c3, ALL_CODONS, '  → 차례도 코돈표 축 차례(첫·둘·셋째 글자 U·C·A·G)와 같다');
+  eq(c3[0], 'UUU', '  → 첫째 UUU'); eq(c3[63], 'GGG', '  → 마지막 GGG');
+  eqJ(S.gbCombos(0), [], 'gbCombos(0) = []'); eqJ(S.gbCombos(undefined), [], 'gbCombos(undefined) = []'); eqJ(S.gbCombos(-1), [], 'gbCombos(-1) = []');
+  [1,2,3].forEach(n => eq(S.gbCombos(n).length, S.codeCount(n), '  gbCombos(' + n + ').length = codeCount(' + n + ') = 4^' + n));
+  // gbGroups
+  const tileX = i => GB.x0 + GB.pitch * i;
+  const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+  eq(S.gbGroups(3).length, 4, '★3개씩 → 묶음 4'); eq(S.gbGroups(2).length, 6, '★2개씩 → 묶음 6'); eq(S.gbGroups(1).length, 12, '★1개씩 → 묶음 12');
+  [1,2,3].forEach(n => {
+    const g = S.gbGroups(n);
+    eqJ(g.map(x => x.start), g.map((_, k) => k * n), '  gbGroups(' + n + ') 의 start = k·n (겹치지도 비지도 않는다)');
+    ok(g.every(x => x.n === n), '  gbGroups(' + n + ') 의 n 이 모두 ' + n);
+    eqJ(g.map(x => x.x), g.map(x => mean([...Array(n).keys()].map(i => tileX(x.start + i)))), '★gbGroups(' + n + ') 의 x = 묶인 타일 x 들의 평균');
+    eq(g[g.length - 1].start + n, 12, '  → 마지막 묶음이 12번째 염기에서 끝난다 (꼬리 없음)');
+  });
+  eqJ(S.gbGroups(0), [], 'gbGroups(0) = []'); eqJ(S.gbGroups(null), [], 'gbGroups(null) = []');
+  eq(S.gbGroups(5).length, 2, '★12 를 5개씩 묶으면 2묶음 — 3자리 못 되는 꼬리는 묶지 않는다');
+  eq(S.gbGroups(7).length, 1, '  → 7개씩이면 1묶음'); eq(S.gbGroups(12).length, 1, '  → 12개씩이면 1묶음'); eq(S.gbGroups(13).length, 0, '  → 13개씩이면 0묶음');
+  // gbLayout
+  [1,2,3].forEach(n => {
+    const L = S.gbLayout(n), G = S.gbGroups(n), N = Math.pow(4, n);
+    eq(L.n, n, 'gbLayout(' + n + ').n'); eq(L.groups, G.length, '  groups = 묶음 수 ' + G.length);
+    eq(L.brackets.length, 12, '  괄호 12'); eq(L.beads.length, 12, '  구슬 12'); eq(L.cells.length, 64, '  칸 64');
+    eqJ(L.brackets.map(b => b.op), L.brackets.map((_, k) => k < G.length ? 1 : 0), '★n=' + n + ' 괄호 op 는 앞 ' + G.length + '개만 1');
+    eqJ(L.beads.map(b => b.op), L.beads.map((_, k) => k < G.length ? 1 : 0), '★n=' + n + ' 구슬 op 도 앞 ' + G.length + '개만 1 (묶음 하나에 아미노산 하나)');
+    eqJ(L.brackets.slice(0, G.length).map(b => b.x), G.map(g => g.x), '★n=' + n + ' 보이는 괄호 x = 묶음 x');
+    eqJ(L.beads.slice(0, G.length).map(b => b.x), L.brackets.slice(0, G.length).map(b => b.x), '★n=' + n + ' 구슬 x = 괄호 x');
+    ok(L.brackets.slice(0, G.length).every(b => b.w === GB.pitch * n - 10), '★n=' + n + ' 괄호 너비 = pitch·n − 10 (' + (GB.pitch * n - 10) + ')');
+    ok(L.beads.every(b => b.y === GB.yB), '  구슬 y = yB');
+    ok(L.brackets.slice(G.length).every((b, k) => b.x === tileX(G.length + k) && b.w === GB.pitch - 10), '  안 쓰는 괄호는 제 타일 자리에 op 0 (스르르 사라진다)');
+    eqJ(L.cells.map(c => c.op), L.cells.map((_, i) => i < N ? 1 : 0), '★n=' + n + ' 칸 op 는 앞 4^' + n + '=' + N + '개만 1');
+    eqJ(L.cells.slice(0, N).map(c => c.txt), S.gbCombos(n), '★n=' + n + ' 칸 글자 = gbCombos(' + n + ')');
+    ok(L.cells.slice(N).every(c => c.txt === ''), '  나머지 칸은 빈 글자');
+    eqJ(L.cells.map(c => c.x), L.cells.map((_, i) => GB.gx0 + GB.gpitch * (i % 16)), '★칸 x = gx0 + gpitch·(i mod 16) — 16열 격자');
+    eqJ(L.cells.map(c => c.y), L.cells.map((_, i) => GB.gy0 + GB.gdy * Math.floor(i / 16)), '★칸 y = gy0 + gdy·⌊i/16⌋');
+    eq(L.count, N, '★count = 4^' + n); eq(L.enough, N >= 20, '★enough === (count ≥ 20) → ' + (N >= 20));
+    ok(new RegExp('묶음 <b>' + G.length + '개</b>').test(L.cap), '  캡션이 묶음 ' + G.length + '개를 말한다');
+    ok(new RegExp('아미노산 <b>' + G.length + '개</b>').test(L.cap), '  캡션이 아미노산 ' + G.length + '개를 말한다');
+    ok(new RegExp('4<sup>' + n + '</sup> = <b>' + N + '가지</b>').test(L.cap), '  캡션이 4^' + n + ' = ' + N + '가지를 말한다');
+    if (n < 3) ok(/모자란다/.test(L.cap) && !/다 가리킬 수 있다/.test(L.cap), '★n=' + n + ' 캡션 「모자란다」');
+    else ok(/다 가리킬 수 있다/.test(L.cap) && !/모자란다/.test(L.cap), '★n=3 캡션 「다 가리킬 수 있다」');
+    eq(L.cnt, '4' + ['', '¹', '²', '³'][n] + ' = ' + N + '가지', '  cnt 표시 「4' + ['', '¹', '²', '³'][n] + ' = ' + N + '가지」');
+    ok(!/[가-힣](요|죠|네|자)[.!]$/.test(strip(L.cap)), '  캡션이 구어체로 끝나지 않는다');
+  });
+  [0, null, undefined, 9, '3'].forEach(v => {
+    const L = S.gbLayout(v), want = (v === '3') ? 3 : 0;
+    eq(L.n, want, 'gbLayout(' + JSON.stringify(v) + ').n = ' + want + (want ? ' (문자열 "3" 도 3)' : ' (범위 밖·없음은 0)'));
+  });
+  const L0 = S.gbLayout(0);
+  eq(L0.groups, 0, '★gbLayout(0) 묶음 0');
+  ok(L0.brackets.every(b => b.op === 0) && L0.beads.every(b => b.op === 0) && L0.cells.every(c => c.op === 0), '★gbLayout(0) 은 괄호·구슬·칸이 모두 op 0');
+  ok(/아미노산 하나/.test(L0.cap) && /묶음 크기를 고르면/.test(L0.cap), '★gbLayout(0) 캡션이 「묶음 하나마다 아미노산 하나」를 예고하고 고르기를 권한다');
+  eq(L0.cnt, '', '  cnt 없음'); eq(L0.count, 0, '  count 0'); eq(L0.enough, false, '  enough false');
+  // 마운트된 SVG
+  const svg = html(S, 'groupStage');
+  ok(svg.length > 2000, '묶기 무대가 마운트되었다');
+  const tiles = [...svg.matchAll(/<g transform="translate\((\d+),(\d+)\)"><rect[^>]*fill="#6C2BD9"\/><text[^>]*>([UCAG])<\/text><\/g>/g)];
+  eq(tiles.length, 12, '★mRNA 타일 12개 (보라 칸 + 흰 글자)');
+  eq(tiles.map(t => t[3]).join(''), GB.seq, '★타일 글자가 GB.seq 차례 그대로');
+  eqJ(tiles.map(t => Number(t[1])), [...Array(12).keys()].map(tileX), '  → 타일 x = x0 + pitch·i');
+  ok(tiles.every(t => Number(t[2]) === GB.yS), '  → 타일 y = yS');
+  eq((svg.match(/<g id="gb_k_\d+" class="rmove" opacity="0">/g) || []).length, 12, '★괄호 g 12개 (처음엔 모두 숨김)');
+  eq((svg.match(/<path id="gb_kp_\d+"/g) || []).length, 12, '  → 괄호 path 12개');
+  eq((svg.match(/<g id="gb_b_\d+" class="rmove" opacity="0">/g) || []).length, 12, '★구슬 g 12개 (처음엔 모두 숨김)');
+  for (let i = 0; i < 12; i++) ok(/<circle[^>]*fill="#C2185B"\/><circle[^>]*fill="#fff"\/>/.test(gOf(svg, 'gb_b_' + i)), '  구슬 ' + i + ' 은 자홍 원 + 흰 점');
+  eq((svg.match(/<g id="gb_c_\d+" class="rmove" opacity="0">/g) || []).length, 64, '★종류 칸 g 64개 (처음엔 모두 숨김)');
+  eq((svg.match(/<text id="gb_ct_\d+"/g) || []).length, 64, '  → 칸 글자 text 64개');
+  ok(/>mRNA<\/text>/.test(svg), '줄 이름표 「mRNA」'); ok(/>아미노산<\/text>/.test(svg), '줄 이름표 「아미노산」');
+  ok(/>묶음 하나가 될 수 있는 종류<\/text>/.test(svg), '종류 칸 제목');
+  ok(/<text id="gb_cnt"/.test(svg), '가짓수 표시 gb_cnt 가 있다');
+  ok(!/<text[^>]*>[^<]*<(sup|b|i)\b/.test(svg), '★<text> 안에 <sup>·<b> 가 없다 (캡션은 SVG 밖 #gb_cap 에 둔다)');
+  ok(!/<sup>|<b>/.test(svg), '  → SVG 어디에도 <sup>·<b> 가 없다');
+  ok(!/NaN|undefined/.test(svg), '좌표에 NaN·undefined 가 없다');
+  ok(/<svg[^>]*id="groupStage"[^>]*viewBox="0 0 700 266"[^>]*aria-label="[^"]{20,}"/.test(bodyHtml), '★#groupStage 는 viewBox 700×266 + aria-label');
+  ok(bodyHtml.indexOf('id="groupStage"') < bodyHtml.indexOf('id="gb_cap"') && bodyHtml.indexOf('id="gb_cap"') < bodyHtml.indexOf('id="codeStage"'), '  → 무대 → 캡션 → 막대그래프 차례 (왼쪽 칸)');
+  ok(bodyHtml.indexOf('class="t codetbl"') > bodyHtml.indexOf('<div class="pane-r">', bodyHtml.indexOf('id="cardCode"')), '  → 부호 비교 표는 오른쪽 칸에');
+  // 처음(codeLast null) 상태
+  eq(html(S, 'gb_cap'), L0.cap, '★처음 캡션 = gbLayout(0).cap');
+  eq(txt(S, 'gb_cnt'), '', '  gb_cnt 비어 있다');
+  eq(attr(S, 'gb_k_0', 'opacity'), '0', '  괄호 0 숨김'); eq(attr(S, 'gb_c_0', 'opacity'), '0', '  칸 0 숨김');
+  // pickCode(2)
+  S.pickCode(2);
+  eq(attr(S, 'gb_kp_0', 'd'), 'M-39,-3 L-39,3 L39,3 L39,-3', '★2개씩: 괄호 path d = 너비 78 (44·2 − 10)');
+  eq(attr(S, 'gb_k_0', 'transform'), 'translate(' + (GB.x0 + GB.pitch * 0.5) + ',' + GB.yK + ')', '  → 괄호 0 이 타일 0·1 사이에');
+  eq(attr(S, 'gb_k_0', 'opacity'), '1', '  → 괄호 0 보임'); eq(attr(S, 'gb_k_5', 'opacity'), '1', '  → 괄호 5 보임'); eq(attr(S, 'gb_k_6', 'opacity'), '0', '  → 괄호 6 숨김');
+  eq(attr(S, 'gb_b_5', 'transform'), 'translate(' + (GB.x0 + GB.pitch * 10.5) + ',' + GB.yB + ')', '  → 구슬 5 가 괄호 5 아래');
+  eq(attr(S, 'gb_b_6', 'opacity'), '0', '  → 구슬 6 숨김');
+  eq(txt(S, 'gb_cnt'), '4² = 16가지', '★gb_cnt 「4² = 16가지」');
+  eq(attr(S, 'gb_c_15', 'opacity'), '1', '  칸 15 보임'); eq(attr(S, 'gb_c_16', 'opacity'), '0', '  칸 16 숨김');
+  eq(txt(S, 'gb_ct_5'), 'CC', '  칸 5 글자 CC'); eq(txt(S, 'gb_ct_15'), 'GG', '  칸 15 글자 GG'); eq(txt(S, 'gb_ct_16'), '', '  칸 16 글자 없음');
+  eq(attr(S, 'gb_c_17', 'transform'), 'translate(' + (GB.gx0 + GB.gpitch) + ',' + (GB.gy0 + GB.gdy) + ')', '  칸 17 = 2행 2열');
+  eq(html(S, 'gb_cap'), S.gbLayout(2).cap, '★캡션 = gbLayout(2).cap');
+  ok(/모자란다/.test(html(S, 'gb_cap')), '  → 모자란다');
+  // pickCode(3)
+  S.pickCode(3);
+  eq(attr(S, 'gb_kp_0', 'd'), 'M-61,-3 L-61,3 L61,3 L61,-3', '★3개씩: 괄호 너비 122 (44·3 − 10)');
+  eq(attr(S, 'gb_k_0', 'transform'), 'translate(' + (GB.x0 + GB.pitch) + ',' + GB.yK + ')', '  → 괄호 0 이 타일 1 위(0·1·2 의 가운데)');
+  eq(attr(S, 'gb_k_3', 'opacity'), '1', '  → 괄호 3 보임'); eq(attr(S, 'gb_k_4', 'opacity'), '0', '  → 괄호 4 숨김');
+  eq(txt(S, 'gb_cnt'), '4³ = 64가지', '★gb_cnt 「4³ = 64가지」');
+  eq(attr(S, 'gb_c_63', 'opacity'), '1', '  칸 63 보임'); eq(txt(S, 'gb_ct_63'), 'GGG', '  칸 63 글자 GGG'); eq(txt(S, 'gb_ct_0'), 'UUU', '  칸 0 글자 UUU');
+  ok(/다 가리킬 수 있다/.test(html(S, 'gb_cap')), '  → 다 가리킬 수 있다');
+  // pickCode(1)
+  S.pickCode(1);
+  eq(attr(S, 'gb_kp_0', 'd'), 'M-17,-3 L-17,3 L17,3 L17,-3', '★1개씩: 괄호 너비 34 (44 − 10)');
+  eq(attr(S, 'gb_k_11', 'opacity'), '1', '  → 괄호 11 까지 보임'); eq(txt(S, 'gb_cnt'), '4¹ = 4가지', '★gb_cnt 「4¹ = 4가지」');
+  eq(attr(S, 'gb_c_3', 'opacity'), '1', '  칸 3 보임'); eq(attr(S, 'gb_c_4', 'opacity'), '0', '  칸 4 숨김');
+  // 되돌리기
+  S.resetSec('code');
+  eq(html(S, 'gb_cap'), L0.cap, '★①-2 되돌리면 캡션이 n=0 문구로');
+  ok([...Array(12).keys()].every(i => attr(S, 'gb_k_' + i, 'opacity') === '0'), '★괄호 12개가 모두 숨는다');
+  ok([...Array(12).keys()].every(i => attr(S, 'gb_b_' + i, 'opacity') === '0'), '  → 구슬 12개도');
+  ok([...Array(64).keys()].every(i => attr(S, 'gb_c_' + i, 'opacity') === '0'), '  → 칸 64개도');
+  eq(txt(S, 'gb_cnt'), '', '  → gb_cnt 비움');
+  eq((html(S, 'groupStage').match(/<g id="gb_k_\d+"/g) || []).length, 12, '  → 무대는 다시 짓지 않는다 (g 12개 그대로)');
+  // 복원
+  const R = makeSandbox({ seed:{ [S.LS_KEY]: JSON.stringify({ seq:1, codeRun:{ '2':true }, codeLast:2 }) } });
+  eq(txt(R, 'gb_cnt'), '4² = 16가지', '★codeLast 2 로 복원하면 무대가 2개씩 묶인 채 시작한다');
+  eq(attr(R, 'gb_kp_0', 'd'), 'M-39,-3 L-39,3 L39,3 L39,-3', '  → 괄호 너비 78');
+  eq(S._missing.join(','), '', '★묶기 무대 동안 없는 id 를 찾은 일이 없다');
 }
 
 // ══ 8. ④ 해독 ══
@@ -1309,12 +1480,15 @@ console.log('[10] 문항 (id 유일 · 정답 범위 · no 되돌림 · 물음�
   const S = makeSandbox();
   const ALL = S.ALLQ();
   eq(ALL.length, 10, '선택형 문항이 모두 10개다');
-  eq(S.Q_CELL.length, 1, '① 결론 1'); eq(S.Q_ZOOM.length, 1, '② 결론 1'); eq(S.Q_CODE.length, 2, '③ 결론 2');
+  eq(S.Q_CELL.length, 1, '①-1 결론 1'); eq(S.Q_CODE.length, 1, '①-2 결론 1 (i1)'); eq(S.Q_ZOOM.length, 1, '② 결론 1'); eq(S.Q_FIND.length, 1, '③ 결론 1 (f1)');
+  eq(S.Q_CODE[0].id, 'i1', '  → Q_CODE 가 i1'); eq(S.Q_FIND[0].id, 'f1', '  → Q_FIND 가 f1');
+  eqJ(ALL.map(q => q.id), ['c1','i1','z1','f1','d1','m1','p1','p2','p3','p4'], '★ALLQ 차례 = 카드 차례 (c1 · i1 · z1 · f1 · d1 · m1 · p1~p4)');
+  ok(/<b>코돈<\/b>이라고 한다\.$/.test(S.qById('i1').ex.trim()), '★i1 해설이 「…이것을 코돈이라고 한다.」로 끝난다');
   eq(S.Q_DEC.length, 1, '④ 결론 1'); eq(S.Q_MUT.length, 1, '⑤ 결론 1'); eq(S.PRACTICE.length, 4, '★💪 4문항');
   const ids = ALL.map(p => p.id).concat(S.WRITEQ.map(w => w.id), S.SELFCHECK.map(s => s.id));
   eq(new Set(ids).size, ids.length, '★문항 id 가 활동 전체(선택 10 + 서술 4 + 자기평가 3)에서 유일하다');
   S.PRACTICE.forEach(p => ok(p.id.indexOf('p') === 0, '★💪 ' + p.id + ' 은 p 로 시작한다'));
-  [].concat(S.Q_CELL, S.Q_ZOOM, S.Q_CODE, S.Q_DEC, S.Q_MUT).forEach(p => ok(p.id.indexOf('p') !== 0, '★결론 ' + p.id + ' 은 p 로 시작하지 않는다'));
+  [].concat(S.Q_CELL, S.Q_CODE, S.Q_ZOOM, S.Q_FIND, S.Q_DEC, S.Q_MUT).forEach(p => ok(p.id.indexOf('p') !== 0, '★결론 ' + p.id + ' 은 p 로 시작하지 않는다'));
   S.WRITEQ.forEach(w => ok(w.id.indexOf('p') !== 0, '  서술 ' + w.id + ' 도 p 로 시작하지 않는다'));
   ALL.forEach(p => eq(S.pickStore(p.id), p.id.indexOf('p') === 0 ? S.state.pPick : S.state.qPick, '  ' + p.id + ' 이 제 저장칸으로 간다'));
   ALL.forEach(p => {
@@ -1359,7 +1533,7 @@ console.log('[10] 문항 (id 유일 · 정답 범위 · no 되돌림 · 물음�
   {
     const T = makeSandbox();
     const p = T.qById('i1'), wrong = (p.a + 1) % 4;
-    eq(T._store['codeQ'].children.length, 2, '③ 문항 카드 2장');
+    eq(T._store['codeQ'].children.length, 1, '①-2 문항 카드 1장 (i1)'); eq(T._store['findQ'].children.length, 1, '③ 문항 카드 1장 (f1)');
     eq(T._store['pracBox'].children.length, 4, '💪 카드 4장');
     T.pickQ('i1', wrong);
     const els = T.qEls['i1'];
@@ -1503,6 +1677,7 @@ console.log('[12] 저장·복원 (seq · 다른 탭 · 망가진 blob · null �
     eq(S.state.hintCodon, 'CAU', '★hintCodon(CAU) 이 복원된다');
     eq(S.state.mutNow, 10, '★mutNow(10) 이 복원된다');
     ok(/class="chip on"[^>]*>3개씩/.test(html(S, 'codeChips')), '  → 화면에도 3개씩 칩이 on');
+    eq(txt(S, 'gb_cnt'), '4³ = 64가지', '  → 묶기 무대도 3개씩으로 복원된다');
     eq(S.curCodon(), 'AAC', '  → decN 2 라 지금 코돈은 AAC');
     const T = makeSandbox({ seed:{ [LS]: JSON.stringify({ seq:1, decN:{}, hintCodon:'CAU', hintUsed:1 }) } });
     ok(/→ <b>히스티딘<\/b>/.test(html(T, 'ctNow4')), '  → hintCodon 이 지금 코돈이면 힌트가 열린 채 복원된다');
@@ -1577,16 +1752,15 @@ console.log('[12] 저장·복원 (seq · 다른 탭 · 망가진 blob · null �
   }
 }
 
-// ══ 13. 섹션별 되돌리기 7칸 ══
-console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 칸마다 전부 대조 · confirm 은 ③④⑤⑥ 만 · 새로고침 없음');
+// ══ 13. 섹션별 되돌리기 8칸 ══
+console.log('[13] 섹션별 되돌리기 8칸 — 지운 것과 남은 것을 칸마다 전부 대조 · confirm 은 ③④⑤⑥ 만 · ①-2↔③ 독립 · 새로고침 없음');
 {
   const D0 = refDecode(REF_MRNA, 0);
   function finishAll(S){
     S.aniGo('cs', 99); S.pickQ('c1', 1);
+    [1,2,3].forEach(n => S.pickCode(n)); S.pickQ('i1', 2);
     S.aniGo('zm', 99); ['G','A','U','C'].forEach(b => S.fillBlank(b)); S.pickQ('z1', 2);
-    [1,2,3].forEach(n => S.pickCode(n));
-    S.FIND_TASKS.forEach(t => t.need.forEach(c => S.ctTap3(c)));
-    S.pickQ('i1', 2); S.pickQ('f1', 2);
+    S.FIND_TASKS.forEach(t => t.need.forEach(c => S.ctTap3(c))); S.pickQ('f1', 2);
     for (let i = 0; i < D0.need; i++) S.ctTap4(D0.codons[i]);
     S.autoFrame(1); S.autoFrame(2); S.pickQ('d1', 1);
     S.MUTS.forEach(m => { S.guessMut(m.pos, S.mutKindIndex(m.kind)); S.runMut(m.pos); }); S.pickQ('m1', 3);
@@ -1600,9 +1774,10 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     const st = S.state;
     return {
       cellSeen:st.cellSeen, csPh:S.ANI.cs.ph, c1:st.qPick.c1, cellProg:txt(S, 'cellProg'), csNextDis:dis(S, 'cs_next'),
+      codeDone:S.codeDoneCount(), codeLast:st.codeLast, i1:st.qPick.i1, codeProg:txt(S, 'codeProg'), codonDef:S._store['codonDef'].style.display,
+      chipOn:/chip (ok|on)/.test(html(S, 'codeChips')),
       zoomSeen:st.zoomSeen, zoomFillN:Object.keys(st.zoomFill).length, zmPh:S.ANI.zm.ph, z1:st.qPick.z1, zoomProg:txt(S, 'zoomProg'),
-      codeDone:S.codeDoneCount(), codeLast:st.codeLast, findDone:S.findDoneCount(), i1:st.qPick.i1, f1:st.qPick.f1,
-      foundUAA:hasCls(S, 'c3_UAA', 'found'), findProg:txt(S, 'findProg'),
+      findDone:S.findDoneCount(), f1:st.qPick.f1, foundUAA:hasCls(S, 'c3_UAA', 'found'), findProg:txt(S, 'findProg'),
       decN0:S.decN0(), autoFN:Object.keys(st.autoF).length, d1:st.qPick.d1, decProg:txt(S, 'decProg'),
       verdict:html(S, 'decVerdict') !== '', curGCA:hasCls(S, 'c4_GCA', 'cur'),
       mutRunN:Object.keys(st.mutRun).length, mutGuessN:Object.keys(st.mutGuess).length, mutNow:st.mutNow, m1:st.qPick.m1,
@@ -1614,22 +1789,23 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     };
   }
   const FULL = facets(finishAll(makeSandbox()));
-  eq(FULL.done, 5, '(먼저 전부 마쳤다 — 완료 5)'); eq(FULL.badge, '진행 5 / 5', '  배지 5 / 5');
-  eqJ(Object.keys(makeSandbox().SEC_DEF), ['cell','zoom','code','dec','mut','prac','write'], '★되돌리기 칸이 7개다 (①②③④⑤ · 💪 · ⑥)');
-  const ASK = { cell:false, zoom:false, code:true, dec:true, mut:true, prac:false, write:true };
+  eq(FULL.done, 6, '(먼저 전부 마쳤다 — 완료 6)'); eq(FULL.badge, '진행 6 / 6', '  배지 6 / 6');
+  eqJ(Object.keys(makeSandbox().SEC_DEF), ['cell','zoom','code','find','dec','mut','prac','write'], '★되돌리기 칸이 8개다 (①-1 ② ①-2 ③ ④ ⑤ · 💪 · ⑥)');
+  const ASK = { cell:false, code:false, zoom:false, find:true, dec:true, mut:true, prac:false, write:true };
   Object.keys(ASK).forEach(k => eq(makeSandbox().SEC_DEF[k].ask, ASK[k], '★SEC_DEF.' + k + '.ask = ' + ASK[k] + (ASK[k] ? ' (잃을 것이 큰 칸)' : ' (그냥 지운다)')));
   const CLEAR = {
-    cell:  { cellSeen:false, csPh:0, c1:undefined, cellProg:'본 국면 1 / 6', csNextDis:false, done:4, badge:'진행 4 / 5' },
-    zoom:  { zoomSeen:false, zoomFillN:0, zmPh:0, z1:undefined, zoomProg:'채운 빈칸 0 / 4', done:4, badge:'진행 4 / 5' },
-    code:  { codeDone:0, codeLast:null, findDone:0, i1:undefined, f1:undefined, foundUAA:false, findProg:'찾은 칸 0 / 4', done:4, badge:'진행 4 / 5' },
+    cell:  { cellSeen:false, csPh:0, c1:undefined, cellProg:'본 국면 1 / 6', csNextDis:false, done:5, badge:'진행 5 / 6' },
+    code:  { codeDone:0, codeLast:null, i1:undefined, codeProg:'눌러 본 묶음 0 / 3', codonDef:'none', chipOn:false, done:5, badge:'진행 5 / 6' },
+    zoom:  { zoomSeen:false, zoomFillN:0, zmPh:0, z1:undefined, zoomProg:'채운 빈칸 0 / 4', done:5, badge:'진행 5 / 6' },
+    find:  { findDone:0, f1:undefined, foundUAA:false, findProg:'찾은 칸 0 / 4', done:5, badge:'진행 5 / 6' },
     dec:   { decN0:0, autoFN:0, d1:undefined, decProg:'읽기틀 0 / 3', verdict:false, curGCA:false,
-             mutRunN:0, mutGuessN:0, mutNow:null, m1:undefined, mutProg:'확인한 자리 0 / 3', mutSummary:false, done:3, badge:'진행 3 / 5' },
-    mut:   { mutRunN:0, mutGuessN:0, mutNow:null, m1:undefined, mutProg:'확인한 자리 0 / 3', mutSummary:false, done:4, badge:'진행 4 / 5' },
+             mutRunN:0, mutGuessN:0, mutNow:null, m1:undefined, mutProg:'확인한 자리 0 / 3', mutSummary:false, done:4, badge:'진행 4 / 6' },
+    mut:   { mutRunN:0, mutGuessN:0, mutNow:null, m1:undefined, mutProg:'확인한 자리 0 / 3', mutSummary:false, done:5, badge:'진행 5 / 6' },
     prac:  { pPickN:0, pracProg:'푼 문항 0 / 4' },
     write: { taW1:0, taW4:0, selfS1:undefined, selfBox:false, ansOpenW1:false, writeProg:'작성한 문항 0 / 4' }
   };
-  const MSG = { cell:/① 을 처음 국면으로/, zoom:/② 의 빈칸과 문항을 지우고/, code:/③ 에서 찾은 칸과 문항을 지웠다/, dec:/④ 의 해독과 문항을 지웠다.*⑤ 도 함께/, mut:/⑤ 의 예상과 결과를 지웠다/ };
-  const FB = { cell:'fb_cell', zoom:'fb_zoom', code:'fb_find', dec:'fb_dec', mut:'fb_mut' };
+  const MSG = { cell:/①-1 을 처음 국면으로/, code:/①-2 를 처음 상태로/, zoom:/② 의 빈칸과 문항을 지우고/, find:/③ 에서 찾은 칸과 문항을 지웠다/, dec:/④ 의 해독과 문항을 지웠다.*⑤ 도 함께/, mut:/⑤ 의 예상과 결과를 지웠다/ };
+  const FB = { cell:'fb_cell', code:'fb_code', zoom:'fb_zoom', find:'fb_find', dec:'fb_dec', mut:'fb_mut' };
   Object.keys(CLEAR).forEach(k => {
     const S = finishAll(makeSandbox());
     S.resetSec(k);
@@ -1646,8 +1822,21 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
   // 되돌린 직후 곧바로 다시 할 수 있다 (단추가 죽어 있지 않다)
   {
     const S = finishAll(makeSandbox()); S.resetSec('cell');
-    S.aniGo('cs', 1); eq(S.ANI.cs.ph, 1, '★① 되돌린 직후 ▶ 가 듣는다'); eq(attr(S, 'cs_mrna', 'opacity'), '1', '  → 무대도 다시 그려진다');
-    S.aniGo('cs', 99); eq(S.state.cellSeen, true, '  → 다시 끝까지 보면 cellSeen'); S.pickQ('c1', 1); eq(S.doneCount(), 5, '  → 다시 5');
+    S.aniGo('cs', 1); eq(S.ANI.cs.ph, 1, '★①-1 되돌린 직후 ▶ 가 듣는다'); eq(attr(S, 'cs_mrna', 'opacity'), '1', '  → 무대도 다시 그려진다');
+    S.aniGo('cs', 99); eq(S.state.cellSeen, true, '  → 다시 끝까지 보면 cellSeen'); S.pickQ('c1', 1); eq(S.doneCount(), 6, '  → 다시 6');
+  }
+  {
+    // ★①-2 ↔ ③ 독립 — ①-2 를 되돌려도 ③ 의 찾은 칸·f1 은 그대로
+    const S = finishAll(makeSandbox()); S.resetSec('code');
+    eq(S.findDoneCount(), 4, '★①-2 를 되돌려도 ③ 의 찾은 칸 4개는 그대로'); eq(S.state.qPick.f1, 2, '  → f1 도 그대로');
+    eq(hasCls(S, 'c3_UAA', 'found'), true, '  → 표의 found 표시도 그대로'); eq(S.stepDone('find'), true, '  → ③ 은 완료인 채');
+    eq(S._store['codonDef'].style.display, 'none', '★코돈의 정의가 도로 숨는다');
+    eq(txt(S, 'codeProg'), '눌러 본 묶음 0 / 3', '  → 꼬리표 0 / 3');
+    ok(/<g id="cb_3" class="rfade" opacity="0">/.test(html(S, 'codeStage')) && !/가지<\/text>/.test(html(S, 'codeStage')), '  → 막대가 도로 사라지고 가짓수 글이 사라진다');
+    S.pickCode(2); eq(S.codeDoneCount(), 1, '★①-2 되돌린 직후 칩이 듣는다');
+    S.pickCode(3); eq(S._store['codonDef'].style.display, 'none', '  → 2·3개씩만으로는 아직 닫혀 있다');
+    S.pickCode(1); eq(S._store['codonDef'].style.display, 'block', '  → 셋을 다 누르면 결론이 다시 열린다');
+    S.pickQ('i1', 2); eq(S.doneCount(), 6, '  → 다시 6');
   }
   {
     const S = finishAll(makeSandbox()); S.resetSec('zoom');
@@ -1655,15 +1844,16 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     eq(txt(S, 'zm_tx_1'), 'G', '  → 빈칸 표시가 걷힌다');
     S.fillBlank('G'); eqJ(S.state.zoomFill, {}, '  → 연출 전이라 못 채운다 (규칙이 되살아난다)');
     S.aniGo('zm', 99); ['G','A','U','C'].forEach(b => S.fillBlank(b)); eq(S.zoomFilledCount(), 4, '★② 되돌린 직후 다시 채울 수 있다');
-    S.pickQ('z1', 2); eq(S.doneCount(), 5, '  → 다시 5');
+    S.pickQ('z1', 2); eq(S.doneCount(), 6, '  → 다시 6');
   }
   {
-    const S = finishAll(makeSandbox()); S.resetSec('code');
-    ok(!/chip (ok|on)/.test(html(S, 'codeChips')), '★③ 되돌리면 칩 표시가 걷힌다');
+    // ★③ ↔ ①-2 독립 — ③ 을 되돌려도 ①-2 의 칩·i1 은 그대로
+    const S = finishAll(makeSandbox()); S.resetSec('find');
+    eq(S.codeDoneCount(), 3, '★③ 을 되돌려도 ①-2 의 눌러 본 묶음 3은 그대로'); eq(S.state.qPick.i1, 2, '  → i1 도 그대로');
+    eq(S._store['codonDef'].style.display, 'block', '  → 코돈의 정의도 열린 채'); eq(S.stepDone('code'), true, '  → ①-2 는 완료인 채');
     eq(ALL_CODONS.filter(c => hasCls(S, 'c3_' + c, 'found')).length, 0, '  → found 가 0');
     eq(html(S, 'findTask'), S.FIND_TASKS[0].text, '  → 지시가 종결코돈 찾기로 돌아간다');
-    S.pickCode(2); eq(S.codeDoneCount(), 1, '★③ 되돌린 직후 칩이 듣는다');
-    S.ctTap3('UGA'); eq(S.findDoneCount(), 1, '  → 찾기도 듣는다');
+    S.ctTap3('UGA'); eq(S.findDoneCount(), 1, '★③ 되돌린 직후 찾기가 듣는다');
     eq(S.decDoneCount(), 3, '  → ④ 는 그대로');
   }
   {
@@ -1677,7 +1867,7 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     for (let i = 0; i < D0.need; i++) S.ctTap4(D0.codons[i]);
     ok(S.frameDone(0), '★④ 되돌린 직후 다시 해독할 수 있다');
     S.guessMut(10, 0); S.runMut(10); eq(S.state.mutRun['10'], true, '  → ⑤ 도 곧바로 다시');
-    eq(S.findDoneCount(), 4, '  → ③ 은 그대로'); eq(S.state.qPick.f1, 2, '  → ③ 문항도 그대로');
+    eq(S.findDoneCount(), 4, '  → ③ 은 그대로'); eq(S.state.qPick.f1, 2, '  → ③ 문항도 그대로'); eq(S.codeDoneCount(), 3, '  → ①-2 도 그대로');
   }
   {
     const S = finishAll(makeSandbox()); S.resetSec('mut');
@@ -1689,7 +1879,7 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     const S = finishAll(makeSandbox()); S.resetSec('prac');
     ok(S.PRACTICE.every(p => S.qEls[p.id].choices.every(b => b.className === 'choice' && !b.disabled)), '★💪 되돌리면 선지가 모두 초기 상태');
     S.pickQ('p2', 0); eq(S.state.pPick.p2, 0, '  → 곧바로 다시 풀 수 있다');
-    eq(S.doneCount(), 5, '  → 완료 5 그대로 (💪 는 완료에 안 들어간다)');
+    eq(S.doneCount(), 6, '  → 완료 6 그대로 (💪 는 완료에 안 들어간다)');
   }
   {
     const S = finishAll(makeSandbox()); S.resetSec('write');
@@ -1698,17 +1888,20 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     ok(S.SELFCHECK.every(s => !S._store['self_' + s.id].checked), '  → 자기평가 체크가 풀린다');
     ok(Object.keys(stored(S).ta).every(k => stored(S).ta[k] === ''), '  → 저장에도 답안이 없다'); eqJ(stored(S).self, {}, '  → 저장에도 체크가 없다');
     S._store['ta_w1'].value = '가'.repeat(S.WRITEQ[0].min); S.onTa('w1'); eq(S.ansGate('w1').open, true, '★⑥ 되돌린 직후 다시 적을 수 있다');
-    eq(S.doneCount(), 5, '  → 완료 5 그대로');
+    eq(S.doneCount(), 6, '  → 완료 6 그대로');
   }
   // 확인 대화상자를 취소하면 아무것도 안 지운다 — 묻는 네 칸만
   {
     const S = finishAll(makeSandbox({ confirmRet:false }));
     const before = JSON.stringify(S.state) + JSON.stringify(facets(S));
-    ['code','dec','mut','write'].forEach(k => S.resetSec(k));
-    eq(S._rec.confirms, 4, '★묻는 칸 넷이 각각 한 번씩 물었다');
+    const ASKING = ['find','dec','mut','write'];
+    ASKING.forEach(k => S.resetSec(k));
+    eq(S._rec.confirms, 4, '★묻는 칸 넷(③④⑤⑥)이 각각 한 번씩 물었다');
     eq(JSON.stringify(S.state) + JSON.stringify(facets(S)), before, '★취소하면 상태도 화면도 한 글자도 바뀌지 않는다');
     eq(S._rec.reloads, 0, '  → 새로고침도 없다');
-    S._rec.confirmMsgs.forEach((m, i) => ok(m === S.SEC_ASK[['code','dec','mut','write'][i]], '  → ' + i + '번 확인 문구가 SEC_ASK 의 그것이다'));
+    S._rec.confirmMsgs.forEach((m, i) => ok(m === S.SEC_ASK[ASKING[i]], '  → ' + i + '번 확인 문구가 SEC_ASK.' + ASKING[i] + ' 이다'));
+    ['cell','code','zoom','prac'].forEach(k => S.resetSec(k));
+    eq(S._rec.confirms, 4, '★①-1 · ①-2 · ② · 💪 는 confirm 없이 지운다 (8칸을 다 돌아도 confirm 은 4번)');
   }
   // 힌트가 열린 채 되돌리면 닫힌다
   {
@@ -1727,12 +1920,12 @@ console.log('[13] 섹션별 되돌리기 7칸 — 지운 것과 남은 것을 �
     eq(S._rec.reloads, 1, '★resetAll 만 location.reload 를 부른다');
     eq(S.localStorage._mem[S.LS_KEY], undefined, '★저장분이 지워진다');
     eq(S.doneCount(), 0, '★메모리의 state 도 비워진다');
-    eq(S.csMounted, false, '  → ① mounted 표시 되돌림'); eq(S.zmMounted, false, '  → ② mounted 표시 되돌림');
+    eq(S.csMounted, false, '  → ① mounted 표시 되돌림'); eq(S.zmMounted, false, '  → ② mounted 표시 되돌림'); eq(S.gbMounted, false, '  → 묶기 무대 mounted 표시 되돌림');
     eqJ(S.ANI, { cs:{ ph:0, prev:-1 }, zm:{ ph:0, prev:-1 } }, '  → 연출 국면도 0');
     S.pickCode(1); eq(stored(S).seq, 1, '  → 새로고침 전에 눌러도 옛 state 가 되살아나지 않는다 (seq 1 부터)');
     const T = finishAll(makeSandbox({ confirmRet:false }));
     T.resetAll();
-    eq(T._rec.reloads, 0, '★전체 되돌리기를 취소하면 새로고침하지 않는다'); eq(T.doneCount(), 5, '  → 상태도 그대로');
+    eq(T._rec.reloads, 0, '★전체 되돌리기를 취소하면 새로고침하지 않는다'); eq(T.doneCount(), 6, '  → 상태도 그대로');
     ok(!!stored(T), '  → 저장분도 그대로');
   }
 }
@@ -1747,7 +1940,7 @@ console.log('[14] 말투 — 시험지 문체 (금지어 · 지시문 「~하시
   const S = makeSandbox();
   const hitsIn = t => BANNED.filter(w => String(t).indexOf(w) >= 0);
   // (1) 자료 문안 전수 — 한 덩이로
-  const blob = JSON.stringify({ QC:S.Q_CELL, QZ:S.Q_ZOOM, QI:S.Q_CODE, QD:S.Q_DEC, QM:S.Q_MUT, P:S.PRACTICE, W:S.WRITEQ, SC:S.SELFCHECK,
+  const blob = JSON.stringify({ QC:S.Q_CELL, QZ:S.Q_ZOOM, QI:S.Q_CODE, QF:S.Q_FIND, QD:S.Q_DEC, QM:S.Q_MUT, P:S.PRACTICE, W:S.WRITEQ, SC:S.SELFCHECK,
     MC:S.MUT_CHOICES, FT:S.FIND_TASKS, RS:S.RNA_SLOTS, ST:S.STEPS, CS:S.CS_STEPS, CC:S.CS_CAP, ZS:S.ZM_STEPS, ZC:S.ZM_CAP,
     FN:S.FRAME_NAMES, SD:S.SEC_DEF, SA:S.SEC_ASK }, (k, v) => (typeof v === 'function' ? String(v) : v));
   eq(hitsIn(blob).join(' '), '', '★문항·서술·캡션·지시 문안에 친근체/추임새 0건');
@@ -1794,7 +1987,7 @@ console.log('[14] 말투 — 시험지 문체 (금지어 · 지시문 「~하시
   // (6) confirm 문구 — SEC_ASK 4 + 리터럴 2 = 6, 모두 「~하시겠습니까?」
   eq((code.match(/confirm\(/g) || []).length, 3, 'confirm 을 부르는 자리가 3곳이다 (교사 해제 · 섹션 되돌리기 · 전체 되돌리기)');
   const msgsC = Object.keys(S.SEC_ASK).map(k => S.SEC_ASK[k]);
-  eqJ(Object.keys(S.SEC_ASK).sort(), ['code','dec','mut','write'], '★SEC_ASK 가 묻는 네 칸(③④⑤⑥)에만 있다');
+  eqJ(Object.keys(S.SEC_ASK).sort(), ['dec','find','mut','write'], '★SEC_ASK 가 묻는 네 칸(③④⑤⑥)에만 있다 — ①-2 는 묻지 않는다');
   { const re = /confirm\(/g; let m;
     while ((m = re.exec(code))){
       let i = m.index + m[0].length, depth = 1;
@@ -1809,7 +2002,7 @@ console.log('[14] 말투 — 시험지 문체 (금지어 · 지시문 「~하시
     ok(tail === '' || /^\(.*\)$/.test(tail) || /다\.$/.test(tail), '  → 물음 뒤에는 괄호 부연이나 설명문뿐이다 [' + tail.slice(0, 20) + ']');
     eq(hitsIn(m).join(' '), '', '  → 금지어 없음');
   });
-  ['code','mut','write'].forEach(k => ok(/다른 단계는 그대로/.test(S.SEC_ASK[k]), '★' + k + ' 의 확인 문구가 다른 칸은 그대로임을 밝힌다'));
+  ['find','mut','write'].forEach(k => ok(/다른 단계는 그대로/.test(S.SEC_ASK[k]), '★' + k + ' 의 확인 문구가 다른 칸은 그대로임을 밝힌다'));
   ok(/⑤ 의 예상과 결과도 함께 지워진다/.test(S.SEC_ASK.dec), '★dec 의 확인 문구가 ⑤ 도 지워짐을 밝힌다');
   ok(/새로고침하면 도로 잠긴다/.test(msgsC[4] + msgsC[5]), '교사 해제 문구가 비저장을 밝힌다');
 }
@@ -1838,35 +2031,44 @@ console.log('[15] 활동의 경계 — 자매 활동(단백질합성 모의실�
 }
 
 // ══ 16. 진행 ══
-console.log('[16] 진행 — 완료 5단계 · 💪⑥ 은 들어가지 않는다 · 배지 · 레일 (잠긴 칸 없음)');
+console.log('[16] 진행 — 완료 6단계 · 💪⑥ 은 들어가지 않는다 · 배지 · 레일 (잠긴 칸 없음)');
 {
   const S = makeSandbox();
   const D0 = refDecode(REF_MRNA, 0);
-  eq(S.STEPS.length, 5, '단계가 5개다');
-  eqJ(S.STEPS.map(s => s.key), ['cell','zoom','code','dec','mut'], '  → cell · zoom · code · dec · mut');
-  eq(S.doneCount(), 0, '★처음 완료 0'); eq(txt(S, 'progress'), '진행 0 / 5', '★배지 「진행 0 / 5」');
-  eq((html(S, 'rail').match(/class="rstep on"/g) || []).length, 5, '레일 5칸이 모두 열려 있다(on) — 잠긴 칸이 없다');
+  eq(S.STEPS.length, 6, '★단계가 6개다');
+  eqJ(S.STEPS.map(s => s.key), ['cell','code','zoom','find','dec','mut'], '  → cell · code · zoom · find · dec · mut (카드 차례)');
+  eqJ(S.STEPS.map(s => s.no), ['①-1','①-2','②','③','④','⑤'], '  → 번호 ①-1 · ①-2 · ② · ③ · ④ · ⑤');
+  eq(S.doneCount(), 0, '★처음 완료 0'); eq(txt(S, 'progress'), '진행 0 / 6', '★배지 「진행 0 / 6」');
+  eq((html(S, 'rail').match(/class="rstep on"/g) || []).length, 6, '레일 6칸이 모두 열려 있다(on) — 잠긴 칸이 없다');
   ok(!/locked/.test(html(S, 'rail')), '  → locked 표시가 없다');
+  ok(/①-1 세포 한 바퀴/.test(html(S, 'rail')) && /①-2 글자 몇 개로/.test(html(S, 'rail')), '  → 레일에 ①-1 · ①-2 가 보인다');
   eq(S._store['pracBody'].style.display, 'block', '💪 는 처음부터 열려 있다');
-  // 단계마다 두 조건(활동 + 문항)이 모두 있어야 한다
-  S.aniGo('cs', 99); eq(S.doneCount(), 0, '① 무대만 보면 아직 0');
-  S.pickQ('c1', 0); eq(S.doneCount(), 1, '★① 무대 + 문항 → 1 (오답이라도 답했으면 된다)');
-  eq(txt(S, 'progress'), '진행 1 / 5', '  → 배지 1 / 5');
+  // 단계마다 두 조건(활동 + 문항)이 모두 있어야 한다 — 카드 차례대로
+  S.aniGo('cs', 99); eq(S.doneCount(), 0, '①-1 무대만 보면 아직 0');
+  S.pickQ('c1', 0); eq(S.doneCount(), 1, '★①-1 무대 + 문항 → 1 (오답이라도 답했으면 된다)');
+  eq(txt(S, 'progress'), '진행 1 / 6', '  → 배지 1 / 6');
   eq((html(S, 'rail').match(/class="rstep ok"/g) || []).length, 1, '  → 레일 ok 1칸');
-  S.pickQ('z1', 2); eq(S.doneCount(), 1, '② 문항만은 아직');
-  S.aniGo('zm', 99); ['G','A','U','C'].forEach(b => S.fillBlank(b)); eq(S.doneCount(), 2, '★② 빈칸 4 + 문항 → 2');
-  [1,2,3].forEach(n => S.pickCode(n)); S.pickQ('i1', 2); S.pickQ('f1', 2); eq(S.doneCount(), 2, '③ 찾기 전엔 아직');
-  S.FIND_TASKS.forEach(t => t.need.forEach(c => S.ctTap3(c))); eq(S.doneCount(), 3, '★③ 칩 3 + 찾기 4 + 문항 2 → 3');
-  for (let i = 0; i < D0.need; i++) S.ctTap4(D0.codons[i]); S.pickQ('d1', 1); eq(S.doneCount(), 3, '④ 자동 틀 전엔 아직');
-  S.autoFrame(1); eq(S.doneCount(), 3, '  → 하나만도 아직'); S.autoFrame(2); eq(S.doneCount(), 4, '★④ 8칸 + 자동 2 + 문항 → 4');
-  S.MUTS.forEach(m => { S.guessMut(m.pos, 0); S.runMut(m.pos); }); eq(S.doneCount(), 4, '⑤ 문항 전엔 아직');
-  S.pickQ('m1', 3); eq(S.doneCount(), 5, '★⑤ 3자리 + 문항 → 5 (예상이 틀려도 확인했으면 된다)');
-  eq(txt(S, 'progress'), '진행 5 / 5', '★배지 「진행 5 / 5」');
-  eq((html(S, 'rail').match(/class="rstep ok"/g) || []).length, 5, '  → 레일 ok 5칸');
-  eqJ(Object.keys(S.state.pPick), [], '★💪 를 하나도 안 풀어도 5 다');
-  eq(Object.keys(S.state.ta).filter(k => S.state.ta[k]).length, 0, '★⑥ 을 안 적어도 5 다');
+  [1,2].forEach(n => S.pickCode(n)); S.pickQ('i1', 2); eq(S.doneCount(), 1, '①-2 칩 둘 + 문항은 아직');
+  S.pickCode(3); eq(S.doneCount(), 2, '★①-2 칩 3 + 문항 → 2');
+  S.pickQ('z1', 2); eq(S.doneCount(), 2, '② 문항만은 아직');
+  S.aniGo('zm', 99); ['G','A','U','C'].forEach(b => S.fillBlank(b)); eq(S.doneCount(), 3, '★② 빈칸 4 + 문항 → 3');
+  S.pickQ('f1', 2); eq(S.doneCount(), 3, '③ 찾기 전엔 아직');
+  S.FIND_TASKS.forEach(t => t.need.forEach(c => S.ctTap3(c))); eq(S.doneCount(), 4, '★③ 찾기 4 + 문항 → 4');
+  for (let i = 0; i < D0.need; i++) S.ctTap4(D0.codons[i]); S.pickQ('d1', 1); eq(S.doneCount(), 4, '④ 자동 틀 전엔 아직');
+  S.autoFrame(1); eq(S.doneCount(), 4, '  → 하나만도 아직'); S.autoFrame(2); eq(S.doneCount(), 5, '★④ 8칸 + 자동 2 + 문항 → 5');
+  S.MUTS.forEach(m => { S.guessMut(m.pos, 0); S.runMut(m.pos); }); eq(S.doneCount(), 5, '⑤ 문항 전엔 아직');
+  S.pickQ('m1', 3); eq(S.doneCount(), 6, '★⑤ 3자리 + 문항 → 6 (예상이 틀려도 확인했으면 된다)');
+  eq(txt(S, 'progress'), '진행 6 / 6', '★배지 「진행 6 / 6」');
+  eq((html(S, 'rail').match(/class="rstep ok"/g) || []).length, 6, '  → 레일 ok 6칸');
+  eqJ(Object.keys(S.state.pPick), [], '★💪 를 하나도 안 풀어도 6 이다');
+  eq(Object.keys(S.state.ta).filter(k => S.state.ta[k]).length, 0, '★⑥ 을 안 적어도 6 이다');
   eq(S._missing.join(','), '', '★전 과정에서 없는 id 를 찾은 일이 없다');
   ok(!('cardOpen' in S) && !('unlockAll' in S), '섹션 잠금·전체 해제 함수가 없다');
+  // ①-2 와 ③ 은 서로를 막지 않는다 — 찾기부터 해도 된다
+  const T = makeSandbox();
+  T.FIND_TASKS.forEach(t => t.need.forEach(c => T.ctTap3(c))); T.pickQ('f1', 2);
+  eq(T.doneCount(), 1, '★①-2 를 건너뛰고 ③ 부터 해도 완료로 센다');
+  eq(txt(T, 'progress'), '진행 1 / 6', '  → 배지 1 / 6');
 }
 
 console.log('\nPASS ' + pass + ' / FAIL ' + fail);

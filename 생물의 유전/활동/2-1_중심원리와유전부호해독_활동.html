@@ -27,7 +27,7 @@ try {
    교과서(이준규) 60~63쪽 · 61쪽 그림 Ⅱ-2 · 62쪽 「해 보기 — 코돈표를 이용한 유전정보의 해독」 · 65쪽 진핵세포의 경로
    성취기준 12유전02-01 (중심원리·모형으로 유전자발현 설명) · 12유전02-02 (유전 부호 표로 해독)
 
-   ★뼈대는 「유전자 하나가 단백질이 되기까지」의 경로다 — ① 세포 한 바퀴 → ② 유전자 확대 → ③ 사전(코돈표) → ④ 해독 → ⑤ 치환.
+   ★뼈대는 「유전자 하나가 단백질이 되기까지」의 경로다 — ①-1 세포 한 바퀴 → ①-2 글자 몇 개로(4ⁿ·코돈) → ② 염기서열에 집중하기 → ③ 사전(코돈표) → ④ 해독 → ⑤ 치환.
      전사·번역의 *기작*(효소·자리)은 다루지 않는다. 그것은 자매 활동(단백질합성 모의실험)의 몫이다.
    ★아미노산은 앱이 말해 주지 않는다(④). 학생이 코돈표에서 찾아 탭한다 — 성취기준이 「표를 사용하여 해독」이다.
    ★카드는 처음부터 다 열려 있고 칸마다 ↻ 가 있다(2026-09-01 규약). 잠금은 미완성 잠금(DRAFT_MODE) 하나뿐이다.
@@ -404,7 +404,7 @@ html:not(.unlocked) #draftGate{display:flex;}
         <h1>🔤 중심원리와 유전부호 해독</h1>
         <p class="sub">유전자 하나가 단백질이 되기까지 — 세포 안에서 유전정보가 <b>어디서 어디로</b> 가는지 따라가고, <b>코돈표를 직접 읽어</b> mRNA 에 적힌 아미노산서열을 해독한다 (교과서 60~63쪽)</p>
       </div>
-      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 5</span>
+      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 6</span>
     </div>
     <div class="tagrow">
       <span class="tag">중심원리</span><span class="tag">전사와 번역</span><span class="tag">mRNA·rRNA·tRNA</span>
@@ -413,10 +413,10 @@ html:not(.unlocked) #draftGate{display:flex;}
     <div class="rail" id="rail"></div>
   </div>
 
-  <!-- ══ ① 세포 한 바퀴 ══ -->
+  <!-- ══ ①-1 세포 한 바퀴 ══ -->
   <div class="card split" id="cardCell">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h2 class="rna" style="flex:1 1 300px;margin-bottom:0;">① 세포 한 바퀴 — 유전정보는 어디서 어디로 가는가<span class="yr">교과서 60·63·65쪽</span></h2>
+      <h2 class="rna" style="flex:1 1 300px;margin-bottom:0;">①-1 세포 한 바퀴 — 유전정보는 어디서 어디로 가는가<span class="yr">교과서 60·63·65쪽</span></h2>
       <span class="tag" id="cellProg">본 국면 0 / 6</span>
     </div>
     <div class="panes">
@@ -459,13 +459,66 @@ html:not(.unlocked) #draftGate{display:flex;}
         </div>
       </div>
     </div>
-    <div class="secreset"><button type="button" onclick="resetSec('cell')">↻ ① 처음 국면부터 다시 보기</button></div>
+    <div class="secreset"><button type="button" onclick="resetSec('cell')">↻ ①-1 처음 국면부터 다시 보기</button></div>
   </div>
 
-  <!-- ══ ② 확대 — 61쪽 그림 Ⅱ-2 ══ -->
+  <!-- ══ ①-2 글자 몇 개로 무엇을 적는가 — 유전부호 ══ -->
+  <div class="card split" id="cardCode">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">①-2 글자 몇 개로 무엇을 적는가 — 유전부호<span class="yr">교과서 60·61쪽</span></h2>
+      <span class="tag" id="codeProg">눌러 본 묶음 0 / 3</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap"><svg class="stage" id="groupStage" viewBox="0 0 700 266" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="mRNA 염기 12개를 고른 크기로 묶고, 묶음 하나마다 아미노산 하나를 대응시키며, 묶음 하나가 될 수 있는 모든 종류를 늘어놓은 무대"></svg></div>
+        <div class="anicap" id="gb_cap"></div>
+        <h3 style="margin-bottom:6px;">묶음 하나가 될 수 있는 가짓수 — 아미노산 20종류와 견주기</h3>
+        <div class="stage-wrap" style="max-width:560px;"><div id="codeStage"></div></div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="datbox" style="margin-top:0;">
+            DNA 의 글자는 <b>4개</b>(A·T·G·C), 단백질의 글자는 <b>20개</b>(아미노산)이다. 4개로 20개를 적으려면 <b>몇 개씩 묶어야 하는가</b> —
+            유전부호가 밝혀지기 전에 과학자들이 먼저 따져 본 물음이다.
+          </div>
+          <div class="panel">
+            <div class="ptitle">🔎 부호 — 글자 몇 개로 무엇을 적는가</div>
+            <div class="tbl-outer" style="margin-top:4px;">
+              <table class="t codetbl">
+                <thead><tr><th>부호</th><th>글자 수</th><th>묶는 방법</th></tr></thead>
+                <tbody>
+                  <tr><td>한글</td><td>자모 24</td><td>자모를 묶어 글자·낱말</td></tr>
+                  <tr><td>컴퓨터</td><td>2 (0·1)</td><td>8개씩 묶어 2<sup>8</sup> = 256가지</td></tr>
+                  <tr><td>DNA·RNA</td><td>4 (A·T/U·G·C)</td><td class="q">?개씩 묶어 아미노산 20종류</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="taskbar" style="margin-top:12px;">1개씩 · 2개씩 · 3개씩 — 셋 다 눌러 몇 가지가 되는지 확인하시오.</div>
+          <div class="chips" id="codeChips"></div>
+          <div class="msg hide" id="fb_code"></div>
+          <!-- ★셋을 다 눌러 본 뒤에만 보이는 결론 — 먼저 보이면 결론 문항의 답이 그대로 드러난다 (교사 2026-09-12: 「3개를 묶어 코돈이라 부른다는 결론이 필요하다」) -->
+          <div class="verdict-card good" id="codonDef" style="margin-top:12px;display:none;">
+            <div class="vh">🎉 결론 — 세 글자씩 묶는다, 그 묶음이 코돈이다</div>
+            <div class="vb">1개씩(4가지)·2개씩(16가지)으로는 20종류에 모자라고, <b>3개씩 묶으면 64가지</b>로 충분하다.
+              그래서 유전부호는 <b>세 자리의 연속된 염기</b>이고, mRNA 에서 아미노산 하나를 지정하는 이 세 글자 묶음을 <b>코돈</b>이라고 한다.
+              1960년대에 실제로 그렇다는 것이 확인되었다.</div>
+          </div>
+        </div>
+        <div class="pr-q">
+          <h3>결론 — 무엇을 알 수 있는가</h3>
+          <div id="codeQ"></div>
+        </div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('code')">↻ ①-2 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ② 염기서열에 집중하기 — 61쪽 그림 Ⅱ-2 ══ -->
   <div class="card split" id="cardZoom">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h2 class="dna" style="flex:1 1 300px;margin-bottom:0;">② 확대 — 유전자에서 폴리펩타이드까지 글자로 본다<span class="yr">교과서 61쪽 그림 Ⅱ-2</span></h2>
+      <h2 class="dna" style="flex:1 1 300px;margin-bottom:0;">② 염기서열에 집중하기<span class="yr">교과서 61쪽 그림 Ⅱ-2</span></h2>
       <span class="tag" id="zoomProg">채운 빈칸 0 / 4</span>
     </div>
     <div class="panes">
@@ -505,48 +558,34 @@ html:not(.unlocked) #draftGate{display:flex;}
     <div class="secreset"><button type="button" onclick="resetSec('zoom')">↻ ② 빈칸 지우고 다시 하기</button></div>
   </div>
 
-  <!-- ══ ③ 번역에는 사전이 필요하다 — 유전부호 · 코돈표 ══ -->
-  <div class="card split" id="cardCode">
+  <!-- ══ ③ 번역에는 사전이 필요하다 — 코돈표 ══ -->
+  <div class="card split" id="cardFind">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">③ 번역에는 사전이 필요하다 — 유전부호와 코돈표<span class="yr">교과서 60~62쪽</span></h2>
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">③ 번역에는 사전이 필요하다 — 코돈표<span class="yr">교과서 61·62쪽</span></h2>
       <span class="tag" id="findProg">찾은 칸 0 / 4</span>
     </div>
     <div class="panes">
       <div class="pane-l">
         <div id="ctNow"></div>
         <div class="ctab-outer" id="codonTable3"></div>
-        <p class="stage-hint">코돈표 — 교과서 62쪽. mRNA 의 코돈(세 글자)이 어느 아미노산을 뜻하는지 적어 둔 <b>사전</b>이다.</p>
+        <p class="stage-hint">코돈표 — 교과서 62쪽. 코돈 64개가 각각 어느 아미노산을 뜻하는지 적어 둔 <b>사전</b>이다. 거의 모든 생물이 같은 표를 쓴다.</p>
       </div>
       <div class="pane-r">
         <div class="pr-do">
-          <div class="panel" style="margin-top:0;">
-            <div class="ptitle">🔎 부호 — 글자 몇 개로 무엇을 적는가</div>
-            <div class="tbl-outer" style="margin-top:4px;">
-              <table class="t codetbl">
-                <thead><tr><th>부호</th><th>글자 수</th><th>묶는 방법</th></tr></thead>
-                <tbody>
-                  <tr><td>한글</td><td>자모 24</td><td>자모를 묶어 글자·낱말</td></tr>
-                  <tr><td>컴퓨터</td><td>2 (0·1)</td><td>8개씩 묶어 2<sup>8</sup> = 256가지</td></tr>
-                  <tr><td>DNA·RNA</td><td>4 (A·T/U·G·C)</td><td class="q">?개씩 묶어 아미노산 20종류</td></tr>
-                </tbody>
-              </table>
-            </div>
+          <div class="datbox" style="margin-top:0;">
+            4<sup>3</sup> = <b>64</b>가지 코돈 중 <b>61개</b>가 아미노산을 지정한다. 나머지 셋은 아미노산을 지정하지 않는다.
           </div>
-          <div class="taskbar" style="margin-top:12px;">1개씩 · 2개씩 · 3개씩 묶으면 몇 가지가 되는지 눌러 확인하시오.</div>
-          <div class="chips" id="codeChips"></div>
-          <div class="stage-wrap" style="margin-top:8px;"><div id="codeStage"></div></div>
-          <div class="msg hide" id="fb_code"></div>
-          <div class="taskbar" id="findTask" style="margin-top:14px;"></div>
+          <div class="taskbar" id="findTask" style="margin-top:12px;"></div>
           <div id="findList"></div>
           <div class="msg hide" id="fb_find"></div>
         </div>
         <div class="pr-q">
           <h3>결론 — 무엇을 알 수 있는가</h3>
-          <div id="codeQ"></div>
+          <div id="findQ"></div>
         </div>
       </div>
     </div>
-    <div class="secreset"><button type="button" onclick="resetSec('code')">↻ ③ 찾은 칸 지우고 다시 하기</button></div>
+    <div class="secreset"><button type="button" onclick="resetSec('find')">↻ ③ 찾은 칸 지우고 다시 하기</button></div>
   </div>
 
   <!-- ══ ④ 해독 — 62쪽 해 보기 1·2 ══ -->
@@ -819,7 +858,7 @@ function mutChangedIndex(pos){
   return -1;
 }
 
-/* ── ③ 묶음 크기 → 지정할 수 있는 가짓수 ── */
+/* ── ①-2 묶음 크기 → 지정할 수 있는 가짓수 ── */
 var CODE_SIZES = [1, 2, 3];
 var AA_KINDS = 20;
 function codeCount(n){ return Math.pow(4, n); }
@@ -879,7 +918,10 @@ var Q_CODE = [
         '',
         '옳지 않다. 256가지는 20종류를 지정하고도 남지만, 3개씩만 묶어도 이미 충분하므로 적어도 필요한 묶음은 3개이다.'],
     ex:'4종류를 n개씩 묶으면 4<sup>n</sup>가지를 지정할 수 있다. 1개씩은 4가지, 2개씩은 16가지로 20종류에 모자라고, ' +
-       '3개씩 묶으면 64가지가 되어 20종류를 모두 지정할 수 있다. 실제로 유전부호는 <b>세 자리의 연속된 염기</b>, 곧 3염기조합으로 이루어져 있다.' },
+       '3개씩 묶으면 64가지가 되어 20종류를 모두 지정할 수 있다. 실제로 유전부호는 <b>세 자리의 연속된 염기</b>, 곧 3염기조합으로 이루어져 있다. 이것을 <b>코돈</b>이라고 한다.' }
+];
+
+var Q_FIND = [
   { id:'f1',
     q:'64개의 코돈 중 61개가 아미노산을 지정하는데 아미노산은 20종류뿐이다. 이로부터 알 수 있는 것은?',
     ch:['하나의 코돈이 경우에 따라 여러 종류의 아미노산을 지정한다.',
@@ -1074,11 +1116,12 @@ function showFb(id, kind, html){
 var LS_KEY = 'codon_sim_v2';
 
 var STEPS = [
-  { key:'cell', no:'①', name:'세포 한 바퀴',   sub:'전사·번역·RNA 3종', cls:'rna'  },
-  { key:'zoom', no:'②', name:'유전자 확대',    sub:'주형 → mRNA → 아미노산', cls:'dna' },
-  { key:'code', no:'③', name:'사전 — 코돈표',  sub:'3염기조합·종결·개시', cls:''   },
-  { key:'dec',  no:'④', name:'해독',          sub:'읽기틀·8코돈',       cls:'prot' },
-  { key:'mut',  no:'⑤', name:'염기 하나가 바뀌면', sub:'치환 3자리',    cls:'teal' }
+  { key:'cell', no:'①-1', name:'세포 한 바퀴',   sub:'전사·번역·RNA 3종', cls:'rna'  },
+  { key:'code', no:'①-2', name:'글자 몇 개로',   sub:'4ⁿ · 코돈',          cls:''     },
+  { key:'zoom', no:'②',  name:'염기서열에 집중하기', sub:'주형 → mRNA → 아미노산', cls:'dna' },
+  { key:'find', no:'③',  name:'사전 — 코돈표',  sub:'종결 3 · 개시 1',    cls:''     },
+  { key:'dec',  no:'④',  name:'해독',          sub:'읽기틀·8코돈',       cls:'prot' },
+  { key:'mut',  no:'⑤',  name:'염기 하나가 바뀌면', sub:'치환 3자리',    cls:'teal' }
 ];
 
 function freshState(){
@@ -1086,8 +1129,8 @@ function freshState(){
     cellSeen:false,    /* ① 마지막 국면까지 봤는가 */
     zoomSeen:false,    /* ② 마지막 국면까지 봤는가 */
     zoomFill:{},       /* ② 빈칸에 넣은 염기 {'1':'G',…} — 오답도 남긴다(화면에 빨갛게 보인다) */
-    codeRun:{},        /* ③ 눌러 본 묶음 크기 {'1':true,…} */
-    codeLast:null,     /* ③ 마지막으로 고른 묶음 크기 */
+    codeRun:{},        /* ①-2 눌러 본 묶음 크기 {'1':true,…} */
+    codeLast:null,     /* ①-2 마지막으로 고른 묶음 크기 */
     find:{},           /* ③ 찾은 칸 {stop:[…], start:[…]} */
     decN:{},           /* ④ 1번째 읽기틀에서 해독을 마친 칸 수 {'0':n} */
     autoF:{},          /* ④ 단추로 끊어 본 읽기틀 {'1':true,'2':true} */
@@ -1184,8 +1227,8 @@ function mutDoneCount(){
 function stepDone(k){
   if (k === 'cell') return !!state.cellSeen && answeredOf(Q_CELL, state.qPick) === Q_CELL.length;
   if (k === 'zoom') return zoomDone(state.zoomFill) && answeredOf(Q_ZOOM, state.qPick) === Q_ZOOM.length;
-  if (k === 'code') return codeDoneCount() === CODE_SIZES.length && findDoneCount() === findTotal() &&
-                           answeredOf(Q_CODE, state.qPick) === Q_CODE.length;
+  if (k === 'code') return codeDoneCount() === CODE_SIZES.length && answeredOf(Q_CODE, state.qPick) === Q_CODE.length;
+  if (k === 'find') return findDoneCount() === findTotal() && answeredOf(Q_FIND, state.qPick) === Q_FIND.length;
   if (k === 'dec')  return decDoneCount() === 3 && answeredOf(Q_DEC, state.qPick) === Q_DEC.length;
   if (k === 'mut')  return mutDoneCount() === MUTS.length && answeredOf(Q_MUT, state.qPick) === Q_MUT.length;
   return false;
@@ -1668,7 +1711,7 @@ function zmStageSvg(){
   s += txt('zl_nuc', CS.nuc.cx, 82, '핵', 15, C_GEAR, 'middle', 700, 1, 'rfade');
   s += txt('zl_cell', 420, 318, '세포질', 15, C_GEAR, 'middle', 700, 1, 'rfade');
   s += '<g id="zl_ring" class="rfade" opacity="1"><rect x="' + (CS.dna.x - 46) + '" y="' + (CS.dna.y - 19) + '" width="92" height="38" rx="8" fill="none" stroke="' +
-       C_DNA + '" stroke-width="2" stroke-dasharray="6,4"/>' + txt('', CS.dna.x, CS.dna.y + 40, '이 부분을 확대한다', 13, '#0A6B67', 'middle', 700) + '</g>';
+       C_DNA + '" stroke-width="2" stroke-dasharray="6,4"/></g>';   /* 글은 없다 — 「이 부분을 확대한다」는 군더더기였다(교사 2026-09-12) */
   return s;
   function r1(v){ return Math.round(v * 10) / 10; }
 }
@@ -1756,9 +1799,13 @@ function fillBlank(b){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   6. ③ 번역에는 사전이 필요하다 — 4ⁿ 막대 + 코돈표 찾기
+   6. ①-2 글자 몇 개로(4ⁿ 막대) · ③ 사전(코돈표 찾기)
    ══════════════════════════════════════════════════════════════ */
 function renderCodeChips(){
+  var t = document.getElementById('codeProg');
+  if (t) t.textContent = '눌러 본 묶음 ' + codeDoneCount() + ' / ' + CODE_SIZES.length;
+  var d = document.getElementById('codonDef');                 /* 결론(코돈)은 셋을 다 눌러 본 뒤에만 */
+  if (d) d.style.display = (codeDoneCount() === CODE_SIZES.length) ? 'block' : 'none';
   var h = '';
   CODE_SIZES.forEach(function(n){
     var on = (state.codeLast === n);
@@ -1766,6 +1813,113 @@ function renderCodeChips(){
          '" onclick="pickCode(' + n + ')">' + n + '개씩 묶는다</button>';
   });
   setHTML('codeChips', h);
+}
+/* ── ①-2 묶기 무대 — 「n개씩 묶는다」를 눈으로 (교사 2026-09-12: 「묶음 하나에 아미노산 하나가 대응된다는 인식」) ──
+   mRNA 12염기를 고른 크기로 묶고(괄호), 묶음마다 아미노산 구슬 하나를 잇는다. 아래에는 묶음 하나가 될 수 있는
+   모든 종류(4ⁿ)를 실제 글자로 늘어놓는다. 물체(괄호 12 · 구슬 12 · 칸 64)는 한 번만 짓고 자리·글자·투명도만 바꾼다. */
+var GB = { seq:'CAUGGUAACGUG', x0:104, pitch:44, yS:52, yK:86, yB:128, half:16, bead:13,
+           gx0:44, gpitch:40, gy0:190, gdy:22, cols:16 };
+function gbGroups(n){
+  n = Number(n) || 0;
+  if (n < 1) return [];
+  var out = [];
+  for (var i = 0; i + n <= GB.seq.length; i += n) out.push({ start:i, n:n, x:GB.x0 + GB.pitch * (i + (n - 1) / 2) });
+  return out;
+}
+/* n 자리 묶음이 될 수 있는 모든 종류 — 축 차례(U·C·A·G)대로 4ⁿ 개 */
+function gbCombos(n){
+  n = Number(n) || 0;
+  if (n < 1) return [];
+  var out = [''];
+  for (var k = 0; k < n; k++){
+    var nx = [];
+    out.forEach(function(pfx){ BASES4.forEach(function(b){ nx.push(pfx + b); }); });
+    out = nx;
+  }
+  return out;
+}
+function gbLayout(n){
+  n = (CODE_SIZES.indexOf(Number(n)) >= 0) ? Number(n) : 0;
+  var groups = gbGroups(n), brackets = [], beads = [], cells = [], i, k;
+  for (k = 0; k < GB.seq.length; k++){
+    var g = groups[k];
+    if (g){
+      brackets.push({ x:g.x, w:GB.pitch * g.n - 10, op:1 });
+      beads.push({ x:g.x, y:GB.yB, op:1 });
+    } else {                                  /* 쓰이지 않는 괄호·구슬은 제 자리에 op 0 */
+      brackets.push({ x:GB.x0 + GB.pitch * k, w:GB.pitch - 10, op:0 });
+      beads.push({ x:GB.x0 + GB.pitch * k, y:GB.yB, op:0 });
+    }
+  }
+  var combos = gbCombos(n);
+  for (i = 0; i < 64; i++){
+    cells.push({ x:GB.gx0 + GB.gpitch * (i % GB.cols), y:GB.gy0 + GB.gdy * Math.floor(i / GB.cols),
+                 txt:(combos[i] || ''), op:(combos[i] ? 1 : 0) });
+  }
+  var count = combos.length, enough = count >= AA_KINDS;
+  var cap = !n
+    ? '묶음 크기를 고르면 mRNA 가 그 크기로 묶이고, <b>묶음 하나마다 아미노산 하나</b>가 대응된다.'
+    : n + '개씩 묶으면 묶음 <b>' + groups.length + '개</b> → 아미노산 <b>' + groups.length + '개</b>. ' +
+      '묶음 하나가 될 수 있는 종류는 4<sup>' + n + '</sup> = <b>' + count + '가지</b> — ' +
+      (enough ? '아미노산 20종류를 <b>다 가리킬 수 있다</b>.' : '아미노산 20종류에 <b>모자란다</b>.');
+  return { n:n, groups:groups.length, brackets:brackets, beads:beads, cells:cells, count:count, enough:enough, cap:cap,
+           cnt:(n ? '4' + ['', '¹', '²', '³'][n] + ' = ' + count + '가지' : '') };
+}
+function gbStageSvg(){
+  var s = '', i;
+  var txt = function(id, x, y, t, size, color, anchor, weight, op, cls){
+    return '<text' + (id ? ' id="' + id + '"' : '') + (cls ? ' class="' + cls + '"' : '') +
+           ' x="' + x + '" y="' + y + '" text-anchor="' + (anchor || 'middle') + '" font-size="' + size +
+           '" font-weight="' + (weight || 700) + '" fill="' + color + '"' +
+           (op !== undefined ? ' opacity="' + op + '"' : '') + '>' + t + '</text>';
+  };
+  s += txt('', GB.x0 - 34, GB.yS + 5, 'mRNA', 14, '#5321A8', 'end');
+  s += txt('', GB.x0 - 34, GB.yB + 5, '아미노산', 13.5, '#8E1147', 'end');
+  for (i = 0; i < GB.seq.length; i++){
+    var x = GB.x0 + GB.pitch * i;
+    s += '<g transform="translate(' + x + ',' + GB.yS + ')"><rect x="-16" y="-16" width="32" height="32" rx="6" fill="' + C_RNA + '"/>' +
+         txt('', 0, 6, GB.seq.charAt(i), 17, '#fff', 'middle', 800) + '</g>';
+  }
+  /* 괄호 + 구슬로 잇는 선 — 묶음마다 하나. 12개를 미리 짓고 쓰는 만큼만 켠다 */
+  for (i = 0; i < GB.seq.length; i++){
+    s += '<g id="gb_k_' + i + '" class="rmove" opacity="0"><path id="gb_kp_' + i + '" d="M-18,-3 L-18,3 L18,3 L18,-3" fill="none" stroke="' + C_RNA + '" stroke-width="2.2"/>' +
+         '<line x1="0" y1="3" x2="0" y2="' + (GB.yB - GB.yK - GB.bead - 2) + '" stroke="' + C_PROT + '" stroke-width="2" stroke-dasharray="3,3"/></g>';
+  }
+  for (i = 0; i < GB.seq.length; i++){
+    s += '<g id="gb_b_' + i + '" class="rmove" opacity="0"><circle r="' + GB.bead + '" fill="' + C_PROT + '"/><circle cx="0" cy="-4" r="2.2" fill="#fff"/></g>';
+  }
+  /* 묶음 하나가 될 수 있는 종류 — 64칸을 미리 짓는다 */
+  s += txt('', GB.gx0 - 14, GB.gy0 - 18, '묶음 하나가 될 수 있는 종류', 12.5, '#555', 'start', 700);
+  s += txt('gb_cnt', 656, GB.gy0 - 18, '', 13, '#1A1A1A', 'end', 800);
+  for (i = 0; i < 64; i++){
+    s += '<g id="gb_c_' + i + '" class="rmove" opacity="0"><rect x="-18" y="-10" width="36" height="18" rx="4" fill="#F2F4F7" stroke="#C8CDD4" stroke-width="1"/>' +
+         '<text id="gb_ct_' + i + '" y="4" text-anchor="middle" font-size="11" font-weight="700" fill="#5321A8" font-family="Consolas,Menlo,monospace"></text></g>';
+  }
+  return s;
+}
+var gbMounted = false;
+function gbApply(n){
+  var L = gbLayout(n), i;
+  for (i = 0; i < L.brackets.length; i++){
+    var b = L.brackets[i], pth = document.getElementById('gb_kp_' + i);
+    if (pth) pth.setAttribute('d', 'M' + (-b.w / 2) + ',-3 L' + (-b.w / 2) + ',3 L' + (b.w / 2) + ',3 L' + (b.w / 2) + ',-3');
+    putAt('gb_k_' + i, b.x, GB.yK, b.op);
+    putAt('gb_b_' + i, L.beads[i].x, L.beads[i].y, L.beads[i].op);
+  }
+  for (i = 0; i < L.cells.length; i++){
+    var t = document.getElementById('gb_ct_' + i);
+    if (t) t.textContent = L.cells[i].txt;
+    putAt('gb_c_' + i, L.cells[i].x, L.cells[i].y, L.cells[i].op);
+  }
+  var c = document.getElementById('gb_cnt');
+  if (c) c.textContent = L.cnt;
+  setHTML('gb_cap', L.cap);
+}
+function gbRender(){
+  var host = document.getElementById('groupStage');
+  if (!host) return;
+  if (!gbMounted){ host.innerHTML = gbStageSvg(); gbMounted = true; }
+  gbApply(state.codeLast);
 }
 /* 막대 높이는 가짓수에 정비례한다 — 「분율」로 그리지 않는다. */
 var CODE_MAXH = 130, CODE_MAXV = 64;
@@ -1783,7 +1937,8 @@ function renderCodeStage(){
   CODE_SIZES.forEach(function(n, i){
     var x = x0 + gap * i, shown = !!state.codeRun[String(n)];
     var h = codeBarH(n), y = base - h;
-    s += '<g id="cb_' + n + '" class="rfade" opacity="' + (shown ? 1 : 0.12) + '">';
+    /* ★누르기 전에는 **아예 보이지 않는다** — 흐릿하게라도 보이면 막대 높이가 곧 답이다(교사 2026-09-12) */
+    s += '<g id="cb_' + n + '" class="rfade" opacity="' + (shown ? 1 : 0) + '">';
     s += '<rect x="' + (x - 36) + '" y="' + y + '" width="72" height="' + h + '" rx="6" fill="' +
          (codeEnough(n) ? C_PROT : C_DNA) + '"/>';
     if (shown){
@@ -1791,10 +1946,8 @@ function renderCodeStage(){
            codeCount(n) + '가지</text>';
     }
     s += '</g>';
-    s += '<text x="' + x + '" y="' + (base + 20) + '" text-anchor="middle" font-size="14" fill="#555">' +
-         n + '개씩</text>';
-    s += '<text x="' + x + '" y="' + (base + 37) + '" text-anchor="middle" font-size="13" fill="#98A0AC">4' +
-         ['', '¹', '²', '³'][n] + '</text>';
+    s += '<text x="' + x + '" y="' + (base + 22) + '" text-anchor="middle" font-size="14" fill="#555">' +
+         n + '개씩</text>';   /* 4ⁿ 표기는 뺐다 — 무대 아래로 잘려 보였고 피드백이 이미 말한다 */
   });
   s += '</svg>';
   setHTML('codeStage', s);
@@ -1803,11 +1956,11 @@ function pickCode(n){
   state.codeRun[String(n)] = true;
   state.codeLast = n;
   saveState();
-  renderCodeChips(); renderCodeStage();
+  renderCodeChips(); renderCodeStage(); gbRender();
   showFb('fb_code', codeEnough(n) ? 'good' : 'warn',
     n + '개씩 묶으면 4<sup>' + n + '</sup> = <b>' + codeCount(n) + '가지</b>. ' +
     (codeEnough(n)
-      ? '20종류를 모두 지정하고도 남는다. 유전부호가 <b>3염기조합</b>인 까닭이다.'
+      ? '20종류를 모두 지정하고도 남는다. 유전부호가 <b>3염기조합</b>인 까닭이다 — 세 글자 한 묶음이 <b>코돈</b>이다.'
       : '20종류에 <b>모자란다.</b>'));
   updateAll();
 }
@@ -2204,7 +2357,7 @@ function renderMut(){
    ★①②③④⑤ 결론 문항과 💪 가 모두 같은 기계를 쓴다. id 는 활동 전체에서 유일해야 한다.
    ══════════════════════════════════════════════════════════════ */
 var qEls = {};
-function ALLQ(){ return [].concat(Q_CELL, Q_ZOOM, Q_CODE, Q_DEC, Q_MUT, PRACTICE); }
+function ALLQ(){ return [].concat(Q_CELL, Q_CODE, Q_ZOOM, Q_FIND, Q_DEC, Q_MUT, PRACTICE); }
 function qById(id){
   var L = ALLQ();
   for (var i = 0; i < L.length; i++){ if (L[i].id === id) return L[i]; }
@@ -2467,14 +2620,16 @@ function unlockDraft(){
    ★파생 관계는 함께 지운다 — ④ 를 지우면 ⑤ 의 예상·결과도 함께 지운다.
      ⑤ 는 ④ 에서 확정한 「1번째 염기부터 읽는다」 위에서만 뜻이 있는 결과이기 때문이다.
    ★확인 대화상자는 **잃을 것이 큰 칸에만** — 직접 조작한 ③④⑤ 와 손으로 적은 ⑥.
-     ①② 와 💪 는 보거나 몇 번 탭한 것이라 그냥 지운다. */
+     ①-1·①-2·② 와 💪 는 보거나 몇 번 탭한 것이라 그냥 지운다. */
 var SEC_DEF = {
-  cell:  { qs:function(){ return Q_CELL; }, ask:false, fb:'fb_cell', msg:'① 을 처음 국면으로 되돌리고 문항을 지웠다.',
+  cell:  { qs:function(){ return Q_CELL; }, ask:false, fb:'fb_cell', msg:'①-1 을 처음 국면으로 되돌리고 문항을 지웠다.',
            run:function(){ state.cellSeen = false; ANI.cs = { ph:0, prev:-1 }; } },
   zoom:  { qs:function(){ return Q_ZOOM; }, ask:false, fb:'fb_zoom', msg:'② 의 빈칸과 문항을 지우고 처음 국면으로 되돌렸다.',
            run:function(){ state.zoomSeen = false; state.zoomFill = {}; ANI.zm = { ph:0, prev:-1 }; } },
-  code:  { qs:function(){ return Q_CODE; }, ask:true,  fb:'fb_find', msg:'③ 에서 찾은 칸과 문항을 지웠다 — 다시 찾으시오.',
-           run:function(){ state.codeRun = {}; state.codeLast = null; state.find = {}; } },
+  code:  { qs:function(){ return Q_CODE; }, ask:false, fb:'fb_code', msg:'①-2 를 처음 상태로 되돌렸다.',
+           run:function(){ state.codeRun = {}; state.codeLast = null; } },
+  find:  { qs:function(){ return Q_FIND; }, ask:true,  fb:'fb_find', msg:'③ 에서 찾은 칸과 문항을 지웠다 — 다시 찾으시오.',
+           run:function(){ state.find = {}; } },
   dec:   { qs:function(){ return Q_DEC; },  ask:true,  fb:'fb_dec',  msg:'④ 의 해독과 문항을 지웠다 — 다시 해독하시오. ⑤ 도 함께 지웠다.',
            run:function(){
              state.decN = {}; state.autoF = {}; state.hintCodon = null;
@@ -2488,7 +2643,7 @@ var SEC_DEF = {
   write: { write:true, ask:true,  fb:'', msg:'⑥ 에 적은 답안과 자기평가를 지웠다.' }
 };
 var SEC_ASK = {
-  code: '③ 에서 찾은 칸과 문항의 답을 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
+  find: '③ 에서 찾은 칸과 문항의 답을 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
   dec:  '④ 의 해독을 모두 지우고 이 단계만 다시 하시겠습니까? ⑤ 의 예상과 결과도 함께 지워진다.',
   mut:  '⑤ 의 예상과 확인 결과를 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)',
   write:'⑥ 에 적은 답안을 모두 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)'
@@ -2517,7 +2672,7 @@ function resetAll(){
   /* ★메모리도 함께 비운다 — 새로고침이 끝나기 전에 무엇이든 누르면
      saveState() 가 옛 state 를 그대로 다시 써 버려 지운 것이 되살아난다(1-4 검토에서 겪었다). */
   state = freshState();
-  csMounted = false; zmMounted = false;
+  csMounted = false; zmMounted = false; gbMounted = false;
   ANI = { cs:{ ph:0, prev:-1 }, zm:{ ph:0, prev:-1 } };
   if (typeof location !== 'undefined' && location.reload) location.reload();
 }
@@ -2527,7 +2682,7 @@ function restoreUI(){
   renderLegend();
   csRender();
   zmRender();
-  renderCodeChips(); renderCodeStage();
+  renderCodeChips(); renderCodeStage(); gbRender();
   renderCodonTable('codonTable3', 'c3', 'ctTap3');
   renderCodonTable('codonTable4', 'c4', 'ctTap4');
   renderFind();
@@ -2536,6 +2691,7 @@ function restoreUI(){
   renderQuizInto(Q_CELL, 'cellQ', 'rna');
   renderQuizInto(Q_ZOOM, 'zoomQ', 'dna');
   renderQuizInto(Q_CODE, 'codeQ', '');
+  renderQuizInto(Q_FIND, 'findQ', '');
   renderQuizInto(Q_DEC,  'decQ',  'prot');
   renderQuizInto(Q_MUT,  'mutQ',  'teal');
   renderQuizInto(PRACTICE, 'pracBox', 'teal');

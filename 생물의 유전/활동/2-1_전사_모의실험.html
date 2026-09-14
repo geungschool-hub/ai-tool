@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>전사 모의실험</title>
+<script>
+/* ══ 미완성 잠금 ══════════════════════════════════════════════
+   교사가 「완성」이라고 판단하기 전에는 학생이 들어올 수 없게 막는다.
+   ★이 스크립트는 head 에 있어야 한다 — 본문보다 먼저 돌아야 잠긴 화면이 깜빡이지 않는다.
+   ★기본이 「잠김」이다(fail-closed). 조건이 맞을 때만 .unlocked 가 붙는다.
+   ⚠ 이것은 잠금이지 보안이 아니다. 공개 저장소라 소스를 보면 비밀번호가 보인다. */
+var DRAFT_MODE = true;                     /* ◀ 교사 검토를 통과하면 false 로 바꿔 재배포한다 */
+var DRAFT_PASS = '7856';                   /* ★교사 지정. 모든 활동이 같은 값을 쓴다 */
+var DRAFT_KEY  = 'tx_sim_draft_ok';        /* ★활동마다 다른 이름 — 허브가 한 origin 이다 */
+try {
+  if (!DRAFT_MODE || localStorage.getItem(DRAFT_KEY) === 'y') {
+    document.documentElement.className += ' unlocked';
+  }
+} catch (e) {
+  if (!DRAFT_MODE) document.documentElement.className += ' unlocked';
+}
+</script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   생물의 유전 2-1 — 전사 모의실험 (2026-09-14)
+   교과서(이준규) 63쪽 「3 전사」· 그림 II-3 「DNA에서 RNA가 전사되는 원리」
+   서열은 61쪽 그림 II-2 · 원핵과 진핵의 차이는 65쪽 끝
+   성취기준 12유전02-01 (중심원리·모형으로 유전자발현 설명)
+
+   ★이 활동이 맡은 자리 = 63쪽 한 쪽이다 — 누가(RNA 중합효소) · 어디서 시작해서(프로모터) ·
+     어떻게 진행하고(풀림 → 신장 → 되감김, 5' → 3') · 어떻게 끝나는가(방출 · 이탈).
+   ★코돈표 해독은 자매 활동(중심원리와 유전부호 해독)의 몫이고,
+     라이보솜 번역 조작은 또 다른 자매 활동(단백질합성 모의실험)의 몫이다. 여기서는 다루지 않는다.
+   ★카드는 처음부터 다 열려 있고 칸마다 되돌리기가 있다(2026-09-01 규약).
+     잠금은 미완성 잠금(DRAFT_MODE) 하나뿐이다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --red:#C0392B;   --red-bg:#FDECEA;
+  --blue:#1255A0;  --blue-bg:#E8F0FA;
+  --yellow:#B7791F;--yellow-bg:#FDF6E3;
+  --green:#2A7A38; --green-bg:#E9F5EB;
+  --amber:#E67E22; --amber-bg:#FDF0E3; --amber-ink:#8A4B08;
+  --teal:#0F766E;  --teal-bg:#E2F3F1;
+  --old:#6B7280;
+  --ink:#1A1A1A;   --sub:#555;  --line:#D5D8DE;  --paper:#fff;  --bg:#F4F6F9;
+
+  /* ★자료의 색 — 채도(최대 채널 − 최소 채널) >= 120 을 지킨다. 검사가 CSS 와 JS 상수의 짝을 문다.
+     ⚠ 색만으로 구분시키지 않는다 — 물질마다 모양이 다르고 진한 칸에는 흰 점을 찍는다. */
+  --dna:#0F9B95;   --dna-bg:#DFF6F4;  --dna-ink:#0A6B67;   /* DNA — 청록 */
+  --rna:#6C2BD9;   --rna-bg:#EEE6FB;  --rna-ink:#5321A8;   /* RNA — 보라 */
+  --pol:#C2185B;   --pol-bg:#FCE4EC;  --pol-ink:#8E1147;   /* RNA 중합효소 — 자홍 */
+  --ribo:#9A4B12;  --ribo-bg:#F6E7DC; --ribo-ink:#6E340A;  /* 라이보솜(rRNA) — 갈색 */
+  --trna:#7A8A00;  --trna-bg:#F0F3D9; --trna-ink:#4F5A00;  /* tRNA — 올리브 */
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink); font-size:16px; line-height:1.65;
+  font-family:"Malgun Gothic","맑은 고딕",AppleSDGothicNeo-Regular,"Apple SD Gothic Neo",sans-serif;
+  padding:14px 12px 60px; overflow-x:hidden;
+}
+.wrap{max-width:980px;margin:0 auto;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin-bottom:16px;}
+h1{font-size:24px;margin:0 0 4px;color:var(--blue);letter-spacing:-.5px;}
+h2{font-size:19px;margin:0 0 12px;padding:8px 12px;border-left:5px solid var(--blue);background:var(--blue-bg);border-radius:0 8px 8px 0;}
+h2.dna{border-left-color:var(--dna);background:var(--dna-bg);color:var(--dna-ink);}
+h2.rna{border-left-color:var(--rna);background:var(--rna-bg);color:var(--rna-ink);}
+h2.pol{border-left-color:var(--pol);background:var(--pol-bg);color:var(--pol-ink);}
+h2.ribo{border-left-color:var(--ribo);background:var(--ribo-bg);color:var(--ribo-ink);}
+h2.green{border-left-color:var(--green);background:var(--green-bg);color:var(--green);}
+h2.amber{border-left-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink);}
+h2.teal{border-left-color:var(--teal);background:var(--teal-bg);color:var(--teal);}
+h3{font-size:16.5px;margin:16px 0 8px;color:var(--ink);}
+.sub{color:var(--sub);font-size:15px;margin:0 0 10px;}
+.tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.tag{font-size:13px;background:var(--blue-bg);color:var(--blue);border-radius:999px;padding:3px 11px;}
+.badge{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:6px 16px;font-weight:700;font-size:15px;cursor:pointer;user-select:none;}
+.yr{display:inline-block;font-size:13.5px;font-weight:700;border-radius:999px;padding:2px 10px;margin-left:6px;vertical-align:2px;
+    background:var(--blue-bg);color:var(--blue);}
+.secreset{display:flex;justify-content:flex-end;margin-top:12px;}
+.secreset button{background:#fff;color:#666;border:1.5px solid #C8CDD4;border-radius:8px;
+  font-family:inherit;font-size:15px;font-weight:600;padding:9px 14px;min-height:44px;cursor:pointer;}
+.secreset button:hover{border-color:var(--blue);color:var(--blue);}
+
+/* ── 단추 ── */
+.btn{
+  font:inherit;font-size:16px;font-weight:700;min-height:44px;padding:10px 18px;
+  border-radius:10px;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;
+}
+.btn.ghost{background:#fff;color:var(--blue);}
+.btn.gray{background:#fff;color:var(--old);border-color:var(--old);}
+.btn.dna{background:var(--dna);border-color:var(--dna);color:#fff;}
+.btn.dna.ghost{background:#fff;color:var(--dna-ink);}
+.btn.rna{background:var(--rna);border-color:var(--rna);color:#fff;}
+.btn.rna.ghost{background:#fff;color:var(--rna);}
+.btn.pol{background:var(--pol);border-color:var(--pol);color:#fff;}
+.btn.pol.ghost{background:#fff;color:var(--pol);}
+.btn.teal{background:var(--teal);border-color:var(--teal);color:#fff;}
+.btn.teal.ghost{background:#fff;color:var(--teal);}
+.btn.sm{padding:8px 13px;font-size:15px;}
+.btn:disabled{background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;cursor:not-allowed;}
+/* ★.btn.rna.ghost 는 클래스 3개라 .btn:disabled 를 이겨 꺼진 단추가 켜진 것처럼 보인다. 특이도를 올려 되찾는다. */
+.btn.dna:disabled,.btn.rna:disabled,.btn.pol:disabled,.btn.teal:disabled,.btn.ghost:disabled,
+.btn.dna.ghost:disabled,.btn.rna.ghost:disabled,.btn.pol.ghost:disabled,.btn.teal.ghost:disabled{
+  background:#EEF0F3;color:#98A0AC;border-color:#CDD3DB;
+}
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+
+/* ── 진행 레일 ── */
+.rail{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 0;}
+.rstep{flex:1 1 140px;border:2px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center;font-weight:700;font-size:15px;color:var(--sub);background:#fff;}
+.rstep.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
+.rstep.ok{border-color:var(--green);background:var(--green-bg);color:var(--green);}
+.rstep .rsub{display:block;font-size:12.5px;font-weight:400;}
+
+/* ── 2단 배치 — 자료는 왼쪽에 고정, 조작·문항은 오른쪽 (제작 표준 §2) ──
+   ★경계는 1180px. 1179.98 로 끊는다 — 정수로 끊으면 그 사이 소수 폭이 두 규칙 어디에도 안 걸린다. */
+@media (min-width:1180px){
+  .card.split{
+    margin-left:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+    margin-right:calc(-1 * clamp(0px, (100vw - 1004px) / 2, 150px));
+  }
+  .panes{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,440px);
+    gap:18px; align-items:start;   /* ★align-items:start 가 없으면 칸이 늘어나 sticky 가 듣지 않는다 */
+  }
+  /* ★top 은 기본값일 뿐이다 — stickyCenter() 가 (화면 − 칸)/2 로 덮어써 무대가 화면 세로 가운데에 멈춘다 */
+  .pane-l{position:sticky; top:10px; max-height:calc(100vh - 20px); overflow-y:auto;}
+  .pane-l svg.stage{min-width:0;}
+  .pane-r svg.stage{min-width:0;}
+}
+@media (max-width:1179.98px){
+  .panes{display:flex;flex-direction:column;}
+  .pane-r{display:contents;}
+  .pr-do{order:1;}
+  .pane-l{order:2;}
+  .pr-q{order:3;}
+  .pane-l,.pr-do,.pr-q{min-width:0;width:100%;}
+}
+
+/* ── 무대 ──
+   ★.stage-wrap 에 overflow:hidden 을 주지 않는다 — 좁은 화면에서 가로 스크롤이 죽어 무대 오른쪽이 잘린다. */
+.stage-wrap{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:8px;
+            overflow-x:auto;-webkit-overflow-scrolling:touch;}
+svg.stage{display:block;width:100%;min-width:560px;height:auto;touch-action:manipulation;}
+.taskbar{
+  background:var(--yellow-bg);border-left:5px solid var(--yellow);color:var(--amber-ink);
+  border-radius:0 8px 8px 0;padding:9px 13px;font-weight:700;font-size:16px;margin-bottom:10px;
+}
+.msg{border-radius:9px;padding:10px 13px;margin-top:10px;font-size:15.5px;line-height:1.7;}
+.msg.warn{background:var(--amber-bg);border-left:4px solid var(--amber);}
+.msg.good{background:var(--green-bg);border-left:4px solid var(--green);}
+.msg.info{background:var(--blue-bg);border-left:4px solid var(--blue);}
+.msg.bad{background:var(--red-bg);border-left:4px solid var(--red);}
+.msg.hide{display:none;}
+
+/* ── 연출 제어 막대 + 캡션 (제작 표준 §4) ── */
+.anibar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:8px;}
+.anibar .btn{min-height:44px;padding:8px 12px;font-size:16px;}
+.anistep{font-size:14.5px;color:var(--sub);margin-left:2px;flex:1 1 170px;min-width:170px;}
+.anistep b{color:var(--ink);font-weight:700;}
+.anicap{font-size:16px;color:var(--ink);margin-top:8px;min-height:56px;line-height:1.65;
+        border-left:4px solid var(--pol);background:var(--pol-bg);border-radius:6px;padding:8px 12px;}
+
+/* ── 무대 아래 범례 띠 ──
+   ★요소 이름표를 무대 안에 두면 국면마다 자리를 옮겨야 하고 서로 덮는다(1-5 에서 실측으로 겪었다).
+     이름은 무대 밖 범례가 맡는다. */
+.slg{list-style:none;display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 0;padding:0;}
+.slg li{display:flex;align-items:center;gap:7px;font-size:14.5px;}
+.slg .mk{display:inline-block;flex:0 0 auto;}
+.mk-dna{width:24px;height:8px;border-radius:4px;background:var(--dna);}
+.mk-pol{width:18px;height:18px;border-radius:50%;background:var(--pol);}
+.mk-rna{width:14px;height:14px;border-radius:50%;background:var(--rna);}
+.mk-arrow{width:26px;height:0;border-top:2px dashed #444;position:relative;top:-2px;}
+.mk-prom{width:24px;height:12px;border-radius:3px;
+         background:repeating-linear-gradient(45deg,var(--dna-ink) 0 3px,#fff 3px 6px);
+         border:1.4px solid var(--dna-ink);}
+
+/* ── 조작 패널 ── */
+.panel{border:1px solid var(--line);border-radius:10px;background:#FAFAFA;padding:12px 14px;margin-top:12px;}
+.panel .ptitle{font-size:16px;font-weight:700;margin-bottom:8px;}
+.panel p{margin:0;font-size:15.5px;}
+.panel ul{margin:8px 0 0 20px;padding:0;line-height:1.9;font-size:15.5px;}
+
+/* ── 염기 타일 (③④ 의 격자) ──
+   ★SVG 로 만들지 않는다 — 칸이 좁아지면 글자까지 같이 줄어들어 못 읽는다. */
+.grid-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);
+            border-radius:12px;background:#FBFCFE;padding:8px 6px 10px;}
+.grid-inner{width:max-content;min-width:100%;}
+.grow{display:flex;align-items:center;margin:3px 0;}
+.rowlab{position:sticky;left:0;z-index:3;flex:0 0 126px;width:126px;background:#FBFCFE;
+        font-size:13.5px;font-weight:700;text-align:right;padding:0 8px 0 4px;line-height:1.3;}
+.rowlab.tpl{color:var(--dna-ink);}
+.rowlab.ntpl{color:var(--old);}
+.rowlab.rna{color:var(--rna-ink);}
+.endlab{flex:0 0 26px;width:26px;text-align:center;font-size:13px;font-weight:800;color:var(--sub);}
+.cells{display:flex;}
+/* ★한 칸의 실제 간격(pitch) = 26px + 좌우 여백 1px = 28px → JS 의 CELL_W 와 반드시 같아야 한다 */
+.cell{flex:0 0 26px;width:26px;height:34px;border:1.8px solid #D5DAE0;border-radius:5px;margin:1px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;font-weight:800;background:#fff;color:#BBB;}
+/* ★★.cell 이 .b-* 보다 뒤에 선언되면 color 와 border 가 염기 색을 통째로 덮는다(1-5 에서 겪었다).
+   2-클래스 특이도로 되살린다. 검사가 다섯 색의 짝을 문다. */
+.cell.b-A{color:var(--red);    border-color:var(--red);}
+.cell.b-T{color:var(--blue);   border-color:var(--blue);}
+.cell.b-G{color:var(--green);  border-color:var(--green);}
+.cell.b-C{color:var(--yellow); border-color:var(--yellow);}
+.cell.b-U{color:var(--rna);    border-color:var(--rna);}
+.cell.dim{opacity:.55;}
+.cell.rnaslot{height:44px;background:#FCFAFF;border-style:dashed;border-color:#C4B5E8;}
+.cell.rnaslot.filled{border-style:solid;background:#fff;}
+.cell.rnaslot.next{border-width:2.6px;border-color:var(--amber);background:var(--amber-bg);color:var(--amber-ink);}
+.cell.shake{animation:shake .4s;}
+@keyframes shake{0%,100%{margin-left:1px;}25%{margin-left:-4px;}75%{margin-left:6px;}}
+/* 자동 전사 — 합성 방향대로 한 칸씩 채워지게. ★타이머를 쓰지 않는다(제작 표준 §4). */
+.cell.pour{animation:pourIn .26s ease-out both;}
+@keyframes pourIn{from{opacity:.12;}to{opacity:1;}}
+.cell.diff{box-shadow:0 0 0 3px rgba(108,43,217,.30);}
+.bondrow{display:flex;}
+.bondc{flex:0 0 26px;width:26px;margin:0 1px;text-align:center;font-size:14px;color:#8A93A0;}
+.promband{display:flex;align-items:center;margin:2px 0 6px;}
+.promlab{flex:0 0 126px;width:126px;}
+.prombox{height:20px;border-radius:5px;border:1.5px solid var(--dna-ink);
+         background:repeating-linear-gradient(45deg,var(--dna-ink) 0 4px,#fff 4px 8px);}
+.promtx{font-size:13px;font-weight:700;color:var(--dna-ink);margin-left:8px;white-space:nowrap;}
+
+/* 염기 단추 */
+.nbtnrow{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px;}
+.nbtn{flex:0 0 auto;width:62px;min-height:58px;border:2.5px solid;border-radius:12px;background:#fff;
+      font-family:inherit;font-size:24px;font-weight:800;cursor:pointer;}
+.nbtn .sm{display:block;font-size:12px;font-weight:700;}
+.nbtn.n-A{color:var(--red);border-color:var(--red);}
+.nbtn.n-U{color:var(--rna);border-color:var(--rna);}
+.nbtn.n-G{color:var(--green);border-color:var(--green);}
+.nbtn.n-C{color:var(--yellow);border-color:var(--yellow);}
+.nbtn.n-T{color:var(--blue);border-color:var(--blue);}
+.nbtn:disabled{color:#98A0AC;border-color:#CDD3DB;cursor:not-allowed;}
+
+/* ── 표 ── */
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:12px;}
+table.t{border-collapse:collapse;width:100%;min-width:480px;font-size:15px;}
+table.t th,table.t td{border:1px solid var(--line);padding:8px 9px;text-align:center;vertical-align:middle;}
+table.t th{background:var(--blue-bg);font-weight:700;}
+table.t th.dna{background:var(--dna-bg);color:var(--dna-ink);}
+table.t th.rna{background:var(--rna-bg);color:var(--rna-ink);}
+table.t td.seqcell{font-family:'Consolas','Menlo',monospace;letter-spacing:1px;font-size:14.5px;}
+
+/* ── ⑤ 설명 카드 · 종류 표시 ── */
+/* ⑤ 무대에서 누를 수 있는 유전자 상자 */
+.genepick{cursor:pointer;}
+.kindrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.kind{font-size:13.5px;border:1.5px solid var(--line);border-radius:999px;padding:3px 10px;color:#9AA1AC;}
+.kind.seen{border-color:var(--green);background:var(--green-bg);color:var(--green);font-weight:700;}
+.infocard{border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:10px;background:#fff;min-height:72px;}
+.infocard.m{border-color:var(--rna);background:var(--rna-bg);}
+.infocard.r{border-color:var(--ribo);background:var(--ribo-bg);}
+.infocard.t{border-color:var(--trna);background:var(--trna-bg);}
+.infocard .ih{font-weight:800;font-size:16.5px;margin-bottom:4px;}
+.infocard .ib{font-size:15.5px;line-height:1.75;}
+
+/* ── 판정 카드 ── */
+.verdict{border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:12px;background:#fff;}
+.verdict.good{border-color:var(--green);background:var(--green-bg);}
+.verdict.bad{border-color:var(--red);background:var(--red-bg);}
+.verdict .vh{font-weight:800;font-size:16.5px;margin-bottom:4px;}
+.verdict .vb{font-size:15.5px;line-height:1.75;}
+
+/* ── 선택형 ── */
+.choices{display:flex;flex-direction:column;gap:9px;margin-top:10px;}
+.choice{
+  font:inherit;font-size:16px;text-align:left;min-height:44px;padding:11px 15px;
+  border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);font-weight:700;cursor:pointer;
+}
+.choice.picked{background:var(--blue);color:#fff;}
+.choice.right{background:var(--green);border-color:var(--green);color:#fff;}
+.choice.dim{border-color:var(--line);color:#9AA1AC;background:#FAFBFC;}
+.choice:disabled{cursor:default;}
+
+/* ── 문항 카드 ── */
+.pq-card{border:1px solid var(--line);border-radius:12px;background:#FCFDFE;padding:13px 14px 15px;margin-top:14px;}
+.pq-card .qtext{font-weight:700;font-size:16.5px;line-height:1.65;}
+.pq-card .qno{display:inline-block;background:var(--amber);color:#fff;border-radius:999px;
+              min-width:26px;padding:1px 9px;font-weight:700;font-size:14px;margin-right:7px;}
+.pq-card .qno.dna{background:var(--dna);} .pq-card .qno.rna{background:var(--rna);}
+.pq-card .qno.pol{background:var(--pol);} .pq-card .qno.teal{background:var(--teal);}
+.pq-card .qno.ribo{background:var(--ribo);}
+.pq-card .lv{display:inline-block;font-size:12.5px;font-weight:700;color:var(--sub);background:#F0F2F5;
+             border-radius:5px;padding:1px 7px;margin-right:7px;vertical-align:2px;}
+.pq-card .expl{margin-top:11px;background:var(--amber-bg);border-left:4px solid var(--amber);
+               border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.pq-card .expl b{color:var(--amber-ink);}
+.datbox{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:0 9px 9px 0;
+        padding:10px 13px;font-size:15.5px;line-height:1.8;margin-top:10px;}
+.datbox ul{margin:6px 0 0;padding-left:20px;}
+.datbox li{margin:2px 0;}
+.datbox .seq{font-family:'Consolas','Menlo',monospace;letter-spacing:2px;font-weight:700;}
+
+/* ── 힌트 2단 — 답 대신 볼 자리를 먼저 가리킨다. 기록하지 않는다. ── */
+.hintwrap{margin-top:10px;}
+.hintbtn{font:inherit;font-size:15px;min-height:44px;padding:9px 15px;margin-top:8px;
+         border:2px dashed var(--blue);border-radius:10px;background:#fff;color:var(--blue);
+         font-weight:700;cursor:pointer;}
+.hintbox{margin-top:8px;background:var(--blue-bg);border-left:4px solid var(--blue);
+         border-radius:0 9px 9px 0;padding:10px 13px;font-size:15.5px;line-height:1.75;}
+.hintbox b{color:var(--blue);}
+
+/* ── 서술 · 모범답안 ── */
+textarea{
+  width:100%;font:inherit;font-size:16px;line-height:1.7;padding:11px 13px;
+  border:2px solid var(--line);border-radius:10px;resize:vertical;min-height:96px;background:#fff;color:var(--ink);
+}
+.cnt{font-size:13.5px;color:var(--sub);margin-top:4px;}
+.ansbox{display:none;margin-top:10px;background:var(--green-bg);border-left:4px solid var(--green);
+        border-radius:0 9px 9px 0;padding:11px 14px;font-size:15.5px;line-height:1.75;}
+.ansbox b{color:var(--green);}
+.qwrap{border:1px solid var(--line);border-radius:12px;padding:13px 14px 15px;margin-top:14px;background:#FCFDFE;}
+.qwrap .qh{font-weight:700;font-size:16.5px;line-height:1.6;margin-bottom:4px;}
+.qwrap .qk{font-size:14px;color:var(--sub);margin-bottom:9px;line-height:1.65;}
+.selfcheck{margin-top:16px;border:1px solid var(--line);border-radius:12px;background:#FAFBFC;padding:13px 15px;}
+.selfcheck h3{margin-top:0;}
+.selfcheck label{display:flex;align-items:flex-start;gap:9px;font-size:15.5px;line-height:1.7;margin:7px 0;cursor:pointer;}
+.selfcheck input{width:22px;height:22px;margin-top:3px;flex:0 0 auto;}
+footer{text-align:center;margin-top:22px;}
+.src{font-size:13.5px;color:var(--sub);margin-top:12px;line-height:1.7;}
+
+/* ── 애니메이션 ──
+   ★모든 연출은 장식이다. 결과 상태는 연출과 무관하게 즉시 확정된다.
+   ★전환은 SVG transform 속성에 건다 — 물체마다 g 를 한 번만 짓고 위치·투명도만 바꾼다(chromolab 방식). */
+.rfade{transition:opacity .45s ease;}
+.rmove{transition:transform .85s cubic-bezier(.4,0,.2,1), opacity .45s ease;}
+@media (prefers-reduced-motion: reduce){
+  .rfade,.rmove,.cell{transition:none !important;}
+  .cell.pour{animation:none;}
+}
+
+/* ── 미완성 잠금 화면 ── */
+html:not(.unlocked) body > .wrap{display:none;}
+html:not(.unlocked) #draftGate{display:flex;}
+#draftGate{
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:var(--bg); align-items:center; justify-content:center; padding:20px;
+}
+#draftGate .box{
+  background:var(--paper); border:1px solid var(--line); border-radius:16px;
+  padding:26px 24px; max-width:420px; width:100%; text-align:center;
+}
+#draftGate h2{border-left:none; background:none; padding:0; margin:0 0 10px; color:var(--blue); font-size:20px;}
+#draftGate p{color:var(--sub); font-size:15.5px; margin:0 0 18px; line-height:1.7;}
+#draftGate input{
+  width:100%; font:inherit; font-size:22px; letter-spacing:6px; text-align:center;
+  min-height:52px; padding:10px 12px; border:2px solid var(--line); border-radius:10px; margin-bottom:12px;
+}
+#draftGate .err{color:var(--red); font-size:15px; min-height:22px; margin-top:8px;}
+
+@media (max-width:640px){
+  body{font-size:16px;padding:10px 8px 50px;}
+  h1{font-size:21px;} h2{font-size:17px;}
+  .card{padding:14px 13px 16px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ★다른 탭이 더 새로운 것을 저장했을 때만 뜬다. 평소에는 숨어 있다. -->
+  <div class="msg bad hide" id="tabWarn"></div>
+
+  <!-- ══ 머리 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div>
+        <h1>✍️ 전사 모의실험</h1>
+        <p class="sub">DNA 두 가닥 가운데 <b>한 가닥</b>을 주형으로 삼아 RNA 가 만들어진다. 누가 어디서 시작해 어떻게 끝내는지를 따라간다 (교과서 63쪽 그림 Ⅱ-3)</p>
+      </div>
+      <span class="badge" id="progress" onclick="tapProgress()">진행 0 / 6</span>
+    </div>
+    <div class="tagrow">
+      <span class="tag">전사</span><span class="tag">RNA 중합효소</span><span class="tag">프로모터</span>
+      <span class="tag">주형 가닥</span><span class="tag">개시·신장·종결</span><span class="tag">12유전02-01</span>
+    </div>
+    <div class="rail" id="rail"></div>
+  </div>
+
+  <!-- ══ ① 어느 가닥을 베끼는가 ══ -->
+  <div class="card split" id="cardStrand">
+    <h2 class="dna">① 어느 가닥을 베끼는가<span class="yr">교과서 61·63쪽</span></h2>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap"><svg class="stage" id="stStage" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="이중가닥 DNA 와 왼쪽 끝의 프로모터. 두 가닥 가운데 하나를 골라 만들어지는 RNA 의 처음 세 염기를 확인하는 무대"></svg></div>
+        <ul class="slg">
+          <li><span class="mk mk-prom"></span>프로모터 — RNA 중합효소가 결합하는 곳</li>
+          <li><span class="mk mk-dna"></span>DNA 두 가닥</li>
+          <li><span class="mk mk-rna"></span>새로 만들어지는 RNA</li>
+        </ul>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">두 가닥 가운데 <b>주형으로 쓰이는 가닥</b>을 고르시오.</div>
+          <div class="panel">
+            <div class="ptitle">🔎 판단의 근거</div>
+            <p>RNA 중합효소는 <b>프로모터</b>에 결합한 뒤 한쪽으로 나아가면서, 주형을 <b>3′ 쪽에서부터</b> 읽고 RNA 를 <b>5′ → 3′</b> 방향으로 잇는다.</p>
+            <ul>
+              <li>프로모터는 유전자의 <b>왼쪽 끝</b>에 있다 → 중합효소는 오른쪽으로 나아간다</li>
+              <li>그러므로 <b>왼쪽 끝이 3′ 인 가닥</b>이 주형이다</li>
+            </ul>
+          </div>
+          <div class="btnrow">
+            <button type="button" class="btn dna ghost" id="btnTop" onclick="pickStrand(1)">위 가닥을 주형으로</button>
+            <button type="button" class="btn dna ghost" id="btnBot" onclick="pickStrand(2)">아래 가닥을 주형으로</button>
+          </div>
+          <div id="strandVerdict"></div>
+          <div class="msg hide" id="fb_strand"></div>
+        </div>
+        <div class="pr-q"><div id="strandQ"></div></div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('strand')">↻ ① 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ② 개시 · 신장 · 종결 ══ -->
+  <div class="card split" id="cardStage">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="pol" style="flex:1 1 300px;margin-bottom:0;">② 개시 · 신장 · 종결<span class="yr">교과서 63쪽 그림 Ⅱ-3</span></h2>
+      <span class="tag" id="stageProg">본 국면 1 / 9</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap"><svg class="stage" id="txStage" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="RNA 중합효소가 프로모터에 결합해 DNA 를 풀고, 나아가면서 RNA 를 잇고, 지나간 자리가 다시 감기며, 끝에서 RNA 를 방출하고 떨어져 나오는 아홉 국면의 무대"></svg></div>
+        <div class="anibar">
+          <button type="button" class="btn pol ghost" id="tx_first" onclick="aniGo(-99)">⏮ 처음부터</button>
+          <button type="button" class="btn pol ghost" id="tx_prev"  onclick="aniGo(-1)">◀ 이전</button>
+          <button type="button" class="btn pol ghost" id="tx_next"  onclick="aniGo(1)">▶ 다음</button>
+          <button type="button" class="btn pol ghost" id="tx_last"  onclick="aniGo(99)">⏩ 끝까지</button>
+          <span class="anistep" id="tx_step"></span>
+        </div>
+        <div class="anicap" id="tx_cap"></div>
+        <ul class="slg">
+          <li><span class="mk mk-pol"></span>RNA 중합효소</li>
+          <li><span class="mk mk-prom"></span>프로모터</li>
+          <li><span class="mk mk-dna"></span>DNA — 위 가닥이 주형이다</li>
+          <li><span class="mk mk-rna"></span>라이보뉴클레오타이드 — 이어져 <b>한 가닥의 RNA</b> 가 된다</li>
+          <li><span class="mk mk-arrow"></span>전사 방향 — 중합효소가 나아가는 쪽</li>
+        </ul>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">▶ 다음 을 눌러 아홉 국면을 차례로 보시오.</div>
+          <div class="panel">
+            <div class="ptitle">🔎 무엇을 보아야 하는가</div>
+            <p>DNA 복제에서는 두 가닥이 <b>끝까지</b> 풀렸다. 전사에서는 풀리는 자리가 <b>중합효소가 있는 곳뿐</b>이다.</p>
+            <ul>
+              <li>풀린 자리가 <b>어디로 옮겨</b> 가는가</li>
+              <li>중합효소가 <b>지나간 자리</b>는 어떻게 되는가</li>
+              <li>만들어진 RNA 는 주형에 <b>붙어 있는가</b>, 떨어지는가</li>
+            </ul>
+          </div>
+          <div class="msg hide" id="fb_stage"></div>
+        </div>
+        <div class="pr-q"><div id="stageQ"></div></div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('stage')">↻ ② 처음 국면으로 되돌리기</button></div>
+  </div>
+
+  <!-- ══ ③ 직접 전사하기 ══ -->
+  <div class="card split" id="cardGrid">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="rna" style="flex:1 1 300px;margin-bottom:0;">③ 직접 전사하기<span class="yr">교과서 61쪽 그림 Ⅱ-2</span></h2>
+      <span class="tag" id="gridProg">이은 염기 0 / 15</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="grid-outer"><div class="grid-inner" id="txGrid"></div></div>
+        <p class="cnt" id="gridInfo"></p>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">주형 가닥의 <b>왼쪽부터</b> 상보적인 염기를 하나씩 이으시오.</div>
+          <div class="panel">
+            <div class="ptitle">🔎 상보 규칙</div>
+            <p>주형의 T 에는 A, G 에는 C, C 에는 G 가 온다. 그리고 <b>A 에는 T 가 아니라 U(유라실)</b> 가 온다.</p>
+          </div>
+          <div class="nbtnrow" id="baseBtns">
+            <button type="button" class="nbtn n-A" id="nb_A" onclick="putBase('A')">A<span class="sm">아데닌</span></button>
+            <button type="button" class="nbtn n-U" id="nb_U" onclick="putBase('U')">U<span class="sm">유라실</span></button>
+            <button type="button" class="nbtn n-G" id="nb_G" onclick="putBase('G')">G<span class="sm">구아닌</span></button>
+            <button type="button" class="nbtn n-C" id="nb_C" onclick="putBase('C')">C<span class="sm">사이토신</span></button>
+            <button type="button" class="nbtn n-T" id="nb_T" onclick="putBase('T')">T<span class="sm">타이민</span></button>
+          </div>
+          <div class="btnrow">
+            <button type="button" class="btn rna" id="btnAuto" onclick="autoTranscribe()">⚡ 나머지 자동 전사</button>
+          </div>
+          <div class="msg hide" id="fb_grid"></div>
+        </div>
+        <div class="pr-q"><div id="gridQ"></div></div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('grid')">↻ ③ 지우고 다시 잇기</button></div>
+  </div>
+
+  <!-- ══ ④ 복제와 무엇이 다른가 ══ -->
+  <div class="card split" id="cardResult">
+    <h2 class="dna">④ 복제와 무엇이 다른가<span class="yr">교과서 63쪽</span></h2>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="grid-outer"><div class="grid-inner" id="cmpGrid"></div></div>
+        <div id="cmpBand"></div>
+        <!-- ★표는 자료다 — 왼쪽 칸에 둔다. 오른쪽 440px 칸에서는 잘린다(제작 표준 §2) -->
+        <div id="cmpTable"></div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">세 줄을 견주어 <b>가닥의 이름</b>을 붙이시오.</div>
+          <div class="panel">
+            <div class="ptitle">🔎 무엇을 견주는가</div>
+            <p>주형 가닥 · 그 짝이 되는 가닥 · 새로 만든 RNA 세 줄이 나란히 놓여 있다. 어느 줄과 어느 줄이 서로 닮았는지 보시오.</p>
+          </div>
+          <div class="btnrow">
+            <button type="button" class="btn dna" id="btnName" onclick="compareRows()">🔎 세 줄을 견주어 보기</button>
+          </div>
+          <div class="msg hide" id="fb_result"></div>
+        </div>
+        <div class="pr-q"><div id="resultQ"></div></div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('result')">↻ ④ 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ⑤ 전사되는 RNA 는 한 종류가 아니다 ══ -->
+  <div class="card split" id="cardRna">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="ribo" style="flex:1 1 300px;margin-bottom:0;">⑤ 전사되는 RNA 는 한 종류가 아니다<span class="yr">교과서 63쪽</span></h2>
+      <span class="tag" id="rnaProg">본 종류 0 / 3</span>
+    </div>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap"><svg class="stage" id="rnStage" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="한 DNA 위의 서로 다른 유전자 세 곳에서 mRNA, rRNA, tRNA 가 각각 전사되는 무대"></svg></div>
+        <div class="kindrow" id="rnaKinds"></div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">유전자 <b>㉮ ㉯ ㉰</b> 를 눌러 각각 어떤 RNA 가 만들어지는지 확인하시오.</div>
+          <div class="infocard" id="rnaInfo"></div>
+          <div class="msg hide" id="fb_rna"></div>
+        </div>
+        <div class="pr-q"><div id="rnaQ"></div></div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('rna')">↻ ⑤ 다시 하기</button></div>
+  </div>
+
+  <!-- ══ ⑥ 어디서 일어나는가 ══ -->
+  <div class="card split" id="cardCell">
+    <h2 class="teal">⑥ 원핵과 진핵 — 어디서 일어나는가<span class="yr">교과서 65쪽</span></h2>
+    <div class="panes">
+      <div class="pane-l">
+        <div class="stage-wrap"><svg class="stage" id="clStage" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="원핵세포와 진핵세포를 나란히 놓고 번역이 시작되는 자리를 고르는 무대"></svg></div>
+      </div>
+      <div class="pane-r">
+        <div class="pr-do">
+          <div class="taskbar">두 세포에서 <b>번역이 시작되는 자리</b>를 각각 찍으시오.</div>
+          <div class="panel">
+            <div class="ptitle">🔎 무엇이 다른가</div>
+            <p>원핵세포에는 <b>핵막이 없다</b>. 진핵세포에서는 DNA 가 핵 안에 있고 라이보솜은 세포질에 있다.</p>
+          </div>
+          <div id="cellVerdict"></div>
+          <div class="msg hide" id="fb_cell"></div>
+        </div>
+        <div class="pr-q"><div id="cellQ"></div></div>
+      </div>
+    </div>
+    <div class="secreset"><button type="button" onclick="resetSec('cell')">↻ ⑥ 다시 찍기</button></div>
+  </div>
+
+  <!-- ══ 💪 더 풀어 보기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="amber" style="flex:1 1 300px;margin-bottom:0;">💪 더 풀어 보기</h2>
+      <span class="tag" id="pracProg">푼 문항 0 / 4</span>
+    </div>
+    <p class="sub">활동에서 확인한 것을 비틀어 묻는다. 풀지 않아도 활동은 완료된다.</p>
+    <div id="pracBody"><div id="pracBox"></div></div>
+    <div class="secreset"><button type="button" onclick="resetSec('prac')">↻ 💪 다시 풀기</button></div>
+  </div>
+
+  <!-- ══ ⑦ 정리하기 ══ -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h2 class="green" style="flex:1 1 300px;margin-bottom:0;">⑦ 정리하기</h2>
+      <span class="tag" id="writeProg">작성한 문항 0 / 4</span>
+    </div>
+    <p class="sub">활동에서 확인한 것을 문장으로 옮기시오. 답안을 일정 길이 이상 쓰면 모범답안이 열린다.</p>
+    <div id="writeBox"></div>
+    <div class="selfcheck" id="selfBox"></div>
+    <div class="secreset"><button type="button" onclick="resetSec('write')">↻ ⑦ 적은 답안 지우고 다시 하기</button></div>
+  </div>
+
+  <footer>
+    <button class="btn gray" onclick="resetAll()">🔄 처음부터 다시 하기</button>
+    <p class="src">
+      출처 — 고등학교 「생물의 유전」(이준규 외) 63쪽 「전사」· 그림 Ⅱ-3 · 61쪽 그림 Ⅱ-2 · 65쪽<br>
+      성취기준 12유전02-01 &nbsp;|&nbsp; 코돈표 해독과 라이보솜의 번역 과정은 다른 활동에서 다룬다.
+    </p>
+  </footer>
+
+</div>
+
+<!-- ══ 미완성 잠금 화면 ══ -->
+<div id="draftGate">
+  <div class="box">
+    <h2>🔒 아직 준비 중이다</h2>
+    <p>이 활동은 아직 검토 중이다.<br>교사용 비밀번호를 입력하시오.</p>
+    <input id="draftPass" type="password" inputmode="numeric" maxlength="8" placeholder="････">
+    <button class="btn" style="width:100%;" onclick="unlockDraft()">들어가기</button>
+    <div class="err" id="draftErr"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════
+   1. 자료층 — 교과서 값. 여기서 파생되지 않는 숫자는 화면에 없다.
+   ══════════════════════════════════════════════════════════════
+   교과서 61쪽 그림 Ⅱ-2 (15 염기)
+     DNA 주형 가닥     3′-ACCTACAACCGTCAT-5′   (왼쪽이 3′)
+     주형이 아닌 가닥   5′-TGGATGTTGGCAGTA-3′
+          전사 ↓
+     RNA               5′-UGGAUGUUGGCAGUA-3′   (개시코돈 AUG 는 4번째 염기부터)
+   ★프로모터 부위의 염기는 교과서에 없다 — 글자를 적지 않고 빗금 상자로만 그린다. */
+var LS_KEY = 'tx_sim_v1';
+
+var TPL  = 'ACCTACAACCGTCAT';   /* 주형 가닥 — 왼쪽 3′ → 오른쪽 5′ */
+var NTPL = 'TGGATGTTGGCAGTA';   /* 주형이 아닌 가닥 — 왼쪽 5′ → 오른쪽 3′ */
+var N = TPL.length;             /* 15 */
+var MANUAL_MIN = 6;             /* 직접 이어야 자동 전사가 열리는 칸 수 (교사 확정 2026-09-14) */
+
+var DNA_PAIR   = { A:'T', T:'A', G:'C', C:'G' };
+var DNA_TO_RNA = { A:'U', T:'A', G:'C', C:'G' };
+var RNA_BASES  = ['A', 'U', 'G', 'C'];
+
+function pairStrand(s){
+  var o = '', i;
+  for (i = 0; i < s.length; i++) o += DNA_PAIR[s.charAt(i)];
+  return o;
+}
+function transcribe(s){
+  var o = '', i;
+  for (i = 0; i < s.length; i++) o += DNA_TO_RNA[s.charAt(i)];
+  return o;
+}
+function revStr(s){ return s.split('').reverse().join(''); }
+
+var RNA_KEY = transcribe(TPL);       /* UGGAUGUUGGCAGUA — 왼쪽 5′ */
+/* 아래 가닥을 주형으로 삼았을 때 만들어질 RNA. 자리는 그대로지만 왼쪽이 3′ 이 된다. */
+var WRONG_RNA_ONSCREEN = transcribe(NTPL);            /* ACCUACAACCGUCAU (왼쪽 3′) */
+var WRONG_RNA_53       = revStr(WRONG_RNA_ONSCREEN);  /* UACUGCCAACAUCCA (5′ → 3′) */
+var START_AT = 3;                                     /* 개시코돈 AUG 가 시작되는 자리(0 기준) */
+
+/* ★자기검사 — 앱이 스스로 교과서 값과 어긋나지 않는지 뜬 자리에서 확인한다. */
+var SELF_ERR = [];
+(function(){
+  if (pairStrand(TPL) !== NTPL) SELF_ERR.push('두 가닥이 상보적이지 않다');
+  if (NTPL.replace(/T/g, 'U') !== RNA_KEY) SELF_ERR.push('RNA 가 주형이 아닌 가닥과 어긋난다');
+  if (RNA_KEY !== 'UGGAUGUUGGCAGUA') SELF_ERR.push('RNA 가 교과서 61쪽 값과 다르다');
+  if (RNA_KEY.substring(START_AT, START_AT + 3) !== 'AUG') SELF_ERR.push('개시코돈 자리가 어긋난다');
+  if (RNA_KEY.indexOf('T') >= 0) SELF_ERR.push('RNA 에 타이민이 있다');
+  if (N !== 15) SELF_ERR.push('염기 수가 15가 아니다');
+})();
+
+/* ── 색 — CSS 변수와 손으로 맞춘다. 검사가 이 짝을 문다. ── */
+var C_DNA = '#0F9B95', C_DNA_INK = '#0A6B67';
+var C_RNA = '#6C2BD9', C_RNA_INK = '#5321A8';
+var C_POL = '#C2185B';
+var C_RIBO = '#9A4B12';
+var C_TRNA = '#7A8A00';
+var C_SUB = '#555', C_INK = '#1A1A1A';
+
+/* ══════════════════ 2. 공통 기계 — DOM 도우미 ══════════════════
+   ★이 활동은 「연습」이다 → 정오를 기록하지 않는다. 고른 답은 새로고침 복원용으로만 남는다.
+     (정책 정본: 작업노트/방법_활동기록_어디에남길것인가.md) */
+function hasJong(w){
+  var t = String(w || '');
+  if (!t) return false;
+  var c = t.charCodeAt(t.length - 1);
+  if (c < 0xAC00 || c > 0xD7A3) return false;
+  return (c - 0xAC00) % 28 !== 0;
+}
+function jo(w, withJong, without){ return w + (hasJong(w) ? withJong : without); }
+function setHTML(id, html){
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+function setDisabled(id, on){
+  var el = document.getElementById(id);
+  if (el) el.disabled = !!on;
+}
+function showFb(id, kind, html){
+  var el = document.getElementById(id);
+  if (!el) return;
+  if (!html){ el.className = 'msg hide'; el.innerHTML = ''; return; }
+  el.className = 'msg ' + kind;
+  el.innerHTML = html;
+}
+function putAt(id, x, y, op){
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.setAttribute('transform', 'translate(' + (Math.round(x * 10) / 10) + ',' + (Math.round(y * 10) / 10) + ')');
+  el.setAttribute('opacity', String(op));
+}
+function fadeTo(id, op){
+  var el = document.getElementById(id);
+  if (el) el.setAttribute('opacity', String(op));
+}
+function txt(id, x, y, s, size, fill, anchor, weight){
+  return '<text' + (id ? ' id="' + id + '"' : '') + ' x="' + x + '" y="' + y + '"' +
+         ' font-size="' + size + '" fill="' + fill + '"' +
+         (anchor ? ' text-anchor="' + anchor + '"' : '') +
+         (weight ? ' font-weight="' + weight + '"' : '') + '>' + s + '</text>';
+}
+
+/* ══════════════════ 3. 상태 ══════════════════
+   ★초기값이 null 인 칸을 두지 않는다 — typeof null === 'object' 이라 복원에서 통째로 버려지고,
+     Number(null) === 0 이라 고르지 않은 것이 골라진 것처럼 보인다(자매 활동에서 겪었다).
+     「없음」은 0 또는 빈 문자열로 적는다. */
+function emptyRna(){
+  var a = [], i;
+  for (i = 0; i < N; i++) a.push('');
+  return a;
+}
+function freshState(){
+  return {
+    strand:0,            /* ① 0 = 아직 안 골랐다 · 1 = 위 가닥(주형) · 2 = 아래 가닥 */
+    stageSeen:false,     /* ② 마지막 국면까지 봤는가 */
+    rna:emptyRna(),      /* ③ 이은 염기 — 왼쪽부터 빈틈없이 찬다 */
+    manual:0,            /* ③ 직접 이은 칸 수 */
+    usedAuto:false,      /* ③ 자동 전사를 썼는가 */
+    wrongT:0,            /* ③ T 단추를 누른 횟수 — 화면 안내에만 쓴다 */
+    named:false,         /* ④ 세 줄을 견주었는가 */
+    rnaSeen:{},          /* ⑤ 설명을 본 종류 {m:true, r:true, t:true} */
+    rnaLast:'',          /* ⑤ 마지막으로 누른 종류 */
+    cellPick:{},         /* ⑥ {pro:1|2, euk:1|2} */
+    qPick:{},            /* ①~⑥ 결론 문항 */
+    pPick:{},            /* 💪 더 풀어 보기 */
+    ta:{},               /* ⑦ 서술형 */
+    self:{},             /* 자기평가 체크 */
+    teacherUnlock:false,
+    seq:0                /* ★저장할 때마다 하나씩 오른다 — 두 탭이 서로를 지우지 않게 하는 표다 */
+  };
+}
+var state = freshState();
+
+/* ★두 탭이 서로를 지우던 문제. 저장할 때마다 seq 를 올리고,
+   저장소의 seq 가 내 것보다 크면 덮어쓰지 않는다. 대신 학생에게 알린다. */
+function saveState(){
+  try{
+    var ta = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) ta[w.id] = el.value;
+    });
+    state.ta = ta;
+
+    var mine = (typeof state.seq === 'number') ? state.seq : 0;
+    var newer = false;
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw){
+        var stored = JSON.parse(raw);
+        if (stored && typeof stored.seq === 'number' && stored.seq > mine) newer = true;
+      }
+    }catch(e2){ newer = false; }
+
+    if (newer){ warnOtherTab(true); return; }
+    state.seq = mine + 1;
+
+    /* ★교사 해제는 저장하지 않는다 — 새로고침하면 도로 잠긴다. */
+    var toSave = {};
+    Object.keys(state).forEach(function(k){ toSave[k] = state[k]; });
+    toSave.teacherUnlock = false;
+    localStorage.setItem(LS_KEY, JSON.stringify(toSave));
+  }catch(e){}
+}
+function warnOtherTab(on){
+  var el = document.getElementById('tabWarn');
+  if (!el) return;
+  el.className = 'msg bad' + (on ? '' : ' hide');
+  if (on){
+    el.innerHTML = '⚠ 이 활동이 <b>다른 탭에서도 열려 있다.</b> 이 탭에서 한 것은 저장되지 않는다.<br>' +
+                   '탭을 하나만 남기고 새로고침하시오.';
+  }
+}
+function loadState(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+    return o;
+  }catch(e){ return null; }
+}
+
+/* ══════════════════ 4. 진행 레일 · 완료 판정 ══════════════════
+   ★막는 데 쓰지 않는다. 카드는 처음부터 다 열려 있다(2026-09-01 규약). */
+var STEPS = [
+  { key:'strand', no:'①', name:'어느 가닥을 베끼는가', sub:'주형 가닥 고르기',   cls:'dna'  },
+  { key:'stage',  no:'②', name:'개시 · 신장 · 종결',  sub:'RNA 중합효소',       cls:'pol'  },
+  { key:'grid',   no:'③', name:'직접 전사하기',       sub:'A 에는 U',           cls:'rna'  },
+  { key:'result', no:'④', name:'복제와 무엇이 다른가', sub:'세 줄 견주기',       cls:'dna'  },
+  { key:'rna',    no:'⑤', name:'RNA 는 한 종류가 아니다', sub:'mRNA·rRNA·tRNA', cls:'ribo' },
+  { key:'cell',   no:'⑥', name:'어디서 일어나는가',   sub:'원핵 · 진핵',        cls:'teal' }
+];
+function rnaFilled(){
+  var n = 0, i;
+  for (i = 0; i < N; i++) if (state.rna[i]) n++;
+  return n;
+}
+function rnaDone(){ return rnaFilled() === N; }
+function rnaSeenCount(){
+  var n = 0;
+  ['m', 'r', 't'].forEach(function(k){ if (state.rnaSeen[k]) n++; });
+  return n;
+}
+function cellPickCount(){
+  var n = 0;
+  ['pro', 'euk'].forEach(function(k){ if (state.cellPick[k]) n++; });
+  return n;
+}
+function stepDone(k){
+  if (k === 'strand') return state.strand !== 0 && answeredOf(Q_STRAND, state.qPick) === Q_STRAND.length;
+  if (k === 'stage')  return !!state.stageSeen && answeredOf(Q_STAGE, state.qPick) === Q_STAGE.length;
+  if (k === 'grid')   return rnaDone() && answeredOf(Q_GRID, state.qPick) === Q_GRID.length;
+  if (k === 'result') return !!state.named && answeredOf(Q_RESULT, state.qPick) === Q_RESULT.length;
+  if (k === 'rna')    return rnaSeenCount() === 3 && answeredOf(Q_RNA, state.qPick) === Q_RNA.length;
+  if (k === 'cell')   return cellPickCount() === 2 && answeredOf(Q_CELL, state.qPick) === Q_CELL.length;
+  return false;
+}
+function doneCount(){
+  var n = 0;
+  STEPS.forEach(function(s){ if (stepDone(s.key)) n++; });
+  return n;
+}
+function updateRail(){
+  var h = '';
+  STEPS.forEach(function(s){
+    var cls = 'rstep' + (stepDone(s.key) ? ' ok' : ' on');   /* ★잠긴 칸이 없다 — 마쳤는가만 보인다 */
+    h += '<div class="' + cls + '">' + s.no + ' ' + s.name +
+         '<span class="rsub">' + s.sub + '</span></div>';
+  });
+  setHTML('rail', h);
+  var b = document.getElementById('progress');
+  if (b) b.textContent = '진행 ' + doneCount() + ' / ' + STEPS.length;
+}
+
+/* ══════════════════ 5. ① 어느 가닥을 베끼는가 — 무대 ══════════════════
+   ★연출이 없는 무대다. 고른 값이 바뀔 때 통째로 다시 그린다.
+   ★여기서 U 가 처음 나온다 — 나오는 그 자리에서 「A 에는 T 가 아니라 U」를 함께 말한다. */
+var ST = { x0:160, pitch:34, yTopL:108, yBotL:152, yRibT:84, yRibB:176, yRna:220,
+           promL:44, promR:146, promT:92, promB:168 };
+function stx(i){ return ST.x0 + ST.pitch * (i + 0.5); }
+function baseFill(b){
+  if (b === 'A') return '#C0392B';
+  if (b === 'T') return '#1255A0';
+  if (b === 'G') return '#2A7A38';
+  if (b === 'C') return '#B7791F';
+  return C_RNA;                       /* U */
+}
+/* 고른 가닥에서 처음 만들어지는 세 염기 — 자리와 글자를 함께 돌려준다.
+   ★순수 함수다. 검사가 이것을 직접 문다. */
+function firstThree(pick){
+  var out = [], i, col;
+  if (pick === 1){
+    for (i = 0; i < 3; i++){ col = i; out.push({ col:col, b:RNA_KEY.charAt(col) }); }
+  } else if (pick === 2){
+    for (i = 0; i < 3; i++){ col = N - 1 - i; out.push({ col:col, b:WRONG_RNA_ONSCREEN.charAt(col) }); }
+  }
+  return out;
+}
+function stStageSvg(){
+  var s = '', i, cx;
+  /* 프로모터 — 교과서에 염기가 없으므로 글자를 적지 않고 빗금 상자로만 그린다 */
+  s += '<rect x="' + ST.promL + '" y="' + ST.promT + '" width="' + (ST.promR - ST.promL) +
+       '" height="' + (ST.promB - ST.promT) + '" rx="7" fill="#F2FBFA" stroke="' + C_DNA_INK + '" stroke-width="2"/>';
+  for (i = 0; i < 6; i++){
+    var px = ST.promL + 8 + i * 18;
+    s += '<line x1="' + px + '" y1="' + (ST.promB - 4) + '" x2="' + (px + 22) + '" y2="' + (ST.promT + 4) +
+         '" stroke="' + C_DNA_INK + '" stroke-width="1.6" opacity=".55"/>';
+  }
+  s += txt('', (ST.promL + ST.promR) / 2, ST.promB + 22, '프로모터', 14, C_DNA_INK, 'middle', 700);
+  /* 두 가닥의 뼈대 */
+  s += '<rect x="' + ST.x0 + '" y="' + ST.yRibT + '" width="' + (ST.pitch * N) + '" height="9" rx="4.5" fill="' + C_DNA + '"/>';
+  s += '<rect x="' + ST.x0 + '" y="' + ST.yRibB + '" width="' + (ST.pitch * N) + '" height="9" rx="4.5" fill="' + C_DNA + '"/>';
+  /* 전사 방향 */
+  s += '<line x1="' + (ST.x0 + 10) + '" y1="56" x2="' + (ST.x0 + ST.pitch * N - 30) + '" y2="56" stroke="#444" stroke-width="2" stroke-dasharray="7,5"/>';
+  s += '<path d="M' + (ST.x0 + ST.pitch * N - 30) + ',49 L' + (ST.x0 + ST.pitch * N - 12) + ',56 L' +
+       (ST.x0 + ST.pitch * N - 30) + ',63 Z" fill="#444"/>';
+  s += txt('', ST.x0 + 14, 44, '전사 방향 — RNA 중합효소가 나아가는 쪽', 13.5, '#444', 'start', 700);
+  /* 염기 글자와 수소결합 */
+  for (i = 0; i < N; i++){
+    cx = stx(i);
+    var t = TPL.charAt(i), b = NTPL.charAt(i);
+    s += '<line x1="' + cx + '" y1="' + (ST.yTopL + 12) + '" x2="' + cx + '" y2="' + (ST.yBotL - 12) +
+         '" stroke="#9AA1AC" stroke-width="1.6" stroke-dasharray="3,3"/>';
+    s += txt('', cx, ST.yTopL + 6, t, 17, baseFill(t), 'middle', 800);
+    s += txt('', cx, ST.yBotL + 6, b, 17, baseFill(b), 'middle', 800);
+  }
+  /* 끝 표시 — 왼쪽 위가 3′ 이라는 것이 이 카드의 판단 근거다 */
+  s += txt('', ST.x0 - 12, ST.yTopL + 6, '3′', 15, C_SUB, 'end', 800);
+  s += txt('', ST.x0 + ST.pitch * N + 12, ST.yTopL + 6, '5′', 15, C_SUB, 'start', 800);
+  s += txt('', ST.x0 - 12, ST.yBotL + 6, '5′', 15, C_SUB, 'end', 800);
+  s += txt('', ST.x0 + ST.pitch * N + 12, ST.yBotL + 6, '3′', 15, C_SUB, 'start', 800);
+  /* 고른 가닥 표시 */
+  if (state.strand === 1 || state.strand === 2){
+    var yy = (state.strand === 1) ? ST.yRibT - 6 : ST.yRibB - 6;
+    s += '<rect x="' + (ST.x0 - 4) + '" y="' + yy + '" width="' + (ST.pitch * N + 8) + '" height="21" rx="10" fill="none" stroke="' +
+         C_POL + '" stroke-width="3"/>';
+  }
+  /* 만들어지는 RNA 의 처음 세 염기 */
+  var f = firstThree(state.strand);
+  if (f.length === 3){
+    f.forEach(function(o){
+      var x = stx(o.col);
+      s += '<rect x="' + (x - 14) + '" y="' + (ST.yRna - 16) + '" width="28" height="30" rx="6" fill="#fff" stroke="' +
+           C_RNA + '" stroke-width="2.2"/>';
+      s += '<circle cx="' + (x - 8) + '" cy="' + (ST.yRna - 10) + '" r="2" fill="' + C_RNA + '"/>';
+      s += txt('', x, ST.yRna + 6, o.b, 17, C_RNA_INK, 'middle', 800);
+    });
+    var lead = (state.strand === 1) ? stx(0) - 24 : stx(N - 1) + 24;
+    s += txt('', lead, ST.yRna + 6, '5′', 15, C_RNA, (state.strand === 1) ? 'end' : 'start', 800);
+    var tail = (state.strand === 1) ? stx(2) + 22 : stx(N - 3) - 22;
+    s += txt('', tail, ST.yRna + 6, '…', 18, C_RNA, (state.strand === 1) ? 'start' : 'end', 800);
+    s += txt('', ST.x0, ST.yRna + 44, '새로 만들어지는 RNA 의 처음 세 염기', 13.5, C_RNA_INK, 'start', 700);
+  } else {
+    s += txt('', ST.x0, ST.yRna + 6, '가닥을 고르면 만들어지는 RNA 가 여기에 나타난다.', 14.5, '#9AA1AC', 'start', 400);
+  }
+  return s;
+}
+function strandVerdictHtml(){
+  if (state.strand === 0) return '';
+  if (state.strand === 1){
+    return '<div class="verdict good"><div class="vh">✅ 옳다 — 위 가닥이 주형이다.</div>' +
+      '<div class="vb">위 가닥은 <b>왼쪽 끝이 3′</b> 이다. 프로모터에 결합한 RNA 중합효소는 오른쪽으로 나아가며 ' +
+      '이 가닥을 3′ 쪽에서부터 읽고, RNA 를 <b>5′ → 3′</b> 로 잇는다.<br>' +
+      '만들어지는 RNA 는 5′-<b>' + RNA_KEY + '</b>-3′ 이고, 4번째 염기부터 <b>AUG</b> 가 있다.<br>' +
+      '★주형의 A 자리에는 T 가 아니라 <b>U(유라실)</b> 가 온다.</div></div>';
+  }
+  return '<div class="verdict bad"><div class="vh">❌ 옳지 않다 — 아래 가닥은 주형이 될 수 없다.</div>' +
+    '<div class="vb">아래 가닥은 <b>왼쪽 끝이 5′</b> 이다. 이 가닥을 3′ 쪽에서부터 읽으려면 중합효소가 ' +
+    '<b>오른쪽 끝에서 왼쪽으로</b> 나아가야 하는데, 프로모터는 왼쪽에 있다.<br>' +
+    '억지로 읽으면 RNA 는 5′-<b>' + WRONG_RNA_53 + '</b>-3′ 이 되어 <b>개시코돈 AUG 가 없다</b>.<br>' +
+    '위 가닥을 눌러 다시 확인하시오.</div></div>';
+}
+function pickStrand(k){
+  state.strand = k;
+  saveState();
+  renderStrand();
+  updateAll();
+}
+function renderStrand(){
+  setHTML('stStage', stStageSvg());
+  setHTML('strandVerdict', strandVerdictHtml());
+  var b1 = document.getElementById('btnTop'), b2 = document.getElementById('btnBot');
+  if (b1) b1.className = 'btn dna' + (state.strand === 1 ? '' : ' ghost');
+  if (b2) b2.className = 'btn dna' + (state.strand === 2 ? '' : ' ghost');
+}
+
+/* ══════════════════ 6. ② 개시 · 신장 · 종결 — 연출 무대 (chromolab 방식) ══════════════════
+   ★물체마다 g 를 한 번만 짓고, 국면이 바뀌면 transform·opacity 만 바꾼다. 다시 그리지 않는다.
+   ★한 국면에 한 사건. 국면 번호를 코드에 숫자로 박지 않고 이름 상수를 쓴다.
+   ★타이머를 쓰지 않는다 — ▶ 를 누를 때만 국면이 바뀐다. */
+var TG = {
+  x0:96, pitch:22, n:26,
+  yTop:118, yBot:166, yPol:142, yOff:262,   /* ★떨어져 나온 중합효소는 오른쪽 아래로 — 위로 보내면 이름표가 무대 밖으로 나간다(실측) */
+  /* ★떨어져 나온 RNA — 거품에서 멀어질수록 yDrop 씩 내려가 yTail 에서 눕는다.
+     ★★평평한 한 줄에 뚝 떨어뜨렸더니 「뉴클레오타이드가 하나씩 분리된다」로 읽혔다(교사 지적 2026-09-14).
+       이어진 한 가닥으로 흘러내리게 하고, 뒤에 등뼈(tx_rnabb)를 깔아 낱낱이 아님을 못박는다. */
+  yTail:190, yDrop:9, yFree:282,
+  bulgeUnit:7, half:2, pairDrop:20,
+  promFrom:2, promTo:6, geneFrom:8, geneTo:22,
+  yArrow:88, yBracket:232
+};
+var TX_PAIRED = 3;                 /* 거품 안에 붙어 있는 채로 남는 라이보뉴클레오타이드 수 */
+function tgx(i){ return TG.x0 + TG.pitch * (i + 0.5); }
+function tgBulge(i, c){
+  if (c < 0) return 0;
+  var d = Math.abs(i - c);
+  return (d > TG.half) ? 0 : (TG.half + 1 - d) * TG.bulgeUnit;
+}
+var TX_STEPS = [
+  '유전자 부위의 DNA 는 이중나선이다',
+  '① 개시 — RNA 중합효소가 프로모터에 결합한다',
+  '① 개시 — DNA 이중나선이 풀린다',
+  '① 개시 — 주형 가닥에 첫 라이보뉴클레오타이드가 붙는다',
+  '② 신장 — 중합효소가 나아가며 RNA 가 길어진다',
+  '② 신장 — 지나간 자리가 다시 감기고 RNA 가 떨어져 나온다',
+  '② 신장 — 중합효소가 유전자 끝에 이른다',
+  '③ 종결 — 합성된 RNA 가 방출된다',
+  '③ 종결 — RNA 중합효소가 DNA 에서 떨어진다'
+];
+var TX_CAP = [
+  'DNA 는 두 가닥이 <b>사다리처럼</b> 마주 보고 있다. 실제 DNA 는 꼬여 있으나 방향을 또렷이 보려고 펴서 그렸다. 왼쪽 빗금 자리가 <b>프로모터</b>이다.',
+  '<b>RNA 중합효소</b>가 프로모터에 결합한다. 아직 DNA 는 풀리지 않았고 RNA 도 없다.',
+  '중합효소가 있는 자리에서만 이중나선이 <b>풀린다</b>. 유전자 전체가 한꺼번에 풀리지 않는다.',
+  '풀린 자리에서 <b>주형 가닥</b>에 상보적인 <b>라이보뉴클레오타이드</b> 하나가 붙는다. 여기서부터 RNA 가 시작된다.',
+  '중합효소가 오른쪽으로 나아간다. 풀린 자리도 함께 옮겨 가고, 그 안에서 RNA 가 <b>5′ → 3′</b> 방향으로 길어진다.',
+  '중합효소가 <b>지나간 자리의 DNA 는 다시 이중나선을 형성</b>한다. 그리고 만들어진 RNA 는 <b>주형 가닥에서 떨어져 나온다.</b> ' +
+  '이때 떨어지는 것은 <b>이어진 한 가닥 전체</b>이다 — 뉴클레오타이드가 하나씩 흩어지는 것이 아니다.',
+  '중합효소가 유전자 끝에 이르렀다. RNA 는 유전자 길이만큼 만들어졌다.',
+  '<b>합성된 RNA 가 방출된다.</b> 풀렸던 DNA 는 모두 다시 이중나선이 되었다.',
+  '<b>RNA 중합효소도 DNA 에서 떨어져 나온다.</b> DNA 는 처음 모습 그대로이고, 새로 생긴 것은 RNA 하나뿐이다.'
+];
+/* 국면 이름 상수 — 대본이 늘어도 코드가 안 깨진다 */
+var TX_PH_BIND = 1, TX_PH_OPEN = 2, TX_PH_FIRST = 3, TX_PH_MOVE = 4,
+    TX_PH_REWIND = 5, TX_PH_END = 6, TX_PH_RELEASE = 7, TX_PH_OFF = 8;
+var TX_POLCOL = [-1, 4, 8, 8, 13, 18, 22, 22, 22];   /* ★마지막 국면은 x 를 그대로 두고 아래로만 내린다 — 오른쪽으로 더 가면 이름표가 5′/3′ 와 겹친다(실측) */
+var TX_BUB    = [-1, -1, 8, 8, 13, 18, 22, -1, -1];
+var TX_MADE   = [ 0,  0, 0, 1,  6, 11, 15, 15, 15];
+var TX_BAND   = ['', 'init', 'init', 'init', 'elong', 'elong', 'elong', 'term', 'term'];
+function aniLast(){ return TX_STEPS.length - 1; }
+
+/* ★검사가 무는 계약면이다 — DOM 없이 국면만 넣으면 놓인 자리가 다 나온다. */
+function txLayout(ph){
+  var p = Math.max(0, Math.min(aniLast(), Number(ph) || 0));
+  var c = TX_BUB[p], polc = TX_POLCOL[p], made = TX_MADE[p], i;
+  var cols = [], rungs = [];
+  for (i = 0; i < TG.n; i++){
+    var b = tgBulge(i, c);
+    cols.push({ i:i, x:tgx(i), yTop:TG.yTop - b, yBot:TG.yBot + b, bulge:b });
+    rungs.push({ i:i, x:tgx(i), op:(b > 0 ? 0 : 1) });
+  }
+  var beads = [];
+  for (i = 0; i < N; i++){
+    var col = TG.geneFrom + i, cx = tgx(col);
+    var pairY = TG.yTop - tgBulge(col, c) + TG.pairDrop;
+    if (p >= TX_PH_RELEASE){
+      /* 방출된 뒤에는 물결 모양으로 눕는다 — 곧은 막대로 두면 자와 구별되지 않는다 */
+      beads.push({ i:i, x:cx - (p >= TX_PH_OFF ? 70 : 40),
+                   y:(p >= TX_PH_OFF ? TG.yFree + 10 : TG.yFree) + 7 * Math.sin(i * 0.9),
+                   op:1, where:'free' });
+    } else if (i >= made){
+      beads.push({ i:i, x:cx, y:pairY, op:0, where:'none' });
+    } else if (c >= 0 && i >= made - TX_PAIRED){
+      beads.push({ i:i, x:cx, y:pairY, op:1, where:'pair' });
+    } else {
+      /* ★거품에서 멀어진 만큼만 내려간다 — 이어진 한 가닥이 흘러내리는 모양이다 */
+      var back = Math.max(1, (c >= 0 ? c : TG.geneTo) - col - TX_PAIRED + 1);
+      beads.push({ i:i, x:cx - 4, y:Math.min(TG.yTail, TG.yTop + TG.pairDrop + back * TG.yDrop),
+                   op:1, where:'tail' });
+    }
+  }
+  /* ★등뼈 — 만들어진 라이보뉴클레오타이드를 차례로 잇는다. 낱낱이 아니라 한 가닥임을 그림이 말한다. */
+  var link = [];
+  for (i = 0; i < beads.length; i++) if (beads[i].op > 0) link.push({ x:beads[i].x, y:beads[i].y });
+  return {
+    ph:p, made:made, bubble:c, polcol:polc,
+    cols:cols, rungs:rungs, beads:beads, link:link,
+    /* ★이름표는 중합효소 위에 붙는다. 다만 떨어져 나온 국면에서는 78px 위가 DNA 두 가닥 위에 얹혀
+       「아직 붙어 있다」로 보인다 — 그 국면만 57px 위로 올려 DNA 아래 빈자리에 둔다(실측). */
+    pol:{ x:tgx(polc >= 0 ? polc : 4), y:(p >= TX_PH_OFF ? TG.yOff : TG.yPol), op:(polc >= 0 ? 1 : 0),
+          labY:(p >= TX_PH_OFF ? TG.yOff - 62 : TG.yPol - 78) },
+    arrow:{ op:(p >= TX_PH_OPEN && p <= TX_PH_END) ? 1 : 0 },
+    band:TX_BAND[p],
+    step:TX_STEPS[p], cap:TX_CAP[p]
+  };
+}
+
+function setFill(id, c){
+  var el = document.getElementById(id);
+  if (el) el.setAttribute('fill', c);
+}
+function txStageSvg(){
+  var s = '', i, x;
+  var gl = tgx(TG.geneFrom) - TG.pitch / 2, gr = tgx(TG.geneTo) + TG.pitch / 2;
+  var pl = tgx(TG.promFrom) - TG.pitch / 2, pr = tgx(TG.promTo) + TG.pitch / 2;
+
+  /* 세 단계 띠 — 결론이 되는 낱말이 무대 안에 박힌다 */
+  var bx = { init:300, elong:392, term:484 };
+  ['init', 'elong', 'term'].forEach(function(k){
+    var nm = (k === 'init') ? '① 개시' : (k === 'elong') ? '② 신장' : '③ 종결';
+    s += '<rect id="tx_bdr_' + k + '" x="' + (bx[k] - 40) + '" y="10" width="80" height="26" rx="13" fill="#EEF0F3"/>';
+    s += txt('tx_bdt_' + k, bx[k], 28, nm, 14, '#98A0AC', 'middle', 800);
+  });
+
+  /* RNA 중합효소 — 가닥보다 먼저 그려 뒤에 깔린다 */
+  s += '<g id="tx_pol" class="rmove" opacity="0"><ellipse rx="48" ry="54" fill="' + C_POL +
+       '" fill-opacity=".18" stroke="' + C_POL + '" stroke-width="3"/></g>';
+
+  /* 프로모터 — 교과서에 염기가 없으므로 글자 없이 빗금 상자로만 */
+  s += '<rect x="' + pl + '" y="' + (TG.yTop - 14) + '" width="' + (pr - pl) + '" height="' + (TG.yBot - TG.yTop + 28) +
+       '" rx="7" fill="#F2FBFA" stroke="' + C_DNA_INK + '" stroke-width="2"/>';
+  for (i = 0; i < 5; i++){
+    x = pl + 6 + i * 21;
+    s += '<line x1="' + x + '" y1="' + (TG.yBot + 10) + '" x2="' + (x + 24) + '" y2="' + (TG.yTop - 10) +
+         '" stroke="' + C_DNA_INK + '" stroke-width="1.5" opacity=".5"/>';
+  }
+  s += txt('', (pl + pr) / 2, TG.yBracket + 18, '프로모터', 14, C_DNA_INK, 'middle', 700);
+
+  /* 유전자 구간 표시 */
+  s += '<path d="M' + gl + ',' + TG.yBracket + ' L' + gl + ',' + (TG.yBracket + 8) + ' L' + gr + ',' + (TG.yBracket + 8) +
+       ' L' + gr + ',' + TG.yBracket + '" fill="none" stroke="#8A93A0" stroke-width="1.8"/>';
+  s += txt('', (gl + gr) / 2, TG.yBracket + 26, '유전자', 14, '#5A6270', 'middle', 700);
+
+  /* 수소결합 — 풀린 자리에서는 사라진다 */
+  for (i = 0; i < TG.n; i++){
+    s += '<g id="tx_rg_' + i + '" class="rfade"><line x1="' + tgx(i) + '" y1="' + (TG.yTop + 9) + '" x2="' + tgx(i) +
+         '" y2="' + (TG.yBot - 9) + '" stroke="#9AA1AC" stroke-width="1.6" stroke-dasharray="3,3"/></g>';
+  }
+  /* 두 가닥 — 칸마다 물체 하나. 거품이 지나가면 위아래로 벌어진다 */
+  for (i = 0; i < TG.n; i++){
+    s += '<g id="tx_ct_' + i + '" class="rmove"><rect x="-9.5" y="-7" width="19" height="14" rx="4" fill="' + C_DNA + '"/></g>';
+    s += '<g id="tx_cb_' + i + '" class="rmove"><rect x="-9.5" y="-7" width="19" height="14" rx="4" fill="' + C_DNA +
+         '" fill-opacity=".55"/></g>';
+  }
+  /* 전사 방향 */
+  s += '<g id="tx_arrow" class="rfade" opacity="0">' +
+       '<line x1="' + (gl + 10) + '" y1="' + TG.yArrow + '" x2="' + (gr - 26) + '" y2="' + TG.yArrow +
+       '" stroke="#444" stroke-width="2" stroke-dasharray="7,5"/>' +
+       '<path d="M' + (gr - 26) + ',' + (TG.yArrow - 7) + ' L' + (gr - 8) + ',' + TG.yArrow + ' L' + (gr - 26) + ',' + (TG.yArrow + 7) +
+       ' Z" fill="#444"/></g>';
+  /* ★화살표에 글자를 붙이지 않는다 — 중합효소 이름표가 국면마다 이 자리를 지나가며 겹친다(실측).
+     방향의 이름은 무대 아래 범례가 맡는다(1-5 에서 얻은 규칙). */
+  /* ★RNA 의 등뼈 — 구슬보다 먼저 그려 뒤에 깔린다. 구슬이 하나씩 떨어져 나가는 것처럼 보이던 것을 잇는다. */
+  s += '<path id="tx_rnabb" class="rfade" fill="none" stroke="' + C_RNA +
+       '" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>';
+  /* 라이보뉴클레오타이드 — 흰 점을 함께 찍어 색만으로 구분시키지 않는다 */
+  for (i = 0; i < N; i++){
+    s += '<g id="tx_rb_' + i + '" class="rmove" opacity="0"><circle r="8" fill="' + C_RNA +
+         '"/><circle cx="-2.5" cy="-3" r="2.2" fill="#fff"/></g>';
+  }
+  /* 중합효소 이름표 — 무대 안에서 함께 움직인다 */
+  s += '<g id="tx_polb" class="rmove" opacity="0"><rect x="-52" y="-14" width="104" height="26" rx="13" fill="' + C_POL +
+       '"/>' + txt('', 0, 5, 'RNA 중합효소', 14, '#fff', 'middle', 800) + '</g>';
+
+  /* 고정 이름표 */
+  s += txt('', TG.x0 - 10, TG.yTop + 5, '주형 가닥 3′', 13.5, C_DNA_INK, 'end', 700);
+  s += txt('', tgx(TG.n - 1) + 16, TG.yTop + 5, '5′', 14, C_SUB, 'start', 800);
+  s += txt('', TG.x0 - 10, TG.yBot + 5, '5′', 14, C_SUB, 'end', 800);
+  s += txt('', tgx(TG.n - 1) + 16, TG.yBot + 5, '3′', 14, C_SUB, 'start', 800);
+  s += txt('tx_rnalab', TG.x0 - 10, TG.yFree + 5, '', 13.5, C_RNA_INK, 'end', 700);
+  return s;
+}
+var txMounted = false;
+function txApply(ph){
+  var L = txLayout(ph), i;
+  for (i = 0; i < L.cols.length; i++){
+    putAt('tx_ct_' + i, L.cols[i].x, L.cols[i].yTop, 1);
+    putAt('tx_cb_' + i, L.cols[i].x, L.cols[i].yBot, 1);
+    fadeTo('tx_rg_' + i, L.rungs[i].op);
+  }
+  for (i = 0; i < L.beads.length; i++){
+    putAt('tx_rb_' + i, L.beads[i].x, L.beads[i].y, L.beads[i].op);
+  }
+  var bb = document.getElementById('tx_rnabb');
+  if (bb){
+    var d = '';
+    for (i = 0; i < L.link.length; i++){
+      d += (i ? ' L' : 'M') + (Math.round(L.link[i].x * 10) / 10) + ',' + (Math.round(L.link[i].y * 10) / 10);
+    }
+    if (d) bb.setAttribute('d', d);
+    bb.setAttribute('opacity', L.link.length >= 2 ? '1' : '0');
+  }
+  putAt('tx_pol', L.pol.x, L.pol.y, L.pol.op);
+  putAt('tx_polb', L.pol.x, L.pol.labY, L.pol.op);
+  fadeTo('tx_arrow', L.arrow.op);
+  ['init', 'elong', 'term'].forEach(function(k){
+    var on = (L.band === k);
+    setFill('tx_bdr_' + k, on ? C_POL : '#EEF0F3');
+    setFill('tx_bdt_' + k, on ? '#fff' : '#98A0AC');
+  });
+  var lab = document.getElementById('tx_rnalab');
+  if (lab) lab.textContent = (L.ph >= TX_PH_RELEASE) ? '합성된 RNA' : '';
+  setHTML('tx_cap', L.cap);
+  var st = document.getElementById('tx_step');
+  if (st) st.innerHTML = L.step + ' <b>' + (L.ph + 1) + ' / ' + (aniLast() + 1) + '</b>';
+  setDisabled('tx_first', L.ph <= 0);
+  setDisabled('tx_prev',  L.ph <= 0);
+  setDisabled('tx_next',  L.ph >= aniLast());
+  setDisabled('tx_last',  L.ph >= aniLast());
+  var pg = document.getElementById('stageProg');
+  if (pg) pg.textContent = '본 국면 ' + (L.ph + 1) + ' / ' + (aniLast() + 1);
+}
+var ANI = { ph:0 };
+function txRender(){
+  var host = document.getElementById('txStage');
+  if (!host) return;
+  if (!txMounted){ host.innerHTML = txStageSvg(); txMounted = true; }
+  txApply(ANI.ph);
+}
+function aniGo(delta){
+  var last = aniLast();
+  var p = (delta === -99) ? 0 : (delta === 99) ? last : ANI.ph + delta;
+  ANI.ph = Math.max(0, Math.min(last, p));
+  if (ANI.ph === last && !state.stageSeen){ state.stageSeen = true; saveState(); }
+  txRender();
+  updateAll();
+}
+
+/* ══════════════════ 7. ③ 직접 전사하기 — 격자 ══════════════════
+   ★CSS 의 .cell 간격(26px + 좌우 여백 1px)과 손으로 맞춘 값이다. 검사가 이 짝을 문다. */
+var CELL_W = 28;
+var pourFrom = -1;          /* 자동 전사로 방금 채운 첫 칸 — 저장하지 않는 화면 전용 값 */
+function nextSlot(){
+  var i;
+  for (i = 0; i < N; i++) if (!state.rna[i]) return i;
+  return -1;
+}
+function gridHtml(){
+  var h = '', i, ns = nextSlot();
+  var gw = CELL_W * N;
+  h += '<div class="promband"><div class="promlab"></div>' +
+       '<div class="prombox" style="width:' + (CELL_W * 3) + 'px"></div>' +
+       '<div class="promtx">◀ 프로모터 · 여기서 시작해 오른쪽으로 나아간다</div></div>';
+  h += '<div class="grow"><div class="rowlab tpl">DNA 주형 가닥<br>3′ →</div><div class="cells">';
+  for (i = 0; i < N; i++) h += '<div class="cell b-' + TPL.charAt(i) + '">' + TPL.charAt(i) + '</div>';
+  h += '</div><div class="endlab">5′</div></div>';
+  h += '<div class="grow"><div class="rowlab"></div><div class="cells bondrow">';
+  for (i = 0; i < N; i++) h += '<div class="bondc">' + (state.rna[i] ? '│' : '·') + '</div>';
+  h += '</div><div class="endlab"></div></div>';
+  h += '<div class="grow"><div class="rowlab rna">새로 만들어지는 RNA<br>5′ →</div><div class="cells">';
+  for (i = 0; i < N; i++){
+    var v = state.rna[i];
+    var cls = 'cell rnaslot' + (v ? ' filled b-' + v : '') + (i === ns ? ' next' : '');
+    var sty = '';
+    if (v && pourFrom >= 0 && i >= pourFrom){
+      cls += ' pour';
+      sty = ' style="animation-delay:' + (0.06 * (i - pourFrom)) + 's"';
+    }
+    h += '<div class="' + cls + '" id="rs_' + i + '"' + sty + '>' + (v ? v : (i === ns ? '?' : '')) + '</div>';
+  }
+  h += '</div><div class="endlab">3′</div></div>';
+  h += '<div class="grow"><div class="rowlab"></div><div class="cells" style="width:' + gw +
+       'px;justify-content:center"><span class="promtx">← 왼쪽부터 차례로 이어진다</span></div><div class="endlab"></div></div>';
+  return h;
+}
+function renderGrid(){
+  setHTML('txGrid', gridHtml());
+  pourFrom = -1;
+  var n = rnaFilled();
+  var pg = document.getElementById('gridProg');
+  if (pg) pg.textContent = '이은 염기 ' + n + ' / ' + N;
+  var info = '직접 이은 칸 ' + state.manual + ' / ' + MANUAL_MIN +
+             (state.usedAuto ? ' · 나머지는 자동 전사로 이었다' : '');
+  if (state.wrongT > 0) info += ' · 타이민 단추를 누른 횟수 ' + state.wrongT;
+  setHTML('gridInfo', info);
+  var ns = nextSlot();
+  RNA_BASES.concat(['T']).forEach(function(b){ setDisabled('nb_' + b, ns < 0); });
+  setDisabled('btnAuto', ns < 0);
+}
+function shakeSlot(i){
+  var el = document.getElementById('rs_' + i);
+  if (!el) return;
+  el.className = el.className + ' shake';
+}
+function putBase(b){
+  var i = nextSlot();
+  if (i < 0){
+    showFb('fb_grid', 'good', '이미 15개를 모두 이었다. ④ 로 넘어가시오.');
+    return;
+  }
+  var want = RNA_KEY.charAt(i), t = TPL.charAt(i);
+  if (b === 'T'){
+    state.wrongT++;
+    showFb('fb_grid', 'bad', '옳지 않다. <b>RNA 에는 타이민(T)이 없다.</b> ' +
+      'DNA 복제와 달리 전사에서는 A 에 상보적인 염기로 <b>U(유라실)</b> 를 쓴다.');
+    saveState();
+    renderGrid();
+    shakeSlot(i);          /* ★다시 그린 뒤에 걸어야 남는다 — 앞에 두면 renderGrid 가 지운다 */
+    return;
+  }
+  if (b !== want){
+    showFb('fb_grid', 'bad', '옳지 않다. ' + (i + 1) + '번째 자리의 주형 염기는 <b>' + t + '</b> 이므로 ' +
+      'RNA 에는 <b>' + want + '</b> 가 온다.');
+    saveState();
+    renderGrid();
+    shakeSlot(i);
+    return;
+  }
+  state.rna[i] = b;
+  state.manual++;
+  saveState();
+  renderGrid();
+  if (rnaDone()){
+    showFb('fb_grid', 'good', '🎉 15개를 모두 이었다. 만들어진 RNA 는 5′-<b>' + RNA_KEY + '</b>-3′ 이다.');
+  } else {
+    showFb('fb_grid', 'good', '옳다. 주형의 ' + t + ' 에는 ' + want + jo(want, '이', '가') + ' 온다.');
+  }
+  updateAll();
+}
+function autoTranscribe(){
+  if (state.manual < MANUAL_MIN){
+    showFb('fb_grid', 'warn', '아직 자동으로 넘어갈 수 없다. <b>' + MANUAL_MIN + '칸</b>을 직접 이어야 한다 — 지금 ' +
+      state.manual + '칸이다.');
+    return;
+  }
+  var i = nextSlot();
+  if (i < 0){
+    showFb('fb_grid', 'info', '이미 15개를 모두 이었다.');
+    return;
+  }
+  pourFrom = i;
+  for (; i < N; i++) state.rna[i] = RNA_KEY.charAt(i);
+  state.usedAuto = true;
+  saveState();
+  renderGrid();
+  showFb('fb_grid', 'good', '⚡ 나머지를 <b>합성 방향대로</b> 이었다. 만들어진 RNA 는 5′-<b>' + RNA_KEY + '</b>-3′ 이다.');
+  updateAll();
+}
+
+/* ══════════════════ 8. ④ 복제와 무엇이 다른가 ══════════════════
+   ★이름은 직접 해 본 뒤에 붙인다 — 「주형이 아닌 가닥」은 여기서 처음 나온다.
+   ★교과서에 없는 이름(암호 가닥 따위)을 지어내지 않는다.
+   ★대조표는 이 카드의 결론이다 — 견주기 전에는 보이지 않는다. */
+function diffAt(i){ return NTPL.charAt(i) !== RNA_KEY.charAt(i); }
+function cmpHtml(){
+  var h = '', i, named = !!state.named;
+  h += '<div class="grow"><div class="rowlab tpl">' + (named ? 'DNA 주형 가닥' : 'DNA 위 가닥') +
+       '<br>3′ →</div><div class="cells">';
+  for (i = 0; i < N; i++) h += '<div class="cell b-' + TPL.charAt(i) + '">' + TPL.charAt(i) + '</div>';
+  h += '</div><div class="endlab">5′</div></div>';
+  h += '<div class="grow"><div class="rowlab ntpl">' + (named ? '주형이 아닌 가닥' : 'DNA 아래 가닥') +
+       '<br>5′ →</div><div class="cells">';
+  for (i = 0; i < N; i++){
+    h += '<div class="cell b-' + NTPL.charAt(i) + (named && diffAt(i) ? ' diff' : '') + '">' + NTPL.charAt(i) + '</div>';
+  }
+  h += '</div><div class="endlab">3′</div></div>';
+  h += '<div class="grow"><div class="rowlab rna">' + (named ? '새로 만들어진 RNA' : '내가 만든 RNA') +
+       '<br>5′ →</div><div class="cells">';
+  for (i = 0; i < N; i++){
+    var v = state.rna[i];
+    h += '<div class="cell rnaslot' + (v ? ' filled b-' + v : '') + (named && v && diffAt(i) ? ' diff' : '') + '">' +
+         (v ? v : '') + '</div>';
+  }
+  h += '</div><div class="endlab">3′</div></div>';
+  return h;
+}
+function cmpBandHtml(){
+  if (!state.named) return '';
+  return '<div class="verdict good"><div class="vh">🔎 RNA 는 <b>주형이 아닌 가닥</b>과 글자가 같다.</div>' +
+    '<div class="vb">두 줄을 견주면 <b>T 자리에 U</b> 가 온 것 말고는 모두 같다(보라색으로 표시된 자리). ' +
+    'RNA 는 주형 가닥을 상보적으로 베낀 것이므로, 결과적으로 그 짝인 가닥과 같은 글자가 된다.</div></div>';
+}
+var CMP_ROWS = [
+  ['주형으로 쓰는 가닥',   '두 가닥 <b>모두</b>',            '두 가닥 가운데 <b>한 가닥</b>'],
+  ['A 에 짝지어지는 염기',  'T',                              '<b>U</b>'],
+  ['만들어지는 것',        'DNA 두 분자',                    'RNA 한 가닥'],
+  ['일하는 효소',          'DNA 중합효소',                   '<b>RNA 중합효소</b>'],
+  ['풀리는 범위',          'DNA 전체가 끝까지',              '<b>중합효소가 있는 자리만</b>'],
+  ['만든 것의 운명',       '주형과 짝을 이룬 채 남는다',      '<b>떨어져 나와 방출된다</b>']
+];
+function cmpTableHtml(){
+  if (!state.named) return '';
+  var h = '<div class="tbl-outer"><table class="t"><tr><th>견주는 자리</th><th class="dna">DNA 복제</th><th class="rna">전사</th></tr>';
+  CMP_ROWS.forEach(function(r){
+    h += '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td><td>' + r[2] + '</td></tr>';
+  });
+  h += '</table></div>';
+  return h;
+}
+function compareRows(){
+  if (!rnaDone()){
+    showFb('fb_result', 'warn', '아직 견줄 수 없다. ③ 에서 RNA 를 <b>끝까지</b> 이어야 한다 — 지금 ' +
+      rnaFilled() + ' / ' + N + ' 이다.');
+    return;
+  }
+  state.named = true;
+  saveState();
+  renderResult();
+  showFb('fb_result', 'good', '세 줄에 이름을 붙였다. 아래 표에서 복제와 전사를 견주시오.');
+  updateAll();
+}
+function renderResult(){
+  setHTML('cmpGrid', cmpHtml());
+  setHTML('cmpBand', cmpBandHtml());
+  setHTML('cmpTable', cmpTableHtml());
+  var b = document.getElementById('btnName');
+  if (b) b.textContent = state.named ? '🔎 견주기 완료' : '🔎 세 줄을 견주어 보기';
+}
+
+/* ══════════════════ 9. ⑤ 전사되는 RNA 는 한 종류가 아니다 ══════════════════
+   교과서 63쪽 둘째 문단 — mRNA · rRNA · tRNA 는 모두 전사로 만들어진다. */
+var RN_GENES = [
+  { k:'m', mark:'㉮', x:150, name:'mRNA', full:'전령 RNA',   color:C_RNA,
+    role:'단백질합성 <b>정보</b>를 라이보솜에 전달한다.' },
+  { k:'r', mark:'㉯', x:350, name:'rRNA', full:'라이보솜 RNA', color:C_RIBO,
+    role:'<b>라이보솜을 구성</b>하는 주요 성분으로, 단백질합성을 촉진하는 핵심적인 역할을 한다.' },
+  { k:'t', mark:'㉰', x:550, name:'tRNA', full:'운반 RNA',   color:C_TRNA,
+    role:'단백질합성을 위해 <b>아미노산을 라이보솜으로 운반</b>한다.' }
+];
+function rnShape(g){
+  var y = 210, s = '';
+  if (g.k === 'm'){
+    s += '<path d="M' + (g.x - 56) + ',' + y + ' q14,-14 28,0 q14,14 28,0 q14,-14 28,0" fill="none" stroke="' +
+         g.color + '" stroke-width="7" stroke-linecap="round"/>';
+    s += '<circle cx="' + (g.x - 46) + '" cy="' + (y - 6) + '" r="2.4" fill="#fff"/>';
+  } else if (g.k === 'r'){
+    s += '<ellipse cx="' + g.x + '" cy="' + (y - 8) + '" rx="34" ry="17" fill="' + g.color + '"/>';
+    s += '<ellipse cx="' + g.x + '" cy="' + (y + 14) + '" rx="26" ry="12" fill="' + g.color + '" fill-opacity=".75"/>';
+    s += '<circle cx="' + (g.x - 14) + '" cy="' + (y - 12) + '" r="3" fill="#fff"/>';
+  } else {
+    s += '<path d="M' + (g.x - 22) + ',' + (y - 20) + ' L' + (g.x + 22) + ',' + (y - 20) + ' L' + g.x + ',' + (y + 20) +
+         ' Z" fill="' + g.color + '"/>';
+    s += '<circle cx="' + (g.x - 22) + '" cy="' + (y - 20) + '" r="7" fill="' + g.color + '"/>';
+    s += '<circle cx="' + (g.x + 22) + '" cy="' + (y - 20) + '" r="7" fill="' + g.color + '"/>';
+    s += '<circle cx="' + g.x + '" cy="' + (y - 8) + '" r="3" fill="#fff"/>';
+  }
+  s += txt('', g.x, y + 46, g.name, 15, g.color, 'middle', 800);
+  return s;
+}
+function rnStageSvg(){
+  var s = '', seen = rnaSeenCount();
+  s += '<rect x="40" y="62" width="620" height="10" rx="5" fill="' + C_DNA + '"/>';
+  s += '<rect x="40" y="86" width="620" height="10" rx="5" fill="' + C_DNA + '" fill-opacity=".55"/>';
+  s += txt('', 40, 44, '하나의 DNA — 서로 다른 자리에 서로 다른 유전자가 있다', 14, C_DNA_INK, 'start', 700);
+  RN_GENES.forEach(function(g){
+    var on = !!state.rnaSeen[g.k], cur = (state.rnaLast === g.k);
+    s += '<g class="genepick" onclick="pickGene(\'' + g.k + '\')">';
+    s += '<rect x="' + (g.x - 62) + '" y="56" width="124" height="46" rx="9" fill="' + (on ? g.color : '#EEF0F3') +
+         '" fill-opacity="' + (on ? '.30' : '1') + '" stroke="' + (cur ? g.color : (on ? g.color : '#B9C2CC')) +
+         '" stroke-width="' + (cur ? 4 : 2.2) + '"/>';
+    s += txt('', g.x, 84, '유전자 ' + g.mark, 15, on ? g.color : '#5A6270', 'middle', 800);
+    s += '</g>';
+    if (on){
+      s += '<path d="M' + g.x + ',108 L' + g.x + ',150" stroke="' + g.color + '" stroke-width="2.4" stroke-dasharray="6,4"/>';
+      s += '<path d="M' + (g.x - 7) + ',148 L' + g.x + ',160 L' + (g.x + 7) + ',148 Z" fill="' + g.color + '"/>';
+      s += txt('', g.x + 12, 140, '전사', 13, g.color, 'start', 700);
+      s += rnShape(g);
+    } else {
+      s += txt('', g.x, 150, '눌러 보시오', 13.5, '#9AA1AC', 'middle', 400);
+    }
+  });
+  if (seen === 3){
+    s += '<rect x="120" y="282" width="460" height="30" rx="15" fill="' + C_RIBO + '"/>';
+    s += txt('', 350, 302, 'mRNA · rRNA · tRNA 는 모두 전사로 만들어진다', 15, '#fff', 'middle', 800);
+  }
+  return s;
+}
+function rnaInfoHtml(){
+  var k = state.rnaLast, g = null;
+  RN_GENES.forEach(function(x){ if (x.k === k) g = x; });
+  if (!g) return '<span class="cnt">유전자 ㉮ ㉯ ㉰ 를 누르면 어떤 RNA 가 만들어지는지 여기에 나온다.</span>';
+  return '<div class="ih" style="color:' + g.color + '">' + g.name + ' — ' + g.full + '</div>' +
+         '<div class="ib">' + g.role + '</div>';
+}
+function rnaKindsHtml(){
+  var h = '';
+  RN_GENES.forEach(function(g){
+    h += '<span class="kind' + (state.rnaSeen[g.k] ? ' seen' : '') + '">' + g.name + '</span>';
+  });
+  return h;
+}
+function pickGene(k){
+  state.rnaSeen[k] = true;
+  state.rnaLast = k;
+  saveState();
+  renderRnaCard();
+  updateAll();
+}
+function renderRnaCard(){
+  setHTML('rnStage', rnStageSvg());
+  var box = document.getElementById('rnaInfo');
+  if (box){
+    box.className = 'infocard' + (state.rnaLast ? ' ' + state.rnaLast : '');
+    box.innerHTML = rnaInfoHtml();
+  }
+  setHTML('rnaKinds', rnaKindsHtml());
+  var pg = document.getElementById('rnaProg');
+  if (pg) pg.textContent = '본 종류 ' + rnaSeenCount() + ' / 3';
+}
+
+/* ══════════════════ 10. ⑥ 원핵과 진핵 — 어디서 일어나는가 ══════════════════
+   교과서 65쪽 끝 — 원핵세포는 전사가 시작되면 곧바로 번역이 시작되고,
+   진핵세포는 전사 뒤 mRNA 가 핵공을 지나 세포질로 나간 다음 번역이 일어난다. */
+var CELL_ANS = { pro:1, euk:2 };
+var CELL_SPOT = {
+  pro:[ { n:1, x:290, y:120, t:'전사 중인 RNA' }, { n:2, x:290, y:206, t:'전사가 끝난 RNA' } ],
+  euk:[ { n:1, x:480, y:138, t:'핵 안' },        { n:2, x:640, y:238, t:'세포질' } ]
+};
+function spotSvg(side, sp){
+  var picked = state.cellPick[side] === sp.n;
+  var right = (picked && sp.n === CELL_ANS[side]);
+  var col = !picked ? '#8A93A0' : (right ? '#2A7A38' : '#C0392B');
+  var mark = (sp.n === 1) ? '㉠' : '㉡';
+  var s = '<g style="cursor:pointer" onclick="pickCell(&#39;' + side + '&#39;,' + sp.n + ')">';
+  s += '<circle cx="' + sp.x + '" cy="' + sp.y + '" r="20" fill="#fff" stroke="' + col + '" stroke-width="' +
+       (picked ? 4 : 2.4) + '"/>';
+  s += txt('', sp.x, sp.y + 6, mark, 16, col, 'middle', 800);
+  s += txt('', sp.x, sp.y + 34, sp.t, 12, '#5A6270', 'middle', 600);
+  s += '</g>';
+  return s;
+}
+/* 물결 모양 RNA 한 도막 — 시작점과 길이만 받는다 */
+function wave(x, y, w, col, op){
+  var q = w / 4;
+  return '<path d="M' + x + ',' + y + ' q' + (q / 2) + ',-11 ' + q + ',0 q' + (q / 2) + ',11 ' + q +
+         ',0 q' + (q / 2) + ',-11 ' + q + ',0 q' + (q / 2) + ',11 ' + q + ',0" fill="none" stroke="' + col +
+         '" stroke-width="5" stroke-linecap="round"' + (op ? ' opacity="' + op + '"' : '') + '/>';
+}
+function riboSvg(x, y, dim){
+  return '<ellipse cx="' + x + '" cy="' + y + '" rx="19" ry="12" fill="' + C_RIBO +
+         (dim ? '" fill-opacity=".55' : '') + '"/><circle cx="' + (x - 7) + '" cy="' + (y - 4) +
+         '" r="2.6" fill="#fff"/>';
+}
+function clStageSvg(){
+  var s = '';
+  /* ── 원핵세포 — 핵막이 없다 ── */
+  s += '<rect x="16" y="34" width="324" height="268" rx="26" fill="#FBFCFE" stroke="#8A93A0" stroke-width="2.5"/>';
+  s += txt('', 178, 24, '원핵세포 — 핵막이 없다', 15, C_INK, 'middle', 800);
+  s += '<rect x="46" y="62" width="264" height="9" rx="4.5" fill="' + C_DNA + '"/>';
+  s += txt('', 46, 54, 'DNA', 12.5, C_DNA_INK, 'start', 700);
+  s += '<ellipse cx="132" cy="67" rx="26" ry="22" fill="' + C_POL + '" fill-opacity=".18" stroke="' + C_POL + '" stroke-width="2.4"/>';
+  s += '<path d="M132,86 q16,20 34,30" fill="none" stroke="' + C_RNA + '" stroke-width="5" stroke-linecap="round"/>';
+  s += riboSvg(182, 126, false);
+  s += txt('', 46, 130, '전사가 끝나기 전에', 12.5, '#5A6270', 'start', 600);
+  s += txt('', 46, 146, '라이보솜이 붙었다', 12.5, '#5A6270', 'start', 600);
+  s += wave(60, 200, 108, C_RNA, '');
+  s += riboSvg(196, 206, true);
+  s += txt('', 60, 178, '전사가 끝나 떨어진 RNA', 12.5, '#5A6270', 'start', 600);
+  /* ── 진핵세포 — 핵막이 있다 ── */
+  s += '<rect x="356" y="34" width="330" height="268" rx="26" fill="#FBFCFE" stroke="#8A93A0" stroke-width="2.5"/>';
+  s += txt('', 521, 24, '진핵세포 — 핵막이 있다', 15, C_INK, 'middle', 800);
+  s += '<ellipse cx="452" cy="104" rx="80" ry="56" fill="#EFF1F5" stroke="#8A93A0" stroke-width="2.5"/>';
+  s += txt('', 392, 62, '핵', 13, '#5A6270', 'start', 700);
+  s += '<rect x="404" y="96" width="104" height="9" rx="4.5" fill="' + C_DNA + '"/>';
+  s += '<ellipse cx="436" cy="101" rx="22" ry="18" fill="' + C_POL + '" fill-opacity=".18" stroke="' + C_POL + '" stroke-width="2.2"/>';
+  s += '<path d="M436,118 q14,14 30,20" fill="none" stroke="' + C_RNA + '" stroke-width="5" stroke-linecap="round"/>';
+  s += '<circle cx="532" cy="104" r="8" fill="#fff" stroke="#8A93A0" stroke-width="2.2"/>';
+  s += txt('', 544, 94, '핵공', 12.5, '#5A6270', 'start', 600);
+  s += '<path d="M540,112 q34,40 66,64" fill="none" stroke="' + C_RNA + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="9,6"/>';
+  s += wave(560, 196, 96, C_RNA, '');
+  s += riboSvg(646, 202, false);
+  /* ★「핵공을 지나 나온 mRNA」 라는 글은 넣지 않는다 — 핵공 이름표와 점선이 이미 그 말을 하고 있고,
+     둘 곳마다 점선·㉡ 과 겹쳤다(실측). 보면 아는 것을 글로 또 적지 않는다. */
+  /* 고르는 자리 */
+  CELL_SPOT.pro.forEach(function(sp){ s += spotSvg('pro', sp); });
+  CELL_SPOT.euk.forEach(function(sp){ s += spotSvg('euk', sp); });
+  return s;
+}
+function cellVerdictHtml(){
+  var h = '', done = 0;
+  ['pro', 'euk'].forEach(function(side){
+    var p = state.cellPick[side];
+    if (!p) return;
+    done++;
+    var right = (p === CELL_ANS[side]);
+    var nm = (side === 'pro') ? '원핵세포' : '진핵세포';
+    var body = (side === 'pro')
+      ? (right
+         ? '옳다. 핵막이 없으므로 <b>전사가 일어나 RNA 가닥이 생기기 시작하면 곧바로 번역이 시작된다.</b>'
+         : '옳지 않다. 원핵세포에서는 전사가 끝나기를 기다리지 않는다. 전사 중인 RNA 에 라이보솜이 바로 붙는다.')
+      : (right
+         ? '옳다. 핵 안의 DNA 에서 전사가 일어난 뒤, <b>mRNA 가 핵공을 지나 세포질로 이동한 다음</b> 번역이 일어난다.'
+         : '옳지 않다. 핵 안에는 라이보솜이 없다. 번역은 mRNA 가 핵 밖으로 나간 뒤 세포질에서 일어난다.');
+    h += '<div class="verdict ' + (right ? 'good' : 'bad') + '"><div class="vh">' +
+         (right ? '✅ ' : '❌ ') + nm + '</div><div class="vb">' + body + '</div></div>';
+  });
+  if (done === 0) h = '<span class="cnt">두 세포에서 ㉠ 또는 ㉡ 을 하나씩 찍으시오.</span>';
+  return h;
+}
+function pickCell(side, n){
+  state.cellPick[side] = n;
+  saveState();
+  renderCellCard();
+  updateAll();
+}
+function renderCellCard(){
+  setHTML('clStage', clStageSvg());
+  setHTML('cellVerdict', cellVerdictHtml());
+}
+
+/* ══════════════════ 11. 문항 ══════════════════
+   { id, q, ch[4], a, no[4], ex, lv?, hint?[2], dat?[] }
+   ★no[a] 는 빈 문자열이다. 오답 해설은 「옳지 않다.」로 시작한다.
+   ★id 가 p 로 시작하면 💪 더 풀어 보기로 분류된다(완료 판정 밖). */
+var Q_STRAND = [
+  { id:'t1',
+    q:'DNA 두 가닥 가운데 <b>주형으로 쓰이는 가닥</b>은 무엇이 정하는가?',
+    ch:['언제나 위쪽 가닥이 주형이 된다.',
+        '두 가닥이 모두 주형으로 쓰인다.',
+        '프로모터의 위치가 정한다.',
+        '염기 개수가 많은 가닥이 주형이 된다.'],
+    a:2,
+    no:['옳지 않다. 그림에서 위쪽에 그렸을 뿐이다. 프로모터가 반대쪽에 있으면 아래 가닥이 주형이 된다.',
+        '옳지 않다. 두 가닥이 모두 주형으로 쓰이는 것은 DNA 복제이다.',
+        '',
+        '옳지 않다. 두 가닥은 염기 개수가 서로 같다.'],
+    ex:'RNA 중합효소는 프로모터에 결합한 뒤 한쪽으로 나아가며 주형을 3′ 쪽에서부터 읽고, RNA 를 5′ → 3′ 로 잇는다. ' +
+       '그러므로 프로모터가 어느 쪽에 있느냐가 두 가닥 가운데 어느 것이 주형인지를 정한다.' }
+];
+var Q_STAGE = [
+  { id:'t2',
+    q:'전사가 진행되는 동안 중합효소가 <b>지나간 자리</b>의 DNA 는 어떻게 되는가?',
+    ch:['풀린 채로 그대로 남는다.',
+        '다시 이중나선을 형성한다.',
+        '두 가닥이 끊어져 잘려 나간다.',
+        '새로운 DNA 가닥이 채운다.'],
+    a:1,
+    no:['옳지 않다. 풀려 있는 자리는 중합효소가 있는 부위뿐이다.',
+        '',
+        '옳지 않다. 전사에서 DNA 가닥이 끊어지지는 않는다.',
+        '옳지 않다. 전사에서 만들어지는 것은 DNA 가 아니라 RNA 이다.'],
+    ex:'RNA 중합효소는 있는 자리만 풀고, 합성이 완료된 부위의 DNA 는 다시 이중나선을 형성한다. ' +
+       '만들어진 RNA 는 주형 가닥에서 떨어져 나오고, 전사가 끝나면 RNA 가 방출되고 중합효소도 DNA 에서 떨어진다.' }
+];
+var Q_GRID = [
+  { id:'t3',
+    q:'주형 가닥의 <b>A</b> 자리에는 RNA 의 어떤 염기가 오는가?',
+    ch:['T(타이민)이다.', 'A(아데닌)이다.', 'G(구아닌)이다.', 'U(유라실)이다.'],
+    a:3,
+    no:['옳지 않다. RNA 에는 타이민이 없다. DNA 복제와 달리 전사에서는 A 에 U 를 쓴다.',
+        '옳지 않다. 같은 염기가 오는 것이 아니라 상보적인 염기가 온다.',
+        '옳지 않다. G 는 주형의 C 자리에 오는 염기이다.',
+        ''],
+    ex:'전사는 주형 가닥에 상보적인 라이보뉴클레오타이드를 잇는 과정이다. ' +
+       'T 자리에는 A, G 자리에는 C, C 자리에는 G 가 오고, <b>A 자리에는 T 가 아니라 U</b> 가 온다.' }
+];
+var Q_RESULT = [
+  { id:'t4',
+    q:'DNA 복제와 전사를 견주었을 때 <b>전사에만</b> 해당하는 것은 무엇인가?',
+    ch:['주형에 상보적인 염기를 이어 붙인다.',
+        '두 가닥 가운데 한 가닥만 주형으로 쓴다.',
+        '5′ → 3′ 방향으로 합성한다.',
+        '이중나선이 풀린 자리에서 일어난다.'],
+    a:1,
+    no:['옳지 않다. 복제와 전사 모두 주형에 상보적인 염기를 잇는다.',
+        '',
+        '옳지 않다. 복제와 전사 모두 5′ → 3′ 방향으로 합성한다.',
+        '옳지 않다. 복제와 전사 모두 이중나선이 풀린 자리에서 일어난다.'],
+    ex:'DNA 복제에서는 두 가닥이 모두 주형이 되어 딸 DNA 두 분자가 만들어진다. ' +
+       '전사에서는 두 가닥 가운데 한 가닥만 주형으로 쓰이고, 만들어진 RNA 는 떨어져 나온다.' }
+];
+var Q_RNA = [
+  { id:'t5',
+    q:'전사로 만들어지는 RNA 에 대한 설명으로 옳은 것은 무엇인가?',
+    ch:['전사로 만들어지는 것은 mRNA 뿐이다.',
+        'tRNA 는 라이보솜이 만들어 낸다.',
+        'rRNA 와 tRNA 도 전사로 만들어진다.',
+        'rRNA 는 단백질을 잘라 만든다.'],
+    a:2,
+    no:['옳지 않다. mRNA 말고도 rRNA 와 tRNA 가 전사로 만들어진다.',
+        '옳지 않다. tRNA 도 DNA 의 유전자를 주형으로 전사된다.',
+        '',
+        '옳지 않다. rRNA 는 단백질이 아니라 DNA 를 주형으로 전사된 RNA 이다.'],
+    ex:'RNA 에는 전령 RNA(mRNA), 라이보솜 RNA(rRNA), 운반 RNA(tRNA) 등 여러 종류가 있고 모두 전사로 만들어진다. ' +
+       'mRNA 는 단백질합성 정보를 라이보솜에 전달하고, rRNA 는 라이보솜을 구성하는 주요 성분이며, tRNA 는 아미노산을 라이보솜으로 운반한다.' }
+];
+var Q_CELL = [
+  { id:'t6',
+    q:'원핵세포에서 전사가 끝나기 전에 번역이 시작될 수 있는 까닭은 무엇인가?',
+    ch:['핵막이 없어 전사와 번역이 한자리에서 일어난다.',
+        '원핵세포의 RNA 중합효소가 진핵세포보다 빠르게 움직인다.',
+        '원핵세포에는 라이보솜의 수가 훨씬 많다.',
+        '원핵세포의 mRNA 가 진핵세포보다 짧다.'],
+    a:0,
+    no:['',
+        '옳지 않다. 효소가 일하는 빠르기의 문제가 아니라 전사와 번역이 일어나는 장소의 문제이다.',
+        '옳지 않다. 라이보솜의 수가 많다고 해서 전사 중에 번역이 시작되지는 않는다.',
+        '옳지 않다. mRNA 의 길이가 짧다고 해서 전사 중에 번역이 시작되지는 않는다.'],
+    ex:'핵이 없는 원핵세포에서는 전사가 일어나 RNA 가닥이 생기기 시작하면 곧바로 번역이 시작된다. ' +
+       '핵이 있는 진핵세포에서는 핵 안의 DNA 에서 전사가 일어난 뒤 mRNA 가 핵공을 통해 세포질로 이동한 다음 번역이 일어난다.' }
+];
+var PRACTICE = [
+  { id:'p1', lv:'중',
+    q:'프로모터가 이 유전자의 <b>반대쪽 끝</b>에 있다면 어느 가닥이 주형이 되는가?',
+    ch:['지금과 같은 가닥이 주형이 된다.',
+        '두 가닥이 모두 주형이 된다.',
+        '어느 가닥도 주형이 되지 못한다.',
+        '지금과 반대쪽 가닥이 주형이 된다.'],
+    a:3,
+    no:['옳지 않다. 중합효소가 나아가는 방향이 반대가 되므로 주형도 바뀐다.',
+        '옳지 않다. 한 번의 전사에서 주형으로 쓰이는 가닥은 하나이다.',
+        '옳지 않다. 프로모터가 있으면 그쪽에서 전사가 시작된다.',
+        ''],
+    ex:'중합효소는 프로모터에서 출발해 한쪽으로 나아가며 주형을 3′ 쪽에서부터 읽는다. ' +
+       '프로모터가 반대쪽에 있으면 나아가는 방향이 반대가 되므로, 그 방향으로 3′ → 5′ 로 읽히는 가닥, 곧 지금과 반대쪽 가닥이 주형이 된다.' },
+
+  { id:'p2', lv:'중',
+    q:'DNA 복제와 전사에서 <b>주형으로 쓰이는 가닥의 수</b>는 각각 몇 개인가?',
+    ch:['복제 1개 · 전사 2개', '복제 2개 · 전사 2개', '복제 2개 · 전사 1개', '복제 1개 · 전사 1개'],
+    a:2,
+    no:['옳지 않다. 두 값이 서로 뒤바뀌었다.',
+        '옳지 않다. 전사에서는 두 가닥 가운데 한 가닥만 주형으로 쓰인다.',
+        '',
+        '옳지 않다. 복제에서는 두 가닥이 모두 주형이 되어 딸 DNA 두 분자가 만들어진다.'],
+    ex:'DNA 복제는 두 가닥이 모두 주형이 되어 각각 새 가닥을 거느린 딸 DNA 두 분자를 만든다. ' +
+       '전사는 두 가닥 가운데 한 가닥만 주형으로 쓰고 RNA 한 가닥을 만든다.' },
+
+  { id:'p3', lv:'상',
+    q:'어떤 RNA 의 일부가 5′-AUGCCUAG-3′ 이다. 이 RNA 를 만든 <b>주형 가닥</b>의 염기서열은 무엇인가?',
+    ch:['5′-TACGGATC-3′', '3′-TACGGATC-5′', '3′-ATGCCTAG-5′', '3′-CTAGGCAT-5′'],
+    a:1,
+    no:['옳지 않다. 염기 차례는 맞으나 방향 표시가 뒤집혀 있다. RNA 의 5′ 끝과 마주 보는 주형의 끝은 3′ 이다.',
+        '',
+        '옳지 않다. RNA 의 U 를 T 로 바꾸기만 한 것이다. 주형은 상보적인 서열이어야 한다.',
+        '옳지 않다. 상보 서열을 거꾸로 적은 것이다.'],
+    ex:'주형과 RNA 는 서로 상보적이고 방향이 반대이다. RNA 를 5′ → 3′ 로 놓고 자리마다 상보적인 DNA 염기를 적으면 ' +
+       'A↔T, U↔A, G↔C, C↔G 가 되어 주형은 3′-TACGGATC-5′ 이다.',
+    hint:['RNA 의 각 염기에 상보적인 DNA 염기를 자리마다 적어 보시오. U 에는 A 가, A 에는 T 가 온다.',
+          '주형 가닥과 RNA 는 방향이 서로 반대이다. RNA 의 5′ 끝과 마주 보는 주형의 끝은 3′ 이다.'] },
+
+  { id:'p4', lv:'상',
+    q:'아래 DNA 에서 전사되는 RNA 의 <b>처음 세 염기</b>는 무엇인가?',
+    dat:['위 가닥 <span class="seq">5′-TACGGATC-3′</span>',
+         '아래 가닥 <span class="seq">3′-ATGCCTAG-5′</span>',
+         '프로모터는 <b>오른쪽 끝</b>에 있다'],
+    ch:['GAU', 'UAC', 'CUA', 'AUG'],
+    a:0,
+    no:['',
+        '옳지 않다. 위 가닥을 왼쪽부터 옮겨 적고 T 를 U 로 바꾼 값이다. 프로모터가 오른쪽에 있으므로 왼쪽부터 읽지 않는다.',
+        '옳지 않다. 주형을 오른쪽부터 읽기는 했으나 상보적인 염기로 바꾸지 않았다.',
+        '옳지 않다. 아래 가닥을 왼쪽부터 옮겨 적은 값이다.'],
+    ex:'프로모터가 오른쪽에 있으므로 중합효소는 왼쪽으로 나아가고, 주형은 오른쪽 끝이 3′ 인 위 가닥이다. ' +
+       '위 가닥을 오른쪽부터 C · T · A 로 읽고 상보적인 염기를 이으면 RNA 는 5′-G A U …-3′ 이 된다.',
+    hint:['프로모터가 오른쪽에 있으므로 중합효소는 왼쪽으로 나아간다. 두 가닥 가운데 오른쪽 끝이 3′ 인 가닥을 찾으시오.',
+          '주형을 3′ 쪽에서부터 한 염기씩 읽으며 상보적인 염기를 잇는다. 주형의 C 에는 G 가, T 에는 A 가, A 에는 U 가 온다.'] }
+];
+
+/* ══════════════════ 12. ⑦ 정리하기 ══════════════════ */
+var WRITEQ = [
+  { id:'w1', min:60,
+    q:'전사가 <b>개시 · 신장 · 종결</b>의 세 단계로 진행되는 과정을 순서대로 서술하시오.',
+    need:['RNA 중합효소가 프로모터에 결합한다는 점', 'DNA 이중나선이 풀리고 한 가닥이 주형이 된다는 점',
+          '상보적인 라이보뉴클레오타이드를 5′ → 3′ 방향으로 잇는다는 점',
+          '합성된 RNA 가 방출되고 중합효소가 DNA 에서 떨어진다는 점'],
+    ans:'RNA 중합효소가 프로모터에 결합하여 DNA 이중나선을 풀고 RNA 합성을 시작한다(개시). ' +
+        '풀린 두 가닥 가운데 한 가닥을 주형으로 삼아, 상보적인 라이보뉴클레오타이드를 5′ → 3′ 방향으로 연결해 RNA 를 합성한다(신장). ' +
+        '이때 합성된 RNA 는 주형 가닥에서 떨어져 나오고, 합성이 완료된 부위의 DNA 는 다시 이중나선을 형성한다. ' +
+        '전사가 끝나면 합성된 RNA 가 방출되고 RNA 중합효소도 DNA 에서 떨어져 나온다(종결).' },
+
+  { id:'w2', min:60,
+    q:'DNA 복제와 전사의 <b>차이</b>를 세 가지 이상 들어 서술하시오.',
+    need:['주형으로 쓰이는 가닥의 수', 'A 에 짝지어지는 염기', '만들어지는 물질과 그 뒤의 운명'],
+    ans:'첫째, 복제는 두 가닥이 모두 주형이 되지만 전사는 두 가닥 가운데 한 가닥만 주형으로 쓴다. ' +
+        '둘째, 복제에서는 A 에 T 가 짝지어지지만 전사에서는 A 에 U(유라실)가 짝지어진다. ' +
+        '셋째, 복제는 DNA 두 분자를 만들고 새 가닥은 주형과 짝을 이룬 채 남지만, 전사는 RNA 한 가닥을 만들고 그 RNA 는 주형에서 떨어져 나와 방출된다. ' +
+        '그 밖에 복제는 DNA 중합효소가, 전사는 RNA 중합효소가 맡고, 복제는 DNA 전체를 대상으로 하지만 전사는 필요한 유전자 부위에서만 일어난다.' },
+
+  { id:'w3', min:60,
+    q:'DNA 두 가닥 가운데 <b>한 가닥만</b> 주형으로 쓰인다. 그 가닥이 어떻게 정해지는지 서술하시오.',
+    need:['프로모터의 위치', '중합효소가 주형을 3′ 쪽에서부터 읽는다는 점', 'RNA 가 5′ → 3′ 로 만들어진다는 점'],
+    ans:'RNA 중합효소는 유전자 앞의 조절 부위인 프로모터에 결합하여 한쪽 방향으로 나아간다. ' +
+        '중합효소는 주형 가닥을 3′ 쪽에서부터 읽으면서 RNA 를 5′ → 3′ 방향으로 잇는다. ' +
+        '그러므로 중합효소가 나아가는 방향으로 3′ → 5′ 로 놓인 가닥, 곧 프로모터 쪽 끝이 3′ 인 가닥이 주형이 된다. ' +
+        '프로모터가 반대쪽에 있으면 나아가는 방향이 반대가 되어 다른 가닥이 주형이 된다.' },
+
+  { id:'w4', min:100, creative:true,
+    q:'<b>💪 창의력.</b> 어떤 세포의 RNA 중합효소가 <b>프로모터를 알아보지 못하게</b> 되었다고 하자. ' +
+      '이 세포에 어떤 일이 일어날지 예상하고 그 까닭을 쓰시오.',
+    need:['전사가 시작되지 못한다는 점', 'mRNA 가 없어 번역도 일어나지 못한다는 점',
+          'rRNA 와 tRNA 까지 함께 만들어지지 못한다는 점', '자기 예상과 그 근거'],
+    ans:'프로모터는 RNA 중합효소가 결합하여 전사가 시작되는 곳이다. 중합효소가 이곳을 알아보지 못하면 어디서부터 읽을지 정해지지 않으므로 ' +
+        '전사 자체가 시작되지 못한다. 전사가 없으면 mRNA 가 만들어지지 않고, 라이보솜에 전달할 정보가 없으므로 번역도 일어나지 못한다. ' +
+        '게다가 rRNA 와 tRNA 도 전사로 만들어지므로, 라이보솜을 새로 만들 수도 없고 아미노산을 나를 tRNA 도 새로 얻을 수 없다. ' +
+        '곧 이 세포는 새 단백질을 하나도 만들지 못하게 된다. DNA 는 그대로 남아 있어 유전정보 자체는 손상되지 않지만, ' +
+        '정보를 꺼내 쓰는 길이 막힌 셈이므로 이미 있던 단백질이 낡아 없어지는 대로 생명 활동이 멈추리라고 예상한다.' }
+];
+var SELFCHECK = [
+  { id:'s1', k:'지식·이해', t:'전사의 개시 · 신장 · 종결 과정을 설명할 수 있는가?' },
+  { id:'s2', k:'과정·기능', t:'주어진 주형 가닥으로부터 RNA 의 염기서열을 적어 보았는가?' },
+  { id:'s3', k:'가치·태도', t:'모형과 모의실험이 눈에 보이지 않는 과정을 이해하는 데 도움이 된다는 것을 인식하였는가?' }
+];
+
+/* ══════════════════ 13. 문항 엔진 ══════════════════
+   ★답은 몇 번이든 고칠 수 있다. 정오는 기록하지 않는다 — 마지막 선택만 화면 복원용으로 저장한다. */
+var qEls = {};
+function ALLQ(){ return [].concat(Q_STRAND, Q_STAGE, Q_GRID, Q_RESULT, Q_RNA, Q_CELL, PRACTICE); }
+function qById(id){
+  var L = ALLQ(), i;
+  for (i = 0; i < L.length; i++){ if (L[i].id === id) return L[i]; }
+  return null;
+}
+function pickStore(id){ return (id.indexOf('p') === 0) ? state.pPick : state.qPick; }
+function answeredOf(list, store){
+  var n = 0;
+  list.forEach(function(p){ if (store[p.id] !== undefined) n++; });
+  return n;
+}
+function renderQuizInto(list, boxId, colorCls){
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  box.innerHTML = '';
+  list.forEach(function(p, idx){
+    var card = document.createElement('div');
+    card.className = 'pq-card';
+
+    var q = document.createElement('div');
+    q.className = 'qtext';
+    q.innerHTML = '<span class="qno' + (colorCls ? ' ' + colorCls : '') + '">' + (idx + 1) + '</span>' +
+                  (p.lv ? '<span class="lv">' + p.lv + '</span>' : '') + p.q;
+    card.appendChild(q);
+
+    if (p.dat){
+      var dat = document.createElement('div');
+      dat.className = 'datbox';
+      dat.innerHTML = '<b>[자료]</b><ul><li>' + p.dat.join('</li><li>') + '</li></ul>';
+      card.appendChild(dat);
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'choices';
+    var btns = [];
+    p.ch.forEach(function(label, i){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.innerHTML = label;
+      b.onclick = (function(pid, k){ return function(){ pickQ(pid, k); }; })(p.id, i);
+      wrap.appendChild(b);
+      btns.push(b);
+    });
+    card.appendChild(wrap);
+
+    /* 힌트 2단 — 1단(어디를 볼 것인가)을 연 뒤에 2단(판단 기준)이 열린다. 기록하지 않는다. */
+    if (p.hint && p.hint.length === 2){
+      var hw = document.createElement('div');
+      hw.className = 'hintwrap';
+      var hb1 = document.createElement('button');
+      hb1.type = 'button'; hb1.className = 'hintbtn'; hb1.textContent = '💡 힌트 보기';
+      var hx1 = document.createElement('div');
+      hx1.className = 'hintbox'; hx1.style.display = 'none';
+      hx1.innerHTML = '<b>힌트 ① 어디를 볼 것인가</b><br>' + p.hint[0];
+      var hb2 = document.createElement('button');
+      hb2.type = 'button'; hb2.className = 'hintbtn'; hb2.textContent = '💡 힌트를 하나 더 보기';
+      hb2.style.display = 'none';
+      var hx2 = document.createElement('div');
+      hx2.className = 'hintbox'; hx2.style.display = 'none';
+      hx2.innerHTML = '<b>힌트 ② 판단 기준</b><br>' + p.hint[1];
+      hb1.onclick = function(){
+        hx1.style.display = 'block'; hb1.style.display = 'none'; hb2.style.display = 'inline-block';
+      };
+      hb2.onclick = function(){ hx2.style.display = 'block'; hb2.style.display = 'none'; };
+      hw.appendChild(hb1); hw.appendChild(hx1); hw.appendChild(hb2); hw.appendChild(hx2);
+      card.appendChild(hw);
+    }
+
+    var ex = document.createElement('div');
+    ex.className = 'expl';
+    ex.style.display = 'none';
+    card.appendChild(ex);
+
+    box.appendChild(card);
+    qEls[p.id] = { choices:btns, expl:ex };
+    paintQ(p.id);
+  });
+}
+function paintQ(id){
+  var p = qById(id), els = qEls[id];
+  if (!p || !els) return;
+  var picked = pickStore(id)[id];
+  els.choices.forEach(function(b, i){
+    var cls = 'choice';
+    if (picked === undefined){ b.className = cls; b.disabled = false; return; }
+    if (i === p.a) cls += ' right';
+    else if (i === picked) cls += ' picked';
+    else cls += ' dim';
+    b.className = cls;
+  });
+  if (picked === undefined){
+    els.expl.style.display = 'none';
+    els.expl.innerHTML = '';
+  } else {
+    var head = (picked === p.a)
+      ? '<b>✅ 옳다.</b> '
+      : '<b>❌ ' + (p.no && p.no[picked] ? p.no[picked] : '옳지 않다.') + '</b> ';
+    els.expl.style.display = 'block';
+    els.expl.innerHTML = head + p.ex;
+  }
+}
+function pickQ(id, i){
+  pickStore(id)[id] = i;
+  paintQ(id);
+  saveState();
+  updateAll();
+}
+
+/* ══════════════════ 14. ⑦ 서술형 그리기 ══════════════════
+   ★마크업을 손으로 적지 않는다 — WRITEQ 하나가 발문·요소·모범답안·저장 id 를 모두 정한다. */
+function renderWrite(){
+  var box = document.getElementById('writeBox');
+  if (!box) return;
+  box.innerHTML = '';
+  WRITEQ.forEach(function(w, i){
+    var d = document.createElement('div');
+    d.className = 'qwrap';
+    var head = w.creative ? w.q : '<b>서술형 ' + (i + 1) + '.</b> ' + w.q;
+    d.innerHTML =
+      '<div class="qh">' + head + '</div>' +
+      '<div class="qk">답안에 반드시 들어가야 할 것 — ' + w.need.join(' · ') + '</div>' +
+      '<textarea id="ta_' + w.id + '" placeholder="여기에 서술하시오." oninput="onTa(\'' + w.id + '\')"></textarea>' +
+      '<div class="cnt"><span id="cnt_' + w.id + '">0자</span> · 모범답안은 ' + w.min + '자 이상 서술하면 열린다</div>' +
+      '<div class="btnrow"><button type="button" class="btn ghost" id="ansBtn_' + w.id + '" onclick="toggleAns(\'' + w.id + '\')">모범답안</button></div>' +
+      '<div class="ansbox" id="ans_' + w.id + '"><b>모범답안</b><br>' + w.ans + '</div>';
+    box.appendChild(d);
+  });
+  var sc = document.getElementById('selfBox');
+  if (sc){
+    var h = '<h3>스스로 평가하기</h3>';
+    SELFCHECK.forEach(function(s){
+      h += '<label><input type="checkbox" id="self_' + s.id + '" onchange="onSelf(\'' + s.id + '\')">' +
+           '<span><b>' + s.k + '</b> ' + s.t + '</span></label>';
+    });
+    sc.innerHTML = h;
+  }
+}
+function ansGate(id){
+  if (state.teacherUnlock) return { open:true, reason:'' };
+  var w = null;
+  WRITEQ.forEach(function(x){ if (x.id === id) w = x; });
+  if (!w) return { open:false, reason:'' };
+  var len = String((state.ta && state.ta[id]) || '').replace(/\s/g, '').length;
+  if (len >= w.min) return { open:true, reason:'' };
+  return { open:false, reason:w.min + '자 이상 서술해야 열린다' };
+}
+function refreshAnsGates(){
+  WRITEQ.forEach(function(w){
+    var btn = document.getElementById('ansBtn_' + w.id);
+    var box = document.getElementById('ans_' + w.id);
+    if (!btn) return;
+    var g = ansGate(w.id);
+    if (!g.open){
+      btn.textContent = '🔒 ' + g.reason;
+      btn.disabled = true;
+      if (box) box.style.display = 'none';
+    } else {
+      btn.disabled = false;
+      btn.textContent = (box && box.style.display === 'block') ? '모범답안 닫기' : '모범답안';
+    }
+  });
+}
+function toggleAns(id){
+  if (!ansGate(id).open) return;
+  var box = document.getElementById('ans_' + id);
+  if (!box) return;
+  box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+  refreshAnsGates();
+}
+function onTa(id){
+  var el = document.getElementById('ta_' + id);
+  if (!el) return;
+  var len = String(el.value || '').replace(/\s/g, '').length;
+  var c = document.getElementById('cnt_' + id);
+  if (c) c.textContent = len + '자';
+  saveState();
+  refreshAnsGates();
+  updateProgTags();
+}
+function onSelf(k){
+  var el = document.getElementById('self_' + k);
+  if (!el) return;
+  state.self[k] = !!el.checked;
+  saveState();
+}
+
+/* ══════════════════ 15. 화면 갱신 ══════════════════ */
+function updateProgTags(){
+  var t1 = document.getElementById('pracProg');
+  if (t1) t1.textContent = '푼 문항 ' + answeredOf(PRACTICE, state.pPick) + ' / ' + PRACTICE.length;
+  var t2 = document.getElementById('writeProg');
+  if (t2){
+    var n = 0;
+    WRITEQ.forEach(function(w){
+      if (String((state.ta && state.ta[w.id]) || '').replace(/\s/g, '').length > 0) n++;
+    });
+    t2.textContent = '작성한 문항 ' + n + ' / ' + WRITEQ.length;
+  }
+}
+function updateAll(){
+  updateRail();
+  updateProgTags();
+  refreshAnsGates();
+  stickyCenter();
+}
+/* ★왼쪽 칸(무대)은 화면 세로 가운데에 멈춘다 — 제작 표준 §2.
+   sticky 의 top 을 칸 높이에 맞춰 (화면 높이 − 칸 높이)/2 로 준다. 칸이 화면보다 크면 10px.
+   1180px 미만에서는 sticky 가 아니므로 손대지 않는다. 헤드리스에서는 아무 일도 하지 않는다. */
+function stickyCenter(){
+  if (typeof window === 'undefined' || !document.querySelectorAll) return;
+  var vh = window.innerHeight || 0, wide = (window.innerWidth || 0) >= 1180;
+  var panes = document.querySelectorAll('.pane-l');
+  for (var i = 0; i < panes.length; i++){
+    var p = panes[i];
+    if (!wide || !vh){ p.style.top = ''; continue; }
+    var h = p.getBoundingClientRect ? p.getBoundingClientRect().height : 0;
+    p.style.top = Math.max(10, Math.round((vh - h) / 2)) + 'px';
+  }
+}
+var tapLog = [];
+function tapProgress(){
+  var t = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  tapLog.push(t);
+  if (tapLog.length > 5) tapLog.shift();
+  if (tapLog.length === 5 && (t - tapLog[0]) < 2500){
+    tapLog = [];
+    if (confirm('교사용: 모범답안 잠금을 해제합니다.\n' +
+                '★이 화면에서만 풀린다 — 새로고침하면 도로 잠긴다.\n' +
+                '해제하시겠습니까?')){
+      state.teacherUnlock = true;
+      saveState();
+      restoreUI();
+    }
+  }
+}
+/* 미완성 잠금 해제 — 맞으면 이 기기에 기억해 교사가 다시 입력하지 않게 한다 */
+function unlockDraft(){
+  var el = document.getElementById('draftPass');
+  var err = document.getElementById('draftErr');
+  var v = (el && el.value ? el.value : '').trim();
+  if (v !== DRAFT_PASS){
+    if (err) err.textContent = '비밀번호가 옳지 않다.';
+    if (el){ el.value = ''; if (el.focus) el.focus(); }
+    return false;
+  }
+  try{ localStorage.setItem(DRAFT_KEY, 'y'); }catch(e){}
+  document.documentElement.className += ' unlocked';
+  var gate = document.getElementById('draftGate');
+  if (gate) gate.style.display = 'none';
+  if (err) err.textContent = '';
+  return true;
+}
+
+/* ══════════════════ 16. 섹션별 되돌리기 ══════════════════
+   ★칸마다 자기가 만든 것만 지운다. 다른 칸은 건드리지 않는다.
+   ★새로고침하지 않는다(resetAll 과 다른 점) — 다른 칸의 답이 살아 있어야 한다.
+   ★파생 관계는 함께 지운다 — ③ 을 지우면 ④ 의 견주기도 함께 지운다.
+     ④ 는 ③ 이 만든 RNA 위에서만 뜻이 있는 결과이기 때문이다.
+   ★확인 대화상자는 잃을 것이 큰 칸에만 — 직접 이은 ③ 과 손으로 적은 ⑦. */
+var SEC_DEF = {
+  strand: { qs:function(){ return Q_STRAND; }, ask:false, fb:'fb_strand', msg:'① 에서 고른 가닥과 문항을 지웠다.',
+            run:function(){ state.strand = 0; } },
+  stage:  { qs:function(){ return Q_STAGE; },  ask:false, fb:'fb_stage',  msg:'② 를 처음 국면으로 되돌리고 문항을 지웠다.',
+            run:function(){ state.stageSeen = false; ANI.ph = 0; } },
+  grid:   { qs:function(){ return Q_GRID; },   ask:true,  fb:'fb_grid',   msg:'③ 에서 이은 RNA 와 문항을 지웠다 — 다시 이으시오. ④ 도 함께 지웠다.',
+            run:function(){
+              state.rna = emptyRna(); state.manual = 0; state.usedAuto = false; state.wrongT = 0;
+              /* ★③ 의 산물 위에서만 뜻이 있는 결과다 — 없는 것에 대한 결과가 남으면 거짓말이 된다 */
+              state.named = false;
+              Q_RESULT.forEach(function(q){ delete state.qPick[q.id]; });
+            } },
+  result: { qs:function(){ return Q_RESULT; }, ask:false, fb:'fb_result', msg:'④ 의 견주기와 문항을 지웠다.',
+            run:function(){ state.named = false; } },
+  rna:    { qs:function(){ return Q_RNA; },    ask:false, fb:'fb_rna',    msg:'⑤ 에서 본 설명과 문항을 지웠다.',
+            run:function(){ state.rnaSeen = {}; state.rnaLast = ''; } },
+  cell:   { qs:function(){ return Q_CELL; },   ask:false, fb:'fb_cell',   msg:'⑥ 에서 찍은 자리와 문항을 지웠다.',
+            run:function(){ state.cellPick = {}; } },
+  prac:   { prac:true,  ask:false, fb:'', msg:'💪 의 문항을 지웠다.' },
+  write:  { write:true, ask:true,  fb:'', msg:'⑦ 에 적은 답안과 자기평가를 지웠다.' }
+};
+var SEC_ASK = {
+  grid:  '③ 에서 이은 RNA 15칸과 문항의 답을 지우고 이 단계만 다시 하시겠습니까? ④ 의 견주기도 함께 지워진다.',
+  write: '⑦ 에 적은 답안을 모두 지우고 이 단계만 다시 하시겠습니까? (다른 단계는 그대로 둔다)'
+};
+function resetSec(key){
+  var d = SEC_DEF[key];
+  if (!d) return;
+  if (d.ask && !confirm(SEC_ASK[key])) return;
+  if (d.qs) d.qs().forEach(function(q){ delete state.qPick[q.id]; });
+  if (d.run) d.run();
+  if (d.prac) state.pPick = {};
+  if (d.write){
+    state.ta = {}; state.self = {};
+    WRITEQ.forEach(function(w){
+      var el = document.getElementById('ta_' + w.id);
+      if (el) el.value = '';
+    });
+    SELFCHECK.forEach(function(s){
+      var el = document.getElementById('self_' + s.id);
+      if (el) el.checked = false;
+    });
+  }
+  saveState();
+  restoreUI();
+  if (d.fb) showFb(d.fb, 'info', '↻ ' + d.msg);
+}
+function resetAll(){
+  if (!confirm('지금까지 이은 RNA 와 서술을 모두 지우고 처음부터 다시 하시겠습니까?')) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  /* ★메모리도 함께 비운다 — 새로고침이 끝나기 전에 무엇이든 누르면
+     saveState() 가 옛 state 를 그대로 다시 써 버려 지운 것이 되살아난다. */
+  state = freshState();
+  txMounted = false;
+  ANI = { ph:0 };
+  pourFrom = -1;
+  if (typeof location !== 'undefined' && location.reload) location.reload();
+}
+
+/* ══════════════════ 17. 시작 ══════════════════ */
+function restoreUI(){
+  renderStrand();
+  txRender();
+  renderGrid();
+  renderResult();
+  renderRnaCard();
+  renderCellCard();
+  renderQuizInto(Q_STRAND, 'strandQ', 'dna');
+  renderQuizInto(Q_STAGE,  'stageQ',  'pol');
+  renderQuizInto(Q_GRID,   'gridQ',   'rna');
+  renderQuizInto(Q_RESULT, 'resultQ', 'dna');
+  renderQuizInto(Q_RNA,    'rnaQ',    'ribo');
+  renderQuizInto(Q_CELL,   'cellQ',   'teal');
+  renderQuizInto(PRACTICE, 'pracBox', '');
+  renderWrite();
+  WRITEQ.forEach(function(w){
+    var el = document.getElementById('ta_' + w.id);
+    if (el && state.ta && state.ta[w.id]) el.value = String(state.ta[w.id]);
+    var c = document.getElementById('cnt_' + w.id);
+    if (c && el) c.textContent = String(el.value || '').replace(/\s/g, '').length + '자';
+  });
+  SELFCHECK.forEach(function(s){
+    var el = document.getElementById('self_' + s.id);
+    if (el) el.checked = !!(state.self && state.self[s.id]);
+  });
+  if (SELF_ERR.length){
+    showFb('fb_strand', 'bad', '⚠ 자료 자기검사에 걸렸다 — ' + SELF_ERR.join(' · '));
+  }
+  updateAll();
+}
+function init(){
+  var saved = loadState();
+  state = freshState();
+  if (saved){
+    /* ★freshState() 가 정의한 칸만 복원한다 — 옛 저장분의 딴 칸은 되살아나지 않는다.
+       ★★typeof null === 'object' 다. null 을 명시적으로 걸러 내지 않으면
+         초기값이 null 인 칸이 객체 칸으로 분류돼 저장분이 통째로 버려진다.
+         이 활동은 애초에 null 을 쓰지 않지만, 옛 저장분에 null 이 들어 있어도 안전하도록 걸러 낸다. */
+    Object.keys(state).forEach(function(k){
+      var sv = saved[k];
+      if (sv === undefined || sv === null) return;
+      var mineIsArray = Array.isArray(state[k]);
+      var mineIsPlainObject = (state[k] !== null && typeof state[k] === 'object' && !mineIsArray);
+      if (mineIsArray){
+        if (Array.isArray(sv)) state[k] = sv;
+      } else if (mineIsPlainObject){
+        if (typeof sv === 'object' && !Array.isArray(sv)) state[k] = sv;
+      } else {
+        state[k] = sv;
+      }
+    });
+  }
+  ['rnaSeen', 'cellPick', 'qPick', 'pPick', 'ta', 'self'].forEach(function(k){
+    if (!state[k] || typeof state[k] !== 'object' || Array.isArray(state[k])) state[k] = {};
+  });
+  /* ★범위 밖의 값·없는 이름은 걸러 낸다 — 저장분이 망가져도 화면이 비지 않게 한다 */
+  var sp = Number(state.strand);
+  state.strand = (sp === 1 || sp === 2) ? sp : 0;
+  state.stageSeen = !!state.stageSeen;
+  state.usedAuto = !!state.usedAuto;
+  /* RNA 는 왼쪽부터 빈틈없이 차 있고, 채워진 칸은 정답과 같아야 한다. 어긋나면 통째로 버린다. */
+  var rr = Array.isArray(state.rna) ? state.rna : [];
+  var clean = emptyRna(), ok = (rr.length === N), i, hole = false;
+  if (ok){
+    for (i = 0; i < N; i++){
+      var v = rr[i];
+      if (v === '' || v === undefined || v === null){ hole = true; continue; }
+      if (hole || v !== RNA_KEY.charAt(i)){ ok = false; break; }
+      clean[i] = v;
+    }
+  }
+  state.rna = ok ? clean : emptyRna();
+  var filled = rnaFilled();
+  var mn = Math.round(Number(state.manual) || 0);
+  state.manual = Math.max(0, Math.min(filled, mn));
+  if (!filled) state.usedAuto = false;
+  state.wrongT = Math.max(0, Math.round(Number(state.wrongT) || 0));
+  state.named = !!state.named && rnaDone();
+  Object.keys(state.rnaSeen).forEach(function(k){
+    if (['m', 'r', 't'].indexOf(k) < 0 || state.rnaSeen[k] !== true) delete state.rnaSeen[k];
+  });
+  if (!state.rnaSeen[state.rnaLast]) state.rnaLast = '';
+  Object.keys(state.cellPick).forEach(function(k){
+    var v = Number(state.cellPick[k]);
+    if (['pro', 'euk'].indexOf(k) < 0 || (v !== 1 && v !== 2)) delete state.cellPick[k];
+    else state.cellPick[k] = v;
+  });
+  [Q_STRAND, Q_STAGE, Q_GRID, Q_RESULT, Q_RNA, Q_CELL].forEach(function(L){
+    L.forEach(function(p){
+      var v = state.qPick[p.id];
+      if (!(typeof v === 'number' && v >= 0 && v < p.ch.length)) delete state.qPick[p.id];
+    });
+  });
+  /* ★접두사가 어긋난 것도 버린다 — p 로 시작하면 💪 몫이다(pickStore 규칙) */
+  Object.keys(state.qPick).forEach(function(k){ if (!qById(k) || k.indexOf('p') === 0) delete state.qPick[k]; });
+  PRACTICE.forEach(function(p){
+    var v = state.pPick[p.id];
+    if (!(typeof v === 'number' && v >= 0 && v < p.ch.length)) delete state.pPick[p.id];
+  });
+  Object.keys(state.pPick).forEach(function(k){ if (!qById(k) || k.indexOf('p') !== 0) delete state.pPick[k]; });
+  /* ★저장분에 teacherUnlock 이 남아 있어도 켜지 않는다 — 새로고침하면 언제나 잠긴 채로 시작한다. */
+  state.teacherUnlock = false;
+  /* ★끝까지 본 무대는 완료 국면에서 시작한다 — 새로고침이 결과를 도로 감추면 안 된다. */
+  ANI = { ph:(state.stageSeen ? aniLast() : 0) };
+  restoreUI();
+}
+
+if (typeof document !== 'undefined' && document.getElementById) init();
+if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('resize', stickyCenter);
+</script>
+</body>
+</html>

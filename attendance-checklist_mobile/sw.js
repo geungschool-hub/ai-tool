@@ -1,4 +1,5 @@
-const CACHE = 'attendance-2026-v14';
+const CACHE = 'attendance-2026-v15';
+const PREFIX = 'attendance-2026-';   // 테스트 캐시(attendance-test-*)는 건드리지 않는다
 const FILES = ['./', './index.html', './manifest.json', './icon.svg', './xlsx.full.min.js', './pdf.min.js', './pdf.worker.min.js'];
 
 // 설치: 파일 캐시
@@ -11,7 +12,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k.startsWith(PREFIX) && k !== CACHE).map(k => caches.delete(k)))
     )
   );
 });

@@ -10,54 +10,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="출결 관리">
 <link rel="apple-touch-icon" href="icon.svg">
-<!-- 업데이트 공지 -->
-<div id="update-notice-overlay">
-  <div id="update-notice-card">
-    <div class="un-header">
-      <div class="un-badge">2026년 4월 24일 업데이트</div>
-      <div class="un-title">교과 출결 기능이<br>새로 추가되었습니다 📚</div>
-    </div>
-    <div class="un-body">
-      <div class="un-feat-list">
-        <div class="un-feat">
-          <div class="un-feat-icon">📋</div>
-          <div class="un-feat-text"><b>반 관리</b> — 여러 반을 등록하고, 명렬표를 PDF로 업로드하거나 직접 입력할 수 있습니다.</div>
-        </div>
-        <div class="un-feat">
-          <div class="un-feat-icon">✅</div>
-          <div class="un-feat-text"><b>일일 체크</b> — 날짜별로 결과 학생을 탭 한 번으로 기록합니다.</div>
-        </div>
-        <div class="un-feat">
-          <div class="un-feat-icon">📊</div>
-          <div class="un-feat-text"><b>출결 현황</b> — 반별로 결과 발생 날짜와 학생을 한눈에 확인합니다.</div>
-        </div>
-      </div>
-      <button class="un-confirm-btn" onclick="closeUpdateNotice()">확인</button>
-    </div>
-  </div>
-</div>
-
-<!-- 온보딩 -->
-<div id="ob-overlay">
-  <div id="ob-card">
-    <div id="ob-dots"></div>
-    <div id="ob-body"></div>
-    <div id="ob-foot"></div>
-  </div>
-</div>
-
-<div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
-    <div style="font-size:44px;line-height:1;margin-bottom:14px">⚠️</div>
-    <div style="font-size:17px;font-weight:700;color:#7A4500;margin-bottom:10px">전체 데이터 삭제</div>
-    <div style="font-size:13px;color:#444;line-height:1.8;margin-bottom:22px">출결 기록, 증빙서류 기한 등<br>모든 데이터가 삭제됩니다.<br><b>이 작업은 되돌릴 수 없습니다.</b></div>
-    <div style="display:flex;gap:10px">
-      <button onclick="document.getElementById('reset-confirm-overlay').style.display='none'" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
-      <button onclick="confirmResetAll()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">삭제</button>
-    </div>
-  </div>
-</div>
-
 <script src="xlsx.full.min.js"></script>
 <script src="pdf.min.js"></script>
 <style>
@@ -67,13 +19,14 @@
   --red: #C0392B; --amber: #E67E22;
   --bg: #E8EBF3; --card: #FFF; --text: #1A1A2E; --muted: #6B7280; --line: #E2E5EC;
   --nav-h: 62px;
+  --top-offset: 0px; /* 기기별 상단 UI 보정 (데이터 탭 > 화면 설정) */
   --sh: 0 1px 3px rgba(0,0,0,.07), 0 2px 6px rgba(0,0,0,.04);
 }
 html { height: 100%; }
 body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
 
 /* ── 헤더 ── */
-.app-header { position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #1B3A6B 0%, #2A52A0 100%); color: white; height: 54px; display: flex; align-items: center; padding: 0 16px; gap: 10px; box-shadow: 0 2px 10px rgba(27,58,107,.3); }
+.app-header { position: sticky; top: 0; z-index: 100; background: linear-gradient(135deg, #1B3A6B 0%, #2A52A0 100%); color: white; height: calc(54px + var(--top-offset)); display: flex; align-items: center; padding: var(--top-offset) 16px 0; gap: 10px; box-shadow: 0 2px 10px rgba(27,58,107,.3); }
 .app-header h1 { font-size: 16px; font-weight: 700; flex: 1; letter-spacing: -.2px; }
 .hd-badge { font-size: 11px; background: rgba(255,255,255,.18); padding: 3px 10px; border-radius: 12px; font-weight: 600; }
 .zoom-btn { background: rgba(255,255,255,.18); border: none; color: white; width: 30px; height: 30px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -307,7 +260,7 @@ body { font-family: -apple-system, 'Malgun Gothic', sans-serif; background: var(
 .naeis-row:active { background: #FFE8C8; }
 .naeis-date { font-weight: 700; color: #7A3000; }
 .naeis-modal-ft { padding: 12px 18px; border-top: 1px solid var(--line); flex-shrink: 0; }
-.sticky-banners { position: sticky; top: 54px; z-index: 99; }
+.sticky-banners { position: sticky; top: calc(54px + var(--top-offset)); z-index: 99; }
 .naeis-banner { background: #FFF3E0; color: #7A3000; border-bottom: 2px solid var(--amber); padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; -webkit-tap-highlight-color: transparent; }
 .naeis-banner:active { opacity: .8; }
 .naeis-banner.hidden { display: none; }
@@ -540,8 +493,8 @@ body.mode-subject > .bottom-nav { display: none !important; }
 .subj-header {
   position: sticky; top: 0; z-index: 100;
   background: linear-gradient(135deg, #1A5C3A 0%, #2E8A55 100%);
-  color: white; height: 54px;
-  display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  color: white; height: calc(54px + var(--top-offset));
+  display: flex; align-items: center; padding: var(--top-offset) 12px 0; gap: 8px;
   box-shadow: 0 2px 10px rgba(26,92,58,.35);
 }
 .subj-header h1 { font-size: 16px; font-weight: 700; flex: 1; }
@@ -622,6 +575,39 @@ body.mode-subject > .bottom-nav { display: none !important; }
 .student-cell.absent   { background: #FEF0ED; border-color: var(--red); }
 .student-cell.absent .sc-num  { color: #E08070; }
 .student-cell.absent .sc-name { color: var(--red); }
+/* ── 연강(2교시 연속) ── */
+.dbl-row { display:flex; align-items:center; justify-content:center; margin-top:10px; }
+.dbl-check {
+  display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  padding:8px 14px; min-height:44px; border-radius:10px; background:var(--bg);
+  font-size:13px; font-weight:700; color:var(--navy);
+  user-select:none; -webkit-tap-highlight-color:transparent;
+}
+.dbl-check input { width:20px; height:20px; accent-color:var(--navy); cursor:pointer; }
+.period-seg { display:none; gap:6px; margin-top:8px; }
+.period-btn {
+  flex:1; min-height:44px; border:2px solid var(--line); border-radius:10px;
+  background:white; font-family:inherit; font-size:14px; font-weight:700;
+  color:var(--muted); cursor:pointer;
+  transition:background .12s, color .12s, border-color .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.period-btn.active { background:var(--navy); border-color:var(--navy); color:white; }
+.copy-p1-btn {
+  display:none; width:100%; min-height:44px; margin-bottom:10px;
+  border:1.5px dashed #90BAE8; border-radius:10px; background:#F5F9FF;
+  font-family:inherit; font-size:13px; font-weight:700; color:var(--blue); cursor:pointer;
+}
+.copy-p1-btn:disabled { opacity:.4; cursor:default; }
+.snc-per {
+  font-size:10px; font-weight:800; color:white; background:var(--navy);
+  border-radius:4px; padding:1px 5px; white-space:nowrap;
+}
+.snc-per.p2 { background:var(--amber); }
+/* 테스트 빌드 — 라이브와 눈으로 구분되게 머리띠 색을 바꾼다 */
+body.test-build .subj-header,
+body.test-build .app-header { background:linear-gradient(135deg,#7A3E00 0%,#B05A00 100%); }
+
 .sc-del-btn {
   position: absolute; top: -6px; right: -6px;
   width: 22px; height: 22px;
@@ -668,7 +654,7 @@ body.mode-subject > .bottom-nav { display: none !important; }
 .subj-tab-bar {
   display: flex; background: white;
   border-bottom: 1px solid var(--line);
-  position: sticky; top: 54px; z-index: 90;
+  position: sticky; top: calc(54px + var(--top-offset)); z-index: 90;
 }
 .subj-tab {
   flex: 1; padding: 12px 0; text-align: center;
@@ -685,6 +671,7 @@ body.mode-subject > .bottom-nav { display: none !important; }
 
 /* ── 출결 현황 뷰 ── */
 #subj-view-summary { display: none; }
+#subj-view-settings { display: none; }
 .summary-cls-section {
   background: white; border-radius: 14px;
   margin-bottom: 12px; overflow: hidden;
@@ -837,6 +824,66 @@ body.mode-subject > .bottom-nav { display: none !important; }
     </div>
   </div>
   <div class="landing-footer" id="landing-footer-yr"></div>
+</div>
+
+<!-- 업데이트 공지 -->
+<div id="update-notice-overlay">
+  <div id="update-notice-card">
+    <div class="un-header">
+      <div class="un-badge">2026년 4월 24일 업데이트</div>
+      <div class="un-title">교과 출결 기능이<br>새로 추가되었습니다 📚</div>
+    </div>
+    <div class="un-body">
+      <div class="un-feat-list">
+        <div class="un-feat">
+          <div class="un-feat-icon">📋</div>
+          <div class="un-feat-text"><b>반 관리</b> — 여러 반을 등록하고, 명렬표를 PDF로 업로드하거나 직접 입력할 수 있습니다.</div>
+        </div>
+        <div class="un-feat">
+          <div class="un-feat-icon">✅</div>
+          <div class="un-feat-text"><b>일일 체크</b> — 날짜별로 결과 학생을 탭 한 번으로 기록합니다.</div>
+        </div>
+        <div class="un-feat">
+          <div class="un-feat-icon">📊</div>
+          <div class="un-feat-text"><b>출결 현황</b> — 반별로 결과 발생 날짜와 학생을 한눈에 확인합니다.</div>
+        </div>
+      </div>
+      <button class="un-confirm-btn" onclick="closeUpdateNotice()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 온보딩 -->
+<div id="ob-overlay">
+  <div id="ob-card">
+    <div id="ob-dots"></div>
+    <div id="ob-body"></div>
+    <div id="ob-foot"></div>
+  </div>
+</div>
+
+<!-- 전체 데이터 삭제 확인 -->
+<div id="reset-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div style="font-size:44px;line-height:1;margin-bottom:14px">⚠️</div>
+    <div style="font-size:17px;font-weight:700;color:#7A4500;margin-bottom:10px">전체 데이터 삭제</div>
+    <div style="font-size:13px;color:#444;line-height:1.8;margin-bottom:22px">출결 기록, 증빙서류 기한 등<br>모든 데이터가 삭제됩니다.<br><b>이 작업은 되돌릴 수 없습니다.</b></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('reset-confirm-overlay').style.display='none'" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
+      <button onclick="confirmResetAll()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 교과 출결 공용 confirm 모달 -->
+<div id="subj-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;padding:28px 24px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.35)">
+    <div id="subj-confirm-msg" style="font-size:15px;color:#333;line-height:1.8;margin-bottom:22px"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="_closeSubjConfirm()" style="flex:1;padding:13px 0;border:1.5px solid #CCC;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">취소</button>
+      <button onclick="_okSubjConfirm()" style="flex:1;padding:13px 0;border:none;border-radius:10px;background:#C0392B;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">확인</button>
+    </div>
+  </div>
 </div>
 
 <header class="app-header">
@@ -1012,6 +1059,26 @@ body.mode-subject > .bottom-nav { display: none !important; }
     </div>
   </div>
 
+  <p class="sec-hd">화면 설정</p>
+
+  <div class="card">
+    <div class="card-hd" onclick="toggleTopOffsetCard()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
+      <span>상단 버튼 위치 조정 <span id="top-offset-badge" style="font-weight:400;font-size:12px;opacity:.7"></span></span>
+      <span id="top-offset-card-arrow" style="font-size:12px;opacity:.8">▶</span>
+    </div>
+    <div id="top-offset-card-body" style="display:none">
+      <div class="card-bd">
+        <p style="font-size:12px;color:#555;line-height:1.8">위쪽 버튼(⌂ · 가− · 가+)이 카메라 구멍이나 상태 표시줄에 가려지는 기종에서, 상단 여백을 늘려 버튼을 아래로 내릴 수 있습니다.<br>담임·교과 화면에 모두 적용되며, 바로 위 파란 헤더에서 즉시 확인됩니다.</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px">
+          <button class="btn ghost" id="top-offset-down" onclick="adjustTopOffset(-1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 줄이기">−</button>
+          <span id="top-offset-val" style="font-size:20px;font-weight:800;color:var(--navy);min-width:64px;text-align:center">0px</span>
+          <button class="btn ghost" id="top-offset-up" onclick="adjustTopOffset(1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 늘리기">＋</button>
+        </div>
+        <button class="btn ghost full" onclick="resetTopOffset()" style="font-size:13px">기본값으로 되돌리기</button>
+      </div>
+    </div>
+  </div>
+
   <p class="sec-hd">나이스 연동</p>
 
   <div class="card">
@@ -1121,8 +1188,9 @@ body.mode-subject > .bottom-nav { display: none !important; }
 
   <!-- 탭 바 -->
   <div class="subj-tab-bar">
-    <button class="subj-tab active" id="subj-tab-daily"   onclick="switchSubjTab('daily')">일일 체크</button>
-    <button class="subj-tab"        id="subj-tab-summary" onclick="switchSubjTab('summary')">출결 현황</button>
+    <button class="subj-tab active" id="subj-tab-daily"    onclick="switchSubjTab('daily')">일일 체크</button>
+    <button class="subj-tab"        id="subj-tab-summary"  onclick="switchSubjTab('summary')">출결 현황</button>
+    <button class="subj-tab"        id="subj-tab-settings" onclick="switchSubjTab('settings')">⚙ 설정</button>
   </div>
 
   <!-- 반 목록 뷰 -->
@@ -1187,8 +1255,19 @@ body.mode-subject > .bottom-nav { display: none !important; }
           <button class="arrow-btn" onclick="subjOpenCal()" style="font-size:16px">📅</button>
           <button class="arrow-btn" onclick="subjClassChangeDate(1)">▶</button>
         </div>
+        <div class="dbl-row">
+          <label class="dbl-check">
+            <input type="checkbox" id="subj-dbl-check" onchange="toggleSubjDouble(this.checked)">
+            <span>연강</span>
+          </label>
+        </div>
+        <div class="period-seg" id="subj-period-seg">
+          <button class="period-btn active" id="pbtn-1" onclick="setSubjPeriod(1)">앞교시</button>
+          <button class="period-btn"        id="pbtn-2" onclick="setSubjPeriod(2)">뒷교시</button>
+        </div>
         <div id="subj-cls-absent-summary" style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center"></div>
       </div>
+      <button class="copy-p1-btn" id="subj-copy-p1" onclick="copyP1ToP2()">⤵ 앞교시 그대로 가져오기</button>
       <div class="student-grid" id="subj-student-grid"></div>
     </div>
   </div>
@@ -1196,6 +1275,40 @@ body.mode-subject > .bottom-nav { display: none !important; }
   <!-- 출결 현황 뷰 -->
   <div id="subj-view-summary">
     <div class="subj-content" id="subj-summary-content"></div>
+  </div>
+
+  <!-- 설정 뷰 -->
+  <div id="subj-view-settings">
+    <div class="subj-content">
+
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">화면 이동</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn ghost full" onclick="goHomeroomFromSubject()" style="color:var(--navy);border-color:#B8C6E0">🏫 담임 출결로 전환</button>
+          <button class="btn ghost full" onclick="backToLanding()">🏠 시작 화면으로</button>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh)">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">상단 버튼 위치 조정</div>
+        <p style="font-size:12px;color:#555;line-height:1.8;margin-bottom:12px">위쪽 버튼(⌂ 등)이 카메라 구멍이나 상태 표시줄에 가려지는 기종에서, 상단 여백을 늘려 버튼을 아래로 내릴 수 있습니다. 담임·교과 화면에 모두 적용됩니다.</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px">
+          <button class="btn ghost" id="top-offset-down-s" onclick="adjustTopOffset(-1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 줄이기">−</button>
+          <span id="top-offset-val-s" style="font-size:20px;font-weight:800;color:var(--green);min-width:64px;text-align:center">0px</span>
+          <button class="btn ghost" id="top-offset-up-s" onclick="adjustTopOffset(1)" style="width:56px;font-size:18px;font-weight:800" aria-label="여백 늘리기">＋</button>
+        </div>
+        <button class="btn ghost full" onclick="resetTopOffset()" style="font-size:13px">기본값으로 되돌리기</button>
+      </div>
+
+      <div style="background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">교과 출결 데이터 백업</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn ghost full" onclick="exportSubjBackup()">📤 JSON 내보내기</button>
+          <label class="btn ghost full" style="cursor:pointer;position:relative">📥 JSON 불러오기<input type="file" accept=".json,application/json" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="importSubjBackup(this)"></label>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <!-- 반 설정 모달 -->
@@ -1271,8 +1384,15 @@ const DEFAULT_HOLIDAYS = [
   { date:'2026-11-20', label:'재량휴업일' },
   { date:'2026-12-25', label:'성탄절' },
 ];
-const STORAGE_KEY        = 'attendance_app_v1';
-const STORAGE_KEY_LEGACY = 'attendance_2026_mobile';
+/* ── 테스트 빌드 스위치 ────────────────────────────────────────────
+   라이브와 테스트가 같은 오리진이라 localStorage 를 공유한다.
+   true  = 테스트 배포본. 저장소 키를 따로 써서 라이브 데이터를 건드리지 않는다.
+   false = 라이브. 승격할 때 이 한 줄만 false 로 바꾼다.               */
+const TEST_BUILD = true;
+const _KS = TEST_BUILD ? '_test' : '';
+
+const STORAGE_KEY        = 'attendance_app_v1' + _KS;
+const STORAGE_KEY_LEGACY = 'attendance_2026_mobile' + _KS;
 const DAYS = ['일','월','화','수','목','금','토'];
 const TL   = { disease:'질병', unapproved:'미인정', other:'기타', approved:'인정' };
 const ABSENCE_OPTS  = [{value:'',label:'없음'},{value:'disease',label:'질병'},{value:'unapproved',label:'미인정'},{value:'other',label:'기타'},{value:'approved',label:'인정'}];
@@ -1706,10 +1826,13 @@ function setAtt(num, field, value, skipSheetRefresh) {
 
   if (field==='approvedType') {
     appData.deadlines = appData.deadlines.filter(d => !(d.studentNo===num && d.absenceDate===currentDate && ['absence_report','absence_report_only','field_trip_report'].includes(d.type)));
-    const due = addSchoolDays(currentDate,5);
-    if (value==='menstrual')  { appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report_only',absenceDate:currentDate,dueDate:due,submitted:false}); checkMenstrualWarning(num,currentDate); }
-    else if (value==='fieldtrip') appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'field_trip_report',absenceDate:currentDate,dueDate:due,submitted:false});
-    else appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report',absenceDate:currentDate,dueDate:due,submitted:false});
+    if (_att.absent) {
+      const due = addSchoolDays(currentDate,5);
+      if (value==='menstrual')      appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report_only',absenceDate:currentDate,dueDate:due,submitted:false});
+      else if (value==='fieldtrip') appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'field_trip_report',absenceDate:currentDate,dueDate:due,submitted:false});
+      else                          appData.deadlines.push({id:Date.now().toString(),studentNo:num,type:'absence_report',absenceDate:currentDate,dueDate:due,submitted:false});
+    }
+    if (value==='menstrual') checkMenstrualWarning(num,currentDate);
     updateDLBadge();
   }
   if (field==='absent' && (!value || value==='unapproved')) {
@@ -1986,6 +2109,48 @@ function importBackup(input) {
       showToast('데이터를 불러왔습니다.');
     } catch(err) { showToast('불러오기 실패: '+err.message); }
     input.value='';
+  };
+  reader.readAsText(file);
+}
+// ── 교과 출결 공용 confirm ────────────────────────────────────────
+let _subjConfirmCb = null;
+function _showSubjConfirm(msg, onConfirm) {
+  document.getElementById('subj-confirm-msg').textContent = msg;
+  _subjConfirmCb = onConfirm;
+  document.getElementById('subj-confirm-overlay').style.display = 'flex';
+}
+function _closeSubjConfirm() {
+  document.getElementById('subj-confirm-overlay').style.display = 'none';
+  _subjConfirmCb = null;
+}
+function _okSubjConfirm() {
+  const cb = _subjConfirmCb;
+  _closeSubjConfirm();
+  if (cb) cb();
+}
+
+function exportSubjBackup() {
+  const blob = new Blob([JSON.stringify({ v:2, ...subjData }, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=`subject_backup_${subjTodayStr()}.json`; a.click();
+  URL.revokeObjectURL(url); showToast('교과 출결 백업 파일을 저장했습니다.');
+}
+function importSubjBackup(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (typeof imp !== 'object' || Array.isArray(imp) || !imp.classes || !imp.records)
+        throw new Error('올바른 백업 파일이 아닙니다.');
+      subjData.classes = imp.classes || [];
+      subjData.records = imp.records || {};
+      saveSubjData();
+      renderSubjClassList();
+      showToast('교과 출결 데이터를 불러왔습니다.');
+    } catch(err) { showToast('불러오기 실패: ' + err.message); }
+    input.value = '';
   };
   reader.readAsText(file);
 }
@@ -2845,7 +3010,7 @@ function showToast(msg) {
 }
 
 // ===== 업데이트 공지 =====
-const UPDATE_NOTICE_KEY = 'notice_subject_240424';
+const UPDATE_NOTICE_KEY = 'notice_subject_240424' + _KS;
 function checkUpdateNotice() {
   if (!localStorage.getItem(UPDATE_NOTICE_KEY)) {
     document.getElementById('update-notice-overlay').style.display = 'flex';
@@ -2857,7 +3022,7 @@ function closeUpdateNotice() {
 }
 
 // ===== 온보딩 =====
-const OB_KEY = 'onboarding_v1';
+const OB_KEY = 'onboarding_v1' + _KS;
 let _obStep = 0;
 
 function showOnboarding() {
@@ -2975,21 +3140,58 @@ function renderObStep() {
 }
 
 // ===== 화면 확대 =====
-const ZOOM_LEVELS = [1, 1.15, 1.3];
+const ZOOM_LEVELS = ['100%', '115%', '130%'];
 let _zoomIdx = 0;
 function initZoom() {
-  _zoomIdx = Math.min(parseInt(localStorage.getItem('attendance_zoom') || '0'), ZOOM_LEVELS.length - 1);
+  _zoomIdx = Math.min(parseInt(localStorage.getItem(('attendance_zoom' + _KS)) || '0'), ZOOM_LEVELS.length - 1);
   applyZoom();
 }
 function adjustZoom(dir) {
   _zoomIdx = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, _zoomIdx + dir));
-  localStorage.setItem('attendance_zoom', _zoomIdx);
+  localStorage.setItem(('attendance_zoom' + _KS), _zoomIdx);
   applyZoom();
 }
 function applyZoom() {
-  document.body.style.zoom = ZOOM_LEVELS[_zoomIdx];
+  document.documentElement.style.fontSize = ZOOM_LEVELS[_zoomIdx];
   document.getElementById('zoom-out').disabled = _zoomIdx === 0;
   document.getElementById('zoom-in').disabled  = _zoomIdx === ZOOM_LEVELS.length - 1;
+}
+
+// ===== 상단 버튼 위치 조정 (기기별 UI 보정) =====
+const TOP_OFFSET_STEP = 5, TOP_OFFSET_MAX = 60;
+function getTopOffset() {
+  let v = parseInt(localStorage.getItem(('attendance_top_offset' + _KS)) || '0', 10);
+  if (isNaN(v) || v < 0) v = 0;
+  return Math.min(v, TOP_OFFSET_MAX);
+}
+function initTopOffset() { applyTopOffset(getTopOffset()); }
+function adjustTopOffset(dir) {
+  const v = Math.max(0, Math.min(TOP_OFFSET_MAX, getTopOffset() + dir * TOP_OFFSET_STEP));
+  localStorage.setItem(('attendance_top_offset' + _KS), v);
+  applyTopOffset(v);
+}
+function resetTopOffset() {
+  localStorage.setItem(('attendance_top_offset' + _KS), 0);
+  applyTopOffset(0);
+}
+function applyTopOffset(v) {
+  document.documentElement.style.setProperty('--top-offset', v + 'px');
+  ['', '-s'].forEach(sfx => { // '' = 담임 데이터 탭, '-s' = 교과 설정 탭
+    const val = document.getElementById('top-offset-val' + sfx);
+    if (val) val.textContent = v + 'px';
+    const dn = document.getElementById('top-offset-down' + sfx), up = document.getElementById('top-offset-up' + sfx);
+    if (dn) dn.disabled = v === 0;
+    if (up) up.disabled = v === TOP_OFFSET_MAX;
+  });
+  const badge = document.getElementById('top-offset-badge');
+  if (badge) badge.textContent = v > 0 ? `(+${v}px)` : '';
+}
+function toggleTopOffsetCard() {
+  const body  = document.getElementById('top-offset-card-body');
+  const arrow = document.getElementById('top-offset-card-arrow');
+  const open  = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  arrow.textContent  = open ? '▼' : '▶';
 }
 
 // ===== 공휴일 자동 업데이트 =====
@@ -3044,7 +3246,7 @@ function _initApp() {
 let _appInitialized = false;
 
 function enterMode(mode) {
-  localStorage.setItem('att_mode', mode);
+  localStorage.setItem(('att_mode' + _KS), mode);
   document.body.className = 'mode-' + mode;
   if (mode === 'homeroom') {
     if (!_appInitialized) { _appInitialized = true; _initApp(); }
@@ -3054,23 +3256,30 @@ function enterMode(mode) {
 }
 
 function backToLanding() {
-  localStorage.removeItem('att_mode');
+  localStorage.removeItem(('att_mode' + _KS));
   document.body.className = '';
-  document.getElementById('subj-view-classes').style.display  = '';
-  document.getElementById('subj-view-students').style.display = 'none';
-  document.getElementById('subj-view-summary').style.display  = 'none';
+  showSubjView('classes');
+  _setSubjTabActive('daily');
   subjCurrentTab = 'daily';
   subjClassId    = null;
 }
 
+// 교과 설정 탭 → 담임 출결로 바로 전환 (상단 ⌂이 가려지는 기종 대비)
+function goHomeroomFromSubject() {
+  backToLanding();
+  enterMode('homeroom');
+  window.scrollTo(0, 0);
+}
+
 // ── 교과 출결 데이터 ─────────────────────────────────────────────
-const SUBJ_KEY = 'subject_att_v1';
+const SUBJ_KEY = 'subject_att_v1' + _KS;
 let subjData = { classes: [], records: {} };
 let subjDate = '';
 let subjClassId = null;
 let editingClassId = null;
 let subjEditMode = false;
 let subjSortMode = false;
+let subjPeriod   = 1;   // 연강일 때 지금 체크 중인 교시 (1=앞, 2=뒷)
 
 function loadSubjData() {
   try {
@@ -3081,6 +3290,29 @@ function loadSubjData() {
   } catch(e) { subjData = { classes: [], records: {} }; }
 }
 function saveSubjData() { localStorage.setItem(SUBJ_KEY, JSON.stringify(subjData)); }
+
+// ── 연강(2교시 연속) 기록 접근자 ─────────────────────────────────
+// records[반ID][날짜] 는 두 가지 꼴을 가진다.
+//   ["3-1-4", ...]                 단일 교시 — 옛 꼴 그대로 (기존 기록을 건드리지 않는다)
+//   { dbl:1, p1:[...], p2:[...] }  연강
+// 읽기·쓰기는 반드시 이 두 함수만 거친다.
+function subjDayRec(clsId, date) {
+  const v = (subjData.records[clsId] || {})[date];
+  if (!v)               return { dbl:0, p1:[], p2:[] };
+  if (Array.isArray(v)) return { dbl:0, p1:[...v], p2:[] };
+  return { dbl: v.dbl ? 1 : 0, p1: [...(v.p1 || [])], p2: [...(v.p2 || [])] };
+}
+function subjSaveDayRec(clsId, date, r) {
+  if (!subjData.records[clsId]) subjData.records[clsId] = {};
+  const rec = subjData.records[clsId];
+  // 연강이면 두 교시가 다 비어도 남긴다 — 연강 표시 자체가 기억되어야 한다
+  if (r.dbl)            rec[date] = { dbl:1, p1:[...r.p1], p2:[...r.p2] };
+  else if (r.p1.length) rec[date] = [...r.p1];
+  else                  delete rec[date];
+  saveSubjData();
+}
+function subjDayCount(r) { return r.dbl ? r.p1.length + r.p2.length : r.p1.length; }
+function subjDayHas(r)   { return subjDayCount(r) > 0; }
 
 function subjTodayStr() {
   const d = new Date();
@@ -3098,19 +3330,30 @@ function subjShiftDate(str, delta) {
   dt.setDate(dt.getDate() + delta);
   return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
 }
+function _subjIsWeekend(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  const dow = new Date(y, m-1, d).getDay();
+  return dow === 0 || dow === 6;
+}
 
 // ── 탭 전환 ─────────────────────────────────────────────────────
 let subjCurrentTab = 'daily';
 
+function _setSubjTabActive(tab) {
+  document.getElementById('subj-tab-daily').classList.toggle('active',    tab === 'daily');
+  document.getElementById('subj-tab-summary').classList.toggle('active',  tab === 'summary');
+  document.getElementById('subj-tab-settings').classList.toggle('active', tab === 'settings');
+}
 function switchSubjTab(tab) {
   subjCurrentTab = tab;
-  document.getElementById('subj-tab-daily').classList.toggle('active',   tab === 'daily');
-  document.getElementById('subj-tab-summary').classList.toggle('active', tab === 'summary');
+  _setSubjTabActive(tab);
   if (tab === 'daily') {
     showSubjView(subjClassId ? 'students' : 'classes');
-  } else {
+  } else if (tab === 'summary') {
     showSubjView('summary');
     renderSubjSummary();
+  } else {
+    showSubjView('settings');
   }
 }
 
@@ -3129,7 +3372,7 @@ function renderSubjSummary() {
   el.innerHTML = subjData.classes.map(cls => {
     const rec = subjData.records[cls.id] || {};
     const dates = Object.keys(rec)
-      .filter(d => rec[d] && rec[d].length > 0)
+      .filter(d => subjDayHas(subjDayRec(cls.id, d)))
       .sort((a, b) => b.localeCompare(a));
 
     let dateRows;
@@ -3145,19 +3388,25 @@ function renderSubjSummary() {
           : '';
         curMonth = monthKey;
 
-        const keys     = rec[d];
+        const day      = subjDayRec(cls.id, d);
         const students = cls.students || {};
         const detailId = `sumdet_${cls.id}_${d.replace(/-/g,'_')}`;
-        const chips    = keys.map(k => {
-          const name  = students[k] || k;
-          const label = studentCellLabel(k);
-          return `<span class="summary-name-chip"><span class="snc-label">${label}</span>${name}</span>`;
-        }).join('');
+        const chipOf   = (k, per) => {
+          const name = students[k] || k;
+          const tag  = per ? `<span class="snc-per${per === '뒤' ? ' p2' : ''}">${per}</span>` : '';
+          return `<span class="summary-name-chip">${tag}<span class="snc-label">${studentCellLabel(k)}</span>${name}</span>`;
+        };
+        const chips = day.dbl
+          ? day.p1.map(k => chipOf(k, '앞')).join('') + day.p2.map(k => chipOf(k, '뒤')).join('')
+          : day.p1.map(k => chipOf(k, '')).join('');
+        const cntBadge = day.dbl
+          ? `결과 앞${day.p1.length}·뒤${day.p2.length}`
+          : `결과 ${day.p1.length}명`;
         return `${monthLabel}<div class="summary-date-row" onclick="toggleSummaryDetail('${detailId}')">
           <div class="summary-date-top">
             <span class="summary-date-label">${subjFmtDate(d)}</span>
             <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-              <span class="summary-absent-badge">결과 ${keys.length}명</span>
+              <span class="summary-absent-badge">${cntBadge}</span>
               <button class="sum-action-btn" onclick="event.stopPropagation();copySummaryDate('${cls.id}','${d}')">복사</button>
               <button class="sum-action-btn goto" onclick="event.stopPropagation();goToDailyCheck('${cls.id}','${d}')">이동</button>
             </div>
@@ -3169,7 +3418,7 @@ function renderSubjSummary() {
 
     const secId     = `sumcls_${cls.id}`;
     const totalDays = dates.length;
-    const meta      = totalDays ? `${totalDays}일 · 누적 결과 ${dates.reduce((s,d)=>(rec[d]?.length||0)+s,0)}건` : '기록 없음';
+    const meta      = totalDays ? `${totalDays}일 · 누적 결과 ${dates.reduce((s,d)=>s+subjDayCount(subjDayRec(cls.id,d)),0)}건` : '기록 없음';
     return `<div class="summary-cls-section" id="${secId}">
       <div class="summary-cls-header" onclick="toggleSummaryClass('${secId}')">
         <span class="summary-cls-title">${cls.name}</span>
@@ -3194,8 +3443,7 @@ function goToDailyCheck(clsId, dateStr) {
   subjDate    = dateStr;
   subjClassId = clsId;
   _setSortMode(false);
-  document.getElementById('subj-tab-daily').classList.add('active');
-  document.getElementById('subj-tab-summary').classList.remove('active');
+  _setSubjTabActive('daily');
   subjCurrentTab = 'daily';
   showSubjView('students');
   renderSubjStudents();
@@ -3214,18 +3462,23 @@ function closeAddClsModal() {
 }
 function saveAddClsModal() {
   const clsName = document.getElementById('add-cls-name-input').value.trim();
-  if (!clsName) { alert('반 이름을 입력해 주세요.'); return; }
+  if (!clsName) { showToast('반 이름을 입력해 주세요.'); return; }
   const raw      = document.getElementById('add-cls-students-input').value;
   const students = _parseStudentList(raw);
   const cnt      = Object.keys(students).length;
-  if (!cnt) { alert('학생 명단을 입력해 주세요.'); return; }
+  if (!cnt) { showToast('학생 명단을 입력해 주세요.'); return; }
   const existing = subjData.classes.find(c => c.name === clsName);
   if (existing) {
-    if (!confirm(`"${clsName}" 반이 이미 있습니다.\n학생 명단을 업데이트할까요?`)) return;
-    existing.students = students;
-  } else {
-    subjData.classes.push({ id: 'cls_' + Date.now(), name: clsName, students });
+    _showSubjConfirm(`"${clsName}" 반이 이미 있습니다. 학생 명단을 업데이트할까요?`, () => {
+      existing.students = students;
+      saveSubjData();
+      closeAddClsModal();
+      renderSubjClassList();
+      showToast(`✅ ${cnt}명 업데이트 완료`);
+    });
+    return;
   }
+  subjData.classes.push({ id: 'cls_' + Date.now(), name: clsName, students });
   saveSubjData();
   closeAddClsModal();
   renderSubjClassList();
@@ -3249,12 +3502,14 @@ function _parseStudentList(text) {
 
 // ── 기능 4: 결과 현황 텍스트 복사 ────────────────────────────────
 function copySummaryDate(clsId, dateStr) {
-  const cls      = subjData.classes.find(c => c.id === clsId);
+  const cls = subjData.classes.find(c => c.id === clsId);
   if (!cls) return;
-  const keys     = (subjData.records[clsId] || {})[dateStr] || [];
+  const day      = subjDayRec(clsId, dateStr);
   const students = cls.students || {};
-  const names    = keys.map(k => `${studentCellLabel(k)} ${students[k] || k}`).join(', ');
-  const text     = `[${cls.name}] ${subjFmtDate(dateStr)} 결과 — ${names}`;
+  const nm = ks => ks.map(k => `${studentCellLabel(k)} ${students[k] || k}`).join(', ');
+  const text = day.dbl
+    ? `[${cls.name}] ${subjFmtDate(dateStr)} 연강\n앞교시 결과 — ${nm(day.p1) || '없음'}\n뒷교시 결과 — ${nm(day.p2) || '없음'}`
+    : `[${cls.name}] ${subjFmtDate(dateStr)} 결과 — ${nm(day.p1)}`;
   navigator.clipboard?.writeText(text)
     .then(() => showToast('📋 복사됨'))
     .catch(() => {
@@ -3270,9 +3525,15 @@ function copySummaryDate(clsId, dateStr) {
 // ── 교과 출결 초기화 ─────────────────────────────────────────────
 function initSubjApp() {
   loadSubjData();
+  if (TEST_BUILD) {
+    document.body.classList.add('test-build');
+    const h = document.querySelector('#subject-app .subj-header h1');
+    if (h) h.textContent = '교과 출결 · 테스트';
+  }
   subjDate = subjTodayStr();
   document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
   subjCurrentTab = 'daily';
+  _setSubjTabActive('daily');
   showSubjView('classes');
   renderSubjClassList();
 }
@@ -3282,6 +3543,7 @@ function showSubjView(view) {
   document.getElementById('subj-view-classes').style.display  = (view === 'classes')  ? '' : 'none';
   document.getElementById('subj-view-students').style.display = (view === 'students') ? '' : 'none';
   document.getElementById('subj-view-summary').style.display  = (view === 'summary')  ? 'block' : 'none';
+  document.getElementById('subj-view-settings').style.display = (view === 'settings') ? 'block' : 'none';
 }
 
 // ── 반 목록 뷰 ───────────────────────────────────────────────────
@@ -3306,11 +3568,15 @@ function renderSubjClassList() {
 
   const last = subjData.classes.length - 1;
   el.innerHTML = subjData.classes.map((cls, idx) => {
-    const absentArr = (subjData.records[cls.id] || {})[subjDate] || [];
+    const day   = subjDayRec(cls.id, subjDate);
     const total = Object.keys(cls.students || {}).length;
-    const cntHtml = absentArr.length
-      ? `<span class="cc-count has-absent">결과 ${absentArr.length}명</span>`
-      : `<span class="cc-count">${total}명</span>`;
+    const cntHtml = subjDayHas(day)
+      ? (day.dbl
+          ? `<span class="cc-count has-absent">결과 앞${day.p1.length}·뒤${day.p2.length}</span>`
+          : `<span class="cc-count has-absent">결과 ${day.p1.length}명</span>`)
+      : (day.dbl
+          ? `<span class="cc-count">연강 · ${total}명</span>`
+          : `<span class="cc-count">${total}명</span>`);
     const clickAttr = subjSortMode ? '' : `onclick="openSubjClass('${cls.id}')"`;
     const chevron = subjSortMode ? '' :
       `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>`;
@@ -3350,13 +3616,20 @@ function moveSubjClass(clsId, delta) {
 }
 
 function _renderSubjDateView() {
+  subjPeriod = 1;
   document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
   if (subjClassId) renderSubjStudents();
   else renderSubjClassList();
 }
 function subjChangeDate(delta) {
   _setSortMode(false);
-  subjDate = subjShiftDate(subjDate, delta);
+  let next = subjShiftDate(subjDate, delta);
+  let safety = 0;
+  while (_subjIsWeekend(next) && safety < 14) {
+    next = subjShiftDate(next, delta > 0 ? 1 : -1);
+    safety++;
+  }
+  subjDate = next;
   _renderSubjDateView();
 }
 function subjGoToday() {
@@ -3367,6 +3640,7 @@ function subjGoToday() {
 // ── 학생 뷰 ─────────────────────────────────────────────────────
 function openSubjClass(classId) {
   subjClassId = classId;
+  subjPeriod  = 1;
   showSubjView('students');
   renderSubjStudents();
 }
@@ -3375,8 +3649,7 @@ function subjClassBack() {
   subjEditMode = false;
   showSubjView('classes');
   renderSubjClassList();
-  document.getElementById('subj-tab-daily').classList.add('active');
-  document.getElementById('subj-tab-summary').classList.remove('active');
+  _setSubjTabActive('daily');
   subjCurrentTab = 'daily';
 }
 function subjClassChangeDate(delta) { subjChangeDate(delta); }
@@ -3392,7 +3665,6 @@ function _subjRenderCal() {
   document.querySelector('.cal-overlay')?.remove();
   const today = subjTodayStr();
   const sel   = subjDate;
-  const DAYS  = ['일','월','화','수','목','금','토'];
   const first  = new Date(_sCalY, _sCalM, 1);
   const lastDay = new Date(_sCalY, _sCalM + 1, 0).getDate();
   const startDow = first.getDay();
@@ -3454,15 +3726,18 @@ function deleteSubjStudent(key) {
   const cls = subjData.classes.find(c => c.id === subjClassId);
   if (!cls) return;
   const name = cls.students[key];
-  if (!confirm(`"${name}" 학생을 명단에서 삭제할까요?`)) return;
-  delete cls.students[key];
-  const rec = subjData.records[cls.id] || {};
-  Object.keys(rec).forEach(date => {
-    const arr = rec[date].filter(k => k !== key);
-    if (!arr.length) delete rec[date]; else rec[date] = arr;
+  _showSubjConfirm(`"${name}" 학생을 명단에서 삭제할까요?`, () => {
+    delete cls.students[key];
+    const rec = subjData.records[cls.id] || {};
+    Object.keys(rec).forEach(date => {
+      const d = subjDayRec(cls.id, date);
+      d.p1 = d.p1.filter(k => k !== key);
+      d.p2 = d.p2.filter(k => k !== key);
+      subjSaveDayRec(cls.id, date, d);
+    });
+    saveSubjData();
+    renderSubjStudents();
   });
-  saveSubjData();
-  renderSubjStudents();
 }
 
 // 학생 키 파싱: "3-1-4" (나이스) 또는 "4" (수동)
@@ -3491,14 +3766,29 @@ function renderSubjStudents() {
   document.getElementById('subj-cls-date-main').textContent   = subjFmtDate(subjDate);
   document.getElementById('subj-hd-date').textContent         = subjFmtDate(subjDate);
 
-  const absentArr = (subjData.records[cls.id] || {})[subjDate] || [];
-  const absentSet = new Set(absentArr);
+  const day = subjDayRec(cls.id, subjDate);
+  if (!day.dbl) subjPeriod = 1;
+  const curArr    = (day.dbl && subjPeriod === 2) ? day.p2 : day.p1;
+  const absentSet = new Set(curArr);
   const students  = cls.students || {};
   const keys = sortStudentKeys(Object.keys(students));
 
+  // 연강 줄 · 교시 전환 · 가져오기 단추
+  document.getElementById('subj-dbl-check').checked = !!day.dbl;
+  document.getElementById('subj-period-seg').style.display = day.dbl ? 'flex' : 'none';
+  const b1 = document.getElementById('pbtn-1'), b2 = document.getElementById('pbtn-2');
+  b1.classList.toggle('active', subjPeriod === 1);
+  b2.classList.toggle('active', subjPeriod === 2);
+  b1.textContent = day.p1.length ? `앞교시 ${day.p1.length}` : '앞교시';
+  b2.textContent = day.p2.length ? `뒷교시 ${day.p2.length}` : '뒷교시';
+  const copyBtn = document.getElementById('subj-copy-p1');
+  copyBtn.style.display = (day.dbl && subjPeriod === 2) ? 'block' : 'none';
+  copyBtn.disabled = day.p1.length === 0;
+
+  const pLabel = day.dbl ? (subjPeriod === 1 ? '앞교시 ' : '뒷교시 ') : '';
   document.getElementById('subj-cls-absent-summary').textContent = absentSet.size
-    ? `결과 ${absentSet.size}명 / 총 ${keys.length}명`
-    : `총 ${keys.length}명 · 결과 없음`;
+    ? `${pLabel}결과 ${absentSet.size}명 / 총 ${keys.length}명`
+    : `총 ${keys.length}명 · ${pLabel}결과 없음`;
 
   const grid = document.getElementById('subj-student-grid');
   if (!keys.length) {
@@ -3525,14 +3815,57 @@ function renderSubjStudents() {
 
 function toggleSubjAbsent(num) {
   if (!subjClassId) return;
-  if (!subjData.records[subjClassId]) subjData.records[subjClassId] = {};
-  const rec = subjData.records[subjClassId];
-  const arr = rec[subjDate] ? [...rec[subjDate]] : [];
+  const day = subjDayRec(subjClassId, subjDate);
+  const tgt = (day.dbl && subjPeriod === 2) ? 'p2' : 'p1';
+  const arr = [...day[tgt]];
   const idx = arr.indexOf(num);
   if (idx >= 0) arr.splice(idx, 1); else arr.push(num);
-  if (arr.length === 0) delete rec[subjDate]; else rec[subjDate] = arr;
-  saveSubjData();
+  day[tgt] = arr;
+  subjSaveDayRec(subjClassId, subjDate, day);
   renderSubjStudents();
+}
+
+// ── 연강 켜고 끄기 ───────────────────────────────────────────────
+function toggleSubjDouble(on) {
+  if (!subjClassId) return;
+  const day = subjDayRec(subjClassId, subjDate);
+  const finish = () => {
+    // 꼴을 정하는 곳은 subjSaveDayRec 한 곳뿐이다 —
+    // dbl:0 으로 저장하면 배열꼴이 되면서 뒷교시가 함께 버려진다
+    day.dbl = on ? 1 : 0;
+    subjSaveDayRec(subjClassId, subjDate, day);
+    subjPeriod = 1;
+    renderSubjStudents();
+    renderSubjClassList();
+  };
+  if (!on && day.p2.length) {
+    document.getElementById('subj-dbl-check').checked = true;   // 취소하면 되돌려 둔다
+    _showSubjConfirm(`뒷교시 결과 ${day.p2.length}건이 지워집니다. 연강을 해제하시겠습니까?`, finish);
+    return;
+  }
+  finish();
+}
+
+function setSubjPeriod(p) {
+  subjPeriod = p;
+  renderSubjStudents();
+}
+
+// 앞교시 결과를 뒷교시로 그대로 옮겨 놓고, 중간에 온 학생만 풀게 한다
+function copyP1ToP2() {
+  if (!subjClassId) return;
+  const day = subjDayRec(subjClassId, subjDate);
+  if (!day.dbl || !day.p1.length) return;
+  const run = () => {
+    day.p2 = [...day.p1];
+    subjSaveDayRec(subjClassId, subjDate, day);
+    renderSubjStudents();
+    renderSubjClassList();
+    showToast(`앞교시 ${day.p1.length}명을 뒷교시로 가져왔습니다.`);
+  };
+  if (day.p2.length)
+    _showSubjConfirm(`뒷교시에 이미 ${day.p2.length}건이 있습니다. 앞교시 기록으로 덮어쓰시겠습니까?`, run);
+  else run();
 }
 
 // ── 나이스 교과시간별 출석부 엑셀 업로드 ─────────────────────────
@@ -3648,8 +3981,8 @@ function deleteSubjClass() {
 
 // ── 랜딩 라벨 관리 ──────────────────────────────────────────────
 function renderLandingLabels() {
-  const hr  = localStorage.getItem('lbl_homeroom') || '';
-  const sub = localStorage.getItem('lbl_subject')  || '';
+  const hr  = localStorage.getItem(('lbl_homeroom' + _KS)) || '';
+  const sub = localStorage.getItem(('lbl_subject' + _KS))  || '';
   const hrEl  = document.getElementById('lbl-homeroom');
   const subEl = document.getElementById('lbl-subject');
   if (hrEl)  hrEl.textContent  = hr  ? `${hr} · 나이스 연동 · 서류 관리` : '나이스 연동 · 서류 관리';
@@ -3663,15 +3996,15 @@ function toggleLandingEdit(mode) {
   document.querySelectorAll('.land-edit-row.open').forEach(el => el.classList.remove('open'));
   if (opening) {
     row.classList.add('open');
-    inp.value = localStorage.getItem('lbl_' + mode) || '';
+    inp.value = localStorage.getItem('lbl_' + mode + _KS) || '';
     setTimeout(() => inp.focus(), 60);
   }
 }
 
 function saveLandingLabel(mode) {
   const val = document.getElementById('inp-' + mode).value.trim();
-  if (val) localStorage.setItem('lbl_' + mode, val);
-  else localStorage.removeItem('lbl_' + mode);
+  if (val) localStorage.setItem('lbl_' + mode + _KS, val);
+  else localStorage.removeItem('lbl_' + mode + _KS);
   document.getElementById('edit-' + mode).classList.remove('open');
   renderLandingLabels();
 }
@@ -3690,7 +4023,8 @@ function saveLandingLabel(mode) {
 })();
 
 // ── 앱 시작 (모드 분기) ──────────────────────────────────────────
-const _savedMode = localStorage.getItem('att_mode');
+initTopOffset(); // 상단 여백은 모드와 무관하게 항상 적용 (교과 모드로 바로 시작해도)
+const _savedMode = localStorage.getItem(('att_mode' + _KS));
 if (_savedMode === 'homeroom') {
   _appInitialized = true;
   document.body.classList.add('mode-homeroom');

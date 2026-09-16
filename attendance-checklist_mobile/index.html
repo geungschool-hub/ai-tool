@@ -575,6 +575,39 @@ body.mode-subject > .bottom-nav { display: none !important; }
 .student-cell.absent   { background: #FEF0ED; border-color: var(--red); }
 .student-cell.absent .sc-num  { color: #E08070; }
 .student-cell.absent .sc-name { color: var(--red); }
+/* ── 연강(2교시 연속) ── */
+.dbl-row { display:flex; align-items:center; justify-content:center; margin-top:10px; }
+.dbl-check {
+  display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  padding:8px 14px; min-height:44px; border-radius:10px; background:var(--bg);
+  font-size:13px; font-weight:700; color:var(--navy);
+  user-select:none; -webkit-tap-highlight-color:transparent;
+}
+.dbl-check input { width:20px; height:20px; accent-color:var(--navy); cursor:pointer; }
+.period-seg { display:none; gap:6px; margin-top:8px; }
+.period-btn {
+  flex:1; min-height:44px; border:2px solid var(--line); border-radius:10px;
+  background:white; font-family:inherit; font-size:14px; font-weight:700;
+  color:var(--muted); cursor:pointer;
+  transition:background .12s, color .12s, border-color .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.period-btn.active { background:var(--navy); border-color:var(--navy); color:white; }
+.copy-p1-btn {
+  display:none; width:100%; min-height:44px; margin-bottom:10px;
+  border:1.5px dashed #90BAE8; border-radius:10px; background:#F5F9FF;
+  font-family:inherit; font-size:13px; font-weight:700; color:var(--blue); cursor:pointer;
+}
+.copy-p1-btn:disabled { opacity:.4; cursor:default; }
+.snc-per {
+  font-size:10px; font-weight:800; color:white; background:var(--navy);
+  border-radius:4px; padding:1px 5px; white-space:nowrap;
+}
+.snc-per.p2 { background:var(--amber); }
+/* 테스트 빌드 — 라이브와 눈으로 구분되게 머리띠 색을 바꾼다 */
+body.test-build .subj-header,
+body.test-build .app-header { background:linear-gradient(135deg,#7A3E00 0%,#B05A00 100%); }
+
 .sc-del-btn {
   position: absolute; top: -6px; right: -6px;
   width: 22px; height: 22px;
@@ -1222,8 +1255,19 @@ body.mode-subject > .bottom-nav { display: none !important; }
           <button class="arrow-btn" onclick="subjOpenCal()" style="font-size:16px">📅</button>
           <button class="arrow-btn" onclick="subjClassChangeDate(1)">▶</button>
         </div>
+        <div class="dbl-row">
+          <label class="dbl-check">
+            <input type="checkbox" id="subj-dbl-check" onchange="toggleSubjDouble(this.checked)">
+            <span>연강</span>
+          </label>
+        </div>
+        <div class="period-seg" id="subj-period-seg">
+          <button class="period-btn active" id="pbtn-1" onclick="setSubjPeriod(1)">앞교시</button>
+          <button class="period-btn"        id="pbtn-2" onclick="setSubjPeriod(2)">뒷교시</button>
+        </div>
         <div id="subj-cls-absent-summary" style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center"></div>
       </div>
+      <button class="copy-p1-btn" id="subj-copy-p1" onclick="copyP1ToP2()">⤵ 앞교시 그대로 가져오기</button>
       <div class="student-grid" id="subj-student-grid"></div>
     </div>
   </div>
@@ -1340,8 +1384,15 @@ const DEFAULT_HOLIDAYS = [
   { date:'2026-11-20', label:'재량휴업일' },
   { date:'2026-12-25', label:'성탄절' },
 ];
-const STORAGE_KEY        = 'attendance_app_v1';
-const STORAGE_KEY_LEGACY = 'attendance_2026_mobile';
+/* ── 테스트 빌드 스위치 ────────────────────────────────────────────
+   라이브와 테스트가 같은 오리진이라 localStorage 를 공유한다.
+   true  = 테스트 배포본. 저장소 키를 따로 써서 라이브 데이터를 건드리지 않는다.
+   false = 라이브. 승격할 때 이 한 줄만 false 로 바꾼다.               */
+const TEST_BUILD = false;
+const _KS = TEST_BUILD ? '_test' : '';
+
+const STORAGE_KEY        = 'attendance_app_v1' + _KS;
+const STORAGE_KEY_LEGACY = 'attendance_2026_mobile' + _KS;
 const DAYS = ['일','월','화','수','목','금','토'];
 const TL   = { disease:'질병', unapproved:'미인정', other:'기타', approved:'인정' };
 const ABSENCE_OPTS  = [{value:'',label:'없음'},{value:'disease',label:'질병'},{value:'unapproved',label:'미인정'},{value:'other',label:'기타'},{value:'approved',label:'인정'}];
@@ -2079,7 +2130,7 @@ function _okSubjConfirm() {
 }
 
 function exportSubjBackup() {
-  const blob = new Blob([JSON.stringify(subjData, null, 2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify({ v:2, ...subjData }, null, 2)], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href=url; a.download=`subject_backup_${subjTodayStr()}.json`; a.click();
@@ -2959,7 +3010,7 @@ function showToast(msg) {
 }
 
 // ===== 업데이트 공지 =====
-const UPDATE_NOTICE_KEY = 'notice_subject_240424';
+const UPDATE_NOTICE_KEY = 'notice_subject_240424' + _KS;
 function checkUpdateNotice() {
   if (!localStorage.getItem(UPDATE_NOTICE_KEY)) {
     document.getElementById('update-notice-overlay').style.display = 'flex';
@@ -2971,7 +3022,7 @@ function closeUpdateNotice() {
 }
 
 // ===== 온보딩 =====
-const OB_KEY = 'onboarding_v1';
+const OB_KEY = 'onboarding_v1' + _KS;
 let _obStep = 0;
 
 function showOnboarding() {
@@ -3092,12 +3143,12 @@ function renderObStep() {
 const ZOOM_LEVELS = ['100%', '115%', '130%'];
 let _zoomIdx = 0;
 function initZoom() {
-  _zoomIdx = Math.min(parseInt(localStorage.getItem('attendance_zoom') || '0'), ZOOM_LEVELS.length - 1);
+  _zoomIdx = Math.min(parseInt(localStorage.getItem(('attendance_zoom' + _KS)) || '0'), ZOOM_LEVELS.length - 1);
   applyZoom();
 }
 function adjustZoom(dir) {
   _zoomIdx = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, _zoomIdx + dir));
-  localStorage.setItem('attendance_zoom', _zoomIdx);
+  localStorage.setItem(('attendance_zoom' + _KS), _zoomIdx);
   applyZoom();
 }
 function applyZoom() {
@@ -3109,18 +3160,18 @@ function applyZoom() {
 // ===== 상단 버튼 위치 조정 (기기별 UI 보정) =====
 const TOP_OFFSET_STEP = 5, TOP_OFFSET_MAX = 60;
 function getTopOffset() {
-  let v = parseInt(localStorage.getItem('attendance_top_offset') || '0', 10);
+  let v = parseInt(localStorage.getItem(('attendance_top_offset' + _KS)) || '0', 10);
   if (isNaN(v) || v < 0) v = 0;
   return Math.min(v, TOP_OFFSET_MAX);
 }
 function initTopOffset() { applyTopOffset(getTopOffset()); }
 function adjustTopOffset(dir) {
   const v = Math.max(0, Math.min(TOP_OFFSET_MAX, getTopOffset() + dir * TOP_OFFSET_STEP));
-  localStorage.setItem('attendance_top_offset', v);
+  localStorage.setItem(('attendance_top_offset' + _KS), v);
   applyTopOffset(v);
 }
 function resetTopOffset() {
-  localStorage.setItem('attendance_top_offset', 0);
+  localStorage.setItem(('attendance_top_offset' + _KS), 0);
   applyTopOffset(0);
 }
 function applyTopOffset(v) {
@@ -3195,7 +3246,7 @@ function _initApp() {
 let _appInitialized = false;
 
 function enterMode(mode) {
-  localStorage.setItem('att_mode', mode);
+  localStorage.setItem(('att_mode' + _KS), mode);
   document.body.className = 'mode-' + mode;
   if (mode === 'homeroom') {
     if (!_appInitialized) { _appInitialized = true; _initApp(); }
@@ -3205,7 +3256,7 @@ function enterMode(mode) {
 }
 
 function backToLanding() {
-  localStorage.removeItem('att_mode');
+  localStorage.removeItem(('att_mode' + _KS));
   document.body.className = '';
   showSubjView('classes');
   _setSubjTabActive('daily');
@@ -3221,13 +3272,14 @@ function goHomeroomFromSubject() {
 }
 
 // ── 교과 출결 데이터 ─────────────────────────────────────────────
-const SUBJ_KEY = 'subject_att_v1';
+const SUBJ_KEY = 'subject_att_v1' + _KS;
 let subjData = { classes: [], records: {} };
 let subjDate = '';
 let subjClassId = null;
 let editingClassId = null;
 let subjEditMode = false;
 let subjSortMode = false;
+let subjPeriod   = 1;   // 연강일 때 지금 체크 중인 교시 (1=앞, 2=뒷)
 
 function loadSubjData() {
   try {
@@ -3238,6 +3290,29 @@ function loadSubjData() {
   } catch(e) { subjData = { classes: [], records: {} }; }
 }
 function saveSubjData() { localStorage.setItem(SUBJ_KEY, JSON.stringify(subjData)); }
+
+// ── 연강(2교시 연속) 기록 접근자 ─────────────────────────────────
+// records[반ID][날짜] 는 두 가지 꼴을 가진다.
+//   ["3-1-4", ...]                 단일 교시 — 옛 꼴 그대로 (기존 기록을 건드리지 않는다)
+//   { dbl:1, p1:[...], p2:[...] }  연강
+// 읽기·쓰기는 반드시 이 두 함수만 거친다.
+function subjDayRec(clsId, date) {
+  const v = (subjData.records[clsId] || {})[date];
+  if (!v)               return { dbl:0, p1:[], p2:[] };
+  if (Array.isArray(v)) return { dbl:0, p1:[...v], p2:[] };
+  return { dbl: v.dbl ? 1 : 0, p1: [...(v.p1 || [])], p2: [...(v.p2 || [])] };
+}
+function subjSaveDayRec(clsId, date, r) {
+  if (!subjData.records[clsId]) subjData.records[clsId] = {};
+  const rec = subjData.records[clsId];
+  // 연강이면 두 교시가 다 비어도 남긴다 — 연강 표시 자체가 기억되어야 한다
+  if (r.dbl)            rec[date] = { dbl:1, p1:[...r.p1], p2:[...r.p2] };
+  else if (r.p1.length) rec[date] = [...r.p1];
+  else                  delete rec[date];
+  saveSubjData();
+}
+function subjDayCount(r) { return r.dbl ? r.p1.length + r.p2.length : r.p1.length; }
+function subjDayHas(r)   { return subjDayCount(r) > 0; }
 
 function subjTodayStr() {
   const d = new Date();
@@ -3297,7 +3372,7 @@ function renderSubjSummary() {
   el.innerHTML = subjData.classes.map(cls => {
     const rec = subjData.records[cls.id] || {};
     const dates = Object.keys(rec)
-      .filter(d => rec[d] && rec[d].length > 0)
+      .filter(d => subjDayHas(subjDayRec(cls.id, d)))
       .sort((a, b) => b.localeCompare(a));
 
     let dateRows;
@@ -3313,19 +3388,25 @@ function renderSubjSummary() {
           : '';
         curMonth = monthKey;
 
-        const keys     = rec[d];
+        const day      = subjDayRec(cls.id, d);
         const students = cls.students || {};
         const detailId = `sumdet_${cls.id}_${d.replace(/-/g,'_')}`;
-        const chips    = keys.map(k => {
-          const name  = students[k] || k;
-          const label = studentCellLabel(k);
-          return `<span class="summary-name-chip"><span class="snc-label">${label}</span>${name}</span>`;
-        }).join('');
+        const chipOf   = (k, per) => {
+          const name = students[k] || k;
+          const tag  = per ? `<span class="snc-per${per === '뒤' ? ' p2' : ''}">${per}</span>` : '';
+          return `<span class="summary-name-chip">${tag}<span class="snc-label">${studentCellLabel(k)}</span>${name}</span>`;
+        };
+        const chips = day.dbl
+          ? day.p1.map(k => chipOf(k, '앞')).join('') + day.p2.map(k => chipOf(k, '뒤')).join('')
+          : day.p1.map(k => chipOf(k, '')).join('');
+        const cntBadge = day.dbl
+          ? `결과 앞${day.p1.length}·뒤${day.p2.length}`
+          : `결과 ${day.p1.length}명`;
         return `${monthLabel}<div class="summary-date-row" onclick="toggleSummaryDetail('${detailId}')">
           <div class="summary-date-top">
             <span class="summary-date-label">${subjFmtDate(d)}</span>
             <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
-              <span class="summary-absent-badge">결과 ${keys.length}명</span>
+              <span class="summary-absent-badge">${cntBadge}</span>
               <button class="sum-action-btn" onclick="event.stopPropagation();copySummaryDate('${cls.id}','${d}')">복사</button>
               <button class="sum-action-btn goto" onclick="event.stopPropagation();goToDailyCheck('${cls.id}','${d}')">이동</button>
             </div>
@@ -3337,7 +3418,7 @@ function renderSubjSummary() {
 
     const secId     = `sumcls_${cls.id}`;
     const totalDays = dates.length;
-    const meta      = totalDays ? `${totalDays}일 · 누적 결과 ${dates.reduce((s,d)=>(rec[d]?.length||0)+s,0)}건` : '기록 없음';
+    const meta      = totalDays ? `${totalDays}일 · 누적 결과 ${dates.reduce((s,d)=>s+subjDayCount(subjDayRec(cls.id,d)),0)}건` : '기록 없음';
     return `<div class="summary-cls-section" id="${secId}">
       <div class="summary-cls-header" onclick="toggleSummaryClass('${secId}')">
         <span class="summary-cls-title">${cls.name}</span>
@@ -3421,12 +3502,14 @@ function _parseStudentList(text) {
 
 // ── 기능 4: 결과 현황 텍스트 복사 ────────────────────────────────
 function copySummaryDate(clsId, dateStr) {
-  const cls      = subjData.classes.find(c => c.id === clsId);
+  const cls = subjData.classes.find(c => c.id === clsId);
   if (!cls) return;
-  const keys     = (subjData.records[clsId] || {})[dateStr] || [];
+  const day      = subjDayRec(clsId, dateStr);
   const students = cls.students || {};
-  const names    = keys.map(k => `${studentCellLabel(k)} ${students[k] || k}`).join(', ');
-  const text     = `[${cls.name}] ${subjFmtDate(dateStr)} 결과 — ${names}`;
+  const nm = ks => ks.map(k => `${studentCellLabel(k)} ${students[k] || k}`).join(', ');
+  const text = day.dbl
+    ? `[${cls.name}] ${subjFmtDate(dateStr)} 연강\n앞교시 결과 — ${nm(day.p1) || '없음'}\n뒷교시 결과 — ${nm(day.p2) || '없음'}`
+    : `[${cls.name}] ${subjFmtDate(dateStr)} 결과 — ${nm(day.p1)}`;
   navigator.clipboard?.writeText(text)
     .then(() => showToast('📋 복사됨'))
     .catch(() => {
@@ -3442,6 +3525,11 @@ function copySummaryDate(clsId, dateStr) {
 // ── 교과 출결 초기화 ─────────────────────────────────────────────
 function initSubjApp() {
   loadSubjData();
+  if (TEST_BUILD) {
+    document.body.classList.add('test-build');
+    const h = document.querySelector('#subject-app .subj-header h1');
+    if (h) h.textContent = '교과 출결 · 테스트';
+  }
   subjDate = subjTodayStr();
   document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
   subjCurrentTab = 'daily';
@@ -3480,11 +3568,15 @@ function renderSubjClassList() {
 
   const last = subjData.classes.length - 1;
   el.innerHTML = subjData.classes.map((cls, idx) => {
-    const absentArr = (subjData.records[cls.id] || {})[subjDate] || [];
+    const day   = subjDayRec(cls.id, subjDate);
     const total = Object.keys(cls.students || {}).length;
-    const cntHtml = absentArr.length
-      ? `<span class="cc-count has-absent">결과 ${absentArr.length}명</span>`
-      : `<span class="cc-count">${total}명</span>`;
+    const cntHtml = subjDayHas(day)
+      ? (day.dbl
+          ? `<span class="cc-count has-absent">결과 앞${day.p1.length}·뒤${day.p2.length}</span>`
+          : `<span class="cc-count has-absent">결과 ${day.p1.length}명</span>`)
+      : (day.dbl
+          ? `<span class="cc-count">연강 · ${total}명</span>`
+          : `<span class="cc-count">${total}명</span>`);
     const clickAttr = subjSortMode ? '' : `onclick="openSubjClass('${cls.id}')"`;
     const chevron = subjSortMode ? '' :
       `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>`;
@@ -3524,6 +3616,7 @@ function moveSubjClass(clsId, delta) {
 }
 
 function _renderSubjDateView() {
+  subjPeriod = 1;
   document.getElementById('subj-hd-date').textContent = subjFmtDate(subjDate);
   if (subjClassId) renderSubjStudents();
   else renderSubjClassList();
@@ -3547,6 +3640,7 @@ function subjGoToday() {
 // ── 학생 뷰 ─────────────────────────────────────────────────────
 function openSubjClass(classId) {
   subjClassId = classId;
+  subjPeriod  = 1;
   showSubjView('students');
   renderSubjStudents();
 }
@@ -3636,8 +3730,10 @@ function deleteSubjStudent(key) {
     delete cls.students[key];
     const rec = subjData.records[cls.id] || {};
     Object.keys(rec).forEach(date => {
-      const arr = rec[date].filter(k => k !== key);
-      if (!arr.length) delete rec[date]; else rec[date] = arr;
+      const d = subjDayRec(cls.id, date);
+      d.p1 = d.p1.filter(k => k !== key);
+      d.p2 = d.p2.filter(k => k !== key);
+      subjSaveDayRec(cls.id, date, d);
     });
     saveSubjData();
     renderSubjStudents();
@@ -3670,14 +3766,29 @@ function renderSubjStudents() {
   document.getElementById('subj-cls-date-main').textContent   = subjFmtDate(subjDate);
   document.getElementById('subj-hd-date').textContent         = subjFmtDate(subjDate);
 
-  const absentArr = (subjData.records[cls.id] || {})[subjDate] || [];
-  const absentSet = new Set(absentArr);
+  const day = subjDayRec(cls.id, subjDate);
+  if (!day.dbl) subjPeriod = 1;
+  const curArr    = (day.dbl && subjPeriod === 2) ? day.p2 : day.p1;
+  const absentSet = new Set(curArr);
   const students  = cls.students || {};
   const keys = sortStudentKeys(Object.keys(students));
 
+  // 연강 줄 · 교시 전환 · 가져오기 단추
+  document.getElementById('subj-dbl-check').checked = !!day.dbl;
+  document.getElementById('subj-period-seg').style.display = day.dbl ? 'flex' : 'none';
+  const b1 = document.getElementById('pbtn-1'), b2 = document.getElementById('pbtn-2');
+  b1.classList.toggle('active', subjPeriod === 1);
+  b2.classList.toggle('active', subjPeriod === 2);
+  b1.textContent = day.p1.length ? `앞교시 ${day.p1.length}` : '앞교시';
+  b2.textContent = day.p2.length ? `뒷교시 ${day.p2.length}` : '뒷교시';
+  const copyBtn = document.getElementById('subj-copy-p1');
+  copyBtn.style.display = (day.dbl && subjPeriod === 2) ? 'block' : 'none';
+  copyBtn.disabled = day.p1.length === 0;
+
+  const pLabel = day.dbl ? (subjPeriod === 1 ? '앞교시 ' : '뒷교시 ') : '';
   document.getElementById('subj-cls-absent-summary').textContent = absentSet.size
-    ? `결과 ${absentSet.size}명 / 총 ${keys.length}명`
-    : `총 ${keys.length}명 · 결과 없음`;
+    ? `${pLabel}결과 ${absentSet.size}명 / 총 ${keys.length}명`
+    : `총 ${keys.length}명 · ${pLabel}결과 없음`;
 
   const grid = document.getElementById('subj-student-grid');
   if (!keys.length) {
@@ -3704,14 +3815,57 @@ function renderSubjStudents() {
 
 function toggleSubjAbsent(num) {
   if (!subjClassId) return;
-  if (!subjData.records[subjClassId]) subjData.records[subjClassId] = {};
-  const rec = subjData.records[subjClassId];
-  const arr = rec[subjDate] ? [...rec[subjDate]] : [];
+  const day = subjDayRec(subjClassId, subjDate);
+  const tgt = (day.dbl && subjPeriod === 2) ? 'p2' : 'p1';
+  const arr = [...day[tgt]];
   const idx = arr.indexOf(num);
   if (idx >= 0) arr.splice(idx, 1); else arr.push(num);
-  if (arr.length === 0) delete rec[subjDate]; else rec[subjDate] = arr;
-  saveSubjData();
+  day[tgt] = arr;
+  subjSaveDayRec(subjClassId, subjDate, day);
   renderSubjStudents();
+}
+
+// ── 연강 켜고 끄기 ───────────────────────────────────────────────
+function toggleSubjDouble(on) {
+  if (!subjClassId) return;
+  const day = subjDayRec(subjClassId, subjDate);
+  const finish = () => {
+    // 꼴을 정하는 곳은 subjSaveDayRec 한 곳뿐이다 —
+    // dbl:0 으로 저장하면 배열꼴이 되면서 뒷교시가 함께 버려진다
+    day.dbl = on ? 1 : 0;
+    subjSaveDayRec(subjClassId, subjDate, day);
+    subjPeriod = 1;
+    renderSubjStudents();
+    renderSubjClassList();
+  };
+  if (!on && day.p2.length) {
+    document.getElementById('subj-dbl-check').checked = true;   // 취소하면 되돌려 둔다
+    _showSubjConfirm(`뒷교시 결과 ${day.p2.length}건이 지워집니다. 연강을 해제하시겠습니까?`, finish);
+    return;
+  }
+  finish();
+}
+
+function setSubjPeriod(p) {
+  subjPeriod = p;
+  renderSubjStudents();
+}
+
+// 앞교시 결과를 뒷교시로 그대로 옮겨 놓고, 중간에 온 학생만 풀게 한다
+function copyP1ToP2() {
+  if (!subjClassId) return;
+  const day = subjDayRec(subjClassId, subjDate);
+  if (!day.dbl || !day.p1.length) return;
+  const run = () => {
+    day.p2 = [...day.p1];
+    subjSaveDayRec(subjClassId, subjDate, day);
+    renderSubjStudents();
+    renderSubjClassList();
+    showToast(`앞교시 ${day.p1.length}명을 뒷교시로 가져왔습니다.`);
+  };
+  if (day.p2.length)
+    _showSubjConfirm(`뒷교시에 이미 ${day.p2.length}건이 있습니다. 앞교시 기록으로 덮어쓰시겠습니까?`, run);
+  else run();
 }
 
 // ── 나이스 교과시간별 출석부 엑셀 업로드 ─────────────────────────
@@ -3827,8 +3981,8 @@ function deleteSubjClass() {
 
 // ── 랜딩 라벨 관리 ──────────────────────────────────────────────
 function renderLandingLabels() {
-  const hr  = localStorage.getItem('lbl_homeroom') || '';
-  const sub = localStorage.getItem('lbl_subject')  || '';
+  const hr  = localStorage.getItem(('lbl_homeroom' + _KS)) || '';
+  const sub = localStorage.getItem(('lbl_subject' + _KS))  || '';
   const hrEl  = document.getElementById('lbl-homeroom');
   const subEl = document.getElementById('lbl-subject');
   if (hrEl)  hrEl.textContent  = hr  ? `${hr} · 나이스 연동 · 서류 관리` : '나이스 연동 · 서류 관리';
@@ -3842,15 +3996,15 @@ function toggleLandingEdit(mode) {
   document.querySelectorAll('.land-edit-row.open').forEach(el => el.classList.remove('open'));
   if (opening) {
     row.classList.add('open');
-    inp.value = localStorage.getItem('lbl_' + mode) || '';
+    inp.value = localStorage.getItem('lbl_' + mode + _KS) || '';
     setTimeout(() => inp.focus(), 60);
   }
 }
 
 function saveLandingLabel(mode) {
   const val = document.getElementById('inp-' + mode).value.trim();
-  if (val) localStorage.setItem('lbl_' + mode, val);
-  else localStorage.removeItem('lbl_' + mode);
+  if (val) localStorage.setItem('lbl_' + mode + _KS, val);
+  else localStorage.removeItem('lbl_' + mode + _KS);
   document.getElementById('edit-' + mode).classList.remove('open');
   renderLandingLabels();
 }
@@ -3870,7 +4024,7 @@ function saveLandingLabel(mode) {
 
 // ── 앱 시작 (모드 분기) ──────────────────────────────────────────
 initTopOffset(); // 상단 여백은 모드와 무관하게 항상 적용 (교과 모드로 바로 시작해도)
-const _savedMode = localStorage.getItem('att_mode');
+const _savedMode = localStorage.getItem(('att_mode' + _KS));
 if (_savedMode === 'homeroom') {
   _appInitialized = true;
   document.body.classList.add('mode-homeroom');

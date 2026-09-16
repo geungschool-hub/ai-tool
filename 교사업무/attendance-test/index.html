@@ -830,22 +830,22 @@ body.test-build .app-header { background:linear-gradient(135deg,#7A3E00 0%,#B05A
 <div id="update-notice-overlay">
   <div id="update-notice-card">
     <div class="un-header">
-      <div class="un-badge">2026년 4월 24일 업데이트</div>
-      <div class="un-title">교과 출결 기능이<br>새로 추가되었습니다 📚</div>
+      <div class="un-badge">2026년 9월 16일 업데이트</div>
+      <div class="un-title">교과 출결에 연강이<br>추가되었습니다 🕑</div>
     </div>
     <div class="un-body">
       <div class="un-feat-list">
         <div class="un-feat">
-          <div class="un-feat-icon">📋</div>
-          <div class="un-feat-text"><b>반 관리</b> — 여러 반을 등록하고, 명렬표를 PDF로 업로드하거나 직접 입력할 수 있습니다.</div>
+          <div class="un-feat-icon">☑️</div>
+          <div class="un-feat-text"><b>연강</b> — 명단 화면에서 연강을 켜면 앞교시·뒷교시를 따로 체크합니다.</div>
         </div>
         <div class="un-feat">
-          <div class="un-feat-icon">✅</div>
-          <div class="un-feat-text"><b>일일 체크</b> — 날짜별로 결과 학생을 탭 한 번으로 기록합니다.</div>
+          <div class="un-feat-icon">⤵️</div>
+          <div class="un-feat-text"><b>앞교시 그대로 가져오기</b> — 뒷교시로 넘어갈 때 앞교시 결과를 한 번에 옮기고, 중간에 온 학생만 풉니다.</div>
         </div>
         <div class="un-feat">
           <div class="un-feat-icon">📊</div>
-          <div class="un-feat-text"><b>출결 현황</b> — 반별로 결과 발생 날짜와 학생을 한눈에 확인합니다.</div>
+          <div class="un-feat-text"><b>출결 현황</b> — 연강인 날은 앞·뒤를 구분해 보이고, 복사 텍스트도 두 줄로 나갑니다.</div>
         </div>
       </div>
       <button class="un-confirm-btn" onclick="closeUpdateNotice()">확인</button>
@@ -3010,7 +3010,7 @@ function showToast(msg) {
 }
 
 // ===== 업데이트 공지 =====
-const UPDATE_NOTICE_KEY = 'notice_subject_240424' + _KS;
+const UPDATE_NOTICE_KEY = 'notice_subject_260916' + _KS;   // 날짜를 바꾸면 모두에게 한 번 다시 뜬다
 function checkUpdateNotice() {
   if (!localStorage.getItem(UPDATE_NOTICE_KEY)) {
     document.getElementById('update-notice-overlay').style.display = 'flex';

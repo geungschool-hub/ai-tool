@@ -1,4 +1,4 @@
-const CACHE = 'attendance-2026-v15';
+const CACHE = 'attendance-2026-v16';
 const PREFIX = 'attendance-2026-';   // 테스트 캐시(attendance-test-*)는 건드리지 않는다
 const FILES = ['./', './index.html', './manifest.json', './icon.svg', './xlsx.full.min.js', './pdf.min.js', './pdf.worker.min.js'];
 

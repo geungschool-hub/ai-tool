@@ -1,0 +1,55 @@
+
+> 자리 배치 앱에 기능을 추가하고 싶어. 우선 자리뽑기 탭에서 시작 버튼을 누르기 전에 미리 내가 학생의 자리를
+  지정할 수 있는 기능이 있었으면 좋겠어. 이건 비밀스레 진행하는 과정이 아닌 모두가 공유해도 되는 과정에
+  사용하는 기능이라 비밀 모드로 들어갈 이유가 없는 기능이거든. 미리 지정한 학생과 그 학생의 자리는 시작 버튼을
+  눌러도 변하지 않고 빈 자리에 남은 학생들이 들어가게 되면 되겠지?
+
+● 구현 전에 현재 v2 파일 구조를 파악하겠습니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● Explore(Seat picker v2 code structure analysis)
+  ⎿  Done (19 tool uses · 66.0k tokens · 51s)
+  (ctrl+o to expand)
+
+● 이미 state.constraints.fixed 필드가 존재하고 tryAssign()에서 처리됩니다. 비밀 조건 탭에서도 고정 배정을 쓰는지
+   확인하겠습니다.
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● state.constraints.fixed가 이미 비밀 조건 탭에 존재합니다. 뽑기 탭에서의 UI를 추가하는 방식으로 구현할 수
+  있겠네요. startDrawing()과 renderRunStage()가 pre-assign을 어떻게 처리하는지 확인합니다.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● 충분히 파악됐습니다. 구현 계획을 정리하면:
+
+  - 새 state 필드 preAssigned: {} 추가 (기존 비밀 조건 constraints.fixed와 분리)
+  - 자리뽑기 탭 시작 버튼 위에 "📌 자리 미리 지정" 접이식 섹션 추가
+  - 섹션 안: 학생 선택 → 교실 클릭으로 배정, 이미 배정된 자리 클릭 시 해제
+  - renderRunStage(): 미리 지정된 학생은 처음부터 자리에 표시
+  - startDrawing(): 미리 지정된 자리는 애니메이션 건너뛰고, 나머지만 랜덤 뽑기
+
+  구현하겠습니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● renderClassroom에서 fixed 자리를 어떻게 처리하는지 봅니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● tryAssign()의 fixed 처리 부분을 확인합니다.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● reshuffle() 함수도 확인합니다.
+
+  Searched for 2 patterns (ctrl+o to expand)
+
+● 학생 삭제 시 preAssigned 정리도 필요한지 확인합니다.
+
+  Searched for 1 pattern (ctrl+o to expand)
+  ⎿  You've hit your org's monthly usage limit
+     /extra-usage to request more usage from your admin.
+
+✻ Baked for 4m 55s

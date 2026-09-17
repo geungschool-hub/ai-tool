@@ -1,0 +1,2753 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>두근두근 자리뽑기 🌸</title>
+<meta name="description" content="교실에서 바로 쓰는 자리 뽑기 도구. 명단 입력 → 교실 배치 → 자리뽑기 → 결과 저장까지 한 번에.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FFB6C7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="자리뽑기">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dongle:wght@300;400;700&family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --cream:#FFF9F5;
+  --paper:#FFFFFF;
+  --pink:#FFB6C7;
+  --pink-2:#FFD9DF;
+  --pink-3:#FFEEF1;
+  --accent-rgb:255,150,170;
+  --blue:#B5D8FF;
+  --blue-2:#DDEFFF;
+  --blue-3:#EEF6FF;
+  --lilac:#DCC6FF;
+  --lilac-2:#EFE5FF;
+  --mint:#B8E6D9;
+  --mint-2:#E1F4EE;
+  --butter:#FFE3A3;
+  --butter-2:#FFF3CF;
+  --ink:#3F3F4A;
+  --sub:#86868F;
+  --line:#F0E6E2;
+  --shadow:0 4px 14px rgba(var(--accent-rgb),.18);
+  --shadow-lg:0 8px 28px rgba(var(--accent-rgb),.22);
+  --r-sm:10px;
+  --r:14px;
+  --r-lg:22px;
+  --r-xl:28px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:var(--cream);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  font-weight:400;
+}
+.title-font{font-family:'Dongle','Jua',sans-serif;letter-spacing:-.5px}
+button{font-family:inherit}
+
+/* ───── Themes (body class로 덮어쓰기) ───── */
+body.theme-pink{
+  --pink:#FFB6C7;--pink-2:#FFD9DF;--pink-3:#FFEEF1;
+  --lilac:#DCC6FF;--lilac-2:#EFE5FF;
+  --cream:#FFF9F5;--line:#F0E6E2;
+  --accent-rgb:255,150,170;
+  --shadow:0 4px 14px rgba(var(--accent-rgb),.18);
+  --shadow-lg:0 8px 28px rgba(var(--accent-rgb),.22);
+}
+body.theme-sky{
+  --pink:#7BC0E8;--pink-2:#C5E2F2;--pink-3:#E8F3FB;
+  --lilac:#95D6E8;--lilac-2:#DCEEF5;
+  --cream:#F7FBFE;--line:#DEE9F0;
+  --accent-rgb:110,170,220;
+  --shadow:0 4px 14px rgba(var(--accent-rgb),.18);
+  --shadow-lg:0 8px 28px rgba(var(--accent-rgb),.22);
+}
+body.theme-mint{
+  --pink:#6FBF99;--pink-2:#B7DEC9;--pink-3:#DEF1E6;
+  --lilac:#93CEAB;--lilac-2:#DCEEDF;
+  --cream:#F8FCF9;--line:#DBE9DE;
+  --accent-rgb:100,180,140;
+  --shadow:0 4px 14px rgba(var(--accent-rgb),.18);
+  --shadow-lg:0 8px 28px rgba(var(--accent-rgb),.22);
+}
+body.theme-mono{
+  --pink:#5A6478;--pink-2:#C2C9D4;--pink-3:#ECEFF4;
+  --lilac:#7C8699;--lilac-2:#DCE0E8;
+  --cream:#F7F8FA;--line:#DCE0E7;
+  --accent-rgb:74,85,104;
+  --shadow:0 4px 14px rgba(var(--accent-rgb),.12);
+  --shadow-lg:0 8px 28px rgba(var(--accent-rgb),.16);
+}
+
+/* ───── Theme picker UI ───── */
+.theme-picker{
+  display:flex;gap:7px;align-items:center;
+  background:rgba(255,255,255,.55);padding:6px 10px;border-radius:99px;
+}
+.theme-btn{
+  width:22px;height:22px;border-radius:50%;
+  border:2px solid #fff;cursor:pointer;padding:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.12);
+  transition:transform .15s;
+}
+.theme-btn:hover{transform:scale(1.18)}
+.theme-btn.active{box-shadow:0 0 0 2px var(--ink),0 1px 4px rgba(0,0,0,.12)}
+
+/* ───── App layout ───── */
+.app{max-width:1680px;margin:0 auto;padding:24px 28px 60px}
+.header{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;
+  padding:18px 28px;border-radius:var(--r-xl);
+  background:linear-gradient(135deg,var(--pink-3) 0%,var(--lilac-2) 100%);
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+  position:relative;
+}
+.header-left{display:flex;align-items:center;gap:12px;justify-self:start}
+.header .tabs{justify-self:center}
+.header .theme-picker{justify-self:end}
+.brand{display:flex;align-items:center;gap:12px;cursor:default;user-select:none}
+.brand-icon{
+  width:50px;height:50px;border-radius:18px;
+  background:#fff;
+  display:grid;place-items:center;font-size:28px;
+  box-shadow:0 3px 10px rgba(var(--accent-rgb),.3);
+}
+.brand h1{
+  margin:0;font-family:'Dongle','Jua',sans-serif;font-size:28px;font-weight:400;
+  color:#5a4d52;line-height:1;
+}
+.brand .sub{font-size:11px;color:var(--sub);margin-top:-2px;letter-spacing:1px}
+
+.tabs{display:flex;gap:6px;background:rgba(255,255,255,.7);padding:6px;border-radius:99px;flex-wrap:wrap}
+.tab{
+  border:0;background:transparent;cursor:pointer;
+  padding:10px 18px;border-radius:99px;font-size:14px;color:var(--sub);
+  transition:all .2s;font-weight:500;font-family:inherit;
+}
+.tab.active{background:var(--pink);color:#fff;box-shadow:0 2px 8px rgba(var(--accent-rgb),.5)}
+.tab:hover:not(.active){background:rgba(255,255,255,.9);color:var(--ink)}
+.tab.secret-tab{display:none}
+body.secret-on .tab.secret-tab{display:inline-flex;align-items:center;gap:4px}
+
+/* secret-on indicator */
+.secret-indicator{
+  display:none;
+  font-size:13px;color:var(--pink);font-weight:700;
+  background:#fff;padding:5px 12px;border-radius:99px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+body.secret-on .secret-indicator{display:inline-flex;align-items:center}
+
+/* ───── Page ───── */
+.page{display:none;animation:fadeIn .35s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{
+  background:var(--paper);border-radius:var(--r-lg);
+  padding:24px;box-shadow:var(--shadow);
+  margin-bottom:18px;
+}
+.card h2{margin:0 0 14px;font-family:'Dongle','Jua',sans-serif;font-size:24px;color:#5a4d52;font-weight:400}
+.card .hint{color:var(--sub);font-size:13px;margin:-8px 0 16px;line-height:1.6}
+
+label{display:block;font-size:13px;color:var(--sub);margin-bottom:6px;font-weight:500}
+input[type=text],input[type=number],input[type=password],select,textarea{
+  width:100%;padding:11px 14px;border:1.5px solid var(--line);
+  border-radius:var(--r);background:var(--cream);font-family:inherit;
+  font-size:14px;color:var(--ink);transition:.15s;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--pink);background:#fff;
+  box-shadow:0 0 0 3px var(--pink-3);
+}
+textarea{min-height:120px;resize:vertical;line-height:1.6}
+
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 20px;border:0;border-radius:99px;cursor:pointer;
+  font-size:14px;font-weight:500;font-family:inherit;
+  transition:transform .12s, box-shadow .15s;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--pink);color:#fff;box-shadow:0 3px 10px rgba(var(--accent-rgb),.4)}
+.btn-secondary{background:var(--blue-2);color:#3d6a99}
+.btn-ghost{background:transparent;color:var(--sub);border:1.5px solid var(--line)}
+.btn-mint{background:var(--mint);color:#3a6e5e}
+.btn-lilac{background:var(--lilac);color:#5a4982}
+.btn-butter{background:var(--butter);color:#8a6d1e}
+.btn-lg{padding:14px 28px;font-size:15px}
+.btn-xl{padding:18px 36px;font-size:17px;font-family:'Dongle','Jua',sans-serif;font-weight:400}
+.btn-sm{padding:8px 10px;font-size:12px;gap:4px;white-space:nowrap}
+.run-ctrl-row{display:flex;gap:6px}
+.run-ctrl-row .btn{flex:1;justify-content:center;min-width:0;padding:8px 6px}
+
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.row > *{flex:1;min-width:140px}
+
+/* ───── Students page ───── */
+.input-mode-tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--line)}
+.input-mode-tabs .imt{
+  padding:10px 18px;cursor:pointer;font-size:14px;color:var(--sub);
+  border-bottom:3px solid transparent;margin-bottom:-2px;font-weight:500;
+}
+.input-mode-tabs .imt.active{color:var(--pink);border-color:var(--pink)}
+.input-pane{display:none}
+.input-pane.active{display:block}
+
+.upload-zone{
+  border:2.5px dashed var(--pink-2);border-radius:var(--r-lg);
+  padding:40px 20px;text-align:center;background:var(--pink-3);
+  cursor:pointer;transition:.2s;
+}
+.upload-zone:hover,.upload-zone.dragover{
+  background:#fff;border-color:var(--pink);transform:scale(1.01);
+}
+.upload-zone .ico{font-size:48px;margin-bottom:8px}
+.upload-zone .main{font-family:'Dongle','Jua',sans-serif;font-size:18px;color:#5a4d52;margin-bottom:4px}
+.upload-zone .sub{font-size:12px;color:var(--sub)}
+
+.student-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:10px;margin-top:14px;
+}
+.student-chip{
+  background:var(--pink-3);border-radius:var(--r);padding:10px 14px;
+  display:flex;align-items:center;gap:10px;font-size:14px;
+}
+.student-chip .num{
+  background:#fff;border-radius:50%;width:30px;height:30px;
+  display:grid;place-items:center;font-weight:700;color:var(--pink);
+  font-family:'Dongle','Jua',sans-serif;font-size:14px;flex-shrink:0;
+}
+.student-chip .name{flex:1;color:var(--ink);font-weight:500}
+.student-chip .x{cursor:pointer;color:var(--sub);font-size:18px;line-height:1;opacity:.6;flex-shrink:0}
+.student-chip .x:hover{opacity:1;color:#d44}
+.empty{color:var(--sub);text-align:center;padding:30px;font-size:14px}
+
+/* ───── Gender UI (남녀공학 모드에서만 노출) ───── */
+.coed-only{display:none}
+body.coed-mode .coed-only{display:block}
+body.coed-mode .coed-only.inline{display:inline-flex}
+body.coed-mode .coed-only.flex{display:flex}
+
+.school-type-pick{display:inline-flex;gap:4px;background:var(--cream);padding:4px;border-radius:99px;border:1.5px solid var(--line);height:42px;align-items:center;box-sizing:border-box}
+.school-type-pick label{
+  margin:0;padding:0;border-radius:99px;cursor:pointer;
+  font-size:13px;color:var(--sub);font-weight:500;transition:all .15s;line-height:1;
+  display:inline-flex;align-items:center;height:100%;
+}
+.school-type-pick input{display:none}
+.school-type-pick input:checked + span{background:var(--pink);color:#fff;box-shadow:0 2px 6px rgba(var(--accent-rgb),.4)}
+.school-type-pick span{padding:0 14px;border-radius:99px;display:inline-flex;align-items:center;height:100%;line-height:1}
+
+.gender-toggle{display:inline-flex;gap:4px;background:var(--cream);padding:4px;border-radius:99px;border:1.5px solid var(--line)}
+.gender-toggle button{
+  border:0;background:transparent;cursor:pointer;padding:7px 12px;border-radius:99px;
+  font-size:13px;color:var(--sub);font-family:inherit;font-weight:500;transition:all .15s;
+}
+.gender-toggle button.active[data-g="M"]{background:var(--blue);color:#2a5178}
+.gender-toggle button.active[data-g="F"]{background:var(--pink);color:#fff}
+
+/* 학생 카드의 성별 뱃지 */
+.student-chip .g-badge{
+  flex-shrink:0;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .15s;user-select:none;
+  background:#fff;border:1.5px solid var(--line);color:var(--sub);
+}
+.student-chip .g-badge.male{background:var(--blue);color:#2a5178;border-color:var(--blue)}
+.student-chip .g-badge.female{background:var(--pink);color:#fff;border-color:var(--pink)}
+.student-chip .g-badge.none{background:#fff;color:#c88;border:1.5px dashed #d88;animation:pulse-warn 1.6s infinite}
+@keyframes pulse-warn{0%,100%{box-shadow:0 0 0 0 rgba(210,80,80,.35)}50%{box-shadow:0 0 0 5px rgba(210,80,80,0)}}
+.student-chip .g-badge:hover{transform:scale(1.1)}
+.bulk-gender-bar{display:none;gap:8px;margin:10px 0 0;align-items:center;flex-wrap:wrap}
+body.coed-mode .bulk-gender-bar{display:flex}
+.bulk-gender-bar .hint-inline{font-size:12px;color:var(--sub)}
+
+/* 교실 자리의 성별 마크 */
+.seat .g-mark{
+  position:absolute;top:4px;right:6px;
+  font-size:11px;font-weight:700;line-height:1;
+  padding:3px 6px;border-radius:99px;
+  background:#fff;border:1px solid var(--line);
+  pointer-events:none;
+}
+.seat .g-mark.male{background:var(--blue-2);color:#2a5178;border-color:var(--blue)}
+.seat .g-mark.female{background:var(--pink-2);color:#8a3547;border-color:var(--pink)}
+.seat.fixed-M{box-shadow:inset 0 0 0 2px var(--blue), 0 2px 6px rgba(0,0,0,.04)}
+.seat.fixed-F{box-shadow:inset 0 0 0 2px var(--pink), 0 2px 6px rgba(0,0,0,.04)}
+
+/* 교실 편집 모드 토글 */
+.layout-tools{gap:10px;align-items:center;margin:6px 0 12px;flex-wrap:wrap}
+.layout-edit-mode{display:none;gap:6px;background:var(--cream);padding:5px;border-radius:99px;width:fit-content}
+body.coed-mode .layout-edit-mode{display:flex}
+.layout-edit-mode .lem{
+  border:0;background:transparent;cursor:pointer;padding:8px 14px;border-radius:99px;
+  font-size:13px;color:var(--sub);font-family:inherit;font-weight:500;transition:all .15s;
+}
+.layout-edit-mode .lem.active{background:var(--pink);color:#fff;box-shadow:0 2px 6px rgba(var(--accent-rgb),.4)}
+
+.custom-group-box{display:none;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 14px;padding:12px 16px;background:var(--pink-3);border-radius:var(--r)}
+body.layout-custom .custom-group-box{display:flex}
+.custom-group-box > label{margin:0;font-size:13px;color:#a4445d;font-weight:600}
+.custom-group-box .cg-inputs{display:flex;align-items:flex-end;gap:8px}
+.custom-group-box .cg-inputs > div{display:flex;flex-direction:column;gap:2px}
+.custom-group-box .cg-lbl{font-size:11px;color:var(--sub);margin:0}
+.custom-group-box input[type=number]{width:64px;padding:6px 10px;border:1.5px solid var(--pink-2);border-radius:10px;background:#fff;font-size:14px;text-align:center}
+.custom-group-box .cg-x{font-size:18px;color:var(--pink);align-self:center;margin-bottom:4px}
+.custom-group-box .cg-eq{font-size:13px;color:#a4445d;align-self:center;margin-left:4px}
+.custom-group-box .cg-eq b{font-family:'Dongle','Jua',sans-serif;font-size:18px;color:var(--pink);font-weight:400;margin:0 2px}
+.pair-rule-box{display:none;gap:10px;align-items:center;margin:12px 0 6px;padding:12px 16px;background:var(--lilac-2);border-radius:var(--r)}
+body.coed-mode.layout-pair .pair-rule-box{display:flex}
+body.coed-mode.layout-single .pair-rule-box{display:none}
+body.coed-mode.layout-group4 .pair-rule-box{display:none}
+body.coed-mode.layout-group6 .pair-rule-box{display:none}
+.pair-rule-box label{margin:0;font-size:13px;color:#5a4982;font-weight:600}
+.pair-rule-box select{max-width:200px}
+
+/* ───── Classroom preview ───── */
+.preview-area{
+  background:linear-gradient(180deg,var(--blue-3) 0%,var(--cream) 100%);
+  border-radius:var(--r-lg);padding:30px 24px 24px;
+  position:relative;overflow:auto;
+}
+.podium{
+  background:var(--ink);color:#fff;text-align:center;
+  padding:8px 0;border-radius:8px;font-family:'Dongle','Jua',sans-serif;
+  font-size:14px;letter-spacing:6px;margin:0 auto 24px;width:60%;max-width:300px;
+  opacity:.85;font-weight:400;
+}
+.classroom{
+  display:flex;flex-direction:column;gap:28px;align-items:center;
+  min-width:max-content;padding:10px 0; /* 내부 스크롤용 */
+}
+/* 1인자리 레이아웃: 6줄 이상이면 세로 간격 축소, 8줄 이상이면 더 축소 */
+body.layout-single .classroom:has(> .row-of-groups:nth-child(6)){gap:12px}
+body.layout-single .classroom:has(> .row-of-groups:nth-child(8)){gap:8px}
+.row-of-groups{
+  display:flex;gap:44px;justify-content:center;flex-wrap:nowrap;
+}
+.group{display:grid;gap:8px;border-radius:18px;padding:8px;transition:background .2s,box-shadow .2s}
+/* 결과 화면·저장 이미지에서 모둠 박스 (테마 핑크 톤) — 1인·짝꿍 레이아웃은 예외 */
+#resultClassroom .group,
+.export-area .group{
+  background:var(--pink-3);
+  border:2px dashed var(--pink-2);
+  padding:14px;
+  gap:10px;
+  box-shadow:0 2px 8px rgba(var(--accent-rgb),.08);
+}
+body.layout-single #resultClassroom .group,
+body.layout-single .export-area .group,
+body.layout-pair #resultClassroom .group,
+body.layout-pair .export-area .group{
+  background:transparent;border:none;padding:8px;box-shadow:none;
+}
+
+.seat{
+  width:178px;height:80px;border-radius:13px;
+  background:#fff;border:2px solid var(--line);
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;
+  font-size:14px;color:var(--sub);position:relative;
+  transition:all .25s;
+  box-shadow:0 2px 6px rgba(0,0,0,.04);
+  padding:0 14px 0 52px;
+  white-space:nowrap;
+}
+.seat .seat-id{
+  position:absolute;top:50%;left:6px;transform:translateY(-50%);
+  font-family:'Dongle','Jua',sans-serif;font-size:10px;color:var(--sub);
+  background:var(--cream);padding:2px 6px;border-radius:99px;line-height:1;
+  min-width:20px;text-align:center;
+}
+.seat .seat-num{font-family:'Dongle','Jua',sans-serif;font-size:16px;font-weight:400;color:var(--pink);line-height:1.15}
+.seat .seat-name{color:var(--ink);font-size:18px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
+.seat.empty-seat{background:var(--cream);border-style:dashed}
+.seat.empty-seat .seat-num,.seat.empty-seat .seat-name{display:none}
+.seat.excluded{
+  background:repeating-linear-gradient(45deg,#F6F4F2,#F6F4F2 6px,#EEE8E4 6px,#EEE8E4 12px);
+  border:2px dashed #D6CFCA;color:#B5ADA7;opacity:.75;padding:0;
+  justify-content:center;
+}
+.seat.excluded .seat-id{position:static;transform:none;background:transparent;color:#C6BEBA;font-size:13px}
+.seat.excluded .seat-num,.seat.excluded .seat-name{display:none}
+/* 교실 미리보기 편집 모드: 클릭 안내 */
+#classroomPreview .seat{cursor:pointer}
+#classroomPreview .seat:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(var(--accent-rgb),.25)}
+#classroomPreview .seat.excluded:hover{opacity:1}
+/* RUN/RESULT 화면에서는 제외 자리를 아예 안 보이게 (빈 공간은 유지) */
+#runClassroom .seat.excluded,
+#resultClassroom .seat.excluded{
+  visibility:hidden;background:transparent;border:none;box-shadow:none;
+}
+/* secret-only highlights */
+body.secret-on .seat.front{border-color:var(--blue);background:var(--blue-3)}
+body.secret-on .seat.back{border-color:var(--lilac);background:var(--lilac-2)}
+body.secret-on .seat.fixed{border-color:var(--butter);background:var(--butter-2)}
+.seat.flash{animation:flash 1s}
+@keyframes flash{0%,100%{transform:scale(1);box-shadow:0 2px 6px rgba(0,0,0,.04)}50%{transform:scale(1.18);box-shadow:0 8px 22px rgba(var(--accent-rgb),.55);z-index:5}}
+.seat.flip-in{animation:flipIn .55s cubic-bezier(.22,.9,.4,1.2)}
+@keyframes flipIn{0%{transform:rotateY(180deg) scale(.7);opacity:0}60%{opacity:1}100%{transform:rotateY(0) scale(1);opacity:1}}
+.seat.just-set{animation:set .6s}
+@keyframes set{0%{background:var(--butter-2)}100%{background:#fff}}
+
+/* ───── Constraints UI ───── */
+.constraints-bar{
+  display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;
+}
+.mode-pill{
+  padding:8px 16px;border-radius:99px;font-size:13px;cursor:pointer;
+  background:#fff;border:1.5px solid var(--line);transition:.15s;font-weight:500;
+}
+.mode-pill.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+.constraint-list{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.constraint-item{
+  background:var(--pink-3);padding:10px 14px;border-radius:var(--r);
+  display:flex;align-items:center;gap:8px;font-size:14px;
+}
+.constraint-item .ico{font-size:18px}
+.constraint-item .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:18px}
+
+.student-pick{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;
+  max-height:280px;overflow-y:auto;padding:4px;
+}
+.pick{
+  background:#fff;border:1.5px solid var(--line);border-radius:99px;
+  padding:6px 14px;font-size:13px;cursor:pointer;transition:.15s;font-weight:500;
+}
+.pick:hover{background:var(--pink-3)}
+.pick.selected{background:var(--pink);color:#fff;border-color:var(--pink)}
+.pick.dimmed{opacity:.35}
+
+.fixed-helpers{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.fixed-progress{margin-left:auto;font-size:13px}
+.fp-full{color:#3e8a6c;font-family:'Dongle','Jua',sans-serif;background:var(--mint-2);padding:4px 12px;border-radius:99px}
+.fp-partial{color:var(--sub);background:var(--cream);padding:4px 12px;border-radius:99px}
+
+/* ───── Run page (split layout) ───── */
+.run-layout{
+  display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:stretch;
+  min-height:720px; /* 전체 고정 높이 — 연출 방식에 따라 흔들리지 않도록 */
+}
+@media (max-width:1100px){.run-layout{grid-template-columns:1fr;min-height:0}}
+
+.draw-panel{
+  background:linear-gradient(160deg,var(--pink-3) 0%,var(--lilac-2) 100%);
+  border-radius:var(--r-xl);padding:18px;box-shadow:var(--shadow);
+  min-width:0;display:flex;flex-direction:column;
+  height:100%;
+}
+.anim-picker{display:flex;gap:4px;flex-wrap:nowrap;margin-bottom:14px}
+.anim-pill{
+  background:#fff;border:1.5px solid transparent;
+  padding:7px 8px;border-radius:99px;cursor:pointer;font-size:11.5px;transition:.15s;
+  font-weight:500;flex:1;text-align:center;white-space:nowrap;
+}
+.anim-pill.active{background:var(--lilac);color:#fff}
+.anim-picker.locked .anim-pill{cursor:not-allowed;opacity:.45;pointer-events:none}
+.anim-picker.locked .anim-pill.active{opacity:.95}
+
+.speed-row{
+  display:flex;align-items:center;gap:10px;
+  background:#fff;padding:10px 14px;border-radius:var(--r);
+  margin-bottom:12px;box-shadow:0 2px 6px rgba(var(--accent-rgb),.08);
+}
+.speed-row .spd-label{font-family:'Dongle','Jua',sans-serif;font-size:13px;color:#5a4d52;white-space:nowrap}
+.speed-row input[type=range]{flex:1;accent-color:var(--pink)}
+.speed-row .spd-val{
+  font-family:'Dongle','Jua',sans-serif;font-size:13px;color:var(--pink);
+  background:var(--pink-3);padding:3px 10px;border-radius:99px;min-width:44px;text-align:center;
+}
+
+.draw-stage{
+  background:#fff;border-radius:var(--r-lg);padding:20px;
+  flex:1;min-height:380px;max-height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;overflow:hidden;
+}
+.draw-empty{color:var(--sub);font-size:14px;line-height:1.7}
+.draw-empty .big{font-size:36px;margin-bottom:8px;display:block}
+
+/* student header (above all animations) */
+.draw-student{
+  font-family:'Dongle','Jua',sans-serif;font-size:14px;color:#5a4d52;
+  background:linear-gradient(135deg,var(--pink-3) 0%,var(--lilac-2) 100%);
+  padding:8px 14px;border-radius:99px;margin-bottom:14px;
+  box-shadow:0 2px 8px rgba(var(--accent-rgb),.18);
+  animation:pop .35s ease;
+  white-space:nowrap;max-width:100%;
+  display:inline-flex;align-items:baseline;gap:3px;
+}
+.draw-student .ds-num{color:var(--pink);font-size:16px}
+.draw-student .ds-name{color:var(--ink);font-size:17px;margin-right:2px}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* roulette inline */
+.r-ball{
+  width:150px;height:150px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#fff 0%,var(--pink) 90%);
+  display:grid;place-items:center;
+  box-shadow:0 12px 30px rgba(var(--accent-rgb),.45);
+  font-family:'Dongle','Jua',sans-serif;font-size:62px;color:#fff;
+  text-shadow:0 3px 10px rgba(0,0,0,.25);
+  animation:bounce calc(.8s / var(--speed,1)) infinite alternate;
+  margin-bottom:14px;
+  transition:transform .3s;
+}
+.r-ball.landed{animation:landed .45s ease;background:radial-gradient(circle at 35% 35%,#fff 0%,var(--lilac) 90%)}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-14px)}}
+@keyframes landed{0%{transform:scale(1)}40%{transform:scale(1.2)}100%{transform:scale(1)}}
+.r-result{
+  font-family:'Dongle','Jua',sans-serif;font-size:18px;color:var(--ink);
+  background:var(--cream);padding:8px 22px;border-radius:99px;
+}
+.r-result b{color:var(--pink);font-size:22px}
+
+/* slot inline */
+.s-window{
+  background:linear-gradient(180deg,var(--pink-3) 0%,#fff 50%,var(--pink-3) 100%);
+  border:3px solid var(--pink);border-radius:var(--r);
+  height:90px;overflow:hidden;position:relative;width:100%;margin-bottom:12px;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.6);
+}
+.s-track{position:absolute;left:0;right:0;}
+.s-item{height:90px;display:flex;align-items:center;justify-content:center;
+  font-family:'Dongle','Jua',sans-serif;font-size:24px;color:var(--ink);white-space:nowrap;}
+.s-item.s-win{color:var(--pink);background:linear-gradient(90deg,var(--pink-3),var(--lilac-2))}
+.s-info{font-family:'Dongle','Jua',sans-serif;font-size:16px;color:var(--ink);
+  background:var(--cream);padding:7px 18px;border-radius:99px;}
+.s-info b{color:var(--pink);font-size:20px}
+
+/* card flip inline */
+.f-card{width:200px;height:260px;perspective:1000px;margin:0 auto 12px}
+.f-inner{position:relative;width:100%;height:100%;transition:transform calc(1.2s / var(--speed,1)) cubic-bezier(.4,0,.3,1.2);transform-style:preserve-3d}
+.f-card.flipped .f-inner{transform:rotateY(180deg)}
+.f-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:var(--r-lg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+.f-front{background:linear-gradient(135deg,var(--pink) 0%,var(--lilac) 100%);color:#fff}
+.f-front .pat{position:absolute;inset:10px;border:2px dashed rgba(255,255,255,.5);border-radius:var(--r)}
+.f-front .mark{font-family:'Dongle','Jua',sans-serif;font-size:60px;animation:spin calc(4s / var(--speed,1)) linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.f-back{background:#fff;transform:rotateY(180deg);padding:20px;
+  background:radial-gradient(circle at 50% 40%,var(--cream) 0%,#fff 80%)}
+.f-back .fb-label{font-family:'Noto Sans KR',sans-serif;font-size:13px;color:var(--sub);margin-bottom:4px;letter-spacing:.5px}
+.f-back .fb-num{font-family:'Dongle','Jua',sans-serif;font-size:82px;color:var(--pink);line-height:1;letter-spacing:-2px}
+.f-back .fb-suffix{font-family:'Dongle','Jua',sans-serif;font-size:22px;color:#5a4d52;margin-top:4px}
+
+/* pause state: freeze infinite CSS animations */
+body.paused .r-ball,
+body.paused .f-front .mark,
+body.paused .confetti-piece{animation-play-state:paused !important}
+
+.draw-progress{
+  margin-top:12px;height:8px;background:rgba(255,255,255,.5);
+  border-radius:99px;overflow:hidden;
+}
+.draw-progress .bar{height:100%;background:var(--pink);width:0;transition:width .4s}
+.draw-counter{text-align:center;font-size:12px;color:var(--sub);margin-top:6px}
+
+.run-classroom-area{
+  background:linear-gradient(180deg,var(--blue-3) 0%,var(--cream) 100%);
+  border-radius:var(--r-xl);padding:24px 20px;height:100%;min-height:720px;
+  overflow:hidden;min-width:0;display:flex;flex-direction:column;align-items:center;
+}
+.run-classroom-area #runClassroom{transform-origin:top center}
+
+/* Confetti */
+.confetti-piece{position:fixed;top:-10px;width:10px;height:14px;border-radius:2px;z-index:200;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+/* Result */
+.result-toolbar{
+  display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap;align-items:center;
+}
+.flip-toggle{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  background:var(--pink-3);padding:9px 16px;border-radius:99px;
+  font-size:16px;font-weight:500;color:#5a4d52;
+  transition:.15s;user-select:none;
+}
+.flip-toggle:hover{background:var(--pink-2)}
+.flip-toggle input{accent-color:var(--pink);width:16px;height:16px;cursor:pointer;margin:0}
+.export-area{
+  background:linear-gradient(180deg,var(--pink-3) 0%,var(--lilac-2) 100%);
+  padding:30px;border-radius:var(--r-xl);position:relative;
+  /* 📄 A4 가로 비율 (297:210 = 1.414) */
+  aspect-ratio:297/210;
+  width:min(100%, 1400px);max-width:100%;margin:0 auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.export-frame{
+  width:100%;
+  display:flex;flex-direction:column;
+  transform-origin:center center;
+  transition:transform .25s ease;
+  flex-shrink:0;
+}
+.export-area .classroom{justify-content:center;gap:36px;margin:6px 0}
+.export-area .podium{font-size:30px;padding:10px 0;width:55%;max-width:360px;letter-spacing:10px;margin:0 auto 18px}
+.export-area .podium.podium-bottom{margin:18px auto 0}
+.export-title{
+  text-align:center;font-family:'Dongle','Jua',sans-serif;
+  font-size:34px;color:#5a4d52;margin-bottom:4px;
+}
+.export-meta{text-align:center;color:var(--sub);font-size:15px;margin-bottom:18px}
+.export-area .seat{background:#fff;width:170px;height:92px;border-radius:15px;padding:4px 18px 6px 18px;gap:16px;justify-content:center}
+#resultClassroom .seat .seat-id{display:none}
+.export-area .seat .seat-num{font-size:30px;line-height:1.2}
+.export-area .seat .seat-name{font-size:22px;line-height:1.3;padding-bottom:2px}
+.export-note-wrap{margin-top:16px;padding:0 20px;flex:0 0 auto}
+.export-note{
+  font-family:'Noto Sans KR',sans-serif;font-size:22px;font-weight:500;color:#5a4d52;text-align:center;
+  background:rgba(255,255,255,.7);padding:14px 22px;border-radius:var(--r);
+  border:2px dashed var(--pink-2);line-height:1.4;white-space:pre-wrap;
+  outline:none;transition:border-color .2s;letter-spacing:-.2px;
+}
+.export-note:focus{border-color:var(--pink);background:#fff}
+.export-note:empty::before{content:'여기에 문구를 입력해주세요';color:var(--sub);opacity:.5}
+.export-note-hint{text-align:center;color:var(--sub);font-size:11px;margin-top:6px}
+/* 이미지 저장·인쇄할 때는 힌트 감춤 */
+.exporting .export-note-hint{display:none}
+.exporting .export-note{border-style:solid;border-color:transparent;background:transparent;font-size:28px;line-height:1.45}
+.deco-flower{
+  position:absolute;font-size:24px;opacity:.5;pointer-events:none;
+}
+
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:12px 22px;border-radius:99px;
+  font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:300;
+}
+.toast.show{opacity:.95}
+
+.section-title{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Dongle','Jua',sans-serif;font-size:18px;color:#5a4d52;margin:18px 0 10px;font-weight:400;
+}
+.section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--pink)}
+
+.tag{
+  display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;
+  background:var(--pink-3);color:var(--pink);font-weight:700;margin-left:6px;
+}
+
+.layout-templates{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.template-card{
+  background:#fff;border:2px solid var(--line);border-radius:var(--r);
+  padding:14px;cursor:pointer;transition:.15s;text-align:center;
+}
+.template-card:hover{border-color:var(--pink-2)}
+.template-card.active{border-color:var(--pink);background:var(--pink-3)}
+.template-card .ico{font-size:28px;margin-bottom:4px;display:block}
+.template-card .nm{font-family:'Dongle','Jua',sans-serif;font-size:16px;color:var(--ink)}
+.template-card .desc{font-size:11px;color:var(--sub);margin-top:2px}
+
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;
+  align-items:center;justify-content:center;z-index:400;padding:20px;
+}
+.modal.show{display:flex}
+.modal-card{
+  background:#fff;border-radius:var(--r-xl);padding:28px;
+  max-width:680px;width:100%;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto;
+}
+.modal-card h3{margin:0 0 14px;font-family:'Dongle','Jua',sans-serif;font-size:22px;color:#5a4d52;font-weight:400}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+
+.preview-table{
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;
+  max-height:300px;overflow-y:auto;margin-top:12px;
+}
+.preview-table table{width:100%;border-collapse:collapse;font-size:13px}
+.preview-table th{
+  background:var(--pink-3);padding:8px 10px;text-align:left;
+  font-weight:600;color:var(--ink);position:sticky;top:0;
+}
+.preview-table td{padding:6px 10px;border-top:1px solid var(--line)}
+.preview-table tr:nth-child(even) td{background:var(--cream)}
+
+@media (max-width:768px){
+  .app{padding:14px}
+  .header{grid-template-columns:1fr;gap:14px}
+  .header .header-left,.header .tabs,.header .theme-picker{justify-self:center}
+  .tabs{justify-content:center}
+  .tab{padding:9px 14px;font-size:13px}
+  .seat{width:120px;height:56px;padding:0 8px 0 28px}
+  .seat .seat-name{font-size:12px}
+  .seat .seat-num{font-size:14px}
+  .row-of-groups{gap:14px}
+  .draw-panel{position:static}
+}
+
+/* ───── Dongle 가독성 보정 (소스 순서상 마지막에 위치 — 같은 specificity일 때 후순위가 이김) ───── */
+.brand h1{font-size:42px}
+.card h2{font-size:38px}
+.btn-xl{font-size:26px;padding:10px 30px;letter-spacing:-.3px;line-height:1.1}
+.upload-zone .main{font-size:22px}
+.student-chip .num{font-size:22px}
+.podium{font-size:22px;padding:5px 14px;line-height:1;letter-spacing:6px;display:flex;align-items:center;justify-content:center;min-height:36px}
+.export-area .podium{font-size:34px;padding:6px 0;width:55%;max-width:360px;letter-spacing:12px;margin:0 auto 14px;line-height:1;display:flex;align-items:center;justify-content:center;min-height:54px}
+.export-area .podium.podium-bottom{margin:14px auto 0}
+/* html2canvas는 flex 수직 중앙을 잘 못 그려서, export 중에는 padding 기반으로 보정 */
+.exporting .podium{display:block;min-height:0;line-height:1;padding:14px 0 22px;text-align:center}
+.exporting .export-area .podium{padding:18px 0 28px}
+.seat .seat-id{font-size:24px;padding:4px 10px;min-width:30px;line-height:1}
+.seat .seat-num{font-size:32px}
+.seat .seat-name{font-size:24px}
+.fp-full{font-size:20px}
+.speed-row .spd-label{font-size:20px;flex:0 0 auto}
+.speed-row .spd-val{font-size:14px;min-width:0;padding:3px 12px;white-space:nowrap;line-height:1.2;flex:0 0 auto}
+.speed-row input[type=range]{flex:1 1 auto;min-width:80px}
+.draw-student{font-size:20px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draw-student .ds-num{font-size:22px}
+.draw-student .ds-name{font-size:26px}
+.r-ball{font-size:90px}
+.r-result{font-size:20px;padding:6px 14px;white-space:nowrap;max-width:100%}
+.r-result b{font-size:24px}
+.s-item{font-size:28px;white-space:nowrap}
+.s-info{font-size:22px;white-space:nowrap;max-width:100%}
+.s-info b{font-size:26px}
+.f-front .mark{font-size:78px}
+.f-back .fb-num{font-size:100px}
+.f-back .fb-suffix{font-size:28px}
+.export-title{font-size:64px}
+.section-title{font-size:32px}
+.template-card .nm{font-size:26px}
+.template-card .desc{font-size:13px}
+.modal-card h3{font-size:36px}
+.anim-pill{font-size:10.5px;padding:6px 2px;letter-spacing:-.4px}
+.anim-pill[data-anim="roulette"],
+.anim-pill[data-anim="flip"],
+.anim-pill[data-anim="slot"]{flex:0.93}
+.anim-pill[data-anim="quick"]{flex:1.21}
+.draw-empty{font-size:15px;line-height:1.7}
+.draw-empty .big{font-size:42px}
+.draw-counter{font-size:13px}
+.tag{font-size:22px;padding:6px 16px}
+.title-font,.brand h1,.card h2,.btn-xl,.upload-zone .main,
+.student-chip .num,.podium,.seat .seat-id,.seat .seat-num,.fp-full,
+.speed-row .spd-label,.speed-row .spd-val,.draw-student,
+.draw-student .ds-num,.draw-student .ds-name,
+.r-ball,.r-result,.r-result b,.s-item,.s-info,.s-info b,.f-front .mark,
+.f-back .fb-num,.f-back .fb-suffix,.export-title,
+.section-title,.template-card .nm,.modal-card h3{
+  font-weight:700;
+}
+
+/* run-stage에서 학생 배치된 자리는 자리번호 숨김 + 좌우 패딩 균등(왼쪽 빈 공간 회수) */
+#runClassroom .seat.has-student .seat-id{display:none}
+#runClassroom .seat.has-student{padding:0 12px}
+#runClassroom .seat .seat-num{font-size:24px}
+#runClassroom .seat .seat-name{font-size:17px;font-weight:500}
+
+/* 교실 미리보기 옆 안내문 (tag 스타일이 아닌 일반 hint 톤) */
+.section-title .inline-hint{
+  font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:400;
+  color:var(--sub);margin-left:8px;letter-spacing:0;
+}
+
+/* h2 + hint 한 줄 배치 (제목 옆으로 안내문 붙이기) */
+.card-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.card-head h2{margin:0}
+.card-head .hint{margin:0;flex:1;min-width:220px}
+
+/* layout 템플릿 카드 슬림화 — 줄 간격 좁히기 */
+.template-card{padding:10px 8px}
+.template-card .ico{font-size:24px;margin-bottom:0;line-height:1}
+.template-card .nm{line-height:1.05;margin-top:2px}
+.template-card .desc{line-height:1.2;margin-top:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ──────── HEADER ──────── -->
+  <div class="header">
+    <div class="header-left">
+      <div class="brand" id="brandLogo" title="">
+        <div class="brand-icon">🌸</div>
+        <div>
+          <h1>두근두근 자리뽑기</h1>
+          <div class="sub">heart-beating seating chart · by. senissem</div>
+        </div>
+      </div>
+      <span class="secret-indicator" id="secretIndicator">🔓 비밀 모드</span>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="students">📝 학생 명단</button>
+      <button class="tab" data-tab="classroom">🏫 교실 모양</button>
+      <button class="tab secret-tab" data-tab="constraints">🔒 비밀 조건</button>
+      <button class="tab" data-tab="run">🎲 자리뽑기</button>
+      <button class="tab" data-tab="result">🎉 결과</button>
+    </div>
+    <div class="theme-picker" id="themePicker">
+      <button class="theme-btn" data-theme="pink" title="벚꽃" style="background:#FFB6C7"></button>
+      <button class="theme-btn" data-theme="sky" title="하늘" style="background:#7BC0E8"></button>
+      <button class="theme-btn" data-theme="mint" title="민트" style="background:#6FBF99"></button>
+      <button class="theme-btn" data-theme="mono" title="모노" style="background:#5A6478"></button>
+    </div>
+  </div>
+
+  <!-- ──────── ① STUDENTS ──────── -->
+  <section class="page active" data-page="students">
+    <div class="card">
+      <div class="card-head">
+        <h2>✏️ 우리 반 학생 명단</h2>
+        <p class="hint">한 번 입력해두시면 브라우저에 저장돼서 다음에도 그대로 쓰실 수 있어요.</p>
+      </div>
+
+      <div class="row" style="margin-bottom:14px;align-items:flex-end">
+        <div style="flex:0 0 180px">
+          <label>학급 이름</label>
+          <input id="className" type="text" placeholder="예: 1학년 3반">
+        </div>
+        <div style="flex:0 0 auto">
+          <label>학급 유형</label>
+          <div class="school-type-pick" id="schoolTypePick">
+            <label><input type="radio" name="schoolType" value="single"><span>🧑 단성 학교</span></label>
+            <label><input type="radio" name="schoolType" value="coed"><span>👫 남녀공학</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-mode-tabs">
+        <div class="imt active" data-imode="excel">📂 엑셀 파일 업로드</div>
+        <div class="imt" data-imode="paste">📋 붙여넣기</div>
+        <div class="imt" data-imode="one">✏️ 한 명씩 추가</div>
+      </div>
+
+      <!-- Excel pane -->
+      <div class="input-pane active" data-pane="excel">
+        <p class="hint" style="margin-top:0">나이스에서 다운받은 명렬표(.xlsx, .xls)를 그대로 올려주세요. 번호·이름을 자동으로 인식해서 바로 불러옵니다. 🌸</p>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" style="display:none">
+          <div class="ico">📂</div>
+          <div class="main">엑셀 파일을 여기에 끌어놓거나 클릭해서 선택하세요</div>
+          <div class="sub">.xlsx · .xls · .csv 지원</div>
+        </div>
+      </div>
+
+      <!-- Paste pane -->
+      <div class="input-pane" data-pane="paste">
+        <p class="hint" style="margin-top:0">엑셀에서 두 컬럼(번호, 이름)을 그대로 복사해서 붙여넣어 주세요. 또는 아래 형식으로 직접 입력하셔도 됩니다.</p>
+        <textarea id="bulkInput" placeholder="1&#9;김민지&#10;2&#9;이서연&#10;3&#9;박지호&#10;...&#10;&#10;형식: 번호[탭 또는 공백]이름"></textarea>
+        <div style="margin-top:10px;text-align:right">
+          <button class="btn btn-mint" onclick="addBulk()">붙여넣기로 추가하기</button>
+        </div>
+      </div>
+
+      <!-- One-by-one pane -->
+      <div class="input-pane" data-pane="one">
+        <div class="row">
+          <div style="flex:0 0 100px">
+            <label>번호</label>
+            <input id="addNum" type="number" min="1" placeholder="번호">
+          </div>
+          <div style="flex:1">
+            <label>이름</label>
+            <input id="addName" type="text" placeholder="이름" onkeydown="if(event.key==='Enter')addOne()">
+          </div>
+          <div class="coed-only" style="flex:0 0 auto">
+            <label>성별</label>
+            <div class="gender-toggle" id="addGender">
+              <button type="button" data-g="M">♂ 남</button>
+              <button type="button" data-g="F">♀ 여</button>
+            </div>
+          </div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end">
+            <button class="btn btn-primary" onclick="addOne()">＋ 추가하기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="dot"></span>등록된 학생 <span id="studentCount" class="tag">0명</span></div>
+      <div class="bulk-gender-bar">
+        <span class="hint-inline">학생 카드의 동그란 뱃지를 눌러 성별을 바꿀 수 있어요.</span>
+        <button class="btn btn-sm btn-ghost" onclick="bulkSetGender('M')">전체 남자로</button>
+        <button class="btn btn-sm btn-ghost" onclick="bulkSetGender('F')">전체 여자로</button>
+        <button class="btn btn-sm btn-ghost" onclick="bulkSetGender(null)">전체 지우기</button>
+      </div>
+      <div id="studentGrid" class="student-grid"></div>
+
+      <div style="margin-top:18px;text-align:right">
+        <button class="btn btn-ghost" onclick="clearStudents()">전체 비우기</button>
+        <button class="btn btn-primary btn-lg" onclick="goTab('classroom')">다음으로 ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── ② CLASSROOM ──────── -->
+  <section class="page" data-page="classroom">
+    <div class="card">
+      <div class="card-head">
+        <h2>🏫 교실 모양 만들기</h2>
+        <p class="hint">자리 형태와 분단·줄 수를 정해주세요. 미리보기로 바로 확인하실 수 있어요. 자리마다 번호가 자동으로 매겨져요.</p>
+      </div>
+
+      <div class="layout-templates">
+        <div class="template-card active" data-layout="single">
+          <span class="ico">🪑</span>
+          <div class="nm">1인 자리</div>
+          <div class="desc">개별 자리</div>
+        </div>
+        <div class="template-card" data-layout="pair">
+          <span class="ico">👫</span>
+          <div class="nm">짝꿍 자리</div>
+          <div class="desc">2명씩 붙여서</div>
+        </div>
+        <div class="template-card" data-layout="group4">
+          <span class="ico">⌗</span>
+          <div class="nm">모둠 자리 (4)</div>
+          <div class="desc">4명씩 모둠</div>
+        </div>
+        <div class="template-card" data-layout="group6">
+          <span class="ico">▦</span>
+          <div class="nm">모둠 자리 (6)</div>
+          <div class="desc">6명씩 모둠</div>
+        </div>
+        <div class="template-card" data-layout="custom">
+          <span class="ico">🎨</span>
+          <div class="nm">커스텀 모둠</div>
+          <div class="desc">가로·세로 직접 설정</div>
+        </div>
+      </div>
+
+      <div class="custom-group-box" id="customGroupBox">
+        <label>🎨 모둠 한 칸 인원</label>
+        <div class="cg-inputs">
+          <div>
+            <label class="cg-lbl">가로</label>
+            <input id="customGc" type="number" min="1" max="8" value="3">
+          </div>
+          <span class="cg-x">×</span>
+          <div>
+            <label class="cg-lbl">세로</label>
+            <input id="customGr" type="number" min="1" max="8" value="2">
+          </div>
+          <span class="cg-eq">= <b id="customTotal">6</b>명</span>
+        </div>
+        <span class="hint-inline" style="color:#5a4982;font-size:12px">예) 3×1 = 3인 줄, 2×3 = 6인 세로 모둠, 4×2 = 8인 모둠</span>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>가로 분단(또는 모둠) 수</label>
+          <input id="cols" type="number" min="1" max="10" value="3">
+        </div>
+        <div>
+          <label id="rowsLabel">세로 줄 수 (앞뒤 방향)</label>
+          <input id="rows" type="number" min="1" max="10" value="5">
+        </div>
+        <div>
+          <label>총 자리 수</label>
+          <input id="totalSeats" type="text" value="0" readonly>
+        </div>
+      </div>
+
+      <div class="pair-rule-box">
+        <label>💑 짝꿍 규칙</label>
+        <select id="pairRuleSelect">
+          <option value="any">상관 없음</option>
+          <option value="mixed">남녀 짝꿍 (남-여)</option>
+          <option value="same">같은 성별 짝꿍</option>
+        </select>
+        <span class="hint-inline" style="color:#5a4982;font-size:12px">학생 수가 맞지 않으면 일부 자리는 남는 성별로 채워져요.</span>
+      </div>
+
+      <div class="section-title"><span class="dot"></span>교실 미리보기 <span id="classroomEditHint" class="inline-hint">자리를 클릭하면 사용 안 함 처리됩니다.</span></div>
+      <div class="layout-tools coed-only flex">
+        <div class="layout-edit-mode" id="layoutEditMode">
+          <button class="lem active" data-mode="exclude">🪑 사용 안 함 지정</button>
+          <button class="lem" data-mode="gender">♂♀ 성별 자리 고정</button>
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="clearAllSeatGender()">🧹 성별 고정 전체 해제</button>
+      </div>
+      <div class="preview-area">
+        <div class="podium">교 탁</div>
+        <div id="classroomPreview" class="classroom"></div>
+      </div>
+
+      <div style="margin-top:18px;display:flex;justify-content:space-between">
+        <button class="btn btn-ghost" onclick="goTab('students')">◂ 이전</button>
+        <button class="btn btn-primary btn-lg" onclick="goTab('run')">다음으로 ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── ③ CONSTRAINTS (secret) ──────── -->
+  <section class="page" data-page="constraints">
+    <div class="card">
+      <h2>🤫 비밀 조건 설정</h2>
+      <p class="hint">이 화면은 비밀 모드일 때만 보여요. 학생들과 함께 화면을 봐도 이 탭 자체가 사라지니 안심하셔도 됩니다.</p>
+
+      <div class="constraints-bar">
+        <div class="mode-pill active" data-mode="avoid">🚫 떨어뜨릴 두 명</div>
+        <div class="mode-pill" data-mode="front">⬆️ 앞쪽 자리</div>
+        <div class="mode-pill" data-mode="back">⬇️ 뒤쪽 자리</div>
+        <div class="mode-pill" data-mode="fixed">📍 자리 고정 · 전체 미리 배정</div>
+      </div>
+
+      <div id="constraintHelp" class="hint" style="margin-top:0"></div>
+
+      <div id="studentPick" class="student-pick"></div>
+
+      <div id="fixedAssignBox" style="display:none;margin-top:14px">
+        <p class="hint" style="margin-top:0">학생을 먼저 고른 다음 아래 미리보기에서 자리를 클릭해주세요. <b>모든 학생을 미리 배정</b>하시면 학생들 앞에서는 자연스럽게 뽑는 것처럼 연출되면서 결과는 선생님이 정한 대로 나와요. 🤫</p>
+        <div class="fixed-helpers">
+          <button class="btn btn-mint btn-sm" onclick="autoFillFixed('order')">📋 번호순 자동 배정</button>
+          <button class="btn btn-lilac btn-sm" onclick="autoFillFixed('random')">🎲 랜덤 자동 배정</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearAllFixed()">🗑 전부 지우기</button>
+          <span class="fixed-progress" id="fixedProgress"></span>
+        </div>
+        <div class="preview-area" style="padding:16px">
+          <div class="podium">교 탁</div>
+          <div id="fixedPreview" class="classroom"></div>
+        </div>
+      </div>
+
+      <div class="section-title"><span class="dot"></span>설정한 조건</div>
+      <div id="constraintList" class="constraint-list"></div>
+
+      <div style="margin-top:18px;display:flex;justify-content:space-between">
+        <button class="btn btn-ghost" onclick="goTab('classroom')">◂ 이전</button>
+        <button class="btn btn-primary btn-lg" onclick="goTab('run')">자리뽑기 시작 ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── ④ RUN ──────── -->
+  <section class="page" data-page="run">
+    <div class="card">
+      <div class="card-head">
+        <h2>🎉 자리뽑기 타임</h2>
+        <p class="hint">왼쪽 패널에서 연출 방식을 고르신 다음 시작 버튼을 눌러주세요. 오른쪽에 우리 반 자리가 한눈에 보여요!</p>
+      </div>
+
+      <div class="run-layout">
+        <!-- LEFT: draw panel -->
+        <div class="draw-panel">
+          <div style="font-family:'Dongle','Jua',sans-serif;font-size:23px;font-weight:700;color:#5a4d52;margin-bottom:8px">연출 방식</div>
+          <div class="anim-picker">
+            <div class="anim-pill active" data-anim="roulette">🎱 룰렛</div>
+            <div class="anim-pill" data-anim="flip">🃏 카드</div>
+            <div class="anim-pill" data-anim="slot">🎰 슬롯</div>
+            <div class="anim-pill" data-anim="quick">⚡ 한 번에</div>
+          </div>
+
+          <div class="speed-row">
+            <span class="spd-label">🐢 속도</span>
+            <input type="range" id="speedSlider" min="0.5" max="2.5" step="0.25" value="1">
+            <span class="spd-val" id="speedLabel">보통</span>
+          </div>
+
+          <div class="draw-stage" id="drawStage">
+            <div class="draw-empty">
+              <span class="big">🌸</span>
+              아래 시작 버튼을 누르시면<br>
+              한 명씩 자리가 정해져요!
+            </div>
+          </div>
+
+          <div class="draw-progress"><div class="bar" id="drawBar"></div></div>
+          <div class="draw-counter" id="drawCounter">대기 중</div>
+
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary btn-xl" id="btnStart" style="width:100%;justify-content:center" onclick="startDrawing()">▶ 시작!</button>
+            <div class="run-ctrl-row">
+              <button class="btn btn-butter btn-sm" id="btnPause" style="display:none" onclick="togglePause()">⏸ 일시정지</button>
+              <button class="btn btn-lilac btn-sm" id="btnReshuffle" onclick="reshuffle()">↺ 처음으로</button>
+              <button class="btn btn-ghost btn-sm" id="btnSkip" onclick="skipAnim()">⏭ 건너뛰기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: classroom -->
+        <div class="run-classroom-area">
+          <div class="podium">교 탁</div>
+          <div id="runClassroom" class="classroom"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;display:flex;justify-content:space-between">
+        <button class="btn btn-ghost" onclick="goTab('classroom')">◂ 이전</button>
+        <button class="btn btn-primary btn-lg" onclick="goTab('result')">결과 보기 ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── ⑤ RESULT ──────── -->
+  <section class="page" data-page="result">
+    <div class="card">
+      <h2>📸 자리 배치 완성</h2>
+      <p class="hint">예쁘게 정리된 배치도예요. 이미지로 저장하시거나 인쇄하실 수 있습니다.</p>
+
+      <div class="result-toolbar">
+        <label class="flip-toggle" title="교탁에서 학생들을 바라보는 시점으로 전환">
+          <input type="checkbox" id="flipResultChk" onchange="toggleFlipResult()">
+          <span>👀 교탁에서 보는 시점</span>
+        </label>
+        <button class="btn btn-mint" onclick="saveImage()">📷 이미지로 저장</button>
+        <button class="btn btn-lilac" onclick="resetToStart()">↺ 처음으로</button>
+      </div>
+
+      <div id="exportTarget" class="export-area">
+        <div class="deco-flower" style="top:14px;left:18px">🌸</div>
+        <div class="deco-flower" style="top:14px;right:18px">🌸</div>
+        <div class="deco-flower" style="bottom:14px;left:18px;font-size:18px">🌷</div>
+        <div class="deco-flower" style="bottom:14px;right:18px;font-size:18px">🌷</div>
+        <div class="export-frame" id="exportFrame">
+          <div class="export-title" id="exportTitle">우리 반 자리 배치도</div>
+          <div class="export-meta" id="exportMeta"></div>
+          <div class="podium">교 탁</div>
+          <div id="resultClassroom" class="classroom"></div>
+          <div class="export-note-wrap">
+            <div id="exportNote" class="export-note" contenteditable="true" spellcheck="false"
+                 oninput="saveResultNote()"></div>
+            <div class="export-note-hint">✏️ 위 문구는 클릭해서 직접 수정하실 수 있어요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Excel mapping modal -->
+<div class="modal" id="excelModal">
+  <div class="modal-card">
+    <h3>📂 엑셀에서 가져오기</h3>
+    <p class="hint" style="margin-top:0">파일에서 어떤 컬럼이 <b>번호</b>이고 어떤 컬럼이 <b>이름</b>인지 골라주세요. 자동으로 추측해드렸으니 맞으면 그대로 가져오시면 됩니다.</p>
+    <div class="row">
+      <div>
+        <label>번호 컬럼</label>
+        <select id="numCol"></select>
+      </div>
+      <div>
+        <label>이름 컬럼</label>
+        <select id="nameCol"></select>
+      </div>
+      <div>
+        <label>첫 행은 헤더</label>
+        <select id="hasHeader">
+          <option value="yes">예 (제목 행)</option>
+          <option value="no">아니오</option>
+        </select>
+      </div>
+    </div>
+    <div class="section-title"><span class="dot"></span>미리보기</div>
+    <div class="preview-table" id="previewTable"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('excelModal')">취소</button>
+      <button class="btn btn-primary" onclick="confirmExcelImport()">이대로 가져오기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Secret help modal (first time) -->
+<div class="modal" id="secretHelpModal">
+  <div class="modal-card" style="max-width:440px">
+    <h3>🤫 비밀 모드 사용법</h3>
+    <p style="line-height:1.7;color:var(--ink);font-size:14px">
+      학생들이 모르게 비밀 조건(떨어뜨릴 친구, 앞·뒤 자리, 자리 고정)을 설정하실 수 있어요.<br><br>
+      <b>왼쪽 위 🌸 아이콘을 더블클릭</b>하시면 비밀 모드가 켜지고, 「③ 비밀 조건」 탭이 나타나요. 한 번 더 더블클릭하시면 다시 숨겨집니다.<br><br>
+      💡 <b>ESC</b> 키로도 빠르게 끌 수 있어요.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal('secretHelpModal');markSecretHelpSeen()">알겠어요!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cute confirm modal -->
+<div class="modal" id="confirmModal">
+  <div class="modal-card" style="max-width:380px;text-align:center">
+    <h3 id="confirmTitle" style="text-align:center">확인</h3>
+    <p id="confirmBody" style="line-height:1.7;color:var(--sub);font-size:14px;margin:4px 0 18px"></p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn btn-ghost" id="confirmNo">아니요</button>
+      <button class="btn btn-primary" id="confirmYes">네, 좋아요</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═════════════════════════ STATE ═════════════════════════ */
+const STORAGE = 'jaribbobgi.v2';
+let state = {
+  className: '',
+  schoolType: 'single',         // 'single' | 'coed'
+  pairRule: 'any',              // 'any' | 'mixed' | 'same'  (공학+짝꿍 전용)
+  students: [],
+  layout: 'single',
+  cols: 3,
+  rows: 5,
+  customGc: 3,                  // 커스텀 모둠: 가로 인원
+  customGr: 2,                  // 커스텀 모둠: 세로 인원
+  constraints: { avoid: [], front: [], back: [], fixed: {} },
+  excluded: [],
+  seatGender: {},               // {seatId: 'M'|'F'}  자리별 성별 고정
+  assignments: {},
+  animation: 'roulette',
+  speed: 1,
+  resultNote: '',
+  secretSeen: false,
+  theme: 'pink',
+  flipResult: false,
+};
+function save(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
+function load(){
+  try{
+    const s = localStorage.getItem(STORAGE);
+    if(s){
+      const loaded = JSON.parse(s);
+      state = {...state, ...loaded};
+      if(!state.constraints) state.constraints = {avoid:[],front:[],back:[],fixed:{}};
+      state.constraints.avoid ||= [];
+      state.constraints.front ||= [];
+      state.constraints.back ||= [];
+      state.constraints.fixed ||= {};
+      state.excluded ||= [];
+      state.assignments ||= {};
+      state.schoolType ||= 'single';
+      // 예전 값 마이그레이션: girls/boys → single
+      if(state.schoolType==='girls' || state.schoolType==='boys') state.schoolType = 'single';
+      state.pairRule ||= 'any';
+      state.seatGender ||= {};
+      state.customGc ||= 3;
+      state.customGr ||= 2;
+      // 기존 학생 데이터에 gender 필드 없으면 null 채움
+      state.students = (state.students||[]).map(s => ({...s, gender: s.gender ?? null}));
+    }
+  }catch(e){}
+}
+load();
+
+/* ═════════════════════════ TABS ═════════════════════════ */
+const $ = id => document.getElementById(id);
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>goTab(t.dataset.tab));
+});
+function goTab(name){
+  if(name==='constraints' && !document.body.classList.contains('secret-on')){
+    toast('비밀 모드를 먼저 켜주세요 (🌸 더블클릭)');
+    return;
+  }
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.dataset.page===name));
+  if(name==='classroom') renderClassroom();
+  if(name==='constraints'){ renderConstraintMode(); renderConstraintList(); }
+  if(name==='run') renderRunStage();
+  if(name==='result') renderResult();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═════════════════════════ INPUT MODE TABS ═════════════════════════ */
+document.querySelectorAll('.imt').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.imt').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.input-pane').forEach(p=>p.classList.toggle('active', p.dataset.pane===t.dataset.imode));
+  });
+});
+
+/* ═════════════════════════ SCHOOL TYPE ═════════════════════════ */
+function applySchoolType(){
+  document.body.classList.toggle('coed-mode', state.schoolType==='coed');
+  document.querySelectorAll('#schoolTypePick input[name="schoolType"]').forEach(r=>{
+    r.checked = r.value === state.schoolType;
+  });
+  // 공학이 아니면 성별 관련 데이터 초기화 (혼란 방지)
+  if(state.schoolType !== 'coed'){
+    state.seatGender = {};
+    state.pairRule = 'any';
+  }
+}
+document.querySelectorAll('#schoolTypePick input[name="schoolType"]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    state.schoolType = r.value;
+    applySchoolType();
+    save();
+    renderStudents();
+    if(document.querySelector('.page.active')?.dataset.page === 'classroom') renderClassroom();
+  });
+});
+
+// "한 명씩" 성별 토글 (공학 모드 전용)
+let addGenderPick = null;
+document.querySelectorAll('#addGender button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const g = b.dataset.g;
+    addGenderPick = (addGenderPick===g) ? null : g;
+    document.querySelectorAll('#addGender button').forEach(x=>{
+      x.classList.toggle('active', x.dataset.g === addGenderPick);
+    });
+  });
+});
+
+/* ═════════════════════════ STUDENTS ═════════════════════════ */
+function renderStudents(){
+  $('className').value = state.className;
+  $('studentCount').textContent = state.students.length + '명';
+  const grid = $('studentGrid');
+  if(state.students.length===0){
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">아직 학생이 없어요. 위에서 추가해주세요 🌸</div>';
+    return;
+  }
+  state.students.sort((a,b)=>a.num-b.num);
+  const isCoed = state.schoolType==='coed';
+  grid.innerHTML = state.students.map(s=>{
+    let badge = '';
+    if(isCoed){
+      const g = s.gender;
+      const cls = g==='M'?'male' : g==='F'?'female' : 'none';
+      const sym = g==='M'?'♂' : g==='F'?'♀' : '?';
+      const title = g==='M'?'남 (클릭해서 바꾸기)' : g==='F'?'여 (클릭해서 바꾸기)' : '성별 미지정 — 클릭해서 지정';
+      badge = `<div class="g-badge ${cls}" title="${title}" onclick="cycleGender(${s.num})">${sym}</div>`;
+    }
+    return `<div class="student-chip">
+      <div class="num">${s.num}</div>
+      <div class="name">${escapeHtml(s.name)}</div>
+      ${badge}
+      <div class="x" onclick="removeStudent(${s.num})">×</div>
+    </div>`;
+  }).join('');
+}
+function cycleGender(num){
+  const s = state.students.find(x=>x.num===num);
+  if(!s) return;
+  // null → M → F → null 사이클
+  s.gender = s.gender==null ? 'M' : s.gender==='M' ? 'F' : null;
+  save(); renderStudents();
+}
+function bulkSetGender(g){
+  if(state.students.length===0){ toast('학생이 없어요'); return; }
+  state.students.forEach(s=>s.gender = g);
+  save(); renderStudents();
+  toast(g==='M'?'전체 남자로 지정했어요' : g==='F'?'전체 여자로 지정했어요' : '전체 성별을 지웠어요');
+}
+function addOne(){
+  const n = parseInt($('addNum').value);
+  const name = $('addName').value.trim();
+  if(!n || !name){ toast('번호와 이름을 모두 적어주세요'); return; }
+  if(state.students.find(s=>s.num===n)){ toast(`이미 ${n}번이 있어요`); return; }
+  state.students.push({num:n, name, gender: state.schoolType==='coed' ? addGenderPick : null});
+  $('addNum').value=''; $('addName').value='';
+  $('addNum').focus();
+  save(); renderStudents();
+}
+function addBulk(){
+  const txt = $('bulkInput').value.trim();
+  if(!txt){ toast('붙여넣을 내용이 없어요'); return; }
+  let added = 0, skipped = 0;
+  txt.split(/\r?\n/).forEach(line=>{
+    line = line.trim();
+    if(!line) return;
+    let m = line.match(/^(\d+)[\s,.\t·\-]+(.+)$/);
+    let num, name;
+    if(m){ num = parseInt(m[1]); name = m[2].trim(); }
+    else { num = nextNum(); name = line; }
+    if(!name) return;
+    if(state.students.find(s=>s.num===num)){ skipped++; return; }
+    state.students.push({num, name, gender:null});
+    added++;
+  });
+  $('bulkInput').value = '';
+  save(); renderStudents();
+  toast(`${added}명 추가됐어요${skipped?` (번호 중복 ${skipped}명 건너뜀)`:''}`);
+}
+function nextNum(){ let n=1; while(state.students.find(s=>s.num===n)) n++; return n; }
+function removeStudent(num){
+  state.students = state.students.filter(s=>s.num!==num);
+  state.constraints.avoid = state.constraints.avoid.filter(p=>!p.includes(num));
+  state.constraints.front = state.constraints.front.filter(x=>x!==num);
+  state.constraints.back = state.constraints.back.filter(x=>x!==num);
+  for(const k of Object.keys(state.constraints.fixed)){
+    if(state.constraints.fixed[k]===num) delete state.constraints.fixed[k];
+  }
+  save(); renderStudents();
+}
+function clearStudents(){
+  if(!confirm('정말로 모든 학생을 삭제하시겠어요?')) return;
+  state.students = [];
+  state.constraints = {avoid:[],front:[],back:[],fixed:{}};
+  state.seatGender = {};
+  save(); renderStudents();
+}
+$('className').addEventListener('input', e=>{state.className = e.target.value; save();});
+
+/* ═════════════════════════ EXCEL UPLOAD ═════════════════════════ */
+let excelData = null;
+const uploadZone = $('uploadZone');
+const fileInput = $('excelFile');
+
+uploadZone.addEventListener('click', ()=>fileInput.click());
+uploadZone.addEventListener('dragover', e=>{
+  e.preventDefault(); uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', ()=>uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e=>{
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  if(e.dataTransfer.files[0]) handleExcelFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{
+  if(e.target.files[0]) handleExcelFile(e.target.files[0]);
+});
+
+function handleExcelFile(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+      // trim empty trailing rows
+      while(json.length && json[json.length-1].every(c=>!String(c).trim())) json.pop();
+      if(json.length<2){ toast('파일이 비어있는 것 같아요'); return; }
+
+      // 🌸 NEIS 명렬표 자동 인식: 헤더에서 번호·성명 컬럼을 찾아 바로 가져오기
+      const headerRow = (json[0]||[]).map(c=>String(c??'').trim());
+      const numIdx = headerRow.findIndex(h=>/^번호$|학번/.test(h));
+      const nameIdx = headerRow.findIndex(h=>/^성\s*명$|^이름$|^성명$/.test(h));
+      if(numIdx>=0 && nameIdx>=0){
+        autoImportRoster(json, numIdx, nameIdx, true);
+        return;
+      }
+
+      // 헤더 없이 (번호|이름) 두 컬럼만 있는 단순 형식도 자동 처리
+      if((json[0]||[]).length===2){
+        const v0 = String(json[1]?.[0]??'').trim();
+        const v1 = String(json[1]?.[1]??'').trim();
+        if(/^\d+$/.test(v0) && /^[가-힣]{2,5}$/.test(v1)){
+          autoImportRoster(json, 0, 1, false);
+          return;
+        }
+      }
+
+      // 그 외: 매핑 UI로 fallback
+      excelData = json;
+      openExcelMapping();
+    }catch(err){ toast('파일을 읽지 못했어요: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+  fileInput.value='';
+}
+
+function autoImportRoster(data, numC, nameC, hasHeader){
+  const start = hasHeader ? 1 : 0;
+  let added=0, skipped=0;
+  for(let r=start;r<data.length;r++){
+    const numStr = String(data[r][numC]??'').trim();
+    const name = String(data[r][nameC]??'').trim();
+    if(!name) continue;
+    if(/^(성명|이름|번호)$/.test(name)) continue;
+    let num = parseInt(numStr);
+    if(isNaN(num)) num = nextNum();
+    if(state.students.find(s=>s.num===num)){ skipped++; continue; }
+    state.students.push({num, name, gender:null});
+    added++;
+  }
+  save(); renderStudents();
+  const coedMsg = state.schoolType==='coed' ? ' 아래에서 각 학생의 ♂/♀를 눌러 지정해주세요.' : '';
+  toast(`나이스 명렬표에서 ${added}명 자동으로 가져왔어요 🌸${skipped?` (중복 ${skipped}명 건너뜀)`:''}${coedMsg}`);
+}
+
+function openExcelMapping(){
+  const data = excelData;
+  const cols = Math.max(...data.map(r=>r.length));
+  // build column letters A,B,C...
+  const letters = [];
+  for(let i=0;i<cols;i++) letters.push(String.fromCharCode(65+i));
+
+  // auto-detect: scan ignoring first row
+  let bestNum = 0, bestName = 1;
+  let bestNumScore = -1, bestNameScore = -1;
+  for(let c=0;c<cols;c++){
+    let numHits=0, nameHits=0, total=0;
+    for(let r=1;r<data.length;r++){
+      const v = String(data[r][c]??'').trim();
+      if(!v) continue;
+      total++;
+      if(/^\d{1,3}$/.test(v)) numHits++;
+      if(/^[가-힣]{2,5}$/.test(v)) nameHits++;
+    }
+    if(total>0){
+      const ns = numHits/total, ms = nameHits/total;
+      if(ns>bestNumScore){ bestNumScore=ns; bestNum=c; }
+      if(ms>bestNameScore){ bestNameScore=ms; bestName=c; }
+    }
+  }
+  if(bestNum===bestName){ bestName = bestNum===0?1:0; }
+
+  const numSel = $('numCol'), nameSel = $('nameCol');
+  numSel.innerHTML = ''; nameSel.innerHTML = '';
+  for(let c=0;c<cols;c++){
+    const sample = data.slice(0,3).map(r=>String(r[c]??'')).filter(Boolean).slice(0,2).join(' / ');
+    const label = `${letters[c]} 컬럼  (${sample||'-'})`;
+    numSel.add(new Option(label, c));
+    nameSel.add(new Option(label, c));
+  }
+  numSel.value = bestNum;
+  nameSel.value = bestName;
+  $('hasHeader').value = looksLikeHeader(data[0]) ? 'yes' : 'no';
+
+  renderPreviewTable();
+  numSel.onchange = renderPreviewTable;
+  nameSel.onchange = renderPreviewTable;
+  $('hasHeader').onchange = renderPreviewTable;
+  openModal('excelModal');
+}
+
+function looksLikeHeader(row){
+  if(!row) return false;
+  return row.some(c=>/번호|이름|성명|학생|학번|성  명/.test(String(c)));
+}
+
+function renderPreviewTable(){
+  const data = excelData;
+  const numC = parseInt($('numCol').value);
+  const nameC = parseInt($('nameCol').value);
+  const skipFirst = $('hasHeader').value==='yes';
+  const start = skipFirst?1:0;
+  const rows = [];
+  for(let r=start;r<Math.min(data.length, start+50);r++){
+    const num = String(data[r][numC]??'').trim();
+    const name = String(data[r][nameC]??'').trim();
+    if(!num && !name) continue;
+    rows.push(`<tr><td>${escapeHtml(num)}</td><td>${escapeHtml(name)}</td></tr>`);
+  }
+  $('previewTable').innerHTML = `
+    <table>
+      <thead><tr><th style="width:80px">번호</th><th>이름</th></tr></thead>
+      <tbody>${rows.join('') || '<tr><td colspan="2" style="text-align:center;color:#999">데이터가 없습니다</td></tr>'}</tbody>
+    </table>`;
+}
+
+function confirmExcelImport(){
+  const data = excelData;
+  const numC = parseInt($('numCol').value);
+  const nameC = parseInt($('nameCol').value);
+  const skipFirst = $('hasHeader').value==='yes';
+  const start = skipFirst?1:0;
+  let added=0, skipped=0;
+  for(let r=start;r<data.length;r++){
+    const numStr = String(data[r][numC]??'').trim();
+    const name = String(data[r][nameC]??'').trim();
+    if(!name) continue;
+    let num = parseInt(numStr);
+    if(isNaN(num)) num = nextNum();
+    if(state.students.find(s=>s.num===num)){ skipped++; continue; }
+    state.students.push({num, name, gender:null});
+    added++;
+  }
+  closeModal('excelModal');
+  save(); renderStudents();
+  toast(`${added}명을 가져왔어요${skipped?` (중복 ${skipped}명 건너뜀)`:''} 🌸`);
+}
+
+/* ═════════════════════════ CLASSROOM ═════════════════════════ */
+let layoutEditMode = 'exclude'; // 'exclude' | 'gender'
+
+document.querySelectorAll('.template-card').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    document.querySelectorAll('.template-card').forEach(x=>x.classList.remove('active'));
+    c.classList.add('active');
+    state.layout = c.dataset.layout;
+    applyLayoutBodyClass();
+    save(); renderClassroom();
+  });
+});
+
+function applyLayoutBodyClass(){
+  document.body.classList.remove('layout-single','layout-pair','layout-group4','layout-group6','layout-custom');
+  document.body.classList.add('layout-'+state.layout);
+}
+
+// 편집 모드 토글
+document.querySelectorAll('#layoutEditMode .lem').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('#layoutEditMode .lem').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    layoutEditMode = b.dataset.mode;
+    const hint = $('classroomEditHint');
+    if(hint){
+      hint.textContent = layoutEditMode==='gender'
+        ? '자리를 클릭하면 자유→남→여→자유 순서로 성별이 지정됩니다.'
+        : '자리를 클릭하면 사용 안 함 처리됩니다.';
+    }
+  });
+});
+
+// 짝꿍 규칙 드롭다운
+$('pairRuleSelect').addEventListener('change', e=>{
+  state.pairRule = e.target.value;
+  save();
+});
+function syncLayoutActiveCard(){
+  document.querySelectorAll('.template-card').forEach(c=>{
+    c.classList.toggle('active', c.dataset.layout === state.layout);
+  });
+}
+$('cols').addEventListener('input', e=>{
+  state.cols = Math.max(1, parseInt(e.target.value)||1);
+  save(); renderClassroom();
+});
+$('rows').addEventListener('input', e=>{
+  state.rows = Math.max(1, parseInt(e.target.value)||1);
+  save(); renderClassroom();
+});
+$('customGc').addEventListener('input', e=>{
+  state.customGc = Math.max(1, Math.min(8, parseInt(e.target.value)||1));
+  save(); renderClassroom();
+});
+$('customGr').addEventListener('input', e=>{
+  state.customGr = Math.max(1, Math.min(8, parseInt(e.target.value)||1));
+  save(); renderClassroom();
+});
+
+function getSeatsInGroup(){
+  switch(state.layout){
+    case 'single': return {n:1, gc:1, gr:1};
+    case 'pair':   return {n:2, gc:2, gr:1};
+    case 'group4': return {n:4, gc:2, gr:2};
+    case 'group6': return {n:6, gc:3, gr:2};
+    case 'custom': {
+      const gc = Math.max(1, Math.min(8, parseInt(state.customGc)||3));
+      const gr = Math.max(1, Math.min(8, parseInt(state.customGr)||2));
+      return {n: gc*gr, gc, gr};
+    }
+  }
+}
+
+function generateSeats(){
+  const {n, gc, gr} = getSeatsInGroup();
+  const seats = [];
+  const cols = state.cols, rows = state.rows;
+  const totalRows = rows * gr;
+  const excluded = new Set(state.excluded || []);
+  let seq = 1;
+  // 활성 자리만 번호 부여 (제외된 자리는 자리번호 없음)
+  for(let gy=0; gy<rows; gy++){
+    for(let iy=0; iy<gr; iy++){
+      const rowIdx = gy*gr + iy;
+      for(let gx=0; gx<cols; gx++){
+        for(let ix=0; ix<gc; ix++){
+          const id = `s_${gy}_${iy}_${gx}_${ix}`;
+          const isExcluded = excluded.has(id);
+          seats.push({
+            id, gx, gy, ix, iy, rowIdx,
+            seatNo: isExcluded ? null : seq++,
+            excluded: isExcluded,
+            isFront: rowIdx < Math.ceil(totalRows/3),
+            isBack:  rowIdx >= totalRows - Math.ceil(totalRows/3),
+          });
+        }
+      }
+    }
+  }
+  return {seats, cols, rows, gc, gr, totalRows};
+}
+
+function renderClassroom(target='classroomPreview'){
+  // sync inputs (only when not focused)
+  if(document.activeElement?.id !== 'cols') $('cols').value = state.cols;
+  if(document.activeElement?.id !== 'rows') $('rows').value = state.rows;
+  if(document.activeElement?.id !== 'customGc') $('customGc').value = state.customGc;
+  if(document.activeElement?.id !== 'customGr') $('customGr').value = state.customGr;
+  const ctEl = $('customTotal'); if(ctEl) ctEl.textContent = (state.customGc||1)*(state.customGr||1);
+  syncLayoutActiveCard();
+  applyLayoutBodyClass();
+  // 짝꿍 규칙 드롭다운 동기화
+  const pr = $('pairRuleSelect'); if(pr) pr.value = state.pairRule || 'any';
+
+  const {seats, cols, rows, gc, gr} = generateSeats();
+  const activeSeats = seats.filter(s=>!s.excluded);
+  const totalEl = $('totalSeats');
+  if(totalEl){
+    const exN = seats.length - activeSeats.length;
+    totalEl.value = exN>0 ? `${activeSeats.length}석 (제외 ${exN})` : `${activeSeats.length}석`;
+  }
+  const rowsLabelEl = $('rowsLabel');
+  if(rowsLabelEl) rowsLabelEl.textContent =
+    (state.layout==='single' || state.layout==='pair') ? '세로 줄 수 (앞뒤 방향)' : '세로 모둠 수';
+
+  const container = $(target);
+  if(!container) return;
+
+  // 타겟별 학생 표시 규칙
+  //   classroomPreview : 아무도 표시 안 함 (레이아웃 전용)
+  //   fixedPreview     : 고정배정된 학생 표시 (선생님 시점, 비밀 모드)
+  //   runClassroom/resultClassroom : state.assignments 그대로
+  const showMode = target==='classroomPreview' ? 'none'
+                  : target==='fixedPreview' ? 'fixed'
+                  : 'assignments';
+  const isLayoutEdit = target==='classroomPreview';
+
+  let html = '';
+  for(let gy=0; gy<rows; gy++){
+    html += '<div class="row-of-groups">';
+    for(let gx=0; gx<cols; gx++){
+      html += `<div class="group" style="grid-template-columns:repeat(${gc},auto)">`;
+      for(let iy=0; iy<gr; iy++){
+        for(let ix=0; ix<gc; ix++){
+          const seat = seats.find(s=>s.gx===gx && s.gy===gy && s.ix===ix && s.iy===iy);
+          if(!seat) continue;
+          let studentNum = null;
+          if(showMode==='fixed') studentNum = state.constraints.fixed[seat.id] ?? null;
+          else if(showMode==='assignments') studentNum = state.assignments?.[seat.id] ?? null;
+          const student = state.students.find(s=>s.num===studentNum);
+          const seatG = state.seatGender?.[seat.id] || null; // 'M'|'F'|null
+          // 뽑기/결과 화면(학생 시점)에서는 성별 표시/테두리 숨김
+          const showGenderCues = state.schoolType==='coed' && seatG && !seat.excluded && showMode!=='assignments';
+          let cls = 'seat';
+          if(seat.excluded) cls += ' excluded';
+          if(seat.isFront) cls += ' front';
+          if(seat.isBack && !seat.isFront) cls += ' back';
+          if(showMode==='fixed' && state.constraints.fixed[seat.id]) cls += ' fixed';
+          if(!student) cls += ' empty-seat';
+          if(student) cls += ' has-student';
+          if(showGenderCues) cls += ' fixed-'+seatG;
+          const noDisplay = seat.excluded ? '❌' : (seat.seatNo ?? '');
+          let gMark = '';
+          if(showGenderCues){
+            gMark = `<div class="g-mark ${seatG==='M'?'male':'female'}">${seatG==='M'?'♂':'♀'}</div>`;
+          }
+          html += `<div class="${cls}" data-id="${seat.id}" data-no="${seat.seatNo??''}">
+            <div class="seat-id">${noDisplay}</div>
+            ${gMark}
+            <div class="seat-num">${student?student.num:''}</div>
+            <div class="seat-name">${student?escapeHtml(student.name):(seat.excluded?'사용 안 함':'')}</div>
+          </div>`;
+        }
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+  if(target==='runClassroom') fitRunClassroom();
+
+  // 🏫 교실 레이아웃 편집 모드: 편집 모드에 따라 클릭 동작 분기
+  if(isLayoutEdit){
+    const isCoed = state.schoolType==='coed';
+    container.querySelectorAll('.seat').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        if(isCoed && layoutEditMode==='gender'){
+          cycleSeatGender(el.dataset.id);
+        } else {
+          toggleExclude(el.dataset.id);
+        }
+      });
+    });
+  }
+  save();
+}
+
+function toggleExclude(sid){
+  state.excluded = state.excluded || [];
+  const i = state.excluded.indexOf(sid);
+  if(i>=0) state.excluded.splice(i,1); else state.excluded.push(sid);
+  // 제외되면 그 자리에 있던 고정배정/일반배정/성별고정도 제거
+  if(i<0){
+    delete state.constraints.fixed[sid];
+    delete state.assignments[sid];
+    delete state.seatGender[sid];
+  }
+  save();
+  renderClassroom('classroomPreview');
+}
+
+function cycleSeatGender(sid){
+  if((state.excluded||[]).includes(sid)){ toast('사용 안 함 자리에는 성별 고정을 할 수 없어요'); return; }
+  state.seatGender = state.seatGender || {};
+  const cur = state.seatGender[sid] || null;
+  // null → M → F → null
+  if(cur==null) state.seatGender[sid] = 'M';
+  else if(cur==='M') state.seatGender[sid] = 'F';
+  else delete state.seatGender[sid];
+  save();
+  renderClassroom('classroomPreview');
+}
+
+function clearAllSeatGender(){
+  const n = Object.keys(state.seatGender||{}).length;
+  if(n===0){ toast('고정된 성별 자리가 없어요'); return; }
+  if(!confirm(`자리별 성별 고정 ${n}개를 전부 해제할까요?`)) return;
+  state.seatGender = {};
+  save();
+  renderClassroom('classroomPreview');
+  toast('모든 성별 자리 고정을 해제했어요');
+}
+
+/* ═════════════════════════ CONSTRAINTS ═════════════════════════ */
+let constraintMode = 'avoid';
+let pickedForConstraint = [];
+let pickedForFixed = null;
+
+document.querySelectorAll('.mode-pill').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    constraintMode = p.dataset.mode;
+    pickedForConstraint = [];
+    pickedForFixed = null;
+    renderConstraintMode();
+  });
+});
+
+function renderConstraintMode(){
+  const helps = {
+    avoid: '떨어뜨리고 싶은 두 명을 클릭해서 선택해주세요. 같은 모둠/짝꿍/앞뒤로 안 앉게 됩니다.',
+    front: '앞쪽에 앉을 학생들을 클릭해주세요 (시력이 안 좋거나 집중이 필요한 친구들).',
+    back:  '뒤쪽에 앉을 학생들을 클릭해주세요 (키가 큰 친구들 등).',
+    fixed: '학생을 한 명 클릭하시고, 아래 미리보기에서 앉힐 자리를 클릭해주세요.',
+  };
+  $('constraintHelp').textContent = helps[constraintMode];
+  $('fixedAssignBox').style.display = constraintMode==='fixed' ? 'block' : 'none';
+
+  const pick = $('studentPick');
+  if(state.students.length===0){
+    pick.innerHTML = '<div class="empty">먼저 학생 명단을 입력해주세요</div>';
+    return;
+  }
+  pick.innerHTML = state.students.map(s=>{
+    let cls = 'pick';
+    if(constraintMode==='front'  && state.constraints.front.includes(s.num)) cls += ' selected';
+    if(constraintMode==='back'   && state.constraints.back.includes(s.num)) cls += ' selected';
+    if(constraintMode==='avoid'  && pickedForConstraint.includes(s.num)) cls += ' selected';
+    if(constraintMode==='fixed'  && pickedForFixed===s.num) cls += ' selected';
+    if(constraintMode==='front' && state.constraints.back.includes(s.num)) cls += ' dimmed';
+    if(constraintMode==='back'  && state.constraints.front.includes(s.num)) cls += ' dimmed';
+    return `<div class="${cls}" onclick="pickStudent(${s.num})">${s.num}. ${escapeHtml(s.name)}</div>`;
+  }).join('');
+
+  if(constraintMode==='fixed'){
+    renderClassroom('fixedPreview');
+    document.querySelectorAll('#fixedPreview .seat').forEach(el=>{
+      if(el.classList.contains('excluded')) return; // 제외자리는 고정 불가
+      el.addEventListener('click', ()=>assignFixed(el.dataset.id));
+      el.style.cursor = 'pointer';
+    });
+    updateFixedProgress();
+  }
+}
+
+function updateFixedProgress(){
+  const el = $('fixedProgress'); if(!el) return;
+  const placed = Object.keys(state.constraints.fixed).length;
+  const total = state.students.length;
+  const full = placed>0 && placed===total;
+  el.innerHTML = full
+    ? `<span class="fp-full">✅ ${placed}/${total}명 전체 미리 배정 완료!</span>`
+    : `<span class="fp-partial">${placed}/${total}명 고정됨</span>`;
+}
+
+function autoFillFixed(mode){
+  if(state.students.length===0){ toast('학생 명단을 먼저 입력해주세요'); return; }
+  const {seats} = generateSeats();
+  const usable = seats.filter(s=>!s.excluded);
+  if(state.students.length > usable.length){
+    toast(`자리(${usable.length}개)가 학생(${state.students.length}명)보다 적어요`); return;
+  }
+  const stuNums = mode==='random' ? shuffle(state.students.map(s=>s.num))
+                                  : state.students.slice().sort((a,b)=>a.num-b.num).map(s=>s.num);
+  const seatOrder = mode==='random' ? shuffle(usable) : usable.slice().sort((a,b)=>a.seatNo-b.seatNo);
+  const newFixed = {};
+  for(let i=0;i<stuNums.length;i++){
+    newFixed[seatOrder[i].id] = stuNums[i];
+  }
+  state.constraints.fixed = newFixed;
+  save(); renderConstraintMode(); renderConstraintList();
+  toast(mode==='random' ? '🎲 랜덤으로 전체 배정했어요' : '📋 번호순으로 전체 배정했어요');
+}
+
+function clearAllFixed(){
+  if(Object.keys(state.constraints.fixed).length===0){ toast('지울 게 없어요'); return; }
+  state.constraints.fixed = {};
+  save(); renderConstraintMode(); renderConstraintList();
+  toast('전체 고정 배정을 지웠어요');
+}
+function pickStudent(num){
+  if(constraintMode==='avoid'){
+    if(pickedForConstraint.includes(num)){
+      pickedForConstraint = pickedForConstraint.filter(x=>x!==num);
+    } else {
+      pickedForConstraint.push(num);
+      if(pickedForConstraint.length===2){
+        const [a,b] = pickedForConstraint;
+        const exists = state.constraints.avoid.find(p=>(p[0]===a&&p[1]===b)||(p[0]===b&&p[1]===a));
+        if(!exists){ state.constraints.avoid.push([a,b]); toast('두 명을 떨어뜨리도록 설정했어요'); }
+        pickedForConstraint = [];
+        save();
+      }
+    }
+  } else if(constraintMode==='front'){
+    if(state.constraints.front.includes(num)){
+      state.constraints.front = state.constraints.front.filter(x=>x!==num);
+    } else {
+      state.constraints.back = state.constraints.back.filter(x=>x!==num);
+      state.constraints.front.push(num);
+    }
+    save();
+  } else if(constraintMode==='back'){
+    if(state.constraints.back.includes(num)){
+      state.constraints.back = state.constraints.back.filter(x=>x!==num);
+    } else {
+      state.constraints.front = state.constraints.front.filter(x=>x!==num);
+      state.constraints.back.push(num);
+    }
+    save();
+  } else if(constraintMode==='fixed'){
+    pickedForFixed = pickedForFixed===num ? null : num;
+  }
+  renderConstraintMode();
+  renderConstraintList();
+}
+function assignFixed(seatId){
+  if(!pickedForFixed){ toast('먼저 학생을 골라주세요'); return; }
+  if((state.excluded||[]).includes(seatId)){ toast('사용 안 함 자리에는 배정할 수 없어요'); return; }
+  for(const k of Object.keys(state.constraints.fixed)){
+    if(state.constraints.fixed[k]===pickedForFixed) delete state.constraints.fixed[k];
+  }
+  state.constraints.fixed[seatId] = pickedForFixed;
+  toast(`${state.students.find(s=>s.num===pickedForFixed).name} 자리가 고정됐어요`);
+  pickedForFixed = null;
+  save();
+  renderConstraintMode();
+  renderConstraintList();
+}
+function renderConstraintList(){
+  const list = $('constraintList');
+  const items = [];
+  state.constraints.avoid.forEach((p,i)=>{
+    const a = state.students.find(s=>s.num===p[0]);
+    const b = state.students.find(s=>s.num===p[1]);
+    if(!a||!b) return;
+    items.push(`<div class="constraint-item">
+      <span class="ico">🚫</span>
+      <span><b>${a.name}</b> ↔ <b>${b.name}</b> 떨어뜨리기</span>
+      <span class="x" onclick="rmAvoid(${i})">×</span>
+    </div>`);
+  });
+  state.constraints.front.forEach(n=>{
+    const s = state.students.find(x=>x.num===n);
+    if(!s) return;
+    items.push(`<div class="constraint-item" style="background:var(--blue-2)">
+      <span class="ico">⬆️</span>
+      <span><b>${s.name}</b> 앞쪽 자리</span>
+      <span class="x" onclick="rmFront(${n})">×</span>
+    </div>`);
+  });
+  state.constraints.back.forEach(n=>{
+    const s = state.students.find(x=>x.num===n);
+    if(!s) return;
+    items.push(`<div class="constraint-item" style="background:var(--lilac-2)">
+      <span class="ico">⬇️</span>
+      <span><b>${s.name}</b> 뒤쪽 자리</span>
+      <span class="x" onclick="rmBack(${n})">×</span>
+    </div>`);
+  });
+  Object.entries(state.constraints.fixed).forEach(([sid,n])=>{
+    const s = state.students.find(x=>x.num===n);
+    if(!s) return;
+    const seat = generateSeats().seats.find(x=>x.id===sid);
+    items.push(`<div class="constraint-item" style="background:var(--butter-2)">
+      <span class="ico">📍</span>
+      <span><b>${s.name}</b> → ${seat?seat.seatNo+'번 자리':'자리'} 고정</span>
+      <span class="x" onclick="rmFixed('${sid}')">×</span>
+    </div>`);
+  });
+  list.innerHTML = items.length ? items.join('') : '<div class="empty">설정된 조건이 없어요</div>';
+}
+function rmAvoid(i){ state.constraints.avoid.splice(i,1); save(); renderConstraintList(); }
+function rmFront(n){ state.constraints.front = state.constraints.front.filter(x=>x!==n); save(); renderConstraintList(); renderConstraintMode(); }
+function rmBack(n){ state.constraints.back = state.constraints.back.filter(x=>x!==n); save(); renderConstraintList(); renderConstraintMode(); }
+function rmFixed(sid){ delete state.constraints.fixed[sid]; save(); renderConstraintList(); renderConstraintMode(); }
+
+/* ═════════════════════════ ASSIGNMENT ALGO ═════════════════════════ */
+function neighborSeatIds(seat, allSeats){
+  const same = allSeats.filter(s=>s.id!==seat.id && s.gx===seat.gx && s.gy===seat.gy);
+  const front = allSeats.find(s=>s.gx===seat.gx && s.ix===seat.ix && s.rowIdx===seat.rowIdx-1);
+  const back  = allSeats.find(s=>s.gx===seat.gx && s.ix===seat.ix && s.rowIdx===seat.rowIdx+1);
+  const ids = same.map(s=>s.id);
+  if(front) ids.push(front.id);
+  if(back) ids.push(back.id);
+  return ids;
+}
+function shuffle(arr){
+  arr = arr.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function tryAssign(){
+  const {seats:allSeats} = generateSeats();
+  const seats = allSeats.filter(s=>!s.excluded); // 제외된 자리는 배정 대상 아님
+  const need = state.students.length;
+  if(need > seats.length){
+    return {ok:false, msg:`쓸 수 있는 자리(${seats.length}개)보다 학생(${need}명)이 더 많아요`};
+  }
+
+  const isCoed = state.schoolType==='coed';
+  const seatGender = state.seatGender || {};
+  const pairRule = state.pairRule || 'any';
+  const getStudent = n => state.students.find(s=>s.num===n);
+
+  // 공학 모드 사전 검증
+  if(isCoed){
+    const noGender = state.students.filter(s=>!s.gender);
+    if(noGender.length>0){
+      const sample = noGender.slice(0,3).map(s=>s.name).join(', ');
+      return {ok:false, msg:`성별이 지정되지 않은 학생이 ${noGender.length}명 있어요 (${sample}${noGender.length>3?' 외':''}). 명단 페이지에서 ♂/♀을 지정해주세요.`};
+    }
+    let mReqd=0, fReqd=0;
+    for(const [sid,g] of Object.entries(seatGender)){
+      if(!seats.find(s=>s.id===sid)) continue;
+      if(g==='M') mReqd++; else if(g==='F') fReqd++;
+    }
+    const mAvail = state.students.filter(s=>s.gender==='M').length;
+    const fAvail = state.students.filter(s=>s.gender==='F').length;
+    if(mReqd > mAvail) return {ok:false, msg:`남자 고정 자리(${mReqd}개)가 남학생(${mAvail}명)보다 많아요. 자리 고정을 줄여주세요.`};
+    if(fReqd > fAvail) return {ok:false, msg:`여자 고정 자리(${fReqd}개)가 여학생(${fAvail}명)보다 많아요. 자리 고정을 줄여주세요.`};
+
+    // 짝꿍 레이아웃 + 성별 규칙 사전 검증: 같은 짝에 같은 성별이 고정된 수를 센다
+    if(state.layout==='pair' && pairRule!=='any'){
+      const pairsChecked = new Set();
+      let forcedSameGender = 0, forcedDiffGender = 0, totalPairs = 0, badPairs = [];
+      for(const seat of seats){
+        const partner = seats.find(s=>s.gx===seat.gx && s.gy===seat.gy && s.iy===seat.iy && s.ix!==seat.ix);
+        if(!partner) continue;
+        const pk = [seat.id, partner.id].sort().join('|');
+        if(pairsChecked.has(pk)) continue;
+        pairsChecked.add(pk);
+        totalPairs++;
+        const g1 = seatGender[seat.id], g2 = seatGender[partner.id];
+        if(g1 && g2){
+          if(g1===g2){ forcedSameGender++; if(pairRule==='mixed') badPairs.push({seat, partner, g:g1}); }
+          else { forcedDiffGender++; if(pairRule==='same') badPairs.push({seat, partner}); }
+        }
+      }
+      if(pairRule==='mixed'){
+        const maxAllowedSame = Math.max(0, totalPairs - Math.min(mAvail, fAvail));
+        if(forcedSameGender > maxAllowedSame){
+          const sample = badPairs.slice(0,2).map(p=>{
+            const a = seats.find(s=>s.id===p.seat.id)?.seatNo;
+            const b = seats.find(s=>s.id===p.partner.id)?.seatNo;
+            return `${a}번·${b}번 자리(둘 다 ${p.g==='M'?'남':'여'} 고정)`;
+          }).join(', ');
+          return {ok:false, msg:`💡 "남녀 짝꿍" 규칙과 충돌: 한 짝의 두 자리가 같은 성별로 고정된 쌍이 ${forcedSameGender}개 있어요 (예: ${sample}). 한 짝은 한 쪽만 고정하고 반대쪽은 비워두세요(클릭으로 '자유'로 되돌리기).`};
+        }
+      }
+      if(pairRule==='same' && forcedDiffGender>0){
+        const p = badPairs[0];
+        const a = seats.find(s=>s.id===p.seat.id)?.seatNo;
+        const b = seats.find(s=>s.id===p.partner.id)?.seatNo;
+        return {ok:false, msg:`💡 "같은 성별 짝꿍" 규칙과 충돌: ${a}번 자리와 ${b}번 자리가 서로 다른 성별로 고정돼 있어요. 둘 중 하나를 풀어주세요.`};
+      }
+    }
+  }
+
+  const fixedAssign = {};
+  const usedStudents = new Set();
+  const usedSeats = new Set();
+  for(const [sid, num] of Object.entries(state.constraints.fixed)){
+    if(seats.find(s=>s.id===sid) && state.students.find(s=>s.num===num)){
+      // 고정 배정 학생이 그 자리의 성별 제약과 충돌하면 에러
+      if(isCoed && seatGender[sid]){
+        const stu = getStudent(num);
+        if(stu.gender && stu.gender !== seatGender[sid]){
+          return {ok:false, msg:`${stu.name} 고정 자리가 해당 자리의 성별(${seatGender[sid]==='M'?'남':'여'}) 제약과 맞지 않아요`};
+        }
+      }
+      fixedAssign[sid] = num;
+      usedSeats.add(sid);
+      usedStudents.add(num);
+    }
+  }
+  const seatById = Object.fromEntries(seats.map(s=>[s.id,s]));
+  const front = state.constraints.front.filter(n=>!usedStudents.has(n));
+  const back  = state.constraints.back.filter(n=>!usedStudents.has(n));
+  const others = state.students.map(s=>s.num).filter(n=>!usedStudents.has(n)&&!front.includes(n)&&!back.includes(n));
+
+  const frontSeats = seats.filter(s=>!usedSeats.has(s.id) && s.isFront);
+  const backSeats  = seats.filter(s=>!usedSeats.has(s.id) && s.isBack && !s.isFront);
+
+  const seatAccepts = (seat, stuNum)=>{
+    if(!isCoed) return true;
+    const req = seatGender[seat.id];
+    if(!req) return true;
+    return getStudent(stuNum)?.gender === req;
+  };
+
+  for(let attempt=0; attempt<500; attempt++){
+    const a = {...fixedAssign};
+    const usedS = new Set(usedSeats);
+    let ok = true;
+    // 성별 제약을 고려한 그리디 배치: 성별 고정 자리 우선, 다음 제약 없는 자리
+    const placeList = (students, candidates)=>{
+      const cands = candidates.filter(s=>!usedS.has(s.id));
+      if(students.length > cands.length) return false;
+      const remainStuds = shuffle(students);
+      const usedCands = new Set();
+      // 1) 성별 고정 자리: 해당 성별 학생이 남아있으면 채움. 없으면 다음 phase로 넘김.
+      const constrained = shuffle(cands.filter(s=>seatGender[s.id]));
+      for(const seat of constrained){
+        const idx = remainStuds.findIndex(n=>seatAccepts(seat, n));
+        if(idx<0) continue;
+        a[seat.id] = remainStuds[idx];
+        usedCands.add(seat.id);
+        usedS.add(seat.id);
+        remainStuds.splice(idx,1);
+      }
+      // 2) 남은 학생을 남은 자리에 배치 (제약 남은 자리는 해당 성별 학생만 수용)
+      const leftCands = shuffle(cands.filter(c=>!usedCands.has(c.id)));
+      for(const n of remainStuds){
+        const i = leftCands.findIndex(seat=>seatAccepts(seat, n));
+        if(i<0) return false;
+        a[leftCands[i].id] = n;
+        usedS.add(leftCands[i].id);
+        leftCands.splice(i,1);
+      }
+      return true;
+    };
+    if(!placeList(front, frontSeats)) { ok=false; }
+    if(ok && !placeList(back, backSeats)) { ok=false; }
+    if(ok){
+      const remaining = seats.filter(s=>!usedS.has(s.id));
+      if(!placeList(others, remaining)) ok=false;
+    }
+    if(!ok) continue;
+
+    // avoid 제약 검사
+    let allOk = true;
+    for(const [na, nb] of state.constraints.avoid){
+      const seatA = Object.entries(a).find(([_,n])=>n===na)?.[0];
+      const seatB = Object.entries(a).find(([_,n])=>n===nb)?.[0];
+      if(!seatA || !seatB) continue;
+      const sA = seatById[seatA];
+      if(neighborSeatIds(sA, seats).includes(seatB)){ allOk=false; break; }
+    }
+    if(!allOk) continue;
+
+    // 짝꿍 규칙 검사 (공학 + 짝꿍 레이아웃)
+    if(isCoed && state.layout==='pair' && pairRule!=='any'){
+      let pairOk = true;
+      const mAvail = state.students.filter(s=>s.gender==='M').length;
+      const fAvail = state.students.filter(s=>s.gender==='F').length;
+      const maxMixedPairs = Math.min(mAvail, fAvail);
+      // 초과하는 쌍은 같은 성별 허용 (수량이 안 맞는 현실적 케이스)
+      let violations = 0;
+      const maxViolations = (pairRule==='mixed')
+        ? Math.max(0, Math.floor(seats.length/2) - maxMixedPairs)
+        : 0;
+      const pairsChecked = new Set();
+      for(const seat of seats){
+        const partner = seats.find(s=>s.gx===seat.gx && s.gy===seat.gy && s.iy===seat.iy && s.ix!==seat.ix);
+        if(!partner) continue;
+        const pk = [seat.id, partner.id].sort().join('|');
+        if(pairsChecked.has(pk)) continue;
+        pairsChecked.add(pk);
+        const sNum = a[seat.id], pNum = a[partner.id];
+        if(sNum==null || pNum==null) continue;
+        const g1 = getStudent(sNum)?.gender;
+        const g2 = getStudent(pNum)?.gender;
+        if(!g1 || !g2) continue;
+        if(pairRule==='mixed' && g1===g2){
+          violations++;
+          if(violations > maxViolations){ pairOk=false; break; }
+        }
+        if(pairRule==='same' && g1!==g2){ pairOk=false; break; }
+      }
+      if(!pairOk) continue;
+    }
+    return {ok:true, assignment:a};
+  }
+  const tips = [];
+  if(state.constraints.avoid.length) tips.push(`떨어뜨리기 ${state.constraints.avoid.length}쌍`);
+  if(state.constraints.front.length) tips.push(`앞쪽 ${state.constraints.front.length}명`);
+  if(state.constraints.back.length) tips.push(`뒤쪽 ${state.constraints.back.length}명`);
+  if(isCoed && Object.keys(seatGender).length) tips.push(`성별 자리 고정 ${Object.keys(seatGender).length}개`);
+  if(isCoed && pairRule!=='any') tips.push(`짝꿍 규칙(${pairRule==='mixed'?'남녀':'동성'})`);
+  const tipTxt = tips.length ? ` 현재 설정: ${tips.join(' · ')}` : '';
+  return {ok:false, msg:`조건을 다 만족하는 배치를 못 찾았어요.${tipTxt} 조건을 하나씩 줄여서 다시 시도해보세요.`};
+}
+
+/* ═════════════════════════ RUN STAGE (split) ═════════════════════════ */
+document.querySelectorAll('.anim-pill').forEach(p=>{
+  p.addEventListener('click', ()=>{
+    if(isDrawing) return; // 뽑는 중엔 모드 변경 금지
+    document.querySelectorAll('.anim-pill').forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    state.animation = p.dataset.anim;
+    save();
+  });
+});
+
+function speedText(v){
+  if(v<=0.6) return '느림';
+  if(v<=0.9) return '살짝느림';
+  if(v<=1.1) return '보통';
+  if(v<=1.6) return '살짝빠름';
+  if(v<=2.1) return '빠름';
+  return '초고속';
+}
+function applySpeed(v){
+  state.speed = v;
+  document.documentElement.style.setProperty('--speed', v);
+  $('speedLabel').textContent = speedText(v);
+  save();
+}
+// slider init + listener (once)
+(()=>{
+  const s = $('speedSlider');
+  if(!s) return;
+  s.value = state.speed || 1;
+  applySpeed(parseFloat(s.value));
+  s.addEventListener('input', ()=>applySpeed(parseFloat(s.value)));
+})();
+
+function renderRunStage(){
+  document.querySelectorAll('.anim-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.anim===state.animation);
+  });
+  // 학생들 시점: 항상 완전히 빈 교실에서 시작 (고정자리도 숨김)
+  state.assignments = {};
+  renderClassroom('runClassroom');
+  $('drawBar').style.width = '0%';
+  $('drawCounter').textContent = '대기 중';
+  $('drawStage').innerHTML = `<div class="draw-empty"><span class="big">${currentIcons().empty}</span>아래 시작 버튼을 누르시면<br>한 명씩 자리가 정해져요!</div>`;
+  // reset controls
+  isDrawing = false; isPaused = false; animSkipped = false;
+  const btnPause = $('btnPause'), btnStart = $('btnStart');
+  if(btnPause){ btnPause.style.display='none'; btnPause.textContent='⏸ 일시정지'; }
+  if(btnStart){ btnStart.disabled = false; btnStart.textContent = '▶ 시작!'; }
+  document.querySelector('.anim-picker')?.classList.remove('locked');
+  // sync slider from state
+  const s = $('speedSlider'); if(s){ s.value = state.speed||1; applySpeed(parseFloat(s.value)); }
+}
+
+let animSkipped = false;
+let isDrawing = false;
+let isPaused = false;
+let drawToken = 0; // 연출 세션 식별자 (다시 뽑기로 중단 시 증가)
+
+// 속도·일시정지를 존중하는 sleep
+function sleep(ms){
+  return new Promise(r=>{
+    let remain = ms / (state.speed || 1);
+    const step = 30;
+    const id = setInterval(()=>{
+      if(animSkipped){ clearInterval(id); r(); return; }
+      if(isPaused) return; // 일시정지 중엔 시간 경과 X
+      remain -= step;
+      if(remain <= 0){ clearInterval(id); r(); }
+    }, step);
+  });
+}
+
+function togglePause(){
+  if(!isDrawing) return;
+  isPaused = !isPaused;
+  const btn = $('btnPause');
+  btn.textContent = isPaused ? '▶ 계속하기' : '⏸ 일시정지';
+  btn.classList.toggle('btn-primary', isPaused);
+  btn.classList.toggle('btn-butter', !isPaused);
+  // CSS 애니메이션(룰렛 바운스, 카드 회전 등)도 일시정지
+  document.body.classList.toggle('paused', isPaused);
+}
+
+function seatPositionLabel(seat){
+  return `${seat.seatNo}번 자리`;
+}
+function highlightSeat(sid){
+  const el = document.querySelector(`#runClassroom .seat[data-id="${sid}"]`);
+  if(el) el.classList.add('flash');
+  setTimeout(()=>el?.classList.remove('flash'), 1000);
+}
+
+function setSeatStudent(sid, studentNum){
+  state.assignments[sid] = studentNum;
+  // patch only that seat in DOM
+  const stu = state.students.find(s=>s.num===studentNum);
+  const el = document.querySelector(`#runClassroom .seat[data-id="${sid}"]`);
+  if(el && stu){
+    el.classList.remove('empty-seat');
+    el.classList.add('just-set','has-student');
+    el.querySelector('.seat-num').textContent = stu.num;
+    el.querySelector('.seat-name').textContent = stu.name;
+    setTimeout(()=>el.classList.remove('just-set'), 600);
+  }
+}
+
+async function startDrawing(){
+  if(isDrawing){ return; } // 🛡 중복 시작 방지 (급발진 버그 원인)
+  if(state.students.length===0){ toast('먼저 학생을 입력해주세요'); goTab('students'); return; }
+  const result = tryAssign();
+  if(!result.ok){ toast(result.msg); return; }
+
+  const myToken = ++drawToken;
+  isDrawing = true;
+  isPaused = false;
+  animSkipped = false;
+  const btnStart = $('btnStart');
+  const btnPause = $('btnPause');
+  if(btnStart){ btnStart.disabled = true; btnStart.textContent = '뽑는 중...'; }
+  if(btnPause){ btnPause.style.display = 'inline-flex'; btnPause.textContent = '⏸ 일시정지'; btnPause.classList.remove('btn-primary'); btnPause.classList.add('btn-butter'); }
+  document.querySelector('.anim-picker')?.classList.add('locked');
+  document.body.classList.remove('paused');
+
+  try{
+    const finalAssignment = result.assignment;
+    // 학생들 눈에는 완전히 빈 교실에서 시작해야 함 (고정자리도 숨김)
+    state.assignments = {};
+    renderClassroom('runClassroom');
+
+    if(state.animation==='quick'){
+      state.assignments = finalAssignment;
+      save();
+      renderClassroom('runClassroom');
+      $('drawBar').style.width='100%';
+      $('drawCounter').textContent = `완료! (${Object.keys(finalAssignment).length}명)`;
+      $('drawStage').innerHTML = `<div style="font-family:'Dongle','Jua',sans-serif;font-size:40px;font-weight:700;color:var(--pink)">🎉<br>완성!</div>`;
+      confetti();
+      return;
+    }
+
+    // 🔢 학생 번호 오름차순으로 뽑기 (1번→2번→…) — 고정배정도 같은 순서에 녹여 연출
+    const order = Object.entries(finalAssignment).sort(([,a],[,b])=>a-b);
+    const total = order.length;
+    let done = 0;
+
+    const {seats} = generateSeats();
+    const seatById = Object.fromEntries(seats.map(s=>[s.id,s]));
+    // 룰렛·슬롯에 실제 존재하는 자리 번호만 돌리기 (제외 자리 제외)
+    const totalSeatNos = seats.filter(s=>!s.excluded).length;
+
+    for(const [sid, num] of order){
+      if(myToken !== drawToken) return; // 🛑 다른 연출로 교체됨 — 즉시 중단
+      if(animSkipped){
+        for(const [sid2, num2] of order.slice(done)) setSeatStudent(sid2, num2);
+        done = total;
+        break;
+      }
+      const stu = state.students.find(s=>s.num===num);
+      const seat = seatById[sid];
+
+      if(state.animation==='roulette') await playRoulette(stu, seat, totalSeatNos);
+      if(myToken !== drawToken) return;
+      if(state.animation==='flip')     await playFlip(stu, seat);
+      if(myToken !== drawToken) return;
+      if(state.animation==='slot')     await playSlot(stu, seat, totalSeatNos);
+      if(myToken !== drawToken) return;
+
+      setSeatStudent(sid, num);
+      highlightSeat(sid);
+      done++;
+      $('drawBar').style.width = (done/total*100)+'%';
+      $('drawCounter').textContent = `${done} / ${total} 명`;
+      if(!animSkipped) await sleep(1100); // 한 명 자리 배정 확인할 여유 (~1초)
+      if(myToken !== drawToken) return;
+    }
+    save();
+    $('drawStage').innerHTML = `<div style="font-family:'Dongle','Jua',sans-serif;font-size:36px;font-weight:700;color:var(--pink)">🎉<br>모두 완성!</div>`;
+    confetti();
+  } finally {
+    if(myToken === drawToken){
+      isDrawing = false;
+      isPaused = false;
+      document.body.classList.remove('paused');
+      if(btnStart){ btnStart.disabled = false; btnStart.textContent = '▶ 다시 시작!'; }
+      if(btnPause){ btnPause.style.display = 'none'; }
+    }
+  }
+}
+
+function skipAnim(){ if(isDrawing) animSkipped = true; }
+
+// 학생 상단 블록 공통 HTML
+function studentHeaderHtml(stu){
+  return `<div class="draw-student"><span class="ds-num">${stu.num}</span>번 <span class="ds-name">${escapeHtml(stu.name)}</span> 학생의 자리는?</div>`;
+}
+function randSeatNo(max, exclude){
+  if(max<=1) return 1;
+  let n;
+  do { n = 1 + Math.floor(Math.random()*max); } while(n===exclude);
+  return n;
+}
+
+async function playRoulette(stu, seat, maxSeat){
+  const stage = $('drawStage');
+  stage.innerHTML = `
+    ${studentHeaderHtml(stu)}
+    <div class="r-ball" id="rBall">?</div>
+    <div class="r-result" id="rResult">두구두구...</div>`;
+  const ball = $('rBall');
+  for(let i=0;i<12;i++){
+    if(animSkipped) break;
+    ball.textContent = randSeatNo(maxSeat, seat.seatNo);
+    await sleep(60 + i*10);
+  }
+  if(animSkipped) return;
+  ball.textContent = seat.seatNo;
+  ball.classList.add('landed');
+  $('rResult').innerHTML = `🎉 <b>${seat.seatNo}번 자리</b> 당첨!`;
+  await sleep(700);
+}
+
+async function playFlip(stu, seat){
+  const stage = $('drawStage');
+  stage.innerHTML = `
+    ${studentHeaderHtml(stu)}
+    <div class="f-card" id="fCard">
+      <div class="f-inner">
+        <div class="f-face f-front"><div class="pat"></div><div class="mark">${currentIcons().mark}</div></div>
+        <div class="f-face f-back">
+          <div class="fb-label">당첨된 자리</div>
+          <div class="fb-num">${seat.seatNo}</div>
+          <div class="fb-suffix">번 자리</div>
+        </div>
+      </div>
+    </div>`;
+  await sleep(160);
+  if(animSkipped) return;
+  $('fCard').classList.add('flipped');
+  await sleep(1200);
+}
+
+async function playSlot(stu, seat, maxSeat){
+  const stage = $('drawStage');
+  stage.innerHTML = `
+    ${studentHeaderHtml(stu)}
+    <div class="s-window"><div class="s-track" id="sTrack"></div></div>
+    <div class="s-info" id="sInfo">두구두구...</div>`;
+  const track = $('sTrack');
+  const items = [];
+  for(let i=0;i<20;i++){
+    items.push(`<div class="s-item">${randSeatNo(maxSeat, seat.seatNo)}번 자리</div>`);
+  }
+  items.push(`<div class="s-item s-win">✨ ${seat.seatNo}번 자리 ✨</div>`);
+  track.innerHTML = items.join('');
+  track.style.transition = 'none';
+  track.style.transform = 'translateY(0)';
+  void track.offsetHeight;
+  const dur = 1.4 / (state.speed||1);
+  track.style.transition = `transform ${dur}s cubic-bezier(.2,.8,.2,1)`;
+  track.style.transform = `translateY(-${20*90}px)`;
+  await sleep(1500);
+  if(animSkipped) return;
+  $('sInfo').innerHTML = `🎉 <b>${seat.seatNo}번 자리</b> 당첨!`;
+  await sleep(500);
+}
+
+async function reshuffle(){
+  if(isDrawing){
+    const ok = await confirmCute('처음으로 돌아갈까요?', '지금 진행 중인 자리 뽑기가 멈추고 시작 화면으로 돌아가요');
+    if(!ok) return;
+    // 진행 중 루프가 myToken !== drawToken을 감지하고 즉시 빠져나오도록
+    drawToken++;
+    await new Promise(r=>setTimeout(r, 80));
+  }
+  state.assignments = {};
+  save();
+  renderRunStage();
+}
+
+function resetToStart(){
+  state.assignments = {};
+  save();
+  goTab('run');
+}
+
+/* ═════════════════════════ CONFETTI ═════════════════════════ */
+function confetti(){
+  const colors = ['#FFB6C7','#B5D8FF','#DCC6FF','#B8E6D9','#FFE3A3'];
+  for(let i=0;i<60;i++){
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random()*100 + 'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (2 + Math.random()*2) + 's';
+    p.style.animationDelay = Math.random()*0.4 + 's';
+    p.style.transform = `rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 4500);
+  }
+}
+
+/* ═════════════════════════ RESULT ═════════════════════════ */
+function defaultResultNote(){
+  const cls = state.className ? state.className : '우리 반';
+  return `선생님! ${cls} 잘 부탁드립니다 🌸\n수업 중 특이사항은 편하게 말씀해주세요.`;
+}
+function renderResult(){
+  const date = new Date();
+  const dstr = `${date.getFullYear()}. ${date.getMonth()+1}. ${date.getDate()}`;
+  $('exportTitle').textContent = `${state.className||'우리 반'} 자리 배치도`;
+  $('exportMeta').textContent = `${dstr}  ·  총 ${Object.keys(state.assignments).length}명`;
+  renderClassroom('resultClassroom');
+  applyFlipResult();
+  const noteEl = $('exportNote');
+  if(noteEl){
+    noteEl.textContent = state.resultNote && state.resultNote.trim()
+      ? state.resultNote
+      : defaultResultNote();
+  }
+  const chk = $('flipResultChk');
+  if(chk) chk.checked = !!state.flipResult;
+  fitResultToFrame();
+}
+
+function applyFlipResult(){
+  const frame = $('exportFrame');
+  const podium = frame?.querySelector('.podium');
+  const classroom = $('resultClassroom');
+  if(!frame || !podium || !classroom) return;
+  if(state.flipResult){
+    classroom.after(podium);
+    podium.classList.add('podium-bottom');
+    // 자리 좌우·앞뒤 reverse — 교탁에서 보는 시점
+    const rows = Array.from(classroom.querySelectorAll('.row-of-groups'));
+    rows.reverse().forEach(r=>classroom.appendChild(r));
+    rows.forEach(r=>{
+      const groups = Array.from(r.querySelectorAll('.group'));
+      groups.reverse().forEach(g=>r.appendChild(g));
+      groups.forEach(g=>{
+        const seats = Array.from(g.querySelectorAll('.seat'));
+        seats.reverse().forEach(s=>g.appendChild(s));
+      });
+    });
+  } else {
+    classroom.before(podium);
+    podium.classList.remove('podium-bottom');
+  }
+}
+
+function toggleFlipResult(){
+  state.flipResult = $('flipResultChk').checked;
+  save();
+  renderResult();
+}
+
+function fitResultToFrame(){
+  const area = $('exportTarget');
+  const frame = $('exportFrame');
+  if(!area || !frame) return;
+  // 측정 전 초기화
+  frame.style.transform = '';
+  frame.style.width = '';
+  frame.style.height = '';
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const cs = getComputedStyle(area);
+      const padX = parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+      const availW = area.clientWidth - padX;
+      const availH = area.clientHeight - padY;
+      const naturalW = frame.scrollWidth;
+      const naturalH = frame.scrollHeight;
+      if(!naturalW || !naturalH) return;
+      const s = Math.min(1, availW/naturalW, availH/naturalH);
+      if(s < 1){
+        // frame layout 박스를 자연 크기로 잡아야 origin center 기준 scale이 정확히 fit
+        frame.style.width = naturalW + 'px';
+        frame.style.height = naturalH + 'px';
+        frame.style.transformOrigin = 'center center';
+        frame.style.transform = `scale(${s})`;
+      }
+    });
+  });
+}
+
+function fitRunClassroom(){
+  const area = document.querySelector('.run-classroom-area');
+  const cls = document.getElementById('runClassroom');
+  const podium = area?.querySelector('.podium');
+  if(!area || !cls) return;
+  // 측정 전 초기화
+  cls.style.transform = '';
+  cls.style.height = '';
+  cls.style.width = '';
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const cs = getComputedStyle(area);
+      const padX = parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+      const podH = podium ? podium.offsetHeight + 8 : 0;
+      const availW = Math.max(0, area.clientWidth - padX);
+      const availH = Math.max(0, area.clientHeight - padY - podH);
+      const naturalW = cls.scrollWidth;
+      const naturalH = cls.scrollHeight;
+      if(!naturalW || !naturalH || !availW || !availH) return;
+      const s = Math.min(1, availW/naturalW, availH/naturalH);
+      if(s < 1){
+        cls.style.transform = `scale(${s})`;
+        // bounding box 보정 — 아래 빈 공간 제거 (transform은 layout에 영향 X)
+        cls.style.height = (naturalH * s) + 'px';
+      }
+    });
+  });
+}
+
+window.addEventListener('resize', ()=>{
+  const active = document.querySelector('.page.active');
+  if(active?.dataset.page==='result') fitResultToFrame();
+  if(active?.dataset.page==='run') fitRunClassroom();
+});
+function saveResultNote(){
+  const el = $('exportNote'); if(!el) return;
+  state.resultNote = el.textContent;
+  save();
+}
+
+async function saveImage(){
+  const target = $('exportTarget');
+  toast('이미지 만드는 중이에요... 🌸');
+  target.classList.add('exporting');
+  try{
+    const bg = getComputedStyle(document.body).getPropertyValue('--cream').trim() || '#FFF9F5';
+    const canvas = await html2canvas(target, {scale:2, backgroundColor:bg, useCORS:true});
+    const link = document.createElement('a');
+    link.download = `자리배치_${state.className||''}_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('저장 완료! 🎉');
+  }catch(e){ toast('저장에 실패했어요: '+e.message); }
+  finally { target.classList.remove('exporting'); }
+}
+
+/* ═════════════════════════ SECRET MODE ═════════════════════════ */
+$('brandLogo').addEventListener('dblclick', ()=>{
+  const on = document.body.classList.toggle('secret-on');
+  toast(on ? '🔓 비밀 모드가 켜졌어요' : '🔒 비밀 모드를 껐어요');
+  if(!on){
+    // if currently on constraints tab, jump back
+    const cur = document.querySelector('.tab.active');
+    if(cur?.dataset.tab==='constraints') goTab('classroom');
+  }
+});
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && document.body.classList.contains('secret-on')){
+    document.body.classList.remove('secret-on');
+    toast('🔒 비밀 모드를 껐어요');
+    const cur = document.querySelector('.tab.active');
+    if(cur?.dataset.tab==='constraints') goTab('classroom');
+  }
+});
+function markSecretHelpSeen(){ state.secretSeen = true; save(); }
+
+/* ═════════════════════════ MODAL UTILS ═════════════════════════ */
+function openModal(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+
+/* ═════════════════════════ UTILS ═════════════════════════ */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+let toastTimer;
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  // 긴 메시지는 더 오래 보여줌 (읽을 시간 확보)
+  const duration = Math.min(8000, Math.max(2500, msg.length * 80));
+  toastTimer = setTimeout(()=>el.classList.remove('show'), duration);
+}
+
+function confirmCute(title, body){
+  return new Promise(resolve=>{
+    $('confirmTitle').textContent = title || '확인';
+    $('confirmBody').textContent = body || '';
+    openModal('confirmModal');
+    const yes = $('confirmYes');
+    const no = $('confirmNo');
+    const close = (v)=>{
+      yes.removeEventListener('click', onYes);
+      no.removeEventListener('click', onNo);
+      closeModal('confirmModal');
+      resolve(v);
+    };
+    const onYes = ()=>close(true);
+    const onNo = ()=>close(false);
+    yes.addEventListener('click', onYes);
+    no.addEventListener('click', onNo);
+  });
+}
+
+/* ═════════════════════════ THEME ═════════════════════════ */
+const THEMES = ['pink','sky','mint','mono'];
+const THEME_ICONS = {
+  pink: { brand:'🌸', deco:['🌸','🌸','🌷','🌷'], empty:'🌸', mark:'🌸' },
+  sky:  { brand:'💎', deco:['💎','💎','🩵','🩵'], empty:'💎', mark:'💎' },
+  mint: { brand:'🌿', deco:['🌿','🌿','🍀','🍀'], empty:'🌿', mark:'🌿' },
+  mono: { brand:'♣️', deco:['♣️','♣️','🖤','🖤'], empty:'♣️', mark:'♣️' },
+};
+function currentIcons(){ return THEME_ICONS[state.theme] || THEME_ICONS.pink; }
+function applyThemeIcons(){
+  const ic = currentIcons();
+  const brandIcon = document.querySelector('.brand-icon');
+  if(brandIcon) brandIcon.textContent = ic.brand;
+  document.querySelectorAll('.deco-flower').forEach((d,i)=>{
+    d.textContent = ic.deco[i] || ic.brand;
+  });
+  // 진행 중이 아닐 때만 draw-empty 갱신 (재호출되어 진행 화면 망치지 않게)
+  const empty = document.querySelector('#drawStage .draw-empty .big');
+  if(empty) empty.textContent = ic.empty;
+}
+function setTheme(name){
+  if(!THEMES.includes(name)) name = 'pink';
+  THEMES.forEach(t=>document.body.classList.remove('theme-'+t));
+  document.body.classList.add('theme-'+name);
+  state.theme = name;
+  save();
+  document.querySelectorAll('.theme-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.theme===name);
+  });
+  applyThemeIcons();
+  const active = document.querySelector('.page.active');
+  if(active?.dataset.page==='result') fitResultToFrame();
+}
+document.querySelectorAll('.theme-btn').forEach(b=>{
+  b.addEventListener('click', ()=>setTheme(b.dataset.theme));
+});
+
+/* ═════════════════════════ INIT ═════════════════════════ */
+setTheme(state.theme || 'pink');
+applySchoolType();
+renderStudents();
+renderClassroom();
+if(!state.secretSeen){
+  setTimeout(()=>openModal('secretHelpModal'), 600);
+}
+
+/* ═════════════════════════ PWA ═════════════════════════ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

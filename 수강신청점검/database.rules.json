@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "students": {
+      ".read": "auth != null",
+      ".indexOn": ["studentId"],
+      "$uid": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['studentId','name'])"
+      }
+    },
+    "submissions": {
+      ".read": "auth != null",
+      ".indexOn": ["classNo", "studentId", "updatedAt"],
+      "$uid": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['studentId','name'])"
+      }
+    },
+    "meta": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}

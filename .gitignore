@@ -1,0 +1,15 @@
+# 학생 데이터·학교 내부 문서는 추적하지 않는다 (teacher-work 레포의 규칙을 그대로 옮김)
+명렬표.pdf
+**/명렬표.pdf
+early-bird/학생명렬표.xlsx
+attendance-checklist_mobile/학급별 출결 현황.xlsx
+attendance_backup_*.json
+**/attendance_backup_*.json
+*.lnk
+.claude/
+**/.claude/
+.firebase/
+**/.firebase/
+# 수강신청점검 — 학교 내부 문서·OCR 임시추출물 (코드만 추적)
+수강신청점검/*.pdf
+수강신청점검/_*

@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>중심원리 모의실험 — 수행평가</title>
+<!-- ══════════════════════════════════════════════════════════════
+     수행① 「중심원리 모의 실험」 — 학생용 (2026-09-28 신설)
+     정본 노트: 작업노트/생물의유전_수행1_중심원리앱.md
+     ★실시 = 컴퓨터실 전용 프로그램(_제작/프로그램 · 2026-10-15). 인터넷·DB 를 쓰지 않는다 —
+       결과는 프로그램 폴더의 「결과」에 파일로 남고, 학생이 관리 프로그램 「제출」로 낸다.
+     ★개인정보: 이 소스에는 명단·점수·정답표·코드표가 없다(코드표·교과서 그림은 빌드가 프로그램에만 넣는다).
+       채점(정답표·scoreScene)은 교사 화면에만 있다.
+     ★캡쳐 = 배치 기록 {칸: 부품} + 그 장면 그림. 교사 화면이 같은 sceneSvg 로 다시 그린다.
+     ══════════════════════════════════════════════════════════════ -->
+<style>
+:root{
+  --red:#C0392B;   --red-bg:#FDECEA;
+  --blue:#1255A0;  --blue-bg:#E8F0FA;
+  --green:#2A7A38; --green-bg:#E9F5EB;
+  --amber:#E67E22; --amber-bg:#FDF0E3; --amber-ink:#8A4B08;
+  --ink:#1A1A1A;   --sub:#555;  --line:#D5D8DE;  --paper:#fff;  --bg:#F4F6F9;
+  --dna:#0F9B95;   --rna:#6C2BD9;  --ribo:#9A4B12;  --trna:#7A8A00;  --new:#AD1457;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-size:16px;line-height:1.6;
+  font-family:"Malgun Gothic","맑은 고딕",AppleSDGothicNeo-Regular,"Apple SD Gothic Neo",sans-serif;
+  -webkit-user-select:none;user-select:none;}
+button{font:inherit;cursor:pointer;min-height:44px;min-width:44px;border-radius:10px;border:1.5px solid var(--line);
+  background:#fff;padding:6px 14px;}
+button.pri{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700;}
+button.go{background:var(--green);color:#fff;border-color:var(--green);font-weight:700;}
+button:disabled{opacity:.45;cursor:default;}
+input{font:inherit;font-size:18px;min-height:48px;padding:6px 12px;border:1.5px solid var(--line);border-radius:10px;width:100%;
+  -webkit-user-select:text;user-select:text;}
+.hide{display:none!important;}
+.screen{max-width:1180px;margin:0 auto;padding:12px 14px 40px;}
+
+/* 로그인 */
+.login-card{max-width:440px;margin:40px auto;background:#fff;border-radius:16px;padding:24px 22px;box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.login-card h1{font-size:21px;margin:0 0 4px;color:var(--blue);}
+.login-card .sub{color:var(--sub);font-size:15px;margin-bottom:16px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-weight:700;font-size:15px;margin-bottom:4px;}
+.secpick{display:flex;gap:8px;}
+.secpick button{flex:1;font-size:18px;font-weight:700;min-height:52px;}
+.secpick button.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+.err{color:var(--red);font-weight:700;min-height:24px;white-space:pre-line;font-size:15px;}
+.demo-banner{background:var(--amber-bg);color:var(--amber-ink);border:1.5px solid var(--amber);border-radius:10px;padding:8px 12px;font-size:15px;margin-bottom:12px;}
+
+/* 평가 화면 머리 */
+.topbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;background:#fff;border-radius:12px;padding:8px 14px;margin-bottom:10px;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);position:sticky;top:0;z-index:5;}
+.topbar .who{font-weight:700;}
+.away{margin-left:auto;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--green-bg);color:var(--green);}
+.away.bad{background:var(--red-bg);color:var(--red);}
+.awaybox{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.awaybox .away{margin-left:0;}
+#btnFinish{min-height:44px;font-weight:700;}
+#btnFinish:not(:disabled){background:var(--red);color:#fff;border-color:var(--red);}
+.done{text-align:center;padding:80px 20px;font-size:24px;font-weight:700;color:var(--green);}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.tabs button{padding:6px 12px;font-size:15px;}
+.tabs button.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);font-weight:700;}
+.tabs button.sent::after{content:" ✔";color:var(--green);font-weight:700;}
+.tabs button.lock{opacity:.45;cursor:not-allowed;}
+.subcount{font-weight:700;padding:4px 12px;border-radius:999px;background:var(--blue-bg);color:var(--blue);}
+.sendstat{font-weight:700;padding:6px 12px;border-radius:10px;font-size:15px;}
+.sendstat.none{background:#EEF0F3;color:var(--sub);}
+.sendstat.sent{background:var(--green-bg);color:var(--green);}
+.lockwarn{background:var(--red-bg);color:var(--red);border-radius:8px;padding:6px 10px;font-weight:700;margin:8px 0;}
+.card{background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.card h2{font-size:19px;margin:0 0 4px;}
+.task{color:var(--sub);font-size:16px;margin:0 0 8px;line-height:1.55;}
+.task b{color:var(--ink);font-size:17px;}
+.task .qem{color:var(--red);font-size:20px;}   /* 전사 서술 발문의 묻는 곳(2026-10-28 교사 — 빨갛게 · 조금 크게) */
+.task .noscore{margin:0 0 8px;padding:10px 12px;border-radius:10px;background:#FFF4D6;border:3px solid #E6A100;color:#7A4B00;font-weight:800;font-size:26px;text-align:center;}   /* ⓪ 복제 = 채점하지 않는 장면(2026-10-28 교사 — 크게) */
+.task .must{margin:6px 0 2px;padding:6px 10px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700;font-size:17px;}
+.task ul{margin:4px 0 0;padding-left:20px;}
+.partg.picked{filter:drop-shadow(0 0 5px #1255A0) drop-shadow(0 0 2px #1255A0);}
+.stage-wrap{width:100%;max-width:calc((100vh - 250px) * 1.695);margin:0 auto;border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;touch-action:none;}
+#stage{display:block;width:100%;height:auto;}
+/* 번역 ②③④ 의 그림은 85%(2026-10-27 교사 — 화면 가득 커서 뒷자리에서 보기 쉽다) · 그림 안 글자도 함께 줄어든다.
+   제목·지시사항 글자는 그대로(교사 — 「지시사항은 원래 크기로」) */
+#scrExam.tlsmall #stageWrap{width:85%;max-width:calc((100vh - 250px) * 1.695 * .85);}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center;}
+/* 쓰는 중이 아니면 흐리게(2026-10-27 교사 — 옆자리에서 읽히지 않게) · 마우스를 올리면 보인다(저장한 뒤에도) */
+#txaText:not(:focus):not(:placeholder-shown){filter:blur(6px);}
+#txaText:not(:focus):not(:placeholder-shown):hover{filter:none;}
+/* 10초 동안 마우스도 안 움직이고 아무것도 안 쓰면 쓰는 중이어도 흐리게(2026-10-27 교사 — 모든 쓰기 칸) · 움직이거나 쓰면 바로 풀린다 */
+body.idle #txaText:not(:placeholder-shown){filter:blur(6px)!important;}
+/* 저장(캡쳐)한 번역 장면도 흐리게(2026-10-28 교사) — 마우스를 올려야 보이고, 10초 동안 입력이 없으면 올려 둔 채로도 다시 흐려진다 */
+#stageWrap.sentblur #stage{filter:blur(8px);}
+#stageWrap.sentblur:hover #stage{filter:none;}
+body.idle #stageWrap.sentblur #stage{filter:blur(8px)!important;}
+.task .ask{margin:6px 0 2px;padding:6px 10px;border-radius:8px;background:var(--blue-bg);color:var(--blue);font-weight:700;font-size:17px;}
+.actions .hint{color:var(--sub);font-size:15px;}
+#btnCap.offlook{opacity:.45;cursor:not-allowed;}   /* 저장한 장면 — 꺼진 모양만(5번 누르면 교사 저장 풀기 · 2026-10-27) */
+.partg{cursor:grab;touch-action:none;}
+.partg.dragging{cursor:grabbing;}
+
+/* 모달 */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px;}
+.modal .box{background:#fff;border-radius:14px;max-width:880px;width:100%;max-height:96vh;overflow:auto;padding:16px;}
+.modal h3{margin:0 0 8px;font-size:19px;}
+.warn{background:var(--amber-bg);color:var(--amber-ink);border-radius:8px;padding:6px 10px;font-weight:700;margin:8px 0;}
+.okmsg{background:var(--green-bg);color:var(--green);border-radius:8px;padding:6px 10px;font-weight:700;margin:8px 0;}
+.pinrow{display:flex;gap:8px;align-items:center;margin-top:8px;}
+/* ② 전사 서술 (2026-10-21) */
+#txaHost svg{display:block;width:100%;height:auto;}
+#txaText{display:block;width:100%;min-height:150px;margin-top:10px;font:inherit;font-size:17px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;
+  resize:vertical;-webkit-user-select:text;user-select:text;}
+#txaText[readonly]{background:#F4F6F9;color:#333;}
+.txa-cond{margin:6px 0 2px;padding:8px 12px;border-radius:8px;background:#F4F6F9;color:var(--ink);font-size:16px;border:1.5px solid var(--line);}
+.txa-cond ol{margin:4px 0 0;padding-left:22px;}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:999px;z-index:60;font-size:16px;}
+</style>
+</head>
+<body>
+
+<!-- ① 로그인 -->
+<div id="scrLogin" class="screen">
+  <div class="login-card">
+    <h1>🧬 중심원리 모의실험</h1>
+    <div class="sub">수행평가 — 답안지 입력 코드를 먼저 입력하고, 반을 고른 뒤 학번·이름을 입력하시오.</div>
+    <div id="noHost" class="demo-banner hide">이 화면은 컴퓨터실 프로그램(중심원리_수행평가.exe)으로 열어야 결과가 저장된다. 지금은 연습만 할 수 있다.</div>
+    <div class="field"><label for="inCode">답안지 입력 코드 <span style="font-weight:400;color:var(--sub)">(답안지 오른쪽 위 6자)</span></label>
+      <input id="inCode" maxlength="9" autocomplete="off" autocapitalize="characters" spellcheck="false" style="text-transform:uppercase;letter-spacing:2px"></div>
+    <div class="field"><label>반</label>
+      <div class="secpick" id="secPick">
+        <button type="button" data-sec="B" onclick="pickSec('B')">B반</button><button type="button" data-sec="C" onclick="pickSec('C')">C반</button><button type="button" data-sec="D" onclick="pickSec('D')">D반</button>
+      </div></div>
+    <div class="field"><label for="inId">학번 (5자리)</label><input id="inId" inputmode="numeric" maxlength="5" autocomplete="off"></div>
+    <div class="field"><label for="inName">이름</label><input id="inName" autocomplete="off"></div>
+    <div class="field hide" id="hostField" style="margin-top:18px;padding-top:12px;border-top:1px dashed #CCC">
+      <button type="button" style="width:100%" onclick="hostCheck()">🔧 저장 점검 (선생님용)</button>
+      <div id="hostChk" style="font-size:15px;color:var(--sub);margin-top:4px"></div></div>
+    <div class="err" id="loginErr"></div>
+    <button class="pri" id="btnLogin" style="width:100%" onclick="doLogin()">들어가기</button>
+    <button id="btnPractice" style="width:100%;margin-top:10px" onclick="offlinePractice()">연습으로 시작 (서열 연습 · 파일을 남기지 않는다)</button>
+    <button id="btnPreview" class="hide" style="width:100%;margin-top:10px" onclick="enterPreview()">👩‍🏫 교사 미리보기로 들어가기 (순서 잠금 없음)</button>
+  </div>
+</div>
+
+<!-- ② 종결 — 앞선 장면은 볼 수 없다 · 화면 이탈도 더 이상 기록하지 않는다 -->
+<div id="scrDone" class="screen hide"><div class="done">✅ 활동이 종료되었다.</div><div id="doneInfo" class="login-card hide" style="max-width:640px"></div></div>
+
+<!-- ③ 평가 -->
+<div id="scrExam" class="screen hide">
+  <div class="topbar">
+    <span class="who" id="whoLabel"></span>
+    <span id="setLabel" style="color:var(--sub);font-size:15px"></span>
+    <select id="pvSet" class="hide" onchange="previewSet(this.value)" style="font-size:15px;min-height:40px"></select>
+    <button id="btnFs" onclick="enterFullscreen()">⛶ 전체화면</button>
+    <span class="subcount" id="subCount">제출 0/5</span>
+    <span class="awaybox">
+      <span class="away" id="awayLabel">화면 이탈 0회</span>
+      <button id="btnFinish" onclick="finishExam()" disabled title="모든 장면을 저장해야 누를 수 있다">🏁 활동 종결</button>
+    </span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="card">
+    <h2 id="scTitle"></h2>
+    <div class="task" id="scTask"></div>
+    <div class="stage-wrap" id="stageWrap"><svg id="stage" viewBox="0 0 1000 590" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="txaBox" class="hide">
+      <div class="stage-wrap" style="touch-action:auto;max-width:clamp(520px, calc((100vh - 470px) * 2.28), 900px)"><div id="txaHost"></div></div>
+      <div class="actions">
+        <button class="pri" id="txaPlay" onclick="TXP.toggle()" style="min-width:120px">▶ 재생</button>
+        <button onclick="TXP.restart()">↺ 처음부터</button>
+        <input type="range" id="txaSeek" min="0" max="1000" value="0" oninput="TXP.seek(this.value/1000)" aria-label="재생 위치" style="flex:1;min-width:200px;width:auto">
+      </div>
+      <textarea id="txaText" maxlength="600" placeholder="여기에 서술하시오." oninput="onTxaInput()"></textarea>
+      <div class="hint" id="txaCount" style="text-align:right;color:var(--sub);font-size:14px"></div>
+    </div>
+    <div class="actions">
+      <button id="btnClear" onclick="clearScene()">↻ 이 장면 비우기</button>
+      <span class="sendstat none" id="sendStat"></span>
+      <button class="go" id="btnCap" style="margin-left:auto" onclick="openCapture()">📸 캡쳐</button>
+    </div>
+  </div>
+</div>
+
+<!-- 저장 풀기(선생님용 · 2026-10-27) — 저장한 장면에서 꺼진 캡쳐 단추를 연달아 5번 -->
+<div id="unlockModal" class="modal hide">
+  <div class="box" style="max-width:440px">
+    <h3>🔑 저장 풀기 (선생님용)</h3>
+    <div style="font-size:15px;color:var(--sub);margin-bottom:8px">비밀번호를 입력하면 이 장면의 저장이 풀려 다시 고칠 수 있다.</div>
+    <input id="unlockPw" type="password" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter') tryUnlock()">
+    <div class="err" id="unlockErr"></div>
+    <div class="actions"><button onclick="closeUnlock()">취소</button><button class="pri" style="margin-left:auto" onclick="tryUnlock()">풀기</button></div>
+  </div>
+</div>
+
+<!-- 캡쳐 미리보기 -->
+<div id="capModal" class="modal hide">
+  <div class="box">
+    <div style="display:flex;align-items:center;gap:8px"><h3 style="flex:1">📸 캡쳐 미리보기 — <span id="capTitle"></span></h3><button onclick="closeCapture()">닫기</button></div>
+    <div class="stage-wrap"><svg id="capSvg" viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="capWarn" class="warn hide" style="white-space:pre-line"></div>
+    <div class="lockwarn" id="capLock">⚠ 저장하면 이 장면은 다시 고칠 수 없고, 다음 장면이 열린다.</div>
+    <div id="capOk" class="okmsg hide"></div>
+    <div id="capNext" class="hide" style="text-align:right"><button class="pri" onclick="goNextAfterSend()">다음 장면으로 ▶</button></div>
+    <div id="capSendArea">
+      <div style="margin-top:8px" id="capSendMsg"></div>
+      <div class="pinrow"><button class="go" id="btnSend" onclick="sendCapture()">💾 저장</button></div>
+      <div class="err" id="capErr"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hide"></div>
+
+<script>
+'use strict';
+/* ═════════════════ 실시 방식 (2026-10-15 교사) ═════════════════
+   컴퓨터실 전용 프로그램으로만 실시한다 — 인터넷·DB 없음. 프로그램이 window.examHost(결과 폴더 쓰기·읽기)를 넣어 준다.
+   브라우저로 그냥 열면 연습만 된다. 교사 미리보기 사본(_제작/_중심원리_미리보기.js)은 PREVIEW_COPY=true. */
+/* ===OFFLINE-INJECT-BEGIN=== (_오프라인빌드.js 가 채운다 — ★정본(이 파일)에는 비워 둔다: 코드표·교과서 그림은 프로그램에만) */
+var CODE_SHEET = {};
+var OFFLINE_ASSETS = {};
+/* ===OFFLINE-INJECT-END=== */
+var PREVIEW_COPY = true;   /* 미리보기 사본 — node _중심원리_미리보기.js 로 다시 만든다. 고치지 말 것 */
+var PREVIEW = false;   /* 교사 미리보기(미리보기 사본에서만): 순서 잠금·저장 뒤 잠금 없음 · 서열 바꾸기 */
+
+/* ===SCENES-BEGIN=== (교사 화면과 한 글자도 다르지 않아야 한다 — 검사가 문다) */
+var VB_W = 1000, STAGE_H = 440, VB_H = 590;
+var SCENE_IDS = ['R','T2','L1','L2','L3'];     /* 전사 종결은 뺐다(2026-09-28 교사 — 눈치로 맞히는 문항) · ① 전사 개시는 ① 전사 서술에 합쳤다(2026-10-21 교사 — 애니메이션에 프로모터가 나온다) */
+
+/* ===SETS-BEGIN=== (_서열생성.py 가 쓴다 — 손으로 고치지 말 것. 개인정보 아님)
+   mRNA 25염기 = lead(AUG 앞 3·4·5 — 답안지마다) + mrna(개시코돈·코돈2·3·4·종결코돈) + trail(종결코돈 뒤 7·6·5) → 폴리펩타이드 A(아미노산 4개).
+   P = 연습(모든 반) · B01~B30 = 가반 · C01~C30 = 나반 · D01~D30 = 다반(답안지 한 장 = 서열 한 벌).
+   학생마다 roster/{학번}/sheet(예: B07-1 — 학생이 답안지 코드를 넣으면 채워진다)의 앞부분으로 서열을 고른다 */
+var SETS = {
+  P:{ name:'연습', lead:'UAAG', mrna:'AUGGGAACUUACUAG', trail:'CUGACG' },
+  B01:{ name:'가-01', lead:'UGG', mrna:'AUGGCCCUUUGUUAG', trail:'GUUGAUA' },
+  B02:{ name:'가-02', lead:'CCAU', mrna:'AUGGGUCCUAGGUAA', trail:'CCUAGA' },
+  B03:{ name:'가-03', lead:'UCCC', mrna:'AUGAGCGUAGAUUGA', trail:'AUUGAC' },
+  B04:{ name:'가-04', lead:'CAGCA', mrna:'AUGCCAUAUAGUUAG', trail:'CUGAG' },
+  B05:{ name:'가-05', lead:'GCA', mrna:'AUGAAGCCAUACUAA', trail:'UCUGACA' },
+  B06:{ name:'가-06', lead:'GUGA', mrna:'AUGUUGUAUAACUGA', trail:'GAUCGA' },
+  B07:{ name:'가-07', lead:'CAAC', mrna:'AUGGUCUUAAAGUGA', trail:'CUUGAC' },
+  B08:{ name:'가-08', lead:'CGCUA', mrna:'AUGCCAUUAAAAUAG', trail:'CCCCA' },
+  B09:{ name:'가-09', lead:'CCA', mrna:'AUGUUGGAGGUCUAG', trail:'CCUAACU' },
+  B10:{ name:'가-10', lead:'GAGC', mrna:'AUGCCCGCUAGUUGA', trail:'CAAGAA' },
+  B11:{ name:'가-11', lead:'CGCG', mrna:'AUGGAGUGCUAUUAA', trail:'CGUGAC' },
+  B12:{ name:'가-12', lead:'UAAUC', mrna:'AUGAUAUACAAUUGA', trail:'CCUGA' },
+  B13:{ name:'가-13', lead:'GAG', mrna:'AUGAGUCCGAUUUAA', trail:'GUAAGUU' },
+  B14:{ name:'가-14', lead:'UGGG', mrna:'AUGUUAAAAGCAUAA', trail:'GUUAGA' },
+  B15:{ name:'가-15', lead:'CCGU', mrna:'AUGUGGUCAGAUUGA', trail:'UUAGGC' },
+  B16:{ name:'가-16', lead:'GUUUA', mrna:'AUGCAGCGAUUUUAG', trail:'UCUAA' },
+  B17:{ name:'가-17', lead:'ACG', mrna:'AUGUCUCUAACAUAG', trail:'UCUGACA' },
+  B18:{ name:'가-18', lead:'GAGU', mrna:'AUGGCAGACUACUAA', trail:'GUAGGG' },
+  B19:{ name:'가-19', lead:'ACCA', mrna:'AUGACAUUAAGAUAA', trail:'AUUCCC' },
+  B20:{ name:'가-20', lead:'CUUUU', mrna:'AUGCACUUAAAAUAA', trail:'CCAUA' },
+  B21:{ name:'가-21', lead:'ACA', mrna:'AUGACGCCUAAAUAA', trail:'GUAAGCG' },
+  B22:{ name:'가-22', lead:'GUAU', mrna:'AUGGGUUUAAGUUGA', trail:'ACAGGA' },
+  B23:{ name:'가-23', lead:'CUAG', mrna:'AUGUGGUUAGGUUGA', trail:'GUAAGU' },
+  B24:{ name:'가-24', lead:'CGGAG', mrna:'AUGGAGACUUAUUAA', trail:'GUAAC' },
+  B25:{ name:'가-25', lead:'AUC', mrna:'AUGCUUUCUAAUUAA', trail:'CGCGUAG' },
+  B26:{ name:'가-26', lead:'UGUA', mrna:'AUGAGCUUAUACUGA', trail:'AAUAGU' },
+  B27:{ name:'가-27', lead:'GUGC', mrna:'AUGCUUAACGCCUGA', trail:'CUGAUA' },
+  B28:{ name:'가-28', lead:'UUGCU', mrna:'AUGCAAGUAGGUUAA', trail:'CUGAA' },
+  B29:{ name:'가-29', lead:'UCU', mrna:'AUGUCGUUAGAGUAG', trail:'CGGCUAA' },
+  B30:{ name:'가-30', lead:'UUUU', mrna:'AUGCAUAGCCGCUAG', trail:'CUAAUU' },
+  C01:{ name:'나-01', lead:'AGA', mrna:'AUGAAUUACAAGUGA', trail:'GUGAGGG' },
+  C02:{ name:'나-02', lead:'AGCA', mrna:'AUGUCGUGGUGUUAG', trail:'AGUGAC' },
+  C03:{ name:'나-03', lead:'ACCG', mrna:'AUGCGGUUAGUGUGA', trail:'AUAAUU' },
+  C04:{ name:'나-04', lead:'CACCA', mrna:'AUGGCAUUGAAUUAA', trail:'CACCC' },
+  C05:{ name:'나-05', lead:'GAU', mrna:'AUGCAUUAUAUAUAG', trail:'CUCCAAA' },
+  C06:{ name:'나-06', lead:'CCAC', mrna:'AUGCUUCACUGUUAG', trail:'UGUAGU' },
+  C07:{ name:'나-07', lead:'UAGG', mrna:'AUGUUAACGUACUGA', trail:'UCGUGC' },
+  C08:{ name:'나-08', lead:'CUCGG', mrna:'AUGUUUUGCAACUAG', trail:'CGUAA' },
+  C09:{ name:'나-09', lead:'GCU', mrna:'AUGCUGUCGACCUAA', trail:'UUGACUA' },
+  C10:{ name:'나-10', lead:'GAGU', mrna:'AUGGUUAUUAAGUAA', trail:'CUAAGC' },
+  C11:{ name:'나-11', lead:'AGGU', mrna:'AUGACCCUUAGUUAA', trail:'CAUAGU' },
+  C12:{ name:'나-12', lead:'GCAAU', mrna:'AUGGUGCCCUAUUAA', trail:'UUUGA' },
+  C13:{ name:'나-13', lead:'CCC', mrna:'AUGUCCGCCUACUAA', trail:'AUUGACU' },
+  C14:{ name:'나-14', lead:'ACGG', mrna:'AUGAGCGUAAACUAG', trail:'AGUGAC' },
+  C15:{ name:'나-15', lead:'CUAC', mrna:'AUGGACUUAGUGUGA', trail:'UCUGGU' },
+  C16:{ name:'나-16', lead:'GGCCC', mrna:'AUGAGCCGUAAUUAG', trail:'CUAGG' },
+  C17:{ name:'나-17', lead:'AAA', mrna:'AUGAGACUAAGCUGA', trail:'GUAGUGC' },
+  C18:{ name:'나-18', lead:'GGAU', mrna:'AUGGUAAUAUUGUGA', trail:'AUAGUC' },
+  C19:{ name:'나-19', lead:'GGAA', mrna:'AUGCGUUCCCCUUAA', trail:'CUUAAG' },
+  C20:{ name:'나-20', lead:'CCGCG', mrna:'AUGGUGUCAACCUAA', trail:'ACUAG' },
+  C21:{ name:'나-21', lead:'AAG', mrna:'AUGCACUCGUAUUGA', trail:'UUAAUCA' },
+  C22:{ name:'나-22', lead:'UGUA', mrna:'AUGGGGUUGAUAUAG', trail:'CUAGUA' },
+  C23:{ name:'나-23', lead:'CAAU', mrna:'AUGGUGUUAAUCUAA', trail:'AAAUCU' },
+  C24:{ name:'나-24', lead:'GAACC', mrna:'AUGCGUGAGAGUUAG', trail:'CAUAG' },
+  C25:{ name:'나-25', lead:'AUA', mrna:'AUGAAACGUGACUAA', trail:'AGUUUGA' },
+  C26:{ name:'나-26', lead:'CGCG', mrna:'AUGGAGUGGACAUAG', trail:'UUAGUG' },
+  C27:{ name:'나-27', lead:'AAGA', mrna:'AUGGCUACAUAUUGA', trail:'GUAAAC' },
+  C28:{ name:'나-28', lead:'ACCUG', mrna:'AUGCUACCGAACUAG', trail:'GUGAG' },
+  C29:{ name:'나-29', lead:'CAC', mrna:'AUGGGUAUUACAUAA', trail:'GCUGAGU' },
+  C30:{ name:'나-30', lead:'GAAG', mrna:'AUGUCCAAUAAGUGA', trail:'GCAUCG' },
+  D01:{ name:'다-01', lead:'UGA', mrna:'AUGAGUCCGUACUGA', trail:'UUAGUUU' },
+  D02:{ name:'다-02', lead:'CUUU', mrna:'AUGUUUGGUAGCUAA', trail:'UUAGUA' },
+  D03:{ name:'다-03', lead:'AGGA', mrna:'AUGAGCAUCGAAUAG', trail:'CUUAAC' },
+  D04:{ name:'다-04', lead:'UCUAU', mrna:'AUGGACUCGACAUAA', trail:'CCUGA' },
+  D05:{ name:'다-05', lead:'AUA', mrna:'AUGCCCGUAGGUUAA', trail:'CUAGAGU' },
+  D06:{ name:'다-06', lead:'UCGU', mrna:'AUGGAUUUAAAGUGA', trail:'UUAAUC' },
+  D07:{ name:'다-07', lead:'GCCU', mrna:'AUGGCGUGCACUUAG', trail:'AUUGAG' },
+  D08:{ name:'다-08', lead:'ACGCA', mrna:'AUGAGGAUAGGUUGA', trail:'GUAAA' },
+  D09:{ name:'다-09', lead:'CAU', mrna:'AUGCCGUCUGACUAG', trail:'AUCAUAG' },
+  D10:{ name:'다-10', lead:'UCGG', mrna:'AUGUGUUUUAAAUAG', trail:'CUAGAC' },
+  D11:{ name:'다-11', lead:'AGGC', mrna:'AUGGAUCGUUAUUAA', trail:'CCUAGU' },
+  D12:{ name:'다-12', lead:'GUGAU', mrna:'AUGUUAAACUAUUGA', trail:'GUUAG' },
+  D13:{ name:'다-13', lead:'CAA', mrna:'AUGUUCGCAAGGUAA', trail:'GUUAAAG' },
+  D14:{ name:'다-14', lead:'UUCG', mrna:'AUGUUGGUAGCAUAA', trail:'GUAGAG' },
+  D15:{ name:'다-15', lead:'GGAC', mrna:'AUGGUCACCGCUUAG', trail:'GGUAAG' },
+  D16:{ name:'다-16', lead:'CGUUA', mrna:'AUGGGUUUAGAAUAG', trail:'ACUAG' },
+  D17:{ name:'다-17', lead:'UCC', mrna:'AUGACGCCAGUUUGA', trail:'UUGAGCA' },
+  D18:{ name:'다-18', lead:'UUGU', mrna:'AUGUGUUUAACUUGA', trail:'CUUAGC' },
+  D19:{ name:'다-19', lead:'AUUU', mrna:'AUGCCCCAUAGCUAA', trail:'CGUAAC' },
+  D20:{ name:'다-20', lead:'AAGUC', mrna:'AUGAGAUUGACGUAG', trail:'GAAGU' },
+  D21:{ name:'다-21', lead:'UAC', mrna:'AUGGGGUGUAGCUAG', trail:'AUAAAUU' },
+  D22:{ name:'다-22', lead:'AUCG', mrna:'AUGAAGUUAGAAUAA', trail:'CAUAGG' },
+  D23:{ name:'다-23', lead:'CGUU', mrna:'AUGUGUGCCCUCUGA', trail:'AUAGCC' },
+  D24:{ name:'다-24', lead:'UACUU', mrna:'AUGAUAUUAAGCUAG', trail:'CGUGA' },
+  D25:{ name:'다-25', lead:'GUU', mrna:'AUGAGAAAAUAUUGA', trail:'UUUAACA' },
+  D26:{ name:'다-26', lead:'AAUC', mrna:'AUGAACUGUAGCUAA', trail:'CUAGGA' },
+  D27:{ name:'다-27', lead:'AUCU', mrna:'AUGUCAGCUGAUUAG', trail:'GUAGCG' },
+  D28:{ name:'다-28', lead:'ACCAC', mrna:'AUGGAAUUGAAGUAA', trail:'AUUUU' },
+  D29:{ name:'다-29', lead:'CUU', mrna:'AUGACCAUUUACUAA', trail:'AUAGGAA' },
+  D30:{ name:'다-30', lead:'UGAA', mrna:'AUGUGGGUAAGAUAA', trail:'CUAAAG' },
+  M01:{ name:'마스터-A', lead:'GUG', mrna:'AUGCACGAUAGAUAG', trail:'GUCCUGA' },
+  M02:{ name:'마스터-B', lead:'UAAU', mrna:'AUGGGCAUCUAUUGA', trail:'CCUAGA' },
+  M03:{ name:'마스터-C', lead:'GAGCA', mrna:'AUGAAUAGUCAUUAA', trail:'AUAGC' }
+};
+var SHEET_VARS = 1;   /* 서열마다 변형(답안지) 수 */
+/* ===SETS-END=== */
+/* ===TX-BEGIN=== (_서열생성.py 가 쓴다 — 손으로 고치지 말 것) 답안지 1번 전사 전용 DNA(주형 가닥 3′→5′) · 본평가 0~4(답안지 번호 % 5) · 5 = 연습 */
+var TX_DNA = ["GTGCGCCCAATGGTG", "CCCTAGTGGTGCCAT", "CGTATGCCACCTTCT", "CCGCGGCTAGGAGCT", "TTGCGAACATGTCCA", "GAGACGAGCCAGTTT"];
+var TX_LEN = 15;
+/* ===TX-END=== */
+/* 답안지 번호 = 「서열키-변형」(예: B07-1 = 가반 7번 서열 · 2026-10-08부터 서열마다 변형 하나 → 표시는 「가-07」).
+   학생 ↔ 번호는 DB 명단 roster/{학번}/sheet 에만 있다 — 학생이 답안지의 입력 코드를 넣을 때 채워진다.
+   앱은 서열만 쓴다 — 변형((가)·(나) 위치)은 종이 답안지에만 있다 */
+var CIRC = '①②③④⑤⑥⑦⑧⑨';
+function setOfSheet(sh){ var k=String(sh||'').split('-')[0]; return SETS[k] ? k : ''; }
+function sheetLabel(sh){ var p=String(sh||'').split('-'), k=p[0], v=parseInt(p[1],10); return SETS[k] ? SETS[k].name+(SHEET_VARS>1&&v>=1&&v<=9?'-'+CIRC.charAt(v-1):'') : ''; }
+var DNA_PAIR = { A:'T', T:'A', G:'C', C:'G' };
+var RNA_OF_DNA = { A:'U', T:'A', G:'C', C:'G' };   /* 주형 DNA 염기 → 상보 RNA 염기 */
+var RNA_PAIR = { A:'U', U:'A', G:'C', C:'G' };
+var CODON_GROUPS = [
+  ['페닐알라닌',['UUU','UUC']],['류신',['UUA','UUG','CUU','CUC','CUA','CUG']],['아이소류신',['AUU','AUC','AUA']],
+  ['메싸이오닌',['AUG']],['발린',['GUU','GUC','GUA','GUG']],['세린',['UCU','UCC','UCA','UCG','AGU','AGC']],
+  ['프롤린',['CCU','CCC','CCA','CCG']],['트레오닌',['ACU','ACC','ACA','ACG']],['알라닌',['GCU','GCC','GCA','GCG']],
+  ['타이로신',['UAU','UAC']],['종결코돈',['UAA','UAG','UGA']],['히스티딘',['CAU','CAC']],['글루타민',['CAA','CAG']],
+  ['아스파라진',['AAU','AAC']],['라이신',['AAA','AAG']],['아스파트산',['GAU','GAC']],['글루탐산',['GAA','GAG']],
+  ['시스테인',['UGU','UGC']],['트립토판',['UGG']],['아르지닌',['CGU','CGC','CGA','CGG','AGA','AGG']],['글라이신',['GGU','GGC','GGA','GGG']]
+];
+var CODON_TABLE = (function(){ var t={}; CODON_GROUPS.forEach(function(g){ g[1].forEach(function(c){ t[c]=g[0]; }); }); return t; })();
+function codonsOf(m){ var r=[]; for (var i=0;i+3<=m.length;i+=3) r.push(m.substr(i,3)); return r; }
+/* 안티코돈 = 코돈을 염기별로 상보 치환한 표기(3′→5′ 로 읽은 것) — 교과서 64쪽 확대 그림과 같다 */
+function antiOf(codon){ return codon.split('').map(function(b){ return RNA_PAIR[b]; }).join(''); }
+function aaOfAnti(anti){ return CODON_TABLE[antiOf(anti)] || '?'; }
+/* mRNA → 그것을 만든 주형 DNA(같은 방향으로 늘어놓음: mRNA 5′→3′ 아래에 주형 3′→5′) */
+function templateOf(m){ return m.split('').map(function(b){ return { A:'T', U:'A', G:'C', C:'G' }[b]; }).join(''); }
+
+/* ── 교과서 그림 (2026-09-28 교사 결정: 글자를 지우고 요소를 떼어 쓴다) ──
+   ★그림은 소스·배포 파일에 넣지 않는다. 교사가 교사 화면에서 DB(assets/)에 올리고, 로그인한 학생만 받는다.
+   ASSETS 가 비어 있으면(검사·그림 없는 체험) 아래 SVG 로 대신 그린다. ★칸 위치는 그림 유무와 무관하게 같다.
+   원본·추출: `_수행평가_그림추출.py` → gitignore 된 `교과서_이미지/수행평가_요소/*.webp` */
+var ASSETS = {};
+var ASSET_META = {
+  fork_bg:{w:1000,h:641, src:'47쪽 그림 Ⅰ-32 (이름표·화살표·효소 지움)'},
+  rna_pol:{w:182,h:181, src:'63쪽 그림 Ⅱ-3 ③'}
+};
+function hasA(n){ return !!ASSETS[n]; }
+function imgA(n,x,y,w,h,op,filt){
+  return '<image href="'+ASSETS[n]+'" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" preserveAspectRatio="none"'+(op?' opacity="'+op+'"':'')+(filt?' filter="url(#'+filt+')"':'')+'/>';
+}
+/* 번역 장면 비율: 라이보솜 주머니 간격(그림 44px) = 코돈 폭 57px → 1.2955배 */
+var BW = 19, RS = 57/44, TS = 0.9;
+/* ② 번역 개시(L1) — 라이보솜·tRNA 를 염기 한 칸 단위로 놓는다(2026-10-28 교사).
+   답안지 N번 염기 가운데 x = L1_X1+(N−1)·19 · 칸 rbN·tbN = N~N+2번 코돈 위(가운데 = N+1번 염기) · N = 1~23 */
+var L1_X1 = 305, L1_N = 23;
+function l1X(n){ return L1_X1+n*BW; }
+function augAt(setKey){ return (SETS[setKey].lead||'').length+1; }   /* 개시코돈 첫 염기 번호(답안지 ②) */
+/* 옛 기록(코돈 단위 칸 rM1·r0·r1·r2 · tM3~t4 — 10-28 전) → 염기 단위 칸으로. 교사 화면·채점이 부른다 */
+function upgradeL1(setKey, lay){
+  if (!lay) return lay;
+  var s=augAt(setKey), out={}, m;
+  Object.keys(lay).forEach(function(k){
+    if ((m=/^([rt])(M?)(\d)$/.exec(k))) out[m[1]+'b'+Math.max(1, Math.min(L1_N, s+3*(m[2]?-1:1)*(+m[3])))]=lay[k];   /* 범위 밖(옛 tM3 등)은 끝 칸으로 — 틀린 칸이라는 것만 남으면 된다 */
+    else out[k]=lay[k];
+  });
+  return out;
+}
+
+/* ── 부품 크기(칸 크기도 이것을 따른다) ── */
+var KIND_SIZE = {
+  enzyme:{w:110,h:66}, label:{w:112,h:36}, write:{w:112,h:36}, arrow:{w:64,h:36}, base:{w:34,h:40}, end:{w:44,h:36},
+  trna:{w:56,h:180}, small:{w:282,h:96}, large:{w:316,h:277}, rna:{w:300,h:22}, poly:{w:170,h:40}, primer:{w:70,h:26},
+  ribo:{w:316,h:397}   /* 대·소단위체를 합친 라이보솜 — 원점 = P 자리가 올 코돈의 가운데(세로는 두 단위체 전체의 가운데) */
+};
+/* 부품 종류마다 색 하나 — 부품 테두리와, 드래그할 때 빛나는 칸의 색이 같다.
+   한 장면 안에서 함께 나오는 종류끼리는 색이 겹치지 않는다(검사가 문다). 색만으로 구분하지 않도록 모양·글자도 다르다. */
+var KIND_COLOR = {
+  enzyme:'#C2185B', label:'#B7791F', arrow:'#3949AB', end:'#E65100', base:'#0F9B95', primer:'#2E7D32',
+  trna:'#7A8A00', small:'#9A4B12', large:'#9A4B12', ribo:'#9A4B12', rna:'#6C2BD9', poly:'#E65100'
+};
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function T(x,y,s,size,fill,anchor,weight){
+  return '<text x="'+x+'" y="'+y+'" font-size="'+(size||16)+'" fill="'+(fill||'#1A1A1A')+'" text-anchor="'+(anchor||'middle')+
+    '" font-weight="'+(weight||'normal')+'" dominant-baseline="central">'+esc(s)+'</text>';
+}
+/* 그림 위에 얹는 글자 — 흰 테두리로 어떤 바탕에서도 읽힌다 */
+function TH(x,y,s,size,fill){
+  return '<text x="'+x+'" y="'+y+'" font-size="'+size+'" fill="'+fill+'" text-anchor="middle" font-weight="bold" dominant-baseline="central"'+
+    ' stroke="#fff" stroke-width="4" stroke-linejoin="round" paint-order="stroke">'+esc(s)+'</text>';
+}
+function L(x1,y1,x2,y2,c,w,dash){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+c+'" stroke-width="'+(w||3)+'"'+(dash?' stroke-dasharray="'+dash+'"':'')+' stroke-linecap="round"/>'; }
+var BASE_FILL = { A:'#E53935', T:'#1E88E5', U:'#8E24AA', G:'#43A047', C:'#F9A825' };
+/* 답안지마다 염기 색을 바꾼다(2026-10-27 교사 — 멀리서 색으로 염기를 짐작하지 못하게).
+   네 색을 A·U·G·C 에 나누는 24가지 중 (번호 × 7) % 24 번째 — 가까운 번호(= 이웃 자리)는 모두 다르다. T 는 U 와 같은 색 · 연습 P 는 원래 색 */
+var BASE_PAL = ['#E53935','#8E24AA','#43A047','#F9A825'];
+function baseFillOf(b){
+  var sk=(typeof setKey!=='undefined' && setKey) || 'P', n=parseInt(String(sk).slice(1),10);
+  if (String(sk).charAt(0)==='P' || isNaN(n)) return BASE_FILL[b];
+  var k=(n*7)%24, pool=BASE_PAL.slice(), perm=[];
+  for (var d=3;d>=0;d--){ var f=[1,1,2,6][d], i=Math.floor(k/f); k%=f; perm.push(pool.splice(i,1)[0]); }
+  var m={ A:perm[0], U:perm[1], T:perm[1], G:perm[2], C:perm[3] };
+  return m[b];
+}
+function baseBox(x,y,b,opt){
+  opt=opt||{};
+  var w=opt.w||30, h=opt.h||34, f=baseFillOf(b)||'#999';
+  return '<rect x="'+(x-w/2)+'" y="'+(y-h/2)+'" width="'+w+'" height="'+h+'" rx="4" fill="'+f+'" fill-opacity="'+(opt.op||0.22)+'" stroke="'+f+'" stroke-width="2"/>'+
+    T(x,y,b,opt.fs||18,'#1A1A1A','middle','bold');
+}
+/* 이중가닥 한 쌍(수평) — 위 가닥 y1, 아래 가닥 y2, 사이에 수소결합 짧은 선 */
+function duplex(x1,x2,y1,y2,rungStep){
+  var s=L(x1,y1,x2,y1,'#0F9B95',6)+L(x1,y2,x2,y2,'#0F9B95',6);
+  for (var x=x1+10;x<x2;x+=(rungStep||22)) s+=L(x,y1+4,x,y2-4,'#9FD8D5',2);
+  return s;
+}
+function leader(x1,y1,x2,y2){ return '<circle cx="'+x1+'" cy="'+y1+'" r="4" fill="#1255A0"/>'+L(x1,y1,x2,y2,'#1255A0',1.6,'5 3'); }
+/* 코돈 하나(세 글자)를 통째로 둘러싸고 지시선을 잇는다(2026-10-27 교사 — 「AUG 를 한꺼번에 가리키게」) · cx = 코돈 가운데 · 글자 줄 y 320~344 · top = 위로 나가는 선 */
+function codonLeader(cx, x2, y2, top){
+  /* 테두리 318~346(안티코돈 칸 아래 끝 319 와 겹치지 않게 글자 줄에 붙인다) · 선은 오른쪽 모서리에서 — tRNA 위를 지나지 않게 */
+  return '<rect x="'+(cx-30.5)+'" y="318" width="61" height="28" rx="5" fill="none" stroke="#1255A0" stroke-width="2.4"/>'+leader(cx+30.5, top ? 318 : 346, x2, y2);
+}
+
+/* ── 부품 그리기: 중심 (0,0) 기준. 색으로만 구분하지 않도록 모양·글자를 함께 쓴다 ── */
+function drawEnzyme(p){
+  var id=p.id.replace(/\d+$/,''), s='';
+  if (id==='rnapol'){
+    /* 교과서 그림이 옅은 회색이라 잘 안 보였다 → 그릴 때 어둡게(교사) */
+    s = hasA('rna_pol') ? imgA('rna_pol',-34,-34,68,68,0,'fDark')
+      : '<path d="M -30 -8 C -30 -30 0 -36 18 -22 C 34 -8 30 20 26 32 C 10 30 -30 18 -30 -8 Z" fill="#9C9C9C" stroke="#5E5E5E" stroke-width="2"/>';
+  } else if (id==='dnapol'){
+    s = '<circle cx="0" cy="0" r="32" fill="url(#gDnapol)" stroke="#C2186B" stroke-width="1.5"/>';
+  } else {
+    s = '<ellipse cx="0" cy="0" rx="30" ry="22" fill="url(#gLig)" stroke="#9A6A00" stroke-width="1.5"/>';
+  }
+  return s+TH(0,0,p.label,14,'#8E1147');
+}
+/* 아미노산마다 색 하나(교과서처럼 모양은 같고 색이 다르다) */
+var AA_COLOR = (function(){
+  /* 붉은색(#E4572E)은 메싸이오닌 한 가지에만 — 사슬에서 개시 아미노산이 따로 보이게 */
+  /* 나머지 19종은 색상환을 고르게 나눠 모두 다른 색(붉은 쪽은 비워 둔다) */
+  var m={}, names=CODON_GROUPS.map(function(g){ return g[0]; }).filter(function(n){ return n!=='종결코돈' && n!=='메싸이오닌'; });
+  names.forEach(function(n,i){ m[n]='hsl('+Math.round(35+i*300/names.length)+',60%,'+(i%2?42:50)+'%)'; });
+  m['메싸이오닌']='#E4572E';                                        /* 교과서 개시 tRNA 의 붉은 육각형 */
+  return m;
+})();
+function hexagon(cx,cy,r,fill){
+  var pts=[]; for (var i=0;i<6;i++){ var a=Math.PI/180*(60*i-30); pts.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1)); }
+  return '<polygon points="'+pts.join(' ')+'" fill="'+fill+'" stroke="#fff" stroke-width="1.5"/>';
+}
+/* tRNA — ★한 가닥이 접힌 모양(과학 허브 「번역과 단백질합성 모의실험」과 같은 약속 · 2026-10-24 교사).
+   5′ 끝(오른쪽 줄기)에서 내려와 오른쪽 고리 → 안티코돈 고리 → 왼쪽 고리를 돌아 3′ 끝(왼쪽 줄기)으로 올라간다.
+   ★가닥이 안티코돈을 오른쪽→왼쪽(5′→3′)으로 지나야 왼쪽부터 3′→5′ 로 적은 안티코돈과 맞고, mRNA(5′ 왼쪽)와 역평행이 된다 — 뒤집지 말 것.
+   ★3′ 끝이 더 길고, 그 끝 동그라미가 아미노산 결합 자리다 → 아미노산(육각형)은 (AA_X, AA_Y) 에 붙는다.
+   ★안티코돈 세 글자는 x = −19 · 0 · +19 (mRNA 글자 칸 19px) → 코돈 세 글자 바로 위에 온다.
+   이웃 tRNA 와 57px 떨어져 있으므로 옆 고리는 좌우 ±23 안에 그린다(이웃 고리와 닿지 않게 — 실측). 아미노산은 이름 없이 색 도형(육각형)만 */
+var AA_X = -8, AA_Y = -77;   /* 3′ 끝(왼쪽 줄기) 위 — 펩타이드결합 선 · 종결 장면 사슬이 이 자리를 쓴다 */
+/* 미리 붙어 있는 P 자리 tRNA(③ 신장·④ 종결) — 빈 사각형에 「tRNA」만(2026-10-28 교사 — 모양이 방향(3′·5′)의 힌트가 됐다).
+   안티코돈도 그리지 않는다 · 아미노산(사슬)은 윗변 가운데(0, AA_Y)에 붙는다 · 아랫변 = mRNA 글자 윗변 */
+var BOX_TOP = -66;
+/* 메싸이오닌 색이 답안지마다 다르다(2026-10-28 교사 — 늘 붉은색이면 보관함에서 개시 tRNA 가 색만으로 보였다).
+   염기 색(baseFillOf)처럼 학생 화면의 답안지(setKey)로 정한다 · 연습 P · 교사 화면(setKey 없음)은 교과서의 붉은색 그대로.
+   후보 8색 중 (번호×3)%8 부터 — 그 답안지에 나오는 다른 아미노산(사슬 셋 + 보관함의 헷갈리는 tRNA 둘)과 색상(hue)이 35° 안이면 다음 후보.
+   (자리표 옆·대각선·앞뒤 약 250쌍 중 30쌍 남짓은 같은 색 — 조합을 찾아 본 최소값) */
+var MET_HUES = [0, 45, 90, 135, 180, 225, 270, 315];
+function hueOf(c){ var m=/^hsl\((\d+)/.exec(c); return m ? +m[1] : 10; }
+function aaFill(aa){
+  if (aa!=='메싸이오닌') return AA_COLOR[aa]||'#888';
+  var sk=(typeof setKey!=='undefined' && setKey) || 'P', n=parseInt(String(sk).slice(1),10);
+  if (String(sk).charAt(0)==='P' || isNaN(n) || !SETS[sk]) return AA_COLOR[aa];
+  var cd=codonsOf(SETS[sk].mrna), others=cd.slice(1,4).map(function(c){ return CODON_TABLE[c]; }).concat([aaOfAnti(cd[0]), aaOfAnti(cd[1])])
+    .filter(function(a){ return a!=='메싸이오닌' && AA_COLOR[a]; }).map(function(a){ return hueOf(AA_COLOR[a]); });
+  for (var j=0;j<MET_HUES.length;j++){
+    var h=MET_HUES[(n*3+j)%MET_HUES.length];
+    if (others.every(function(o){ var d=Math.abs(o-h)%360; return Math.min(d,360-d)>=35; })) return 'hsl('+h+',80%,46%)';
+  }
+  return AA_COLOR[aa];
+}
+function drawTrnaBox(aaFill){
+  var h=KIND_SIZE.trna.h, w=50, y1=h/2-1, C='#1446A0';
+  return '<rect x="'+(-w/2)+'" y="'+BOX_TOP+'" width="'+w+'" height="'+(y1-BOX_TOP)+'" rx="8" fill="#fff" stroke="'+C+'" stroke-width="2.5"/>'+
+    T(0,(BOX_TOP+y1)/2,'tRNA',14,C,'middle','bold')+(aaFill ? hexagon(0,AA_Y,11,aaFill) : '');
+}
+function drawTrna(p){
+  var h=KIND_SIZE.trna.h, s='', d=8, C='#1446A0';   /* 진한 파랑 — 주황·갈색 라이보솜 위에서도 또렷하게(2026-10-24 교사) */
+  if (p.none){
+    var w=64;
+    /* tRNA 와 같은 파랑(2026-10-28 교사 — 빨강이면 혼자 튀어 「다른 종류」로 보였다) */
+    return '<rect x="'+(-w/2)+'" y="'+(-h/2+40)+'" width="'+w+'" height="'+(h-40)+'" rx="8" fill="#fff" fill-opacity=".9" stroke="'+C+'" stroke-width="2.5" stroke-dasharray="6 4"/>'+
+      T(0,0,'✕',26,C,'middle','bold')+T(0,30,'결합하는',12,C,'middle','bold')+T(0,46,'tRNA',12,C,'middle','bold')+T(0,62,'없음',12,C,'middle','bold');
+  }
+  var b='', fx=p.rev ? -1 : 1;   /* 거꾸로 tRNA 는 몸통을 좌우로 뒤집는다(안티코돈 글자는 그대로) */
+  /* 줄기의 점선 = 접혀 마주 본 가닥 사이의 수소 결합 */
+  [-38,-28,-18,18,28,38].forEach(function(y){ b+='<line x1="'+(-d+2.5)+'" y1="'+y+'" x2="'+(d-2.5)+'" y2="'+y+'" stroke="#4B5563" stroke-width="1.6" stroke-dasharray="2,2"/>'; });
+  /* 안티코돈 고리(바탕) — 가닥이 위 양쪽에서 들어온다 */
+  s+='<rect x="-28.5" y="58" width="57" height="35" rx="8" fill="#fff" stroke="'+C+'" stroke-width="2.5"/>';
+  /* 한 가닥: 5′(오른쪽 위) → 오른쪽 고리 → 안티코돈 고리 → 왼쪽 고리 → 3′(왼쪽 위, 더 길다) */
+  var TP='M'+d+',-46 L'+d+',-6 L14,-6 C25,-13 25,11 14,4 L'+d+',4 L'+d+',58 M-'+d+',58 L-'+d+',4 L-14,4 C-25,11 -25,-13 -14,-6 L-'+d+',-6 L-'+d+',-58';
+  b+='<path d="'+TP+'" fill="none" stroke="#fff" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>'+   /* 흰 테두리 — 바탕과 떼어 놓는다 */
+     '<path d="'+TP+'" fill="none" stroke="'+C+'" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  b+='<circle cx="'+AA_X+'" cy="-62" r="4" fill="#fff" stroke="'+C+'" stroke-width="2.5"/>';   /* 3′ 끝 = 아미노산 결합 자리 */
+  s+='<g transform="scale('+fx+',1)">'+b+'</g>';   /* 3′·5′ 글자는 쓰지 않는다(2026-10-27 교사) */
+  /* 아미노산 — 아미노산을 넘겨준 tRNA(bare, E 자리로 나가는 것)는 빈 채로 */
+  if (!p.bare) s+=hexagon(fx*AA_X,AA_Y,11,aaFill(p.aa));
+  /* 아미노산 이름은 쓰지 않는다 — 이름이 있으면 안티코돈을 안 보고 코돈표의 이름만으로 고를 수 있다(교사 결정) */
+  /* 안티코돈(왼쪽부터 3′→5′) — 코돈 글자 칸과 같은 간격 · 글자·칸 크기도 mRNA 코돈과 같게(2026-10-27 교사 — 13 · 17×24) */
+  for (var j=0;j<3;j++){
+    var x=(j-1)*BW;
+    s+='<rect x="'+(x-8.5)+'" y="65" width="17" height="24" rx="3" fill="#fff" stroke="'+C+'" stroke-width="1.6"/>'+T(x,77,p.anti.charAt(j),13,'#1A1A1A','middle','bold');
+  }
+  return s;
+}
+/* 라이보솜 — 64쪽 그림 Ⅱ-4 의 윤곽을 따서 푸리에로 잔물결을 걷고 곡선(베지어)으로 이었다(울퉁불퉁하지 않게 — 교사). 그 색으로 칠했다. 주머니 E·P·A 는 P 가 대단위체 가운데보다 10 왼쪽 */
+var RIBO_PATH = { large:'M-16.5 -135.4 C-23.9 -133.7 -30.4 -131.6 -37.5 -128.6 C-44.7 -125.6 -52.3 -121.8 -59.3 -117.5 C-66.4 -113.2 -73.3 -108.3 -79.8 -102.9 C-86.3 -97.5 -92.7 -91.5 -98.4 -85.2 C-104.1 -78.9 -109.6 -71.8 -114.2 -65.2 C-118.7 -58.6 -122.2 -52.5 -125.8 -45.5 C-129.3 -38.6 -132.5 -31.1 -135.4 -23.7 C-138.3 -16.3 -140.7 -9.0 -143.0 -1.4 C-145.4 6.2 -147.7 13.9 -149.8 21.8 C-151.8 29.8 -154.0 38.4 -155.5 46.4 C-157.0 54.4 -158.4 61.8 -158.7 69.8 C-159.0 77.9 -159.0 86.9 -157.4 94.6 C-155.7 102.2 -153.0 109.8 -148.9 115.9 C-144.8 121.9 -139.1 127.2 -132.6 131.1 C-126.1 135.0 -117.7 137.5 -109.9 139.1 C-102.1 140.7 -94.3 140.8 -85.8 140.8 C-77.2 140.8 -67.7 139.7 -58.7 139.0 C-49.8 138.3 -41.0 137.1 -32.3 136.6 C-23.6 136.1 -15.1 135.8 -6.4 136.0 C2.3 136.1 11.3 136.9 19.7 137.6 C28.2 138.2 35.8 139.3 44.4 139.8 C52.9 140.3 62.4 141.0 71.1 140.5 C79.7 140.1 88.4 139.3 96.2 137.2 C104.0 135.1 111.5 132.1 118.0 128.1 C124.5 124.1 130.4 118.6 135.2 113.0 C140.0 107.4 143.4 101.5 146.6 94.5 C149.8 87.5 152.6 79.1 154.5 70.9 C156.4 62.8 157.5 54.0 158.1 45.6 C158.6 37.1 158.5 28.4 157.8 20.1 C157.1 11.8 155.7 3.3 154.0 -4.3 C152.3 -11.9 150.3 -18.4 147.7 -25.5 C145.1 -32.7 141.8 -40.1 138.2 -47.2 C134.7 -54.2 130.8 -61.0 126.4 -67.7 C122.1 -74.4 117.4 -81.0 112.3 -87.2 C107.1 -93.4 101.2 -99.7 95.4 -105.1 C89.6 -110.4 84.0 -114.9 77.3 -119.2 C70.7 -123.4 62.9 -127.6 55.3 -130.6 C47.7 -133.6 39.6 -135.9 31.6 -137.2 C23.6 -138.6 15.3 -139.0 7.3 -138.7 C-0.7 -138.4 -9.0 -137.1 -16.5 -135.4Z', small:'M-120.6 -43.2 C-125.4 -40.0 -129.1 -35.3 -132.2 -29.9 C-135.3 -24.6 -137.9 -17.8 -139.3 -11.1 C-140.7 -4.4 -141.5 3.4 -140.5 10.3 C-139.5 17.1 -137.1 24.4 -133.3 29.9 C-129.5 35.4 -123.6 40.3 -117.6 43.2 C-111.6 46.1 -104.2 47.2 -97.5 47.2 C-90.8 47.3 -84.0 45.2 -77.4 43.5 C-70.9 41.8 -64.8 38.8 -58.1 37.0 C-51.4 35.2 -44.6 33.4 -37.3 32.4 C-30.1 31.5 -22.1 31.2 -14.6 31.4 C-7.0 31.5 0.8 32.2 7.9 33.3 C15.1 34.3 21.8 35.9 28.4 37.5 C35.1 39.2 41.2 41.6 47.9 43.3 C54.5 45.0 61.4 47.1 68.4 47.9 C75.4 48.6 83.0 49.0 90.0 47.8 C96.9 46.6 104.1 44.3 110.2 40.9 C116.2 37.6 122.0 32.9 126.5 27.8 C130.9 22.6 134.8 16.4 137.1 10.0 C139.5 3.7 140.9 -3.6 140.5 -10.3 C140.1 -16.9 138.1 -24.2 134.8 -29.7 C131.4 -35.3 126.1 -40.4 120.4 -43.7 C114.7 -46.9 107.4 -48.4 100.4 -49.3 C93.4 -50.1 85.8 -49.0 78.3 -48.7 C70.9 -48.3 63.3 -47.2 55.7 -47.1 C48.1 -46.9 40.3 -47.3 32.6 -47.5 C24.9 -47.8 17.1 -48.7 9.5 -48.8 C2.0 -49.0 -5.4 -48.8 -12.7 -48.5 C-20.1 -48.2 -27.2 -47.4 -34.7 -47.2 C-42.2 -47.0 -50.0 -47.0 -57.8 -47.3 C-65.7 -47.6 -74.1 -48.8 -81.8 -49.1 C-89.4 -49.4 -97.2 -50.1 -103.7 -49.1 C-110.2 -48.2 -115.9 -46.4 -120.6 -43.2Z' };
+var POCKET_X = [-67,-10,47];
+function drawRibo(k){
+  var sz=KIND_SIZE[k], w=sz.w, h=sz.h, s;
+  if (k==='large'){
+    s='<path d="'+RIBO_PATH.large+'" fill="url(#gRiboL)" stroke="#8E542E" stroke-width="1.6"/>';
+    ['E','P','A'].forEach(function(e,i){ var x=POCKET_X[i];
+      s+='<path d="M '+(x-24)+' 139 L '+(x-24)+' 47 A 24 24 0 0 1 '+(x+24)+' 47 L '+(x+24)+' 139 Z" fill="url(#gPocket)" stroke="#9A5A2E" stroke-width="1.5"/>'; });   /* E·P·A 글자는 쓰지 않는다(2026-10-27 교사) — 주머니 모양만 */
+    return s;
+  }
+  return '<path d="'+RIBO_PATH.small+'" fill="url(#gRiboS)" stroke="#8E542E" stroke-width="1.6"/>'+
+    '<ellipse cx="-60" cy="-15" rx="18" ry="7" fill="#A4602F" fill-opacity=".55"/>';
+}
+/* 원점에서 대단위체·소단위체 가운데까지(번역 장면: 대단위체 가운데 y 181.5 · 소단위체 392 · 전체 가운데 241.5) */
+var RIBO_DY = { large:-60, small:150.5 };
+function drawRiboWhole(label){
+  /* 그림은 누르기를 가로채지 않게 한다 — 위에 놓인 tRNA 칸을 눌러야 하므로 */
+  return '<g pointer-events="none"><g transform="translate(10,'+RIBO_DY.large+')">'+drawRibo('large')+'</g>'+
+    '<g transform="translate(0,'+RIBO_DY.small+')">'+drawRibo('small')+'</g></g>'+TH(10,RIBO_DY.large-100,label||'라이보솜',15,'#6E340A');
+}
+function drawPart(p){
+  var k=p.kind, sz=KIND_SIZE[k], w=sz.w, h=sz.h, s='';
+  if (k==='ribo') return drawRiboWhole(p.label);
+  if (k==='enzyme') return drawEnzyme(p);
+  if (k==='trna') return drawTrna(p);
+  if (k==='large' || k==='small') return drawRibo(k)+TH(0,k==='large'?-h/2+36:0,p.label||'',14,'#6E340A');
+  if (k==='label'){
+    s='<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#FFF6D6" stroke="#B7791F" stroke-width="1.8"/>'+T(0,0,p.label,Math.min(15,Math.floor((w-10)/String(p.label).length)),'#5C3D00','middle','bold');
+  } else if (k==='arrow' || k==='end'){
+    s='<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" rx="6" fill="#fff" stroke="'+KIND_COLOR[k]+'" stroke-width="2.5"/>'+T(0,0,p.label,k==='arrow'?24:18,KIND_COLOR[k],'middle','bold');
+  } else if (k==='base'){
+    s=baseBox(0,0,p.label,{w:w,h:h,op:0.35,fs:19});
+  } else if (k==='primer'){
+    s='<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" rx="12" fill="#C8E6C9" stroke="#2E7D32" stroke-width="2"/>'+T(0,0,p.label,13,'#1B5E20','middle','bold');
+  } else if (k==='rna'){
+    s=('<path d="M -140 0 C -110 -9 -90 9 -60 0 S -10 -9 20 0 S 70 9 100 0 S 130 -6 140 0" fill="none" stroke="#B57EC4" stroke-width="8" stroke-linecap="round"/>')+
+      TH(0,-20,p.label,13,'#5321A8');
+  } else if (k==='poly'){
+    var n=p.beads||3;
+    for (var j=0;j<n;j++){ var cx=-((n-1)*34)/2+j*34; if (j) s+=L(cx-34,0,cx,0,'#8A4B08',3); }
+    for (var q=0;q<n;q++){ var bx=-((n-1)*34)/2+q*34; s+='<circle cx="'+bx+'" cy="0" r="12" fill="#FFE0B2" stroke="'+KIND_COLOR.poly+'" stroke-width="2"/>'; }
+    s+=T(0,-24,p.label,13,'#8A4B08','middle','bold');
+  }
+  return s;
+}
+/* 쓰기 칸 — 왼쪽 끝을 지시선 끝(x−60)에 맞춘다. 무대에는 기호만, 저장 그림에는 「㉠ 쓴 답」(답이 길면 오른쪽으로 넓어진다) */
+function writeBox(sl, text){
+  var t=String(text||'').trim(), lab=t ? sl.mark+' '+t : sl.mark, w=Math.max(120, Math.min(300, 16*lab.length+20)), x0=sl.x-60;
+  return '<rect x="'+x0+'" y="'+(sl.y-22)+'" width="'+w+'" height="44" rx="8" fill="#fff" stroke="#1255A0" stroke-width="2.2"/>'+
+    T(x0+w/2, sl.y, lab, t ? 17 : 24, '#1255A0', 'middle', 'bold');
+}
+/* 염기 단위 칸(fine · L1) — 칸이 겹치므로 누름 영역은 폭 19 로 나란히 두고(투명), 모양은 가까운 칸·마우스 올린 칸만 보인다(finev).
+   finev 는 opacity 0 속성으로 둔다 — 저장 그림(PNG)엔 CSS 가 없어 그대로 숨는다 */
+function fineSlot(sl){
+  var hit, vis, c=KIND_COLOR[sl.kind];
+  if (sl.kind==='ribo'){
+    hit='<rect class="slot k-ribo fine" data-slot="'+sl.id+'" x="'+(sl.x-BW/2)+'" y="344" width="'+BW+'" height="36" fill="transparent"/>';
+    vis='<g class="finev" data-slot="'+sl.id+'" opacity="0" pointer-events="none"><rect x="'+(sl.x-28.5)+'" y="344" width="57" height="28" rx="6" fill="'+c+'" fill-opacity=".3" stroke="'+c+'" stroke-width="3"/>'+
+      '<path d="M '+(sl.x-7)+' 344 L '+sl.x+' 334 L '+(sl.x+7)+' 344 Z" fill="'+c+'"/></g>';
+  } else {
+    var sz=KIND_SIZE[sl.kind];
+    hit='<rect class="slot k-'+sl.kind+' fine" data-slot="'+sl.id+'" x="'+(sl.x-BW/2)+'" y="'+(sl.y-sz.h/2)+'" width="'+BW+'" height="'+sz.h+'" fill="transparent"/>';
+    vis='<rect class="finev" data-slot="'+sl.id+'" opacity="0" pointer-events="none" x="'+(sl.x-sz.w/2-4)+'" y="'+(sl.y-sz.h/2-4)+'" width="'+(sz.w+8)+'" height="'+(sz.h+8)+'" rx="10" fill="'+c+'" fill-opacity=".25" stroke="'+c+'" stroke-width="3.5"/>';
+  }
+  return hit+vis;   /* vis 가 hit 바로 뒤 — CSS 「.fine:hover + .finev」 */
+}
+function slotBox(sl, filled){
+  var sz=KIND_SIZE[sl.kind], w=sz.w+8, h=sz.h+8;
+  if (sl.fine) return filled ? '' : fineSlot(sl);
+  if (sl.kind==='ribo'){   /* 「이 코돈에 P 자리가 오게」 — 코돈 아래 괄호 */
+    return '<rect class="slot k-ribo'+(filled?' filled':'')+'" data-slot="'+sl.id+'" x="'+(sl.x-26)+'" y="349" width="52" height="20" rx="6"'+
+      ' fill="#8A94A3" fill-opacity=".06" stroke="#8A94A3" stroke-width="2" stroke-dasharray="5 4"'+(filled?' opacity="0"':'')+'/>';
+  }
+  return '<rect class="slot k-'+sl.kind+(filled?' filled':'')+'" data-slot="'+sl.id+'" x="'+(sl.x-w/2)+'" y="'+(sl.y-h/2)+'" width="'+w+'" height="'+h+
+    '" rx="10" fill="#8A94A3" fill-opacity=".06" stroke="#8A94A3" stroke-width="2" stroke-dasharray="7 5"'+(filled?' opacity="0"':'')+'/>';
+}
+
+/* ── 장면 7장. slots = 놓는 칸, parts = 아래쪽에 늘어놓는 요소. 정답표는 여기 없다(교사 화면에만). ── */
+function buildScene(sid, setKey){
+  var m=SETS[setKey].mrna, cod=codonsOf(m), bg='', fg='', extra=null, slots=[], parts=[], title='', task='', what='', must='', limit=null, need=null, write=null;   /* write = 이름을 쓰는 칸(㉠㉡㉢ · 2026-10-27) — 그림엔 기호만 · ★답은 종이 답안지 2번 (2) 에 쓴다(2026-10-27 교사 — 화면 쓰기 칸은 걷어 냄) */   /* must = 이 장면에서 꼭 할 일(안내문 맨 위에 강조) */   /* extra(배치) = 놓인 것에 따라 더 그릴 것 */   /* fg = 놓인 라이보솜보다 위에 그릴 것 */
+  function enz(id,label){ return {id:id,kind:'enzyme',label:label}; }
+  function lab(id,label){ return {id:id,kind:'label',label:label}; }
+  function tr(anti){ var aa=aaOfAnti(anti); return {id:'t_'+anti,kind:'trna',anti:anti,aa:aa,label:'tRNA '+anti}; }
+  function trBare(anti){ return {id:'t0_'+anti,kind:'trna',anti:anti,aa:'',bare:true,label:'tRNA '+anti+'(아미노산 없음)'}; }
+  /* 방향이 거꾸로인 tRNA(2026-10-24 교사 — 방향성을 따져 고르게) — 안티코돈 글자는 같고 5′·3′ 이 좌우 반대(아미노산이 오른쪽 3′ 끝).
+     그림대로면 안티코돈이 코돈과 평행 → 오답. 이름표는 학생 화면에 나오지 않는다(교사 화면·기록용) */
+  function trRev(anti){ var t=tr(anti); t.id='tr_'+anti; t.rev=true; t.label+='(방향 거꾸로)'; return t; }
+  function trBareRev(anti){ var t=trBare(anti); t.id='t0r_'+anti; t.rev=true; t.label+='(방향 거꾸로)'; return t; }
+  var ARROWS=[{id:'ar_r',kind:'arrow',label:'→',stock:true},{id:'ar_l',kind:'arrow',label:'←',stock:true}];
+  var ENDS=[{id:'e5',kind:'end',label:'5′'},{id:'e3',kind:'end',label:'3′'}];
+
+  if (sid==='R'){
+    title='⓪ DNA 복제 — 복제 분기점';
+    task='복제 분기점에서 새 가닥 두 개가 합성되는 모습을 완성하시오.'; what='효소, 프라이머, 새 가닥의 이름, 합성 방향';
+    /* 교과서 47쪽 그림 Ⅰ-32 — 그림(1000×641)을 x=160 부터 높이 440 에 맞춘다(0.6864배).
+       분기점 (428,209) · 위 주형 끝 (823,13) · 아래 주형 끝 (810,424) */
+    if (hasA('fork_bg')) bg+=imgA('fork_bg',160,0,686.4,440);
+    else {
+      bg+=duplex(175,428,195,223,20);
+      bg+=L(428,195,823,13,'#5BB4D6',7)+L(428,223,810,424,'#5BB4D6',7);
+      bg+=L(505,194,838,45,'#EE8A2E',6);                                    /* 선도 가닥 */
+      bg+=L(507,228,620,285,'#EE8A2E',6)+L(650,302,756,357,'#EE8A2E',6)+L(760,359,827,392,'#EE8A2E',6); /* 지연 가닥 조각 */
+      bg+=L(256,268,401,268,'#C7B3DA',5);
+    }
+    bg+=T(843,12,'3′',15,'#555')+T(830,432,'5′',15,'#555');                 /* 주형 가닥 끝(새 가닥 끝은 묻는 것이라 쓰지 않는다) */
+    bg+=T(330,290,'DNA가 풀리는 방향',13,'#6B5B7B');
+    /* 효소 칸 5 · 프라이머 칸 3 — 그중 일부는 비워 두어야 하는 자리다(정답표는 교사 화면에만) */
+    slots=[
+      {id:'eParent',   kind:'enzyme',x:288,y:224},
+      {id:'polTop',    kind:'enzyme',x:500,y:180},
+      {id:'eTop5',     kind:'enzyme',x:730,y:95},
+      {id:'primerTop', kind:'primer',x:850,y:40},
+      {id:'dirTop',    kind:'arrow', x:620,y:70},
+      {id:'lblTop',    kind:'label', x:650,y:195},
+      {id:'primerBot', kind:'primer',x:512,y:238},
+      {id:'polBot',    kind:'enzyme',x:625,y:280},
+      {id:'dirBot',    kind:'arrow', x:540,y:335},
+      {id:'lig',       kind:'enzyme',x:758,y:359},
+      {id:'lblBot',    kind:'label', x:760,y:265},
+      {id:'primerC3',  kind:'primer',x:860,y:405}
+    ];
+    parts=[enz('dnapol','DNA 중합효소'),enz('dnapol2','DNA 중합효소'),enz('ligase','DNA 연결효소'),enz('rnapol','RNA 중합효소'),
+      {id:'primer',kind:'primer',label:'프라이머'},{id:'primer2',kind:'primer',label:'프라이머'},
+      lab('lead','선도 가닥'),lab('lag','지연 가닥')].concat(ARROWS);
+  }
+  else if (sid==='T2'){
+    /* ① 전사 서술(2026-10-21 교사) — 끌어 놓을 칸이 없다. 애니메이션을 보고 서술한다(아래 textSceneSvg) · 장면 id 는 T2 그대로 */
+    return {id:sid,kind:'text',anim:animOf(setKey),um:txaUMask(setKey),mk:txaMarkOf(setKey),title:'① 전사 — 애니메이션 서술',task:txaQ(animOf(setKey)),what:'',must:'',limit:null,need:null,bg:'',fg:'',extra:null,slots:[],parts:[]};
+  }
+  else {
+    /* 번역 3장면 공통 — 64·65쪽 그림 Ⅱ-5 비율. mRNA 글자 칸 19px(코돈 57px = 라이보솜 주머니 간격).
+       mRNA 글자 윗변 y=320 · 아랫변 344. P 자리 코돈 가운데 x=cP */
+    var shift = sid==='L3' ? 3 : 0;           /* L3 은 코돈4가 P, 종결코돈이 A */
+    var cP=400, cA=cP+57, cE=cP-57, MT=320, MB=344;
+    /* mRNA 줄 = 장식 염기 + 답안지의 25염기(lead + mrna + trail) + 장식 염기. 장식 염기에는 AUG 가 생기지 않는다(검사) */
+    var PAD_L='GCACUCGACC', PAD_R='GCACUCGACCGCACUCGACC', S0=SETS[setKey];
+    var lead=PAD_L+(S0.lead||''), full=lead+m+(S0.trail||'')+PAD_R;
+    var pStart=cP-28.5-(lead.length+shift*3)*BW;
+    function mrnaRow(){
+      var s=L(40,MB+2,960,MB+2,'#6C2BD9',3);
+      /* 장식 염기는 흐리게 — 답안지 ② 의 25염기(lead + mrna + trail)만 또렷이(2026-10-24 교사 — 답안지와 달라 보여 헷갈렸다) */
+      var in0=PAD_L.length, in1=PAD_L.length+(S0.lead||'').length+m.length+(S0.trail||'').length;
+      /* ★학생 화면은 글자 대신 답안지 ② 의 번호(1~25)만(2026-10-27 교사 — 뒤에서 보아도 서열을 알 수 없게 · 답안지를 보고 푼다).
+         색도 없앤다(색으로 염기를 짐작하지 못하게) · 장식 염기는 번호 없는 빈 칸. 교사 화면(SHOW_MRNA)은 글자 그대로 */
+      var letters=(typeof SHOW_MRNA!=='undefined' && SHOW_MRNA);
+      for (var i=0;i<full.length;i++){ var x=pStart+i*BW+BW/2; if (x<50||x>950) continue;
+        var pad=(i<in0||i>=in1), y=(MT+MB)/2;
+        var bb=letters ? baseBox(x,y,full.charAt(i),{w:17,h:24,op:.25,fs:13})
+          : '<rect x="'+(x-8.5)+'" y="'+(y-12)+'" width="17" height="24" rx="4" fill="#F4F6F9" stroke="#8A94A3" stroke-width="1.6"/>'+(pad ? '' : T(x,y,String(i-in0+1),i-in0+1>=10?10:12,'#1A1A1A','middle','bold'));
+        s+=pad ? '<g class="mpad" opacity=".5">'+bb+'</g>' : bb; }
+      s+=T(28,(MT+MB)/2,'5′',14,'#555')+T(972,(MT+MB)/2,'3′',14,'#555')+T(70,372,'mRNA',14,'#5321A8','middle','bold');
+      return s;
+    }
+    var LX=cP+10, LY=MT-KIND_SIZE.large.h/2, SY=MB+KIND_SIZE.small.h/2, TY=MT-KIND_SIZE.trna.h/2;
+    function riboBg(pBox){   /* pBox 면 P 자리에 상자 tRNA(아미노산 없이 · ④ 종결 — 사슬은 따로 그린다). ③ 신장은 놓인 것에 따라 extra 가 그린다 */
+      return '<g transform="translate('+LX+','+LY+')">'+drawRibo('large')+'</g>'+
+             '<g transform="translate('+cP+','+SY+')">'+drawRibo('small')+'</g>'+
+             (pBox ? '<g transform="translate('+cP+','+TY+')">'+drawTrnaBox('')+'</g>' : '');
+    }
+    if (sid==='L1'){
+      title='② 번역 — 개시';
+      task='번역이 시작되는 모습을 완성하시오.'; what='라이보솜, tRNA';
+      must='먼저 라이보솜을 놓아 위치를 정하시오. 라이보솜을 놓으면 특정 코돈을 가리키는 지시선이 나타난다.\n번역 개시 단계이므로 아미노산-tRNA는 하나만 배치하시오.';   /* \n = 줄을 바꿔 ✏️ 를 한 번 더 붙인다(교사) */
+      limit={trna:1};   /* 개시 단계에는 tRNA 가 하나뿐 — 하나를 놓으면 다른 tRNA 는 놓을 수 없다(2026-09-29 교사) */
+      /* ★mRNA 줄을 밀지 않는다 — 답안지 1번 염기가 늘 L1_X1(2026-10-28 교사). 개시코돈의 화면 자리가 답안지마다 다르다 */
+      pStart=L1_X1-BW/2-PAD_L.length*BW;
+      bg+=mrnaRow();
+      /* ★핵심: 라이보솜의 P 자리가 개시코돈(AUG) 위에 온다(2026-09-28 교사).
+         라이보솜 자리 후보 = 염기 한 칸씩(2026-10-28 교사 — 코돈 단위 넷이면 정답이 늘 둘째 칸이었다).
+         rbN = P 자리가 답안지 N~N+2번 염기 위 · tRNA 칸 tbN 도 같은 간격(코돈 단위로 두면 읽기틀이 드러난다) */
+      slots=[];
+      for (var n=1;n<=L1_N;n++) slots.push({id:'rb'+n,kind:'ribo',x:l1X(n),y:241.5,fine:1});
+      for (var n2=1;n2<=L1_N;n2++) slots.push({id:'tb'+n2,kind:'trna',x:l1X(n2),y:TY,fine:1});
+      var cAug=l1X(augAt(setKey));
+      /* 코돈 이름은 끌어 놓지 않고 쓴다(2026-10-27 교사) — 칸에는 ㉠ 만 · 아래 쓰기 칸 */
+      slots.push({id:'lblC',kind:'write',x:760,y:100,mark:'㉠'});
+      write={slot:'lblC',mark:'㉠',ask:'지시선이 가리키는 코돈 ㉠의 명칭은 답안지 문항 2-(2)에 쓰시오.'};
+      /* ★지시선은 라이보솜을 놓은 뒤에만 나타나고, 라이보솜을 어디에 두든 늘 개시코돈(AUG)을 가리킨다 → 오른쪽 위 이름칸
+         (2026-10-01 교사 — 전에는 「놓인 라이보솜의 P 자리 아래 코돈」을 가리켜 P 자리를 틀리면 이름 묻기까지 흔들렸다). 라이보솜 위에 그린다(extra) */
+      extra=function(lay){
+        var placed=slots.some(function(sl){ return sl.kind==='ribo' && lay[sl.id]; });
+        return placed ? codonLeader(cAug,704,106,true) : '';   /* 개시코돈 세 글자를 둘러싼 테두리 위쪽에서 ㉠ 으로 */
+      };
+      parts=[{id:'ribo',kind:'ribo',label:'라이보솜'},
+        trRev(antiOf(cod[0])), tr(cod[0]), tr(antiOf(cod[0])), trRev(antiOf(cod[1])), tr(antiOf(cod[1])), trRev(cod[0])];   /* tRNA 마다 방향이 거꾸로인 짝(2026-10-27 교사) */
+    }
+    else if (sid==='L2'){
+      title='③ 번역 — 신장';
+      task='폴리펩타이드가 신장되는 모습을 완성하시오.'; what='tRNA, 라이보솜의 이동 방향';
+      bg+=mrnaRow()+riboBg('');
+      bg+=T(715,420,'라이보솜 이동 방향 :',15,'#1A1A1A','end','bold');   /* 소단위체 바로 오른쪽으로(2026-10-24 교사 — 830 은 멀었다) */
+      /* ★펩타이드결합 형성(2026-10-27 교사 — 「P 자리 아미노산과 A 자리 아미노산을 억지로 엮은 것은 오류」):
+         A 자리에 tRNA 를 놓으면 P 자리 tRNA 의 메싸이오닌이 떨어져 A 자리 tRNA 의 아미노산에 옮겨 붙는다 → P 자리 tRNA 는 빈 채로,
+         메싸이오닌은 A 자리 아미노산의 왼쪽 위(④ 종결 사슬과 같은 간격 31·19)에 · 그 사이에 새 결합 → ㉡ 지시선은 그 결합 한가운데에서.
+         놓기 전에는 P 자리 tRNA 가 메싸이오닌을 달고 있고 지시선은 없다 */
+      var HY=TY+AA_Y, pAnti=antiOf(cod[0]), MET=aaFill(CODON_TABLE[cod[0]]), BK=bondOf(setKey);
+      /* ㉡ = 수소결합(2026-10-28 교사)이면 A 자리에 새로 놓은 tRNA 의 안티코돈 오른쪽 끝 염기와 코돈 셋째 염기가 맞닿은 곳(y 319.5)을 가리킨다 —
+         P 자리는 상자 tRNA(안티코돈 없음)라 거기를 가리킬 수 없다 → A 자리에 tRNA 를 놓은 뒤에 보인다 ·
+         지시선은 새 tRNA 오른쪽으로 올라가 ㉡ 칸으로(교사 — tRNA 사이로 지나가지 않게) */
+      var HBX=cA+BW, HBY=TY+89.5;
+      extra=function(lay){
+        var on=lay.A && lay.A!=='none';
+        var s='<g transform="translate('+cP+','+TY+')">'+drawTrnaBox(on ? '' : MET)+'</g>';   /* 메싸이오닌은 상자 윗변 가운데 */
+        if (!on) return s;
+        if (BK==='hbond') s+='<path d="M '+HBX+' '+HBY+' L '+(cA+42)+' '+(HBY-20)+' L '+(cA+42)+' 110 L 640 110" fill="none" stroke="#1255A0" stroke-width="1.6" stroke-dasharray="5 3"/>'+
+          '<circle cx="'+HBX+'" cy="'+HBY+'" r="5" fill="#1255A0" stroke="#fff" stroke-width="1.5"/>';   /* 새 tRNA 오른쪽(고리 바깥)으로 */
+        var ax=cA+(/^tr_/.test(lay.A) ? -AA_X : AA_X), mx=ax-31, my=HY-19, bx=(mx+ax)/2, by=(my+HY)/2;   /* 거꾸로 tRNA 의 아미노산은 오른쪽 3′ 끝 */
+        s+=L(mx+9,my+5.5,ax-9,HY-5.5,'#4A3B2A',4)+hexagon(mx,my,11,MET);
+        if (BK==='hbond') return s;
+        return s+'<circle cx="'+bx+'" cy="'+by+'" r="4" fill="#1255A0"/>'+
+          /* 지시선: 결합 한가운데에서 곧장 위로 → 오른쪽 ㉡ 칸(아미노산 위를 지나지 않게) */
+          '<path d="M '+bx+' '+by+' L '+bx+' 110 L 640 110" fill="none" stroke="#1255A0" stroke-width="1.6" stroke-dasharray="5 3"/>';
+      };
+      slots=[
+        {id:'A',kind:'trna',x:cA,y:TY},
+        {id:'E',kind:'trna',x:cE,y:TY},
+        {id:'bond',kind:'write',x:700,y:110,mark:'㉡'},   /* 결합 이름은 쓴다(2026-10-27 교사) */
+        {id:'dir',kind:'arrow',x:765,y:420}
+      ];
+      write={slot:'bond',mark:'㉡',ask:BK==='hbond' ? '코돈과 안티코돈의 염기 사이에 형성된 결합 ㉡의 명칭은 답안지 문항 2-(2)에 쓰시오.' : '아미노산 사이에 새로 형성된 결합 ㉡의 명칭은 답안지 문항 2-(2)에 쓰시오.'};   /* 발문도 ㉡ 에 맞춘다(2026-10-28 교사) */
+      parts=[tr(antiOf(cod[1])), tr(cod[1]), trRev(antiOf(cod[1])), tr(antiOf(cod[2])), trRev(cod[1]), trRev(antiOf(cod[2]))].concat(ARROWS);   /* tRNA 마다 거꾸로 짝(2026-10-27) */
+    }
+    else {
+      title='④ 번역 — 종결';
+      task='번역이 끝나는 모습을 완성하시오.'; what='E 자리와 A 자리에 들어갈 것';   /* 2026-10-24 교사 — E 자리 칸도 있다 */
+      must='E 자리와 A 자리에 적절한 요소를 필수적으로 배치하시오.';
+      need=[['E','E 자리'],['A','A 자리']];   /* 둘 다 채워야 캡쳐된다(2026-10-01 교사) — A 자리의 「결합하는 tRNA 없음」도 놓인 요소다 */
+      bg+=mrnaRow()+riboBg(true);
+      /* 지금까지 이어진 아미노산 사슬(64~65쪽 그림처럼 P 자리 tRNA 에 달려 있다 · 이름은 쓰지 않는다) —
+         넷째 아미노산은 P 자리 상자 tRNA 윗변 가운데의 육각형(cP, TY+AA_Y · 2026-10-28), 그 앞으로 셋째·둘째·첫째(메싸이오닌)가 왼쪽 위로 이어진다 */
+      var HX=cP, HY=TY+AA_Y, chain=[[HX,HY,cod[3]],[HX-31,HY-19,cod[2]],[HX-62,HY-38,cod[1]],[HX-93,HY-57,cod[0]]];
+      for (var q=0;q<3;q++) bg+=L(chain[q][0]-9,chain[q][1]-5.5,chain[q+1][0]+9,chain[q+1][1]+5.5,'#4A3B2A',4);
+      for (var q2=0;q2<4;q2++) bg+=hexagon(chain[q2][0],chain[q2][1],11,aaFill(CODON_TABLE[chain[q2][2]]));
+      /* ★사슬 이름은 묻지 않고 늘 「폴리펩타이드 A」로 띄워 둔다(2026-10-01 교사 — 답안지에서 그 아미노산 구성을 묻는다).
+         사슬 전체를 묶는 괄호 → 오른쪽 위 이름표 */
+      var bx0=HX-109, bx1=HX+16, by=HY-77, bm=(bx0+bx1)/2;
+      bg+='<path d="M '+bx0+' '+(by+8)+' L '+bx0+' '+by+' L '+bx1+' '+by+' L '+bx1+' '+(by+8)+'" fill="none" stroke="#1255A0" stroke-width="2"/>'+
+          '<circle cx="'+bm+'" cy="'+by+'" r="4" fill="#1255A0"/>'+
+          '<path d="M '+bm+' '+by+' L '+bm+' 40 L 584 40" fill="none" stroke="#1255A0" stroke-width="1.6" stroke-dasharray="5 3"/>'+
+          '<rect x="584" y="22" width="150" height="36" rx="6" fill="#E8F0FA" stroke="#1255A0" stroke-width="2"/>'+
+          T(659,40,'폴리펩타이드 A',17,'#1255A0','middle','bold');
+      slots=[
+        {id:'A',kind:'trna',x:cA,y:TY},
+        {id:'E',kind:'trna',x:cE,y:TY},
+        {id:'X',kind:'trna',x:cE-57,y:TY},      /* E 자리보다 한 코돈 왼쪽(라이보솜 밖) — 비워 둔다 */
+        {id:'lblC',kind:'write',x:720,y:390,mark:'㉢'}   /* 코돈 이름은 쓴다(2026-10-27 교사) · 420→390(2026-10-24 교사 — 무대 아래 끝에 걸려 칸이 잘려 보였다) */
+      ];
+      bg+=codonLeader(cA,662,384,false);   /* 종결코돈 세 글자를 둘러싼 테두리 아래쪽에서 ㉢ 으로(2026-10-27 교사) */
+      /* E 자리: 셋째 아미노산을 넘겨주고 나가는 tRNA — 아미노산이 없어야 한다(교사). 아미노산 달린 같은 tRNA 는 헷갈리는 것 */
+      write={slot:'lblC',mark:'㉢',ask:'지시선이 가리키는 코돈 ㉢의 명칭은 답안지 문항 2-(2)에 쓰시오.'};
+      parts=[{id:'none',kind:'trna',none:true,label:'결합하는 tRNA 없음'}, trBareRev(antiOf(cod[2])), trBare(antiOf(cod[2])), tr(antiOf(cod[2])), tr(antiOf(cod[3])), trRev(antiOf(cod[2])), trRev(antiOf(cod[3]))];   /* tRNA 마다 거꾸로 짝(2026-10-27) */
+    }
+  }
+  /* 보관함 tRNA 순서를 답안지마다 돌린다(2026-10-27 교사 — 「몇 번째 것을 놓았나」 베끼기 막기).
+     (번호 % 4) 칸만큼 돌린다 → 자리표의 옆·대각선·앞뒤는 번호 % 4 가 모두 다르므로 정답 tRNA 의 순번도 다르다. 연습 P 는 그대로 */
+  if (/^L/.test(sid)){
+    var rn=parseInt(String(setKey).slice(1),10), ti=[];
+    parts.forEach(function(p,i){ if (p.kind==='trna') ti.push(i); });
+    var tl=ti.map(function(i){ return parts[i]; }), r=isNaN(rn) ? 0 : rn%4;
+    ti.forEach(function(i,j){ parts[i]=tl[(j-r+tl.length*4)%tl.length]; });
+  }
+  return {id:sid,title:title,task:task,what:what,must:must,limit:limit,need:need,write:write,bg:bg,fg:fg,extra:extra,slots:slots,parts:parts};
+}
+
+/* 보관함 배치 — 부품을 두 줄로 늘어놓는다 */
+function trayLayout(parts){
+  /* 줄을 먼저 나눈 뒤, 줄마다 가운데 높이에 맞춰 세운다 */
+  var rows=[[]], x=20;
+  parts.forEach(function(p){
+    var w=trayW(p);
+    if (x+w>VB_W-20 && rows[rows.length-1].length){ rows.push([]); x=20; }
+    rows[rows.length-1].push(p); x+=w+16;
+  });
+  var pos={}, y=450;   /* 466→450(2026-10-24 — tRNA 를 키운 만큼 첫 줄을 올린다) */
+  rows.forEach(function(row){
+    var rowH=0; row.forEach(function(p){ rowH=Math.max(rowH, KIND_SIZE[p.kind].h*trayScale(p)); });
+    var xx=20;
+    row.forEach(function(p){
+      var sc=trayScale(p), w=trayW(p);
+      pos[p.id]={x:xx+w/2, y:y+rowH/2, sc:sc}; xx+=w+16;
+    });
+    y+=rowH+12;
+  });
+  return pos;
+}
+/* tRNA 그림은 칸(56)보다 넓다(5′·3′ 글자·고리) → 보관함에서는 그 폭만큼 띄운다 */
+function trayW(p){ return (p.kind==='trna' ? 76 : KIND_SIZE[p.kind].w)*trayScale(p); }
+function trayScale(p){ return {large:0.36, small:0.42, ribo:0.27, rna:0.7, trna:0.75}[p.kind] || 1; }   /* tRNA 0.62→0.75(2026-10-24 교사 — 보관함에서 안티코돈이 작았다 · 보관함 높이 안의 최대) */
+
+var DEFS='<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'+
+  '<line x1="0" y1="0" x2="0" y2="8" stroke="#999" stroke-width="2"/></pattern>'+
+  /* 47쪽 그림의 DNA 중합효소(분홍 구슬)·DNA 연결효소(노란 알) 모양을 본뜬 것 */
+  '<radialGradient id="gDnapol" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#F8C9DE" stop-opacity=".85"/><stop offset="1" stop-color="#E88BB5" stop-opacity=".9"/></radialGradient>'+
+  /* RNA 중합효소 그림 어둡게: fDark(부품) · fDarkL(② 신장의 큰 것 — 안의 염기 글자가 읽히게 조금만) */
+  '<filter id="fDark"><feComponentTransfer><feFuncR type="linear" slope=".62"/><feFuncG type="linear" slope=".62"/><feFuncB type="linear" slope=".62"/></feComponentTransfer></filter>'+
+  '<filter id="fDarkL"><feComponentTransfer><feFuncR type="linear" slope=".8"/><feFuncG type="linear" slope=".8"/><feFuncB type="linear" slope=".8"/></feComponentTransfer></filter>'+
+  '<radialGradient id="gLig" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFFDE7"/><stop offset="1" stop-color="#F5C542"/></radialGradient>'+
+  /* 64쪽 그림 Ⅱ-4·Ⅱ-5 의 색 — 라이보솜(갈색 입체), 주머니(밝은 모래색), tRNA(하늘색 원통) */
+  '<radialGradient id="gRiboL" cx="38%" cy="28%" r="80%"><stop offset="0" stop-color="#F3BE8C"/><stop offset=".55" stop-color="#DF9A63"/><stop offset="1" stop-color="#B46C3A"/></radialGradient>'+
+  '<radialGradient id="gRiboS" cx="40%" cy="30%" r="85%"><stop offset="0" stop-color="#EBA974"/><stop offset=".6" stop-color="#D0844B"/><stop offset="1" stop-color="#A5633A"/></radialGradient>'+
+  '<linearGradient id="gPocket" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#F8DCBC"/><stop offset=".5" stop-color="#EDBE92"/><stop offset="1" stop-color="#CC8B58"/></linearGradient>'+
+  '<linearGradient id="gTrna" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#F3FAFF"/><stop offset=".45" stop-color="#C6E3F8"/><stop offset="1" stop-color="#7FB6E3"/></linearGradient></defs>';
+
+/* 장면 SVG 문자열 — withTray=false 면 무대(0~440)만. 미리보기·교사 화면이 같은 함수를 쓴다 */
+function sceneSvg(scene, layout, withTray){
+  layout=layout||{};
+  if (scene.kind==='text') return DEFS+'<rect x="0" y="0" width="'+VB_W+'" height="'+STAGE_H+'" fill="#fff"/>'+textSceneSvg(scene, layout);   /* ② 서술 — 보관함 없음 */
+  var byId={}; scene.parts.forEach(function(p){ byId[p.id]=p; });
+  var s=DEFS+'<rect x="0" y="0" width="'+VB_W+'" height="'+STAGE_H+'" fill="#fff"/>'+scene.bg;
+  /* 놓인 라이보솜을 먼저 깔고 → 칸 → 나머지 부품 (라이보솜 위의 tRNA 칸이 가려지지 않게) */
+  /* 라이보솜은 대단위체로도 잡힌다(2026-10-24 교사 — tRNA 를 놓은 뒤에도). 라이보솜을 먼저 깔고 tRNA 를 위에 그리므로 놓인 tRNA 는 그대로 먼저 잡힌다 */
+  function placed(sl){ var p=byId[layout[sl.id]]; if (!p) return '';
+    var big=(p.kind==='ribo') ? '<rect class="ribohitL" x="-148" y="'+(RIBO_DY.large-138)+'" width="316" height="276" fill="transparent"/>' : '';
+    return '<g class="partg" data-part="'+p.id+'" data-from="'+sl.id+'" transform="translate('+sl.x+','+sl.y+')">'+hitRect(p,1)+big+drawPart(p)+'</g>'; }
+  scene.slots.forEach(function(sl){ if (sl.kind==='ribo') s+=placed(sl); });
+  s+=scene.fg||'';
+  scene.slots.forEach(function(sl){ if (sl.kind==='write') s+=writeBox(sl, withTray ? '' : layout._w); else if (!layout[sl.id]) s+=slotBox(sl); else if (withTray) s+=slotBox(sl, true); });
+  scene.slots.forEach(function(sl){
+    if (sl.kind==='ribo' || sl.kind==='write') return;
+    var p=byId[layout[sl.id]]; if (!p) return;
+    s+='<g class="partg" data-part="'+p.id+'" data-from="'+sl.id+'" transform="translate('+sl.x+','+sl.y+')">'+hitRect(p,1)+drawPart(p)+'</g>';
+  });
+  if (scene.extra) s+='<g pointer-events="none">'+scene.extra(layout)+'</g>';   /* 놓인 것에 따라 생기는 것(펩타이드결합 등) */
+  if (withTray){
+    s+='<rect x="0" y="'+STAGE_H+'" width="'+VB_W+'" height="'+(VB_H-STAGE_H)+'" fill="#F4F6F9"/>'+L(0,STAGE_H,VB_W,STAGE_H,'#D5D8DE',2);
+    var used=placedIds(layout), tp=trayLayout(scene.parts);
+    scene.parts.forEach(function(p){
+      if (!p.stock && used[p.id]) return;
+      var q=tp[p.id];
+      s+='<g class="partg" data-part="'+p.id+'" data-from="tray" transform="translate('+q.x+','+q.y+')"><g transform="scale('+q.sc+')">'+hitRect(p,q.sc)+drawPart(p)+'</g></g>';
+    });
+  }
+  return s;
+}
+function hitRect(p,sc){
+  if (p.kind==='ribo' && sc===1) return '<rect x="-141" y="'+(RIBO_DY.small-48)+'" width="282" height="96" fill="transparent"/>';
+  var sz=KIND_SIZE[p.kind], w=Math.max(sz.w,44/sc), h=Math.max(sz.h,44/sc);
+  return '<rect x="'+(-w/2)+'" y="'+(-h/2)+'" width="'+w+'" height="'+h+'" fill="transparent"/>';
+}
+function placedIds(layout){ var u={}; Object.keys(layout).forEach(function(k){ if (layout[k]) u[layout[k]]=true; }); return u; }
+/* 오프라인 결과 파일의 확인값(2026-10-08) — 메모장으로 고치면 교사 화면에서 「변조 의심」. 잠금이 아니라 표시용이다.
+   check 를 뺀 객체를 JSON 으로 만든 문자열의 53비트 해시(cyrb53). 학생 파일·교사 화면이 같은 함수를 쓴다 */
+function resultCheck(o){
+  var c={}; Object.keys(o).forEach(function(k){ if (k!=='check') c[k]=o[k]; });
+  var str='dogma-offline-v1|'+JSON.stringify(c), h1=0xdeadbeef, h2=0x41c6ce57;
+  for (var i=0; i<str.length; i++){ var ch=str.charCodeAt(i); h1=Math.imul(h1^ch, 2654435761); h2=Math.imul(h2^ch, 1597334677); }
+  h1=Math.imul(h1^(h1>>>16), 2246822507)^Math.imul(h2^(h2>>>13), 3266489909);
+  h2=Math.imul(h2^(h2>>>16), 2246822507)^Math.imul(h1^(h1>>>13), 3266489909);
+  return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);
+}
+/* ── ② 전사 서술 장면 (2026-10-21 교사 — 끌어 놓기 ② 전사 신장을 대체) ──
+   정보를 일부러 뺀 전사 애니메이션(5′·3′ · 「프로모터」 · 「주형 가닥」 · 방향 화살표 · 염기 글자 · 두 가닥 색 차이 없음)을 보고 서술한다.
+   변형 4종 = 진행 방향(오른쪽·왼쪽) × 주형 가닥(위·아래) — 서열 번호로 정한다(animOf). 학생마다 그림이 다르다.
+   ★txaLayout(t, v) 는 DOM 없이 놓인 자리를 다 돌려준다 — 재생(학생)·정지 그림(PNG·교사 화면)·검사가 같은 함수를 쓴다.
+   ★서술은 배치 기록 자리에 담는다: layout = {_text:'…', _anim:n} — 저장·이어 하기·확인값·교사 화면이 그대로 따라온다 */
+var TXA_W = 960, TXA_H = 420;
+var TXA_G = {
+  n:28, pitch:29, x0:74,         /* 2026-10-24 교사: RNA 15개 = 답안지 1번 mRNA 15칸 · 줄어든 만큼 칸을 넓혀 가운데에 */
+  yMid:210, half:25,              /* 두 가닥 = yMid ∓ half (yMid = 높이의 절반 — 위아래 뒤집기가 이것에 기댄다) */
+  amp:30, win:3.4,                /* 거품: 최대 벌어짐(px) · 반폭(칸) */
+  promFrom:2, promTo:7,           /* 빗금 상자(이름 없음) */
+  geneFrom:9, geneTo:23,          /* RNA 가 만들어지는 칸(15개 — 답안지 1번과 같은 수) — 끝에서 중합효소가 DNA 밖으로 삐져나오지 않게 오른쪽을 남긴다 */
+  stub:12, pairIn:17,             /* 염기 꼭지 길이 · 짝지은 RNA 구슬이 가닥에서 안쪽으로 들어온 거리 */
+  paired:3,                       /* 거품 안에 붙어 있는 채로 남는 구슬 수 */
+  yOut:104,                       /* 떨어져 나온 RNA 가 눕는 높이(위 주형 기준 · 아래 주형이면 뒤집는다) */
+  drift:[-34, -30], polOff:[30, 104], /* 종결: RNA 가 멀어지는 거리 · 중합효소가 DNA 와 겹치지 않을 만큼 떨어져 나가는 거리(실측) */
+  polRx:64, polRy:70
+};
+/* 초 — 2026-10-21 교사: 빠르게 · 프로모터 한가운데에 결합 · 끝에 종결과 분리가 또렷이 보이게 */
+var TXA_T = { dna:0.5, land:1.3, open:1.9, move0:1.9, move1:7.0,
+              rel0:7.0, rel1:7.9,      /* 마지막 구슬까지 주형에서 떨어진다 */
+              drift0:7.8, drift1:9.3,  /* RNA 가 통째로 멀어진다 */
+              close0:7.8, close1:8.7,  /* 거품이 닫힌다 */
+              off0:8.3, off1:9.4,      /* 중합효소가 DNA 에서 떨어진다 */
+              still:5.2,               /* 정지 그림(PNG·교사 화면)에 쓰는 순간 — RNA 가 주형에 짝지어 있다 */
+              end:10.2 };
+var TXA_C = { dna:'#0F9B95', dnaInk:'#0A6B67', rna:'#6C2BD9', pol:'#C2185B', u:'#E5202E' };   /* u = U 자리 구슬(2026-10-24) */
+/* 문항(2026-10-21 교사) — 묻는 것은 문항 본문에 · <조건> 은 결합 부위 이름 하나
+   ★**주형이 아닌 가닥**의 왼쪽 끝을 묻는다(교사) — 주형이 위면 아래 가닥, 아래면 위 가닥. 누구나 역평행까지 따져야 한다 */
+function txaAsk(v){ return txaVar(v).tpl === 'top' ? '아래' : '위'; }   /* 묻는 가닥 */
+function txaQ(v){
+  return '애니메이션에 나타난 전사 과정에서 ' + txaAsk(v) + ' 가닥의 왼쪽 끝이 5′ 말단과 3′ 말단 중 어느 것인지 쓰고, ' +
+         '그 까닭을 RNA 중합효소의 가닥 합성 방향과 관련지어 서술하시오. (단, <조건>을 포함하시오.)';   /* 2026-10-24 교사 — 당은 본문에서 <조건> 2 로 옮겼다 */
+}
+function txaCond(){ return ['RNA 중합효소가 처음으로 결합하는 부위의 명칭']; }   /* 당(옛 <조건> 2)은 답안지 1번 (3)으로 옮겼다(2026-10-28 교사 — 코드마다 X 가 가리키는 가닥이 달라 앞 반 답이 뒤 반에 새지 않게) */   /* 2 = RNA 의 당(2026-10-24 — 문항 본문에서 옮김 · 채점 4곳은 그대로) · 2026-10-27 교사 문구(「이름」→「명칭」 · 당은 고르기 없이 명칭을 쓰게) */
+
+function txaX(col){ return TXA_G.x0 + TXA_G.pitch * (col + 0.5); }
+function txaC01(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+function txaEase(u){ u = txaC01(u); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }   /* 가속·감속 */
+function txaSmooth(u){ u = txaC01(u); return u * u * (3 - 2 * u); }
+function txaVar(v){ v = ((v | 0) % 4 + 4) % 4; return { v:v, dir:(v < 2 ? 'R' : 'L'), tpl:(v % 2 ? 'bot' : 'top') }; }
+/* 서열 → 변형: 연습 P = 0 · 본평가 B07 → 7 % 4 (반마다 30벌이 네 변형에 고르게 돈다) */
+function animOf(sk){ var n = parseInt(String(sk || '').slice(1), 10); return isNaN(n) ? 0 : n % 4; }
+/* 답안지 1번 (3) 「X 로 표시된 가닥을 구성하는 뉴클레오타이드의 당」(2026-10-28 교사) — X 가 가리키는 것이 코드마다 다르다.
+   번호 % 3 → 0: RNA · 1: 위 DNA 가닥 · 2: 아래 DNA 가닥 (변형 % 4 · 빛나는 구슬 % 5 와 따로 돈다) · 연습 P = RNA · 답안지 글은 모두 같다 */
+var TXA_MARKS = ['rna', 'dnaTop', 'dnaBot'];
+function txaMarkOf(sk){ var n = parseInt(String(sk || '').slice(1), 10); return isNaN(n) ? 'rna' : TXA_MARKS[n % 3]; }
+function txaSugarAns(sk){ return txaMarkOf(sk) === 'rna' ? '라이보스' : '디옥시라이보스'; }
+/* ③ 신장 ㉡ 이 가리키는 결합(2026-10-28 교사) — 펩타이드결합(아미노산 사이) 또는 수소결합(코돈·안티코돈 염기 사이).
+   ⌊번호 / 2⌋ % 2 → 0: 펩타이드결합 · 1: 수소결합 (반마다 15·15 · 다른 % 와 따로 돈다) · 연습 P = 펩타이드결합 */
+function bondOf(sk){ var n = parseInt(String(sk || '').slice(1), 10); return (isNaN(n) || Math.floor(n / 2) % 2 === 0) ? 'pep' : 'hbond'; }
+/* 서열 → 답안지 1번 DNA 의 U 자리(2026-10-24 교사 — 답안지와 프로그램 연계) — 구슬 k = 합성 순서 = RNA 5′ 부터 k+1 번째 = 주형(3′→5′) k 번째.
+   주형이 A 인 자리 = RNA 가 U 인 자리 → **5′ 쪽 첫 U 하나만** 빨갛게 깜빡인다(교사 「딱 하나만」). 연습 P = TX_DNA[5] · 본평가 = 번호 % 5 (_서열생성.py tx_of 와 같다) */
+function txaUMask(sk){
+  if (typeof TX_DNA === 'undefined' || !sk) return null;
+  var n = parseInt(String(sk).slice(1), 10), d = TX_DNA[String(sk).charAt(0) === 'P' ? TX_DNA.length - 1 : (isNaN(n) ? -1 : n % (TX_DNA.length - 1))];
+  var f = d ? d.indexOf('A') : -1;
+  return f < 0 ? null : d.split('').map(function(c, k){ return k === f; });
+}
+
+/* 오른쪽으로 나아가는 그림(기준틀)에서 중합효소 중심 x · 거품 크기 · 떨어져 나간 정도 */
+function txaPol(t){
+  var T = TXA_T, G = TXA_G;
+  var xBind = (txaX(G.promFrom) + txaX(G.promTo)) / 2, xEnd = txaX(G.geneTo - 0.5);
+  var land = txaSmooth((t - T.dna) / (T.land - T.dna));
+  var x = (t < T.move0) ? xBind : xBind + (xEnd - xBind) * txaEase((t - T.move0) / (T.move1 - T.move0));
+  var open = txaSmooth((t - T.land + 0.3) / (T.open - T.land + 0.3)) * (1 - txaSmooth((t - T.close0) / (T.close1 - T.close0)));
+  return { x:x, land:land, open:open, off:txaSmooth((t - T.off0) / (T.off1 - T.off0)) };
+}
+/* 거품 — 중합효소 둘레만 매끈하게 벌어진다(코사인 창) */
+function txaBulge(x, P){
+  if (P.open <= 0) return 0;
+  var w = TXA_G.win * TXA_G.pitch, d = Math.abs(x - P.x);
+  return d >= w ? 0 : TXA_G.amp * P.open * (Math.cos(Math.PI * d / w) + 1) / 2;
+}
+function txaLayout(t, v){
+  var G = TXA_G, T = TXA_T, V = txaVar(v), P = txaPol(t), front = P.x + 0.7 * G.pitch, i, k, x;
+  var top = [], bot = [], cols = [], beads = [];
+  for (x = G.x0; x <= G.x0 + G.n * G.pitch + 0.1; x += 6){   /* 가닥 등뼈 — 6px 마다 찍어 곡선으로 잇는다 */
+    var b = txaBulge(x, P); top.push([x, G.yMid - G.half - b]); bot.push([x, G.yMid + G.half + b]);
+  }
+  for (i = 0; i < G.n; i++){
+    var cx = txaX(i), bb = txaBulge(cx, P);
+    cols.push({ x:cx, yT:G.yMid - G.half - bb, yB:G.yMid + G.half + bb, hb:txaC01(1 - bb / 9) });
+  }
+  for (k = 0; k <= G.geneTo - G.geneFrom; k++){              /* RNA 구슬 (기준틀: 주형 = 위 가닥) */
+    var xk = txaX(G.geneFrom + k), born = txaC01((front - xk) / (0.8 * G.pitch) + 0.5);
+    born = Math.max(born, txaSmooth((t - T.move1 + 0.4) / 0.4));   /* 신장이 끝날 때 마지막 구슬도 다 자란다(2026-10-24 교사 — 마지막 것만 작고 연했다) */
+    var lag = (front - xk) / G.pitch - G.paired;              /* 0 보다 크면 떨어져 나온다 */
+    lag += txaSmooth((t - T.rel0) / (T.rel1 - T.rel0)) * (G.paired + 2.8);   /* 종결: 붙어 있던 것까지 모두 떨어진다 */
+    var yPair = G.yMid - G.half - txaBulge(xk, P) + G.pairIn, bx = xk, by = yPair;
+    if (lag > 0){   /* 중합효소 뒤쪽에서 빠져나와 뒤로 길게 눕는다 — 이어진 한 가닥이 흘러나오는 모양 */
+      var u = txaSmooth(lag / 2.6), exitX = P.x - 0.85 * G.polRx;
+      bx = (1 - u) * xk + u * (exitX - Math.max(0, lag - 2.6) * G.pitch * 0.92);
+      by = (1 - u) * yPair + u * (G.yOut + 6 * Math.sin(lag * 0.9));
+    }
+    var dr = txaSmooth((t - T.drift0) / (T.drift1 - T.drift0));   /* 종결: RNA 가 통째로 멀어진다 */
+    beads.push({ k:k, x:bx + G.drift[0] * dr, y:by + G.drift[1] * dr, op:born, s:0.4 + 0.6 * born, ex:(lag > 0 ? txaSmooth(lag / 1.2) : 0) });   /* ex = 중합효소 밖으로 빠져나온 정도(X 표시가 RNA 를 가리킬 때) */
+  }
+  var L = { t:t, V:V, top:top, bot:bot, cols:cols, beads:beads,
+    pol:{ x:P.x + G.polOff[0] * P.off, y:G.yMid - (1 - P.land) * 120 + G.polOff[1] * P.off, op:P.land },   /* 종결: RNA 반대쪽으로 떨어져 나간다 */
+    labY:G.yMid + G.polRy + 22 };   /* 이름표는 RNA 가 나가는 쪽의 반대편 */
+  /* 기준틀 → 변형: 왼쪽이면 좌우 반전 · 아래 주형이면 RNA·중합효소·이름표만 위아래 반전(두 가닥은 대칭) */
+  var fx = function(x){ return V.dir === 'L' ? TXA_W - x : x; }, fy = function(y){ return V.tpl === 'bot' ? TXA_H - y : y; };
+  L.pol.x = fx(L.pol.x); L.pol.y = fy(L.pol.y); L.labY = fy(L.labY);
+  L.top = L.top.map(function(p){ return [fx(p[0]), p[1]]; }); L.bot = L.bot.map(function(p){ return [fx(p[0]), p[1]]; });
+  L.cols.forEach(function(c){ c.x = fx(c.x); });
+  L.beads.forEach(function(b){ b.x = fx(b.x); b.y = fy(b.y); });
+  L.prom = [fx(txaX(G.promFrom) - G.pitch / 2), fx(txaX(G.promTo) + G.pitch / 2)].sort(function(a, b){ return a - b; });
+  return L;
+}
+/* X 표시 — 상자 가운데(bx,by) · 지시선 끝(tx,ty) · 보임(op). DNA = 프로모터 바깥 첫 칸의 위/아래 가닥(거품이 닿지 않아 움직이지 않는다) ·
+   RNA = 5′ 끝 구슬(처음 만들어진 것)이 중합효소 밖으로 나온 뒤부터 따라다닌다 */
+function txaMarkPos(L, mk){
+  var c = L.cols[0], up = (L.V.tpl === 'top');
+  if (mk === 'dnaTop') return { tx:c.x, ty:c.yT, bx:c.x, by:c.yT - 82, op:1 };
+  if (mk === 'dnaBot') return { tx:c.x, ty:c.yB, bx:c.x, by:c.yB + 82, op:1 };
+  var b = L.beads[0], dx = (L.V.dir === 'L' ? 1 : -1) * 34, by = b.y + (up ? -50 : 50);
+  by = Math.max(20, Math.min(TXA_H - 20, by));
+  return { tx:b.x, ty:b.y, bx:b.x + dx, by:by, op:Math.min(b.op, b.ex) };
+}
+/* 지시선은 상자(40×32) 테두리에서 시작한다 */
+function txaMarkAttr(M){
+  var dx = M.tx - M.bx, dy = M.ty - M.by, k = Math.min(Math.abs(dx) > 0.01 ? 20 / Math.abs(dx) : 1e9, Math.abs(dy) > 0.01 ? 16 / Math.abs(dy) : 1e9, 1);
+  return { x1:(M.bx + dx * k).toFixed(1), y1:(M.by + dy * k).toFixed(1), x2:M.tx.toFixed(1), y2:M.ty.toFixed(1), g:'translate(' + M.bx.toFixed(1) + ',' + M.by.toFixed(1) + ')', op:M.op.toFixed(3) };
+}
+/* 정답 — 채점 4곳(10-22 RNA 의 당 더함). 교사 화면·검사가 쓴다(학생 화면에는 보이지 않는다) */
+function txaAnswer(v){
+  var V = txaVar(v), way = V.dir === 'R' ? '오른쪽' : '왼쪽', tpl = V.tpl === 'top' ? '위' : '아래', ask = txaAsk(v);
+  var tl = V.dir === 'R' ? '3′' : '5′', al = V.dir === 'R' ? '5′' : '3′';   /* 주형의 왼쪽 끝 · 묻는 가닥(주형의 상보 가닥)의 왼쪽 끝 */
+  return [
+    { c:1, what:'결합 부위', ans:'프로모터' },
+    { c:2, what:ask + ' 가닥 왼쪽 끝', ans:al },
+    { c:2, what:'까닭', ans:'RNA 는 5′ → 3′ 방향으로 합성되므로 RNA 중합효소는 주형 가닥(' + tpl + ' 가닥 — RNA 가 짝짓는 가닥)의 3′ → 5′ 방향(' + way +
+      ')으로 나아간다 → 주형 가닥의 왼쪽 끝은 ' + tl + ' · 두 가닥은 방향이 반대(역평행)이므로 ' + ask + ' 가닥의 왼쪽 끝은 ' + al }
+  ];   /* 당은 답안지 1번 (3) — txaSugarAns(2026-10-28) */
+}
+function txaPath(pts){
+  var d = '';
+  for (var i = 0; i < pts.length; i++) d += (i ? ' L' : 'M') + pts[i][0].toFixed(1) + ',' + pts[i][1].toFixed(1);
+  return d;
+}
+function txaLabY(L){ return L.labY + L.pol.y - TXA_H / 2; }   /* 이름표는 중합효소와 함께 움직인다 */
+/* 무대 안쪽(바깥 svg 없이) — 처음 한 번 짓고, 재생 때는 txaApply 가 좌표만 바꾼다. pre = id 앞붙이(한 화면에 여럿 그릴 때 겹치지 않게) */
+function txaInner(v, t, pre, um, mk){   /* um = U 자리 표시(txaUMask) — 없으면 구슬이 모두 같은 색 · mk = X 표시(txaMarkOf) — 없으면 없다 */
+  var G = TXA_G, C = TXA_C, L = txaLayout(t, v), s = '', i, p = pre || 'txa';
+  s += '<defs><pattern id="' + p + 'Hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+       '<line x1="0" y1="0" x2="0" y2="10" stroke="' + C.dnaInk + '" stroke-width="2" opacity=".35"/></pattern></defs>';
+  s += '<rect width="' + TXA_W + '" height="' + TXA_H + '" fill="#fff"/>';
+  s += '<rect x="' + L.prom[0] + '" y="' + (G.yMid - G.half - 16) + '" width="' + (L.prom[1] - L.prom[0]) + '" height="' + (2 * G.half + 32) +
+       '" rx="8" fill="url(#' + p + 'Hatch)" stroke="' + C.dnaInk + '" stroke-width="1.8" stroke-opacity=".6"/>';   /* 빗금 상자 — 이름을 붙이지 않는다 */
+  s += '<g id="' + p + 'Pol" transform="translate(' + L.pol.x.toFixed(1) + ',' + L.pol.y.toFixed(1) + ')" opacity="' + L.pol.op.toFixed(3) + '">' +
+       '<ellipse rx="' + G.polRx + '" ry="' + G.polRy + '" fill="' + C.pol + '" fill-opacity=".15" stroke="' + C.pol + '" stroke-width="3"/></g>';
+  for (i = 0; i < G.n; i++){
+    var c = L.cols[i];
+    s += '<line id="' + p + 'Hb' + i + '" x1="' + c.x.toFixed(1) + '" y1="' + (c.yT + G.stub).toFixed(1) + '" x2="' + c.x.toFixed(1) + '" y2="' + (c.yB - G.stub).toFixed(1) +
+         '" stroke="#9AA1AC" stroke-width="1.6" stroke-dasharray="3,3" opacity="' + c.hb.toFixed(2) + '"/>' +
+         '<line id="' + p + 'St' + i + '" x1="' + c.x.toFixed(1) + '" y1="' + c.yT.toFixed(1) + '" x2="' + c.x.toFixed(1) + '" y2="' + (c.yT + G.stub).toFixed(1) + '" stroke="' + C.dna + '" stroke-width="5" stroke-linecap="round"/>' +
+         '<line id="' + p + 'Sb' + i + '" x1="' + c.x.toFixed(1) + '" y1="' + c.yB.toFixed(1) + '" x2="' + c.x.toFixed(1) + '" y2="' + (c.yB - G.stub).toFixed(1) + '" stroke="' + C.dna + '" stroke-width="5" stroke-linecap="round"/>';
+  }
+  /* 두 가닥 — 같은 색·같은 굵기(어느 쪽이 주형인지 색으로 알려 주지 않는다) */
+  s += '<path id="' + p + 'Top" d="' + txaPath(L.top) + '" fill="none" stroke="' + C.dna + '" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>' +
+       '<path id="' + p + 'Bot" d="' + txaPath(L.bot) + '" fill="none" stroke="' + C.dna + '" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>';
+  var pts = L.beads.filter(function(b){ return b.op > 0.5; }).map(function(b){ return [b.x, b.y]; });
+  s += '<path id="' + p + 'Rbb" d="' + (pts.length >= 2 ? txaPath(pts) : '') + '" fill="none" stroke="' + C.rna + '" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="' + (pts.length >= 2 ? 1 : 0) + '"/>';
+  for (i = 0; i < L.beads.length; i++){
+    var bd = L.beads[i];
+    s += '<g id="' + p + 'B' + i + '" transform="translate(' + bd.x.toFixed(1) + ',' + bd.y.toFixed(1) + ') scale(' + bd.s.toFixed(3) + ')" opacity="' + bd.op.toFixed(3) + '">' +
+         (um && um[i] ? '<circle class="txaU" r="13.5" fill="none" stroke="' + C.u + '" stroke-width="3"><animate attributeName="opacity" values="1;.15;1" dur="1.1s" repeatCount="indefinite"/></circle>' : '') +
+         '<circle r="8.5" fill="' + (um && um[i] ? C.u : C.rna) + '"/><circle cx="-2.6" cy="-3" r="2.3" fill="#fff"/></g>';
+  }
+  s += '<g id="' + p + 'Lab" transform="translate(' + L.pol.x.toFixed(1) + ',' + txaLabY(L).toFixed(1) + ')" opacity="' + L.pol.op.toFixed(3) + '">' +
+       '<rect x="-58" y="-15" width="116" height="28" rx="14" fill="' + C.pol + '"/>' +
+       '<text x="0" y="5" font-size="15" font-weight="800" fill="#fff" text-anchor="middle">RNA 중합효소</text></g>';
+  if (mk){   /* X — 색으로 무엇인지 알려 주지 않게 검정 */
+    var A = txaMarkAttr(txaMarkPos(L, mk));
+    s += '<g id="' + p + 'Mk" opacity="' + A.op + '"><line id="' + p + 'MkL" x1="' + A.x1 + '" y1="' + A.y1 + '" x2="' + A.x2 + '" y2="' + A.y2 + '" stroke="#1A1A1A" stroke-width="2.5"/>' +
+         '<circle id="' + p + 'MkD" cx="' + A.x2 + '" cy="' + A.y2 + '" r="4" fill="#1A1A1A"/>' +
+         '<g id="' + p + 'MkB" transform="' + A.g + '"><rect x="-20" y="-16" width="40" height="32" rx="5" fill="#fff" stroke="#1A1A1A" stroke-width="2.5"/>' +
+         '<text x="0" y="8" font-size="22" font-weight="800" fill="#1A1A1A" text-anchor="middle">X</text></g></g>';
+  }
+  return s;
+}
+/* 서술을 줄로 나눈다 — 한글 1칸 · 그 밖 0.55칸으로 어림한다(캔버스 없이 · PNG 에 <text> 로 넣기 위해) */
+function txaCW(ch){ return /[ᄀ-ᇿ㄰-㆏가-힯　-〿＀-￯]/.test(ch) ? 1 : 0.55; }
+function txaW(str){ var w = 0; for (var i = 0; i < str.length; i++) w += txaCW(str.charAt(i)); return w; }
+function txaWrap(str, maxW){
+  var out = [];
+  String(str || '').replace(/\r/g, '').split('\n').forEach(function(par){
+    var line = '', w = 0;
+    for (var i = 0; i < par.length; i++){
+      var ch = par.charAt(i), cw = txaCW(ch);
+      if (w + cw > maxW && line){
+        var sp = line.lastIndexOf(' ');   /* 되도록 띄어쓰기에서 끊는다(낱말 가운데서 자르지 않게) */
+        if (ch !== ' ' && sp > line.length / 2){ out.push(line.slice(0, sp)); line = line.slice(sp + 1); w = txaW(line); }
+        else { out.push(line); line = ''; w = 0; if (ch === ' ') continue; }
+      }
+      line += ch; w += cw;
+    }
+    out.push(line);
+  });
+  return out;
+}
+/* 장면 그림(1000×440) — 왼쪽 위 정지 그림 · 조건 · 오른쪽에 학생 서술. 캡쳐 PNG·종결 그림·교사 화면이 이것을 쓴다 */
+function textSceneSvg(scene, layout){
+  var lay = layout || {}, v = (typeof lay._anim === 'number') ? lay._anim : scene.anim, s = '';
+  s += '<svg x="12" y="14" width="456" height="200" viewBox="0 0 ' + TXA_W + ' ' + TXA_H + '">' + txaInner(v, TXA_T.still, 'tst', null, scene.mk) + '</svg>';
+  s += '<rect x="12" y="14" width="456" height="200" fill="none" stroke="#C9CED6" stroke-width="1.5" rx="6"/>';
+  var y = 240;   /* 문항(변형마다 묻는 가닥이 다르다) · <조건> */
+  txaWrap(txaQ(v), 30).forEach(function(ln){ s += '<text x="14" y="' + y + '" font-size="14.5" font-weight="700" fill="#1A1A1A">' + esc(ln) + '</text>'; y += 21; });
+  y += 10; s += '<text x="14" y="' + y + '" font-size="14.5" font-weight="700" fill="#1A1A1A">&lt;조건&gt;</text>'; y += 21;
+  txaCond(v).forEach(function(c, i){
+    txaWrap((i + 1) + '. ' + c, 30).forEach(function(ln){ s += '<text x="14" y="' + y + '" font-size="14.5" fill="#444">' + esc(ln) + '</text>'; y += 21; });
+  });
+  s += '<rect x="484" y="14" width="504" height="412" rx="8" fill="#FAFBFC" stroke="#C9CED6" stroke-width="1.5"/>';
+  var text = String(lay._text || ''), fs = 18, lines = txaWrap(text, 26);
+  if (lines.length > 17){ fs = 15; lines = txaWrap(text, 31); }
+  if (lines.length > 21){ fs = 13; lines = txaWrap(text, 36); }
+  var lh = Math.round(fs * 1.32);
+  if (!text.replace(/\s/g, '')) s += '<text x="736" y="225" font-size="18" fill="#999" text-anchor="middle">(서술 없음)</text>';
+  lines.forEach(function(ln, i){ if (32 + (i + 1) * lh < 420) s += '<text x="498" y="' + (32 + (i + 1) * lh - 6) + '" font-size="' + fs + '" fill="#1A1A1A">' + esc(ln) + '</text>'; });
+  return s;
+}
+
+var SCENE_FILE = { R:'0_복제', T2:'1_전사서술', L1:'2_번역개시', L2:'3_번역신장', L3:'4_번역종결' };   /* 오프라인 결과 그림 파일 이름 */
+/* ===SCENES-END=== */
+
+/* 드래그 중: 들어갈 수 있는 칸만 그 종류 색으로 켜고, 나머지 칸은 흐리게 */
+(function slotGlowCss(){
+  if (!document.head || !document.createElement) return;
+  var css=['#stage .slot{transition:opacity .15s;}', '#stage[data-drag] .slot{opacity:.18;}',
+    '@keyframes slotglow{from{fill-opacity:.10}to{fill-opacity:.32}}'];
+  Object.keys(KIND_COLOR).forEach(function(k){
+    var c=KIND_COLOR[k];
+    css.push('#stage[data-drag="'+k+'"] .slot.k-'+k+'{opacity:1;stroke:'+c+';fill:'+c+';stroke-width:3.5;stroke-dasharray:none;animation:slotglow .8s ease-in-out infinite alternate;}');
+  });
+  css.push('#stage[data-drag] .slot.near{fill-opacity:.45;stroke-width:6;animation:none;}');
+  css.push('#stage .rmark.near{fill-opacity:.55;stroke-width:4;}');
+  /* 염기 단위 칸(L1): 누름 영역은 늘 투명 · 모양(finev)은 가까운 칸·마우스 올린 칸만 */
+  css.push('#stage .slot.fine,#stage[data-drag] .slot.fine{opacity:1;fill:transparent;stroke:none;animation:none;}',
+    '#stage[data-drag] .finev.near,#stage[data-drag] .slot.fine:hover+.finev{opacity:1;}');
+  css.push('#stage .slot{pointer-events:none;}', '#stage[data-drag] .slot{pointer-events:auto;}', '#stage[data-drag] .ribohitL{pointer-events:none;}');
+  css.push('@media (prefers-reduced-motion:reduce){#stage .slot{animation:none!important;transition:none;}}');
+  var st=document.createElement('style'); st.textContent=css.join('\n'); document.head.appendChild(st);
+})();
+
+/* ═════════════════ 상태 ═════════════════ */
+var SNAP_R = 70;
+var me = null;          /* {id, name, sec, email} */
+var session = null;     /* 'exam'(본평가 · 코드로 들어감) | 'practice'(연습) | 'preview'(교사 미리보기) */
+var setKey = 'P';
+var scenes = {};
+var state = null;       /* {cur, layouts:{sid:{}}, sent:{sid:n}, away:{n,ms,fs}, queue:[]} */
+var awayStart = null, awayKind = null;
+
+function lsKey(){ return 'dogma_exam_v2_' + (session || 'x') + '_' + (me ? me.id : 'x'); }
+function freshState(){ return { cur:'R', layouts:{}, sent:{}, sentAt:{}, sentSnap:{}, away:{n:0,ms:0,fs:0}, queue:[], seq:0, done:false }; }
+function saveState(){ try{ state.seq=(state.seq||0)+1; localStorage.setItem(lsKey(), JSON.stringify(state)); }catch(e){} }
+function loadState(){
+  var st=freshState();
+  try{
+    var raw=JSON.parse(localStorage.getItem(lsKey())||'null');
+    if (raw && typeof raw==='object'){
+      Object.keys(st).forEach(function(k){
+        if (!(k in raw)) return;
+        var a=st[k], b=raw[k];
+        if (Array.isArray(a)){ if (Array.isArray(b)) st[k]=b; }
+        else if (a!==null && typeof a==='object'){ if (b && typeof b==='object' && !Array.isArray(b)) st[k]=b; }
+        else if (typeof a===typeof b) st[k]=b;
+      });
+    }
+  }catch(e){}
+  if (SCENE_IDS.indexOf(st.cur)<0) st.cur='R';
+  return st;
+}
+
+/* ═════════════════ 화면 ═════════════════ */
+function show(id){ ['scrLogin','scrExam','scrDone'].forEach(function(s){ document.getElementById(s).classList.toggle('hide', s!==id); }); }
+function toast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.remove('hide'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.add('hide'); },2600); }
+
+function startExam(remote, doneAt, fromServer){
+  state=loadState();
+  /* 서버에서 읽은 경우 서버가 정본 — 교사가 리셋하면 이 기기의 「보냄·종결」 표시도 풀린다(보냈던 장면의 배치는 비운다) */
+  if (fromServer){
+    SCENE_IDS.forEach(function(sid){ if (state.sent[sid] && !(remote||{})[sid]){ delete state.sent[sid]; delete state.sentAt[sid]; delete state.sentSnap[sid]; state.layouts[sid]={}; } });
+    state.done=!!doneAt;
+  }
+  if (doneAt || (state.done && !PREVIEW)){ showDone(); return; }   /* 이미 종결 — 서버 기록이 정본, 이 기기의 저장분도 따른다 */
+  SCENE_IDS.forEach(function(sid){ scenes[sid]=buildScene(sid,setKey); if (!state.layouts[sid]) state.layouts[sid]={}; });
+  /* 서버의 본인 제출 기록이 정본 — 기기를 바꾸거나 저장분이 지워져도 이어진다 */
+  Object.keys(remote||{}).forEach(function(sid){
+    var r=remote[sid]; if (SCENE_IDS.indexOf(sid)<0 || !r) return;
+    state.sent[sid]=1; state.sentAt[sid]=r.ts||Date.now(); state.sentSnap[sid]=r.layout;
+    try{ state.layouts[sid]=JSON.parse(r.layout)||{}; }catch(e){}
+  });
+  sanitizeLayouts();
+  state.cur=SCENE_IDS[Math.min(openIdx(), SCENE_IDS.length-1)];
+  document.getElementById('whoLabel').textContent=(me.sec?me.sec+'반 · ':'')+me.id+' '+me.name;
+  document.getElementById('setLabel').textContent=(PREVIEW?'교사 미리보기 · ':'')+(session!=='practice' && me && me.sheet && setOfSheet(me.sheet)===setKey ? '답안지 '+sheetLabel(me.sheet) : '서열 '+SETS[setKey].name);   /* 학생이 종이 답안지 번호와 맞는지 본다 */
+  show('scrExam');
+  renderTabs(); renderScene(); renderAway();
+}
+/* 저장분에 지금 장면에 없는 칸·부품이 있으면 버린다(서열이 바뀐 경우 등) */
+function sanitizeLayouts(){
+  SCENE_IDS.forEach(function(sid){
+    var sc=scenes[sid], lay=state.layouts[sid], ok={}, pk={};
+    if (sc.kind==='text'){ state.layouts[sid]=(lay && typeof lay._text==='string') ? { _text:lay._text.slice(0,600), _anim:sc.anim } : {}; return; }   /* 서술만 남긴다 */
+    sc.slots.forEach(function(s){ ok[s.id]=s.kind; }); sc.parts.forEach(function(p){ pk[p.id]=p.kind; });
+    Object.keys(lay).forEach(function(k){ if (!ok[k] || pk[lay[k]]!==ok[k]) delete lay[k]; });
+  });
+}
+var TAB_NAME={R:'⓪ 복제',T2:'① 전사 서술',L1:'② 번역 개시',L2:'③ 번역 신장',L3:'④ 번역 종결'};
+/* 제출 상태: none(안 보냄) · sent(보낸 뒤 그대로) · changed(보낸 뒤 바뀜 — 다시 보내야 반영) */
+/* 순서대로만 진행: 앞 장면을 저장해야 다음 장면이 열리고, 저장한 장면은 읽기 전용이다.
+   (뒤 장면 그림이 앞 장면의 답을 드러내기 때문 — 2026-09-28 교사 결정) */
+function openIdx(){ var i=0; while (i<SCENE_IDS.length && state.sent[SCENE_IDS[i]]) i++; return i; }
+function canOpen(sid){ return PREVIEW || SCENE_IDS.indexOf(sid)<=openIdx(); }
+/* 저장한 장면은 읽기 전용 — 교사 미리보기에서는 계속 고칠 수 있다 */
+function locked(sid){ return !PREVIEW && !!state.sent[sid]; }
+function sendStatus(sid){ return state.sent[sid] ? 'sent' : 'none'; }
+function hhmm(t){ var d=new Date(t); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function renderSendStat(){
+  var sid=state.cur, st=sendStatus(sid), el=document.getElementById('sendStat');
+  el.className='sendstat '+st;
+  el.textContent = st==='none' ? '아직 저장하지 않았다' : '✅ 저장함 ('+hhmm(state.sentAt[sid])+') — 다시 고칠 수 없다';
+  var n=SCENE_IDS.filter(function(k){ return state.sent[k]; }).length;
+  document.getElementById('subCount').textContent='제출 '+n+'/'+SCENE_IDS.length;
+  document.getElementById('btnFinish').disabled = n<SCENE_IDS.length;   /* 모든 장면을 저장해야 켜진다 */
+}
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=SCENE_IDS.map(function(sid){
+    var st=sendStatus(sid), lk=!canOpen(sid), cls=(sid===state.cur?'on ':'')+(st==='none'?'':st)+(lk?' lock':'');
+    return '<button class="'+cls+'"'+(lk?' disabled':'')+' onclick="goScene(\''+sid+'\')">'+(lk?'🔒 ':'')+esc(TAB_NAME[sid])+'</button>';
+  }).join('');
+}
+function goScene(sid){ if (!canOpen(sid)) return; state.cur=sid; picked=null; lastPick=null; saveState(); renderScene(); }
+function renderScene(){
+  var sc=scenes[state.cur];
+  document.getElementById('scTitle').textContent=sc.title;
+  document.getElementById('scrExam').classList.toggle('tlsmall', /^L/.test(state.cur));   /* 번역 장면만 85% */
+  if (sc.kind==='text'){ renderTextScene(sc); return; }
+  document.getElementById('stageWrap').classList.remove('hide'); document.getElementById('txaBox').classList.add('hide'); TXP.stop();
+  document.getElementById('stageWrap').classList.toggle('sentblur', /^L/.test(state.cur) && locked(state.cur));   /* 저장한 번역 장면은 흐리게(10-28) */
+  document.getElementById('btnClear').classList.remove('hide');
+  document.getElementById('scTask').innerHTML=(sc.id==='R'?'<div class="noscore">📢 이 장면은 채점하지 않는다.</div>':'')+'<b>'+esc(sc.task)+'</b>'+(sc.must?'<div class="must">'+sc.must.split('\n').map(function(t){ return '✏️ '+esc(t); }).join('<br>')+'</div>':'')+
+    (sc.write?'<div class="ask">📝 '+esc(sc.write.ask)+'</div>':'')+'<ul>'+
+    '<li>아래의 각 요소('+esc(sc.what)+')를 알맞은 칸에 드래그하시오.</li>'+
+    '<li>각 요소는 쓰일 수도, 쓰이지 않을 수도 있다. 비워 두어야 하는 칸도 있을 수 있다.</li>'+
+    '<li>요소를 누르면 그 요소를 놓을 수 있는 칸이 밝게 빛난다. 빛나는 칸을 누르면 그 자리에 놓인다.</li>'+
+    '<li>칸 밖에 놓으면 제자리로 돌아간다. 놓은 요소는 다시 끌어 옮길 수 있다.</li>'+
+    (/^L/.test(state.cur)?'<li>mRNA 칸의 번호는 답안지 ②의 mRNA 번호와 같다. 답안지를 보고 각 번호의 염기를 확인하시오.</li>':'')+'</ul>';
+  var svg=document.getElementById('stage'), ro=locked(state.cur);
+  if (ro){
+    /* 저장한 장면: 저장한 모습만 보여 준다(보관함·드래그 없음) */
+    /* 쓴 답은 그림에 넣지 않는다(쓰기 칸에서 마우스를 올려야 보인다 — 2026-10-27 교사) */
+    svg.innerHTML=stampWm(sceneSvg(sc, Object.assign({}, state.layouts[state.cur], { _w:'' }), false))+
+      '<rect x="0" y="'+STAGE_H+'" width="'+VB_W+'" height="'+(VB_H-STAGE_H)+'" fill="#F4F6F9"/>'+
+      T(VB_W/2,(STAGE_H+VB_H)/2,'저장한 장면이다 — 다시 고칠 수 없다',18,'#555','middle','bold');
+  } else {
+    svg.innerHTML=stampWm(sceneSvg(sc, state.layouts[state.cur], true));
+    var gs=svg.querySelectorAll('.partg');
+    for (var i=0;i<gs.length;i++){
+      gs[i].addEventListener('pointerdown', onPartDown);
+      if (picked && gs[i].getAttribute('data-part')===picked.part && gs[i].getAttribute('data-from')===picked.from) gs[i].classList.add('picked');
+    }
+  }
+  pickWasOn=!!picked;
+  if (picked && !ro) svg.setAttribute('data-drag', kindFull(state.cur, picked.kind, picked.from) ? 'full' : picked.kind); else svg.removeAttribute('data-drag');
+  if (picked && !ro && picked.kind==='ribo') riboMarksOn(svg);
+  document.getElementById('btnClear').disabled=ro;
+  setCapLook(ro);
+  renderTabs(); renderSendStat();
+}
+/* ② 서술 장면 — 무대 대신 애니메이션 · 조건 · 서술 칸 */
+/* 발문 강조 — 「○ 가닥의 왼쪽 끝」 · 「RNA 중합효소의 가닥 합성 방향」(2026-10-28 교사). 글은 txaQ 그대로 */
+function txaQHtml(v){
+  var ask=txaAsk(v), h=esc(txaQ(v));
+  [ask+' 가닥의 왼쪽 끝', 'RNA 중합효소의 가닥 합성 방향'].forEach(function(t){ h=h.replace(esc(t), '<span class="qem">'+esc(t)+'</span>'); });
+  return h;
+}
+function renderTextScene(sc){
+  var ro=locked(state.cur), lay=state.layouts[state.cur]||{};
+  document.getElementById('scTask').innerHTML='<b>'+txaQHtml(sc.anim)+'</b>'+
+    '<div class="txa-cond"><b>&lt;조건&gt;</b><ol>'+txaCond(sc.anim).map(function(c){ return '<li>'+esc(c)+'</li>'; }).join('')+'</ol></div>'+   /* 문항이 가리키는 <조건> 을 제목으로 밝힌다(교사) */
+    '<ul><li>▶ 재생을 눌러 애니메이션을 보시오. 몇 번이든 다시 볼 수 있고, 막대를 끌어 원하는 순간에 멈출 수 있다.</li>'+
+    '<li>아래 칸에 서술한 뒤 📸 캡쳐 → 💾 저장하시오. 저장한 서술은 다시 고칠 수 없다.</li></ul>';
+  document.getElementById('stageWrap').classList.add('hide'); document.getElementById('txaBox').classList.remove('hide');
+  document.getElementById('stage').innerHTML=''; document.getElementById('stage').removeAttribute('data-drag');
+  TXP.mount(document.getElementById('txaHost'), sc.anim, sc.um, sc.mk);
+  var ta=document.getElementById('txaText');
+  if (document.activeElement!==ta) ta.value=lay._text||'';
+  ta.readOnly=ro; txaCount();
+  document.getElementById('btnClear').classList.add('hide');
+  setCapLook(ro);
+  renderTabs(); renderSendStat();
+}
+function txaCount(){ var n=document.getElementById('txaText').value.length; document.getElementById('txaCount').textContent=n+' / 600자'; }
+function onTxaInput(){
+  var sc=scenes[state.cur]; if (!sc || sc.kind!=='text' || locked(state.cur)) return;
+  state.layouts[state.cur]={ _text:document.getElementById('txaText').value.slice(0,600), _anim:sc.anim };
+  txaCount(); clearTimeout(onTxaInput._t); onTxaInput._t=setTimeout(saveState, 400);
+}
+/* 재생기 — 시간 t 하나로 그린다 · rAF 가 없으면 setTimeout · 움직임 줄이기면 마지막 그림 */
+function txaApply(root, v, t){
+  var L=txaLayout(t, v), G=TXA_G, i, $=function(id){ return root.querySelector('#txa'+id); };
+  if (!$('Pol')) return;
+  $('Pol').setAttribute('transform','translate('+L.pol.x.toFixed(1)+','+L.pol.y.toFixed(1)+')'); $('Pol').setAttribute('opacity',L.pol.op.toFixed(3));
+  $('Lab').setAttribute('transform','translate('+L.pol.x.toFixed(1)+','+txaLabY(L).toFixed(1)+')'); $('Lab').setAttribute('opacity',L.pol.op.toFixed(3));
+  $('Top').setAttribute('d',txaPath(L.top)); $('Bot').setAttribute('d',txaPath(L.bot));
+  for (i=0;i<G.n;i++){
+    var c=L.cols[i], hb=$('Hb'+i), st=$('St'+i), sb=$('Sb'+i);
+    hb.setAttribute('y1',(c.yT+G.stub).toFixed(1)); hb.setAttribute('y2',(c.yB-G.stub).toFixed(1)); hb.setAttribute('opacity',c.hb.toFixed(2));
+    st.setAttribute('y1',c.yT.toFixed(1)); st.setAttribute('y2',(c.yT+G.stub).toFixed(1));
+    sb.setAttribute('y1',c.yB.toFixed(1)); sb.setAttribute('y2',(c.yB-G.stub).toFixed(1));
+  }
+  var pts=[];
+  for (i=0;i<L.beads.length;i++){
+    var b=L.beads[i], g=$('B'+i);
+    g.setAttribute('transform','translate('+b.x.toFixed(1)+','+b.y.toFixed(1)+') scale('+b.s.toFixed(3)+')'); g.setAttribute('opacity',b.op.toFixed(3));
+    if (b.op>0.5) pts.push([b.x,b.y]);
+  }
+  $('Rbb').setAttribute('d', pts.length>=2 ? txaPath(pts) : ''); $('Rbb').setAttribute('opacity', pts.length>=2 ? '1' : '0');
+  if ($('Mk')){   /* X 표시가 RNA 를 따라간다 */
+    var A=txaMarkAttr(txaMarkPos(L, root.getAttribute('data-mk')));
+    $('Mk').setAttribute('opacity',A.op); $('MkB').setAttribute('transform',A.g);
+    $('MkL').setAttribute('x1',A.x1); $('MkL').setAttribute('y1',A.y1); $('MkL').setAttribute('x2',A.x2); $('MkL').setAttribute('y2',A.y2);
+    $('MkD').setAttribute('cx',A.x2); $('MkD').setAttribute('cy',A.y2);
+  }
+}
+var TXP=(function(){
+  var host=null, v=-1, t=0, playing=false, last=0;
+  var reduce=!!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var tick=window.requestAnimationFrame ? function(f){ window.requestAnimationFrame(f); } : function(f){ setTimeout(function(){ f(Date.now()); },16); };
+  function ui(){
+    var b=document.getElementById('txaPlay'), s=document.getElementById('txaSeek');
+    if (b) b.textContent=playing ? '⏸ 멈춤' : (t>=TXA_T.end ? '▶ 다시 재생' : '▶ 재생');
+    if (s) s.value=Math.round(1000*t/TXA_T.end);
+  }
+  function draw(){ if (host) txaApply(host, v, t); ui(); }
+  function frame(now){
+    if (!playing) return;
+    var dt=last ? (now-last)/1000 : 0; last=now;
+    t=Math.min(TXA_T.end, t+Math.min(dt,0.05)); draw();
+    if (t>=TXA_T.end){ playing=false; ui(); return; }
+    tick(frame);
+  }
+  function start(){ playing=true; last=0; tick(frame); ui(); }
+  return {
+    mount:function(el, variant, um, mk){
+      var uk=(um||[]).join();
+      if (host===el && v===variant && el.getAttribute('data-um')===uk && el.getAttribute('data-mk')===(mk||'') && el.firstChild) return;   /* 같은 변형이면 다시 짓지 않는다(재생 위치 유지) */
+      host=el; v=variant; playing=false; t=reduce ? TXA_T.end : 0; el.setAttribute('data-um', uk); el.setAttribute('data-mk', mk||'');
+      el.innerHTML='<svg viewBox="0 0 '+TXA_W+' '+TXA_H+'" xmlns="http://www.w3.org/2000/svg" font-family="Malgun Gothic, 맑은 고딕, sans-serif">'+txaInner(v, t, 'txa', um, mk)+'</svg>';
+      ui();
+    },
+    toggle:function(){ if (playing){ playing=false; ui(); return; } if (t>=TXA_T.end) t=0; start(); },
+    restart:function(){ t=0; start(); },
+    seek:function(f){ playing=false; t=txaC01(f)*TXA_T.end; draw(); },
+    stop:function(){ playing=false; },
+    get t(){ return t; }
+  };
+})();
+function clearScene(){
+  if (locked(state.cur)) return;
+  if (!confirm('이 장면에 놓은 요소를 모두 제자리로 되돌리시겠습니까?')) return;
+  state.layouts[state.cur]={}; saveState(); renderScene();
+}
+
+/* ═════════════════ 드래그 — 1-3 염색체 비분리 방식(포인터 캡처 + 자석 스냅) ═════════════════ */
+var dragState=null;
+function svgPoint(e){
+  var svg=document.getElementById('stage'), r=svg.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*VB_W/r.width, y:(e.clientY-r.top)*VB_H/r.height };
+}
+function findSnap(pos, slots, kind){
+  var best=null, bestD=Infinity;
+  slots.forEach(function(t){
+    if (t.kind!==kind) return;
+    if (kind==='ribo'){
+      /* 라이보솜은 「P 자리가 어느 코돈 위에 오나」만 따진다 — 세로는 무대 안이면 된다(전에는 가운데 거리로 재서 잘 안 붙었다) */
+      var dx=Math.abs(pos.x-t.x);
+      if (dx<=(t.fine?BW/2:28.5) && pos.y>20 && pos.y<STAGE_H && dx<bestD){ best=t; bestD=dx; }
+      return;
+    }
+    var d=Math.sqrt((pos.x-t.x)*(pos.x-t.x)+(pos.y-t.y)*(pos.y-t.y));
+    var r=(kind==='ribo')?45:((kind==='large'||kind==='small'||kind==='rna')?110:SNAP_R);
+    if (d<=r && d<bestD){ best=t; bestD=d; }
+  });
+  return best;
+}
+/* 누르기로 고른 요소 {part, from, kind} — 드래그 없이 눌렀다 떼면 여기에 남는다 */
+var picked=null;
+function onPartDown(e){
+  if (dragState || locked(state.cur)) return;
+  picked=null;                                            /* 새로 누르면 앞의 고르기는 풀린다 */
+  e.preventDefault();
+  var el=e.currentTarget;
+  /* ★맨 위로 올리는 appendChild 가 포인터 캡처를 풀어 버린다 — 먼저 옮기고 나서 캡처한다(실측으로 잡음) */
+  el.parentNode.appendChild(el);
+  if (el.setPointerCapture){ try{ el.setPointerCapture(e.pointerId); }catch(err){} }
+  var tr=el.getAttribute('transform'), m=/translate\(([-\d.]+),([-\d.]+)\)/.exec(tr);
+  dragState={ el:el, pid:e.pointerId, part:el.getAttribute('data-part'), from:el.getAttribute('data-from'),
+    start:svgPoint(e), ox:+m[1], oy:+m[2], base:tr };
+  el.classList.add('dragging');
+  var pk=null; scenes[state.cur].parts.forEach(function(q){ if (q.id===dragState.part) pk=q.kind; });
+  dragState.kind=pk;
+  if (pk==='ribo' && dragState.from==='tray' && el.firstElementChild) el.firstElementChild.setAttribute('transform','scale(1)');
+  if (pk==='ribo'){ el.setAttribute('opacity','.78'); riboMarksOn(document.getElementById('stage')); }   /* 코돈 글자가 비쳐 보이게 */
+  document.getElementById('stage').setAttribute('data-drag', kindFull(state.cur, pk, dragState.from) ? 'full' : (pk||''));   /* 다 찼으면 어느 칸도 빛나지 않는다 */
+  el.addEventListener('pointermove', onDragMove);
+  el.addEventListener('pointerup', onDragEnd);
+  el.addEventListener('pointercancel', onDragEnd);
+}
+/* ★라이보솜 자리 표지를 그림 위로 — 라이보솜을 끄는(또는 고른) 동안 코돈 아래 괄호가 그림에 가려 보이지 않았다(교사 지적).
+   맨 위에 같은 표지를 한 벌 더 얹는다(누르면 그 자리에 놓인다 — class 가 같다) */
+function riboMarksOn(svg){
+  if (svg.querySelector('#riboMarks')) return;
+  var h='<g id="riboMarks">';
+  scenes[state.cur].slots.forEach(function(sl){
+    if (sl.kind!=='ribo') return;
+    if (sl.fine){ h+=fineSlot(sl); return; }
+    h+='<rect class="slot k-ribo rmark" data-slot="'+sl.id+'" x="'+(sl.x-27)+'" y="344" width="54" height="28" rx="6" fill="#9A4B12" fill-opacity=".15" stroke="#9A4B12" stroke-width="2.5"/>'+
+       '<path d="M '+(sl.x-7)+' 344 L '+sl.x+' 334 L '+(sl.x+7)+' 344 Z" fill="#9A4B12" pointer-events="none"/>';
+  });
+  svg.insertAdjacentHTML('beforeend', h+'</g>');
+}
+function setNear(svg, oldId, newId){
+  if (oldId){ var o=svg.querySelectorAll('[data-slot="'+oldId+'"]'); for (var i=0;i<o.length;i++) o[i].classList.remove('near'); }
+  if (newId){ var n=svg.querySelectorAll('[data-slot="'+newId+'"]'); for (var j=0;j<n.length;j++) n[j].classList.add('near'); }
+}
+function onDragMove(e){
+  if (!dragState || e.pointerId!==dragState.pid) return;
+  var p=svgPoint(e), d=dragState;
+  d.el.setAttribute('transform','translate('+(d.ox+p.x-d.start.x)+','+(d.oy+p.y-d.start.y)+')');
+  /* 지금 놓으면 붙을 칸을 더 밝게 */
+  var t=findSnap({ x:d.ox+p.x-d.start.x, y:d.oy+p.y-d.start.y }, scenes[state.cur].slots, d.kind);
+  var id=t?t.id:'';
+  if (id!==d.near){ setNear(document.getElementById('stage'), d.near, id); d.near=id; }
+}
+function onDragEnd(e){
+  if (!dragState || e.pointerId!==dragState.pid) return;
+  var d=dragState; dragState=null;
+  document.getElementById('stage').removeAttribute('data-drag');
+  if (d.el.releasePointerCapture && d.el.hasPointerCapture && d.el.hasPointerCapture(d.pid)){ try{ d.el.releasePointerCapture(d.pid); }catch(err){} }
+  d.el.removeEventListener('pointermove', onDragMove);
+  d.el.removeEventListener('pointerup', onDragEnd);
+  d.el.removeEventListener('pointercancel', onDragEnd);
+  var p=svgPoint(e), drop={ x:d.ox+p.x-d.start.x, y:d.oy+p.y-d.start.y };
+  /* 거의 안 움직였으면 「누르기」 — 고른 상태로 두고 놓을 수 있는 칸을 계속 빛나게 한다 */
+  if (Math.abs(p.x-d.start.x)+Math.abs(p.y-d.start.y) < 8){
+    picked = (pk0Same(d)) ? null : { part:d.part, from:d.from, kind:d.kind };
+    lastPick=picked; renderScene(); return;
+  }
+  applyDrop(state.cur, d.part, d.from, drop);
+  saveState(); renderScene();
+}
+var lastPick=null;
+/* 같은 요소를 다시 누르면 고르기를 푼다 */
+function pk0Same(d){ return !!(lastPick && lastPick.part===d.part && lastPick.from===d.from && pickWasOn); }
+var pickWasOn=false;
+/* 빛나는 칸을 누르면 고른 요소를 그 칸에 놓는다. 다른 곳을 누르면 고르기를 푼다 */
+function onStageDown(e){
+  if (!picked || locked(state.cur)) return;
+  var t=e.target;
+  if (t.closest && t.closest('.partg')) return;           /* 다른 요소를 누르면 onPartDown 이 맡는다 */
+  var el=t.closest ? t.closest('.slot') : null, sl=null;
+  if (el) scenes[state.cur].slots.forEach(function(x){ if (x.id===el.getAttribute('data-slot')) sl=x; });
+  if (sl && sl.kind===picked.kind){
+    applyDrop(state.cur, picked.part, picked.from, { x:sl.x, y:sl.y });
+    picked=null; lastPick=null; saveState();
+  } else { picked=null; lastPick=null; }
+  renderScene();
+}
+/* 장면이 한 종류의 개수를 묶어 두었는가(limit) — 이미 다 찼으면 보관함에서 더 놓을 수 없다.
+   무대에 놓인 것을 옮기는 것은 된다(개수가 늘지 않는다) */
+function kindFull(sid, kind, from){
+  var sc=scenes[sid], lay=state.layouts[sid], n=0;
+  if (!sc.limit || !sc.limit[kind] || from!=='tray') return false;
+  var kindOf={}; sc.parts.forEach(function(p){ kindOf[p.id]=p.kind; });
+  Object.keys(lay).forEach(function(k){ if (lay[k] && kindOf[lay[k]]===kind) n++; });
+  return n>=sc.limit[kind];
+}
+/* 장면이 꼭 채우라고 한 칸(need) 중 빈 것의 이름 — 하나라도 있으면 캡쳐하지 못한다(검사가 직접 부른다) */
+function missingNeed(sid){
+  var sc=scenes[sid], lay=state.layouts[sid]||{};
+  if (sc.kind==='text') return String(lay._text||'').replace(/\s/g,'').length<5 ? ['서술'] : [];   /* ② 서술은 비우고 저장할 수 없다 */
+  return (sc.need||[]).filter(function(n){ return !lay[n[0]]; }).map(function(n){ return n[1]; });
+}
+/* 순수 규칙: 놓은 결과를 배치에 반영한다(검사가 직접 부른다) */
+function applyDrop(sid, partId, from, pos){
+  var sc=scenes[sid], lay=state.layouts[sid], part=null;
+  sc.parts.forEach(function(p){ if (p.id===partId) part=p; });
+  if (!part) return;
+  if (kindFull(sid, part.kind, from)) return;   /* 다 찼다 → 제자리로 */
+  var target=findSnap(pos, sc.slots, part.kind);
+  if (from!=='tray') delete lay[from];
+  if (!target) return;                     /* 칸 밖 → 제자리(아래쪽)로 */
+  if (!part.stock){ Object.keys(lay).forEach(function(k){ if (lay[k]===partId) delete lay[k]; }); }
+  lay[target.id]=partId;                   /* 칸에 있던 것은 제자리로 밀려난다 */
+}
+
+/* ═════════════════ 이탈 기록 ═════════════════ */
+function awayBegin(kind){
+  if (!me || awayStart!==null || (state && state.done)) return;   /* 종결 뒤에는 이탈을 기록하지 않는다 */
+  awayStart=Date.now(); awayKind=kind;
+}
+function awayEnd(){
+  if (awayStart===null) return;
+  if (document.visibilityState==='hidden' || (document.hasFocus && !document.hasFocus())) return;
+  var rec={ leftAt:awayStart, backAt:Date.now(), ms:Date.now()-awayStart, kind:awayKind, scene:state?state.cur:'' };
+  awayStart=null; awayKind=null;
+  recordAway(rec);
+}
+function recordAway(rec){
+  if (!state || state.done) return;
+  state.away.n+=rec.kind==='fs'?0:1;
+  state.away.ms+=rec.ms;
+  if (rec.kind==='fs') state.away.fs+=1;
+  state.queue.push(rec);
+  saveState(); renderAway();
+}
+function renderAway(){
+  if (!state) return;
+  var a=state.away, el=document.getElementById('awayLabel');
+  el.textContent='화면 이탈 '+a.n+'회 · 누적 '+Math.round(a.ms/1000)+'초'+(a.fs?' · 전체화면 해제 '+a.fs+'회':'');
+  el.classList.toggle('bad', a.n>0 || a.fs>0);
+}
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState==='hidden') awayBegin('hidden'); else awayEnd(); });
+window.addEventListener('blur', function(){ awayBegin('blur'); });
+window.addEventListener('focus', function(){ awayEnd(); });
+document.addEventListener('fullscreenchange', function(){
+  if (!document.fullscreenElement && me && state && !state.done) recordAway({ leftAt:Date.now(), backAt:Date.now(), ms:0, kind:'fs', scene:state.cur });
+});
+/* 쓰기 칸 흐림 — 10초 동안 아무 입력이 없으면 body.idle(2026-10-27 교사) · 마우스·키·터치·휠 중 무엇이든 하면 풀고 다시 잰다 */
+var IDLE_MS=10000, idleT=null;
+function idleReset(){
+  if (document.body) document.body.classList.remove('idle');
+  clearTimeout(idleT); idleT=setTimeout(function(){ if (document.body) document.body.classList.add('idle'); }, IDLE_MS);
+}
+['mousemove','pointerdown','keydown','input','wheel','touchstart'].forEach(function(ev){ document.addEventListener(ev, idleReset, true); });
+idleReset();
+function enterFullscreen(){
+  var el=document.documentElement;
+  try{ if (el.requestFullscreen) el.requestFullscreen(); }catch(e){}
+}
+/* ═════════════════ 학번 워터마크 (2026-09-29 교사) ═════════════════
+   화면 캡쳐는 웹에서 막을 수 없다 → 캡쳐가 돌아다니면 누구 것인지 드러나게 반·학번을 비스듬히 깐다.
+   ★화면 전체가 아니라 **무대 그림(캡쳐되는 이미지)의 흰 바탕 바로 위 · 그림 뒤에만**(교사) — 보관함·안내문에는 없다.
+   사람 눈에는 아주 흐리고(불투명도 0.035), 캡쳐를 확대하거나 AI 로 보면 읽힌다. 누르기를 막지 않는다. 이름은 넣지 않는다 */
+var WM_OPACITY = 0.035;
+function watermarkText(){ return me && me.code ? me.code : ''; }   /* 결과 그림에는 학번 대신 답안지 코드(연습·미리보기는 없음) */
+function wmLayer(txt){
+  if (!txt) return '';
+  var t=esc(txt), s='<g pointer-events="none" font-family="sans-serif" font-weight="700" font-size="26" fill="#000" fill-opacity="'+WM_OPACITY+'" text-anchor="middle">';
+  for (var r=0, y=40; y<STAGE_H+40; r++, y+=110)
+    for (var x=(r%2?-10:140); x<VB_W+150; x+=300)
+      s+='<text x="'+x+'" y="'+y+'" transform="rotate(-24 '+x+' '+y+')">'+t+'</text>';
+  return s+'</g>';
+}
+/* 무대 그림 문자열의 흰 바탕 직후에 워터마크를 끼운다 — 장면 그림 함수(sceneSvg)는 교사 화면과 같아야 해서 건드리지 않는다 */
+var WM_BG = '<rect x="0" y="0" width="'+VB_W+'" height="'+STAGE_H+'" fill="#fff"/>';
+function stampWm(svg){
+  if (!state || state.done) return svg;
+  var i=svg.indexOf(WM_BG); if (i<0) return svg;
+  return svg.slice(0, i+WM_BG.length)+wmLayer(watermarkText())+svg.slice(i+WM_BG.length);
+}
+
+/* ═════════════════ 활동 종결 (2026-09-29 교사) ═════════════════
+   모든 장면을 저장하고 답안지까지 쓴 뒤 누른다. 결과 JSON 에 종결 시각·이탈 기록을 남기고 다섯 장면 그림({코드}_전체.png)을 쓴다.
+   그 뒤로는 「활동이 종료되었다」만 보이고, 앞선 장면은 볼 수 없으며, 이탈도 기록하지 않는다 */
+var finishing=false;
+function finishExam(){
+  if (finishing || !state || state.done) return;
+  if (SCENE_IDS.some(function(k){ return !state.sent[k]; })) return;
+  if (!confirm('활동을 종결하시겠습니까? 종결하면 앞선 장면을 다시 볼 수 없다. 답안지를 다 쓴 뒤에 누르시오.')) return;
+  finishing=true; document.getElementById('btnFinish').disabled=true;
+  awayEnd();                                              /* 나가 있던 중이면 그 기록까지 닫는다 */
+  if (session!=='exam'){ finishing=false; showDone(); return; }   /* 연습·미리보기는 파일을 남기지 않는다 */
+  offlineSave(null, Date.now()).then(function(files){ finishing=false; showDone(files); })
+    .catch(function(e){ finishing=false; document.getElementById('btnFinish').disabled=false; toast('저장하지 못했다. 다시 누르시오. ('+(e&&e.message||e)+')'); });
+}
+/* 종결 화면 — 이 기기에 남은 배치도 지운다(공용 태블릿) */
+function showDone(files){
+  closeCapture();
+  var di=document.getElementById('doneInfo');
+  if (session==='exam' && me && me.code && HOST){
+    var list=(files||[]).length ? files : [me.code+'.json', me.code+'_전체.png', '학번연결_'+me.code+'.csv'];
+    di.innerHTML='<b>저장된 파일</b> (폴더 「'+esc(HOST.dirPath)+'」)<ul>'+list.map(function(f){ return '<li>'+esc(f)+'</li>'; }).join('')+'</ul>'+
+      '🔎 아래 그림에 다섯 장면이 모두 있는지 확인하시오.<br>📤 관리 프로그램의 <b>제출</b> 기능으로 <b>'+esc(HOST.dirName||'결과')+'</b> 폴더를 제출하시오.<div id="donePic" style="margin-top:10px"></div>';
+    di.classList.remove('hide');
+    HOST.read(me.code+'_전체.png').then(function(b){   /* 파일에 실제로 남은 것을 다시 읽어 보여 준다 */
+      var pc=document.getElementById('donePic'); if (!pc) return;
+      pc.innerHTML='<img alt="저장된 다섯 장면" style="width:100%;border:1px solid #BBB" src="'+URL.createObjectURL(new Blob([b],{type:'image/png'}))+'">';
+    }, function(){ var pc=document.getElementById('donePic'); if (pc) pc.innerHTML='<span style="color:var(--red)">❌ '+esc(me.code)+'_전체.png 를 읽지 못했다. 선생님께 알리시오.</span>'; });
+  } else di.classList.add('hide');
+  var keep={ away:state?state.away:{n:0,ms:0,fs:0}, sent:state?state.sent:{} };
+  state=freshState(); state.done=true; state.away=keep.away; state.sent=keep.sent;
+  if (!PREVIEW) saveState();
+  document.getElementById('stage').innerHTML=''; document.getElementById('capSvg').innerHTML=''; document.getElementById('tabs').innerHTML='';
+  show('scrDone');
+}
+
+/* ═════════════════ 캡쳐 → 미리보기 → 저장 ═════════════════ */
+function openCapture(){
+  if (locked(state.cur)){ capTap(); return; }   /* 저장한 장면 — 연달아 5번이면 교사 저장 풀기 */
+  var miss=missingNeed(state.cur);
+  if (miss.length){ toast(scenes[state.cur].kind==='text' ? '✏️ 아래 칸에 서술한 뒤 캡쳐하시오.' : '✏️ '+miss.join('와 ')+'에 요소를 배치한 뒤 캡쳐하시오.'); return; }
+  var sc=scenes[state.cur], lay=state.layouts[state.cur];
+  document.getElementById('capTitle').textContent=sc.title;
+  document.getElementById('capSvg').innerHTML=stampWm(sceneSvg(sc, lay, false));
+  var empty=sc.slots.filter(function(s){ return s.kind!=='write' && !s.fine && !lay[s.id]; }).length;   /* ㉠㉡㉢ 는 답안지에 쓴다 — 빈 칸으로 세지 않는다 */
+  /* 염기 단위 칸(② 개시 · 23칸씩)은 자리 후보일 뿐 — 그 종류를 하나도 안 놓았을 때만 빈 칸 하나로 센다(2026-10-28 · 전에는 「빈 칸 44개」) */
+  var fk={}; sc.slots.forEach(function(s){ if (s.fine){ fk[s.kind]=fk[s.kind]||!!lay[s.id]; } });
+  Object.keys(fk).forEach(function(k){ if (!fk[k]) empty++; });
+  var w=document.getElementById('capWarn');
+  w.textContent=empty>0 ? '빈 칸이 '+empty+'개 있다. 비워 두어야 할 칸이 있을 수도 있으니, 확인한 뒤 저장하시오.' : '';
+  w.classList.toggle('hide', !w.textContent);
+  document.getElementById('capOk').classList.add('hide');
+  document.getElementById('capNext').classList.add('hide');
+  document.getElementById('capLock').classList.remove('hide');
+  document.getElementById('capSendArea').classList.remove('hide');
+  document.getElementById('capErr').textContent='';
+  document.getElementById('btnSend').textContent=session==='exam'?'💾 저장':'확인';
+  document.getElementById('capSendMsg').textContent=session==='exam'?'이 모습을 저장하려면 [💾 저장]을 누르시오.':(PREVIEW?'교사 미리보기이다 — 파일을 남기지 않는다.':'연습이다 — 파일을 남기지 않는다.');
+  document.getElementById('capModal').classList.remove('hide');
+}
+/* ── 교사 저장 풀기(2026-10-27 교사) ──
+   저장한 장면에서 꺼진 모양의 캡쳐 단추를 3초 안에 5번 누르면 비밀번호 창. ★비밀번호 글자는 어디에도 두지 않고 해시만 둔다
+   (CLAUDE.md 「민감 정보는 소스에 넣지 않는다」 — 그래도 브라우저 안 비교라 진짜 잠금은 아니다: 교사용 비상 수단).
+   풀면 그 장면의 저장 표시만 지운다 → 다시 캡쳐·저장하면 그림·결과 JSON 을 새로 쓴다 · 푼 기록은 결과 JSON 의 unlocks 에 남는다 */
+var UNLOCK_HASH='wqvt5qxtdq', capTaps=[];
+function setCapLook(off){ var b=document.getElementById('btnCap'); b.disabled=false; b.classList.toggle('offlook', !!off); b.setAttribute('aria-disabled', off?'true':'false'); }
+function capTap(){
+  var now=Date.now(); capTaps=capTaps.filter(function(t){ return now-t<3000; }); capTaps.push(now);
+  if (capTaps.length>=5){ capTaps=[]; openUnlock(); }
+}
+function openUnlock(){
+  document.getElementById('unlockPw').value=''; document.getElementById('unlockErr').textContent='';
+  document.getElementById('unlockModal').classList.remove('hide');
+  try{ document.getElementById('unlockPw').focus(); }catch(e){}
+}
+function closeUnlock(){ document.getElementById('unlockModal').classList.add('hide'); document.getElementById('unlockPw').value=''; }
+function tryUnlock(){
+  var pw=document.getElementById('unlockPw').value;
+  if (resultCheck({ unlock:pw })!==UNLOCK_HASH){ document.getElementById('unlockErr').textContent='비밀번호가 틀렸다.'; return; }
+  var sid=state.cur;
+  delete state.sent[sid]; delete state.sentAt[sid]; delete state.sentSnap[sid];
+  (state.unlocks=state.unlocks||[]).push({ scene:sid, at:Date.now() });
+  saveState(); closeUnlock(); renderScene();
+  toast('🔓 '+TAB_NAME[sid]+' 저장을 풀었다. 고친 뒤 다시 캡쳐 → 저장하시오.');
+}
+function closeCapture(){ document.getElementById('capModal').classList.add('hide'); }
+function goNextAfterSend(){ closeCapture(); var i=openIdx(); if (i<SCENE_IDS.length) goScene(SCENE_IDS[i]); }
+var sending=false;
+function sendCapture(){
+  if (sending) return;
+  var err=document.getElementById('capErr');
+  if (missingNeed(state.cur).length){ err.textContent=scenes[state.cur].kind==='text' ? '서술을 입력하시오.' : missingNeed(state.cur).join('와 ')+'에 요소를 배치하시오.'; return; }
+  var sid=state.cur, layout=JSON.stringify(state.layouts[sid]);
+  sending=true; document.getElementById('btnSend').disabled=true; err.textContent='';
+  /* 본평가: 그 장면 그림 + 결과 JSON 을 결과 폴더에 쓴다 — 써진 뒤에야 저장한 것으로 친다 */
+  (session==='exam' ? offlineSave(sid, null) : Promise.resolve()).then(function(){
+    state.sent[sid]=1; state.sentAt[sid]=Date.now(); state.sentSnap[sid]=layout; saveState();
+    var ok=document.getElementById('capOk');
+    ok.textContent=(session==='exam' ? '✅ 저장 완료('+me.code+'_'+SCENE_FILE[sid]+'.png). ' : (PREVIEW?'교사 미리보기이다 — 저장하지 않았다. ':'연습이다 — 저장하지 않았다. '))+'이 모습을 근거로 답안지에 서술하시오.';
+    ok.classList.remove('hide'); document.getElementById('capSendArea').classList.add('hide');
+    document.getElementById('capLock').classList.add('hide');
+    if (openIdx()<SCENE_IDS.length) document.getElementById('capNext').classList.remove('hide');
+    renderScene();
+  }).catch(function(e){
+    err.textContent = e&&e.code==='nofolder' ? '저장 폴더에 쓸 수 없다. 선생님께 알리시오. ('+(e.message||'')+')' : '저장하지 못했다. 다시 시도하시오. ('+((e&&e.message)||e)+')';
+  }).then(function(){ sending=false; document.getElementById('btnSend').disabled=false; });
+}
+
+/* ═════════════════ 교과서 그림 불러오기 ═════════════════
+   프로그램: 빌드가 넣은 그림(OFFLINE_ASSETS · data URI — 캔버스가 오염되지 않아 PNG 를 만들 수 있다).
+   미리보기·브라우저: 이 PC 의 추출 폴더(gitignore). 없으면 SVG 로 대신 그린다. */
+var ASSET_DIR = '../../../교과서_이미지/수행평가_요소/';
+function loadAssets(done){
+  var names=Object.keys(ASSET_META);
+  if (names.every(function(n){ return OFFLINE_ASSETS[n]; })){ names.forEach(function(n){ ASSETS[n]=OFFLINE_ASSETS[n]; }); done(); return; }
+  var left=names.length;
+  names.forEach(function(n){
+    var im=new Image(), url=ASSET_DIR+n+'.webp';
+    im.onload=function(){ ASSETS[n]=url; if (!--left) done(); };
+    im.onerror=function(){ if (!--left) done(); };
+    im.src=url;
+  });
+}
+
+/* ═════════════════ 로그인 — 반 · 학번 · 이름 · 답안지 입력 코드 ═════════════════
+   종이 답안지를 섞어 나눠 주고, 학생이 받은 답안지의 코드를 넣으면 그 답안지(서열)가 정해진다(2026-10-08).
+   코드표(CODE_SHEET)는 빌드가 프로그램에만 넣는다. 확인 뒤 offlineLogin 이 연결 파일·이어 하기를 맡는다. */
+var pickedSec='';
+function pickSec(k){
+  pickedSec=k;
+  var bs=document.querySelectorAll('#secPick button');
+  for (var i=0;i<bs.length;i++) bs[i].classList.toggle('on', bs[i].getAttribute('data-sec')===k);
+}
+function normName(s){ return String(s||'').replace(/\s+/g,''); }
+function loginErr(msg){ document.getElementById('loginErr').textContent=msg; }
+function normCode(v){ return String(v||'').toUpperCase().replace(/[^0-9A-Z]/g,''); }
+function codeShapeOk(c){ return /^[2-9A-HJKMNP-Z]{6}$/.test(c); }
+function doLogin(){
+  var id=document.getElementById('inId').value.trim(), name=normName(document.getElementById('inName').value);
+  /* 코드를 먼저 확인한다(2026-10-27 교사 — 입력 칸도 코드가 맨 위). 반 대조는 반을 고른 뒤 offlineLogin 에서 */
+  if (dirH){
+    var code=normCode(document.getElementById('inCode').value);
+    if (!code){ loginErr('답안지 오른쪽 위의 입력 코드를 입력하시오. (연습이면 아래 「연습으로 시작」)'); return; }
+    if (!codeShapeOk(code) || !CODE_SHEET[code] || !setOfSheet(CODE_SHEET[code])){ loginErr('없는 코드이다. 답안지의 입력 코드를 다시 확인하시오.'); return; }
+  }
+  if (['B','C','D'].indexOf(pickedSec)<0){ loginErr('반을 고르시오.'); return; }
+  if (!/^\d{5}$/.test(id)){ loginErr('학번은 숫자 5자리이다.'); return; }
+  if (!name){ loginErr('이름을 입력하시오.'); return; }
+  /* 명단 대조(2026-10-21) — 프로그램 안 해시 명단과 맞춰 본다. 명단이 없는 빌드·브라우저에서는 건너뛴다 */
+  var H=(typeof window!=='undefined' && window.examHost) || null;
+  if (!H || !H.checkStudent){ offlineLogin(id, name); return; }
+  H.checkStudent(pickedSec, id, name).then(function(r){
+    if (r && r.why){ loginErr(ROSTER_MSG[r.why] || '명단과 일치하지 않는다. 다시 확인하시오.'); return; }
+    offlineLogin(id, name);
+  }, function(){ loginErr('명단을 확인하지 못했다. 선생님께 알리시오.'); });
+}
+var ROSTER_MSG = {
+  id:'명단에 없는 학번이다. 학번을 다시 확인하시오.',
+  name:'학번과 이름이 명단과 일치하지 않는다. 이름을 다시 확인하시오.',
+  sec:'선택한 반이 명단과 다르다. 반을 다시 확인하시오.'
+};
+
+/* ═════════════════ 교사 미리보기 (체험 모드 전용) ═════════════════ */
+function enterPreview(){
+  if (!PREVIEW_COPY) return;
+  PREVIEW=true; me={ id:'00000', name:'교사 미리보기', sec:'', email:'' }; session='preview'; setKey='P';
+  var sel=document.getElementById('pvSet');
+  sel.innerHTML=Object.keys(SETS).map(function(k){ return '<option value="'+k+'">서열 '+esc(SETS[k].name)+' ('+k+')</option>'; }).join('');
+  sel.classList.remove('hide');
+  loadAssets(function(){ startExam({}); });
+}
+function previewSet(k){
+  if (!PREVIEW || !SETS[k]) return;
+  setKey=k; var cur=state.cur;
+  SCENE_IDS.forEach(function(sid){ scenes[sid]=buildScene(sid,k); });
+  sanitizeLayouts(); state.cur=cur; renderScene();
+  document.getElementById('setLabel').textContent='교사 미리보기 · 서열 '+SETS[k].name;
+}
+
+/* ═════════════════ 결과 파일 (2026-10-08 오프라인 · 2026-10-15 프로그램 전용) ═════════════════
+   · 로그인 = 반 · 학번 · 이름 · 입력 코드뿐. 저장 위치는 프로그램 폴더의 「결과」(고르지 않는다).
+   · ★연결 정보와 코드 기반 자료를 나눈다(교사 결정):
+       학번연결_{코드}.csv — 반·학번·이름·코드 (여기에만 학번·이름. Claude 는 읽지 않는다)
+       {코드}.json · {코드}_{n}_{장면}.png · {코드}_전체.png — 코드만(학번·이름 없음)
+   · 장면을 저장할 때마다 그 장면 그림과 JSON 을 쓴다 → PC 가 꺼져도 남는다. 다시 열면 JSON 으로 이어 한다.
+   · 결과는 관리 프로그램의 「제출」로 교사에게 → 교사 화면이 모은 폴더를 읽어 채점한다 */
+var dirH = null;
+/* 프로그램(2026-10-15 — 컴퓨터실의 인터넷 차단이 브라우저 자체를 막는다 → 전용 프로그램 _제작/프로그램/)이
+   window.examHost 를 넣어 준다 — 프로그램 폴더 안 「결과」 폴더에 바로 쓴다. 아래 쓰기·읽기가 돌도록 폴더 API 모양으로 감싼다. */
+var HOST = (typeof window!=='undefined' && window.examHost) || null;
+function hostDir(h){
+  return { name:h.dirName, getFileHandle:function(n, o){
+    return h.exists(n).then(function(ex){
+      if (!ex && !(o && o.create)) throw new Error('NotFound');
+      return {
+        createWritable:function(){ var parts=[]; return Promise.resolve({
+          write:function(d){ parts.push(d); return Promise.resolve(); },
+          close:function(){ return new Blob(parts).arrayBuffer().then(function(b){ return h.write(n, new Uint8Array(b)); }); } }); },
+        getFile:function(){ return h.read(n).then(function(b){ return new Blob([b]); }); } };
+    });
+  } };
+}
+/* 🔧 저장 점검(선생님용) — 결과 폴더에 그림·JSON 을 써 보고 다시 읽는다 */
+function hostCheck(){
+  var el=document.getElementById('hostChk'), t=Date.now(), name='점검_시험';
+  el.textContent='점검 중이다…'; el.style.color='var(--sub)';
+  svgToPng('<rect width="760" height="120" fill="#EAF3FF"/><text x="20" y="70" font-size="32" fill="#1255A0">저장 점검 '+esc(new Date(t).toLocaleString('ko-KR'))+'</text>', 760, 120, 1)
+    .then(function(b){ return writeFileOut(name+'.png', b); })
+    .then(function(){ return writeFileOut(name+'.json', JSON.stringify({ t:t, ua:navigator.userAgent })); })
+    .then(function(){ return readFileText(name+'.json'); })
+    .then(function(txt){
+      if (!txt || JSON.parse(txt).t!==t) throw new Error('다시 읽은 내용이 다르다');
+      el.innerHTML='✅ 저장 · 다시 읽기 성공 — 「'+esc(HOST.dirPath)+'」 에 '+name+'.png · '+name+'.json 이 생겼다. 이 두 파일을 관리 프로그램의 <b>제출</b>로 보내 보시오.';
+      el.style.color='var(--green)';
+    })
+    .catch(function(e){ el.textContent='❌ 저장하지 못했다 — '+((e&&e.message)||e)+' (화면을 사진으로 찍어 두시오)'; el.style.color='var(--red)'; });
+}
+/* 결과 폴더에 쓰기 · 읽기 */
+function writeFileOut(name, data){
+  if (!dirH) return Promise.reject({ code:'nofolder', message:'프로그램으로 열지 않았다' });
+  return dirH.getFileHandle(name, { create:true }).then(function(fh){ return fh.createWritable(); })
+    .then(function(w){ return w.write(data).then(function(){ return w.close(); }); })
+    .catch(function(e){ throw { code:'nofolder', message:(e&&e.message)||String(e) }; });
+}
+function readFileText(name){
+  if (!dirH) return Promise.resolve(null);
+  return dirH.getFileHandle(name).then(function(fh){ return fh.getFile(); }).then(function(f){ return f.text(); }, function(){ return null; });
+}
+/* 장면 그림(SVG 문자열) → PNG Blob. 그림은 data URI 라 캔버스가 오염되지 않는다 */
+function svgToPng(inner, w, h, scale){
+  scale=scale||1.5;
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" width="'+(w*scale)+'" height="'+(h*scale)+'" font-family="Malgun Gothic, 맑은 고딕, sans-serif">'+inner+'</svg>';
+  return new Promise(function(res, rej){
+    var im=new Image();
+    im.onload=function(){
+      try{
+        var c=document.createElement('canvas'); c.width=w*scale; c.height=h*scale;
+        var g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height);
+        c.toBlob(function(b){ b ? res(b) : rej(new Error('PNG 를 만들지 못했다')); }, 'image/png');
+      }catch(e){ rej(e); }
+    };
+    im.onerror=function(){ rej(new Error('그림을 그리지 못했다')); };
+    im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  });
+}
+function stageSvgOf(sid){ return stampWm(sceneSvg(scenes[sid], state.layouts[sid], false)); }
+/* 다섯 장면 한 장 — 2열 × 3행 + 머리 줄(코드 · 시각) */
+function summarySvg(doneAt){
+  var W=VB_W, H=STAGE_H, top=70, gap=20, s='<rect width="'+(2*W+gap)+'" height="'+(top+3*(H+gap+34))+'" fill="#fff"/>'+
+    '<text x="12" y="44" font-size="34" font-weight="700" fill="#1255A0">중심원리 모의 실험 — 코드 '+esc(me.code)+'</text>'+
+    '<text x="'+(2*W+gap-12)+'" y="44" font-size="24" fill="#555" text-anchor="end">'+esc(new Date(doneAt||Date.now()).toLocaleString('ko-KR'))+'</text>';
+  SCENE_IDS.forEach(function(sid, i){
+    var x=(i%2)*(W+gap), y=top+Math.floor(i/2)*(H+gap+34);
+    s+='<text x="'+(x+8)+'" y="'+(y+26)+'" font-size="24" font-weight="700" fill="#1A1A1A">'+esc(TAB_NAME[sid])+(state.sent[sid]?'':' (저장 안 됨)')+'</text>'+
+       '<svg x="'+x+'" y="'+(y+34)+'" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+stageSvgOf(sid)+'</svg>'+
+       '<rect x="'+x+'" y="'+(y+34)+'" width="'+W+'" height="'+H+'" fill="none" stroke="#BBB" stroke-width="2"/>';
+  });
+  return { svg:s, w:2*W+gap, h:top+3*(H+gap+34) };
+}
+/* 결과 JSON — 학번·이름은 넣지 않는다(코드만) */
+function offlineRecord(extraSid, doneAt){
+  var sc={};
+  SCENE_IDS.forEach(function(k){
+    if (state.sent[k]) sc[k]={ layout:state.sentSnap[k]||JSON.stringify(state.layouts[k]||{}), ts:state.sentAt[k]||0 };
+    else if (k===extraSid) sc[k]={ layout:JSON.stringify(state.layouts[k]||{}), ts:Date.now() };
+  });
+  var o={ v:1, code:me.code, sheet:me.sheet, set:setKey, scenes:sc, away:{ n:state.away.n, ms:state.away.ms, fs:state.away.fs },
+          awayLog:state.queue.slice(), unlocks:(state.unlocks||[]).slice(), doneAt:doneAt||null, savedAt:Date.now() };
+  o.check=resultCheck(o);
+  return o;
+}
+/* 장면 저장(sid) 또는 종결(doneAt) — 그림을 먼저, JSON 을 나중에(JSON 이 있으면 그림도 있다) */
+function offlineSave(sid, doneAt){
+  var files=[];
+  var pic = sid ? svgToPng(stageSvgOf(sid), VB_W, STAGE_H).then(function(b){ var n=me.code+'_'+SCENE_FILE[sid]+'.png'; files.push(n); return writeFileOut(n, b); })
+                : (function(){ var m=summarySvg(doneAt); return svgToPng(m.svg, m.w, m.h, 1).then(function(b){ var n=me.code+'_전체.png'; files.push(n); return writeFileOut(n, b); }); })();
+  return pic.then(function(){
+    var rec=offlineRecord(sid, doneAt), n=me.code+'.json'; files.push(n);
+    return writeFileOut(n, new Blob([JSON.stringify(rec)], { type:'application/json' }));
+  }).then(function(){ if (doneAt) files.push('학번연결_'+me.code+'.csv'); return files; });
+}
+/* 로그인 — 코드 → 답안지(반 대조) → 연결 파일 → 이어 하기 */
+function offlineLogin(id, name){
+  var code=normCode(document.getElementById('inCode').value), sheet=CODE_SHEET[code];
+  if (!dirH){ loginErr('이 화면은 컴퓨터실 프로그램(중심원리_수행평가.exe)으로 열어야 결과가 저장된다. 연습은 아래 「연습으로 시작」을 누르시오.'); return; }
+  if (!code){ loginErr('답안지 오른쪽 위의 입력 코드를 입력하시오. (연습이면 아래 「연습으로 시작」)'); return; }
+  if (!codeShapeOk(code) || !sheet || !setOfSheet(sheet)){ loginErr('없는 코드이다. 답안지의 입력 코드를 다시 확인하시오.'); return; }
+  /* 마스터 답안지(M01~M03 · 2026-10-27 교사 — 오류 때 내줄 예비)는 반 구분 없이 어느 반이든 들어간다 · ★코드는 소스에 적지 않는다(코드표는 빌드가 넣는다) */
+  if (sheet.charAt(0)!=='M' && sheet.charAt(0)!==pickedSec){ loginErr('다른 반의 답안지이다. 자기 반 답안지를 받았는지 확인하시오.'); return; }
+  var btn=document.getElementById('btnLogin'); btn.disabled=true; loginErr('확인 중이다…');
+  var mapName='학번연결_'+code+'.csv';
+  readFileText(mapName).then(function(old){
+    if (old){
+      var row=(old.replace(/^\ufeff/,'').split(/\r?\n/)[1]||'').split(',');
+      if (row[1] && row[1]!==id) throw { code:'taken' };
+      return;
+    }
+    var csv='\ufeff반,학번,이름,코드,답안지,시각\r\n'+[pickedSec, id, name, code, sheet, new Date().toISOString()].join(',')+'\r\n';
+    return writeFileOut(mapName, csv);
+  }).then(function(){ return readFileText(code+'.json'); }).then(function(txt){
+    var remote={}, doneAt=null, prev=null;
+    if (txt){
+      try{ prev=JSON.parse(txt); }catch(e){ prev=null; }
+      if (!prev || prev.code!==code || resultCheck(prev)!==prev.check) throw { code:'broken' };
+      Object.keys(prev.scenes||{}).forEach(function(k){ remote[k]=prev.scenes[k]; });
+      doneAt=prev.doneAt||null;
+    }
+    me={ id:id, name:name, sec:pickedSec, email:'', sheet:sheet, code:code };
+    session='exam'; setKey=setOfSheet(sheet);
+    loadAssets(function(){
+      startExam(remote, doneAt, true);
+      if (prev && state && !state.done){   /* 이탈 기록도 파일 것을 이어 받는다(이 PC 저장분이 지워졌어도) */
+        var seen={}; state.queue.forEach(function(r){ seen[r.leftAt+'|'+r.kind]=1; });
+        (prev.awayLog||[]).forEach(function(r){ if (!seen[r.leftAt+'|'+r.kind]) state.queue.push(r); });
+        state.queue.sort(function(a,b){ return a.leftAt-b.leftAt; });
+        state.away={ n:0, ms:0, fs:0 }; state.queue.forEach(function(r){ if (r.kind==='fs') state.away.fs++; else state.away.n++; state.away.ms+=r.ms||0; });
+        saveState(); renderAway();
+      }
+    });
+  }).catch(function(e){
+    var c=e&&e.code;
+    loginErr(c==='taken' ? '이 코드는 이미 다른 학번으로 시작되었다. 선생님께 알리시오.' :
+      c==='broken' ? '결과 폴더의 결과 파일('+code+'.json)이 손상되었다. 선생님께 알리시오.' :
+      c==='nofolder' ? '저장 폴더에 쓸 수 없다. 선생님께 알리시오.' : '들어가지 못했다. ('+(c||e)+')');
+  }).then(function(){ btn.disabled=false; });
+}
+function offlinePractice(){
+  var id=document.getElementById('inId').value.trim(), name=normName(document.getElementById('inName').value);
+  me={ id:id||'00000', name:name||'연습', sec:pickedSec, email:'' }; session='practice'; setKey='P';
+  loadAssets(function(){ startExam({}); });
+}
+
+/* ═════════════════ 시작 ═════════════════ */
+(function init(){
+  var st=document.getElementById('stage'); if (st && st.addEventListener) st.addEventListener('pointerdown', onStageDown);
+  if (HOST){ dirH=hostDir(HOST); document.getElementById('hostField').classList.remove('hide'); return; }
+  if (PREVIEW_COPY){ document.getElementById('btnPreview').classList.remove('hide'); return; }
+  document.getElementById('noHost').classList.remove('hide');   /* 브라우저로 그냥 열었다 — 연습만 */
+})();
+</script>
+</body>
+</html>

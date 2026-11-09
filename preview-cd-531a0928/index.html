@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 <title>중심원리 모의실험 — 수행평가</title>
 <!-- ══════════════════════════════════════════════════════════════
      수행① 「중심원리 모의 실험」 — 학생용 (2026-09-28 신설)
@@ -116,6 +116,15 @@ body.idle #stageWrap.sentblur #stage{filter:blur(8px)!important;}
 .txa-cond ol{margin:4px 0 0;padding-left:22px;}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:999px;z-index:60;font-size:16px;}
 </style>
+<style>/* 배포 사본 전용(2026-11-09) — 확대·축소 허용 · 답안지 예시 옆 창 */
+.stage-wrap,.partg,#stage,#capSvg{touch-action:pinch-zoom!important;}
+#sheetPanel{position:fixed;top:0;right:0;bottom:0;width:min(48vw,860px);background:#fff;border-left:2px solid var(--line);z-index:900;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.15);}
+#sheetPanel .bar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:15px;}
+#sheetPanel .bar span{flex:1;font-weight:700;}
+#sheetPanel iframe{flex:1;border:0;width:100%;}
+body.sheetOpen #scrExam{margin-right:min(48vw,860px);}
+@media (max-width:820px){#sheetPanel{width:100vw;} body.sheetOpen #scrExam{margin-right:0;}}
+</style>
 </head>
 <body>
 
@@ -151,7 +160,8 @@ body.idle #stageWrap.sentblur #stage{filter:blur(8px)!important;}
   <div class="topbar">
     <span class="who" id="whoLabel"></span>
     <span id="setLabel" style="color:var(--sub);font-size:15px"></span>
-    <select id="pvSet" class="hide" onchange="previewSet(this.value)" style="font-size:15px;min-height:40px"></select>
+    <select id="pvSet" class="hide" onchange="previewSet(this.value);syncSheet()" style="font-size:15px;min-height:40px"></select>
+    <button id="btnSheet" class="hide" onclick="toggleSheet()">📄 답안지 예시 보기</button>
     <button id="btnFs" onclick="enterFullscreen()">⛶ 전체화면</button>
     <span class="subcount" id="subCount">제출 0/5</span>
     <span class="awaybox">
@@ -1718,8 +1728,27 @@ function enterPreview(){
   PREVIEW=true; me={ id:'00000', name:'교사 미리보기', sec:'', email:'' }; session='preview'; setKey='P';
   var sel=document.getElementById('pvSet');
   sel.innerHTML=Object.keys(SETS).map(function(k){ return '<option value="'+k+'">서열 '+esc(SETS[k].name)+' ('+k+')</option>'; }).join('');
-  sel.classList.remove('hide');
+  sel.classList.remove('hide'); document.getElementById('btnSheet').classList.remove('hide');
   loadAssets(function(){ startExam({}); });
+}
+/* 배포 사본 전용 — 마스터 답안지 예시(입력 코드는 가림) */
+function sheetKey(){ return /^M0[123]$/.test(setKey) ? setKey : 'M01'; }
+function toggleSheet(){
+  var p=document.getElementById('sheetPanel');
+  if (p){ p.remove(); document.body.classList.remove('sheetOpen'); return; }
+  p=document.createElement('div'); p.id='sheetPanel';
+  p.innerHTML='<div class="bar"><span id="sheetTitle">답안지 예시</span><button onclick="toggleSheet()">✕ 닫기</button></div><iframe id="sheetFrame" src="sheet.html"></iframe>';
+  document.body.appendChild(p); document.body.classList.add('sheetOpen');
+  document.getElementById('sheetFrame').onload=syncSheet;
+}
+function syncSheet(){
+  var f=document.getElementById('sheetFrame'); if (!f || !f.contentDocument || !f.contentDocument.body) return;
+  var d=f.contentDocument, k=sheetKey(), pg=d.querySelector('[data-sheet="'+k+'-1"]');
+  d.body.style.zoom=1;
+  var first=d.querySelector('.page'), w=first?first.getBoundingClientRect().width:800;
+  d.body.style.zoom=Math.min(1,(f.clientWidth-24)/w);
+  document.getElementById('sheetTitle').textContent='답안지 예시 · '+(SETS[k]?SETS[k].name:k)+(/^M/.test(setKey)?'':' (마스터 서열을 고르면 그 답안지로 바뀐다)');
+  if (pg){ pg=pg.closest('.page')||pg; pg.scrollIntoView(); }
 }
 function previewSet(k){
   if (!PREVIEW || !SETS[k]) return;

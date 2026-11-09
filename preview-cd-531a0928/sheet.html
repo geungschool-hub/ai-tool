@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>수행① 답안지 인쇄본 — 마스터(예비 · 반 구분 없음)</title>
+<!-- _서열생성.py 가 만든 인쇄본(손으로 고치지 말 것) — 원본 양식은 수행1_중심원리_답안지.html
+     수행① 「중심원리 모의 실험」 종이 답안지 — 양식(견본)
+     ★이 파일은 _서열생성.py 가 읽는 양식이다. 「S:이름 … E:이름」 주석 표시 자리를 생성기가 답안지마다 채워
+       수행1_답안지_인쇄_{가,나,다,연습}.html 을 만든다. 표시를 지우지 말 것. 견본 서열은 아무 의미 없다.
+     채점: 전사 = 1번 (1) RNA 서열 · 앱 ① 서술 3곳 · 1번 (2) 빛나는 염기 · 1번 (3) X 의 당(10-28) · 번역 = 앱 ②③④ 감점 + 2번 서열 오류 · 해독 = 3번 서술(두 경우 6 · 한 경우 3 · 0)
+     ★2026-10-22 전사와 번역을 끊었다 — ① 전사 DNA(15염기 · 5개 돌려 씀)는 1번에만, ② 제시 mRNA(25염기 = 앱 번역 장면 mRNA)는 2·3번에만 쓴다
+     정답 = 수행1_답안지_정답표.html (답안지 번호별) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue-pastel:#C5E3F7; --green-pastel:#C3E9CC;
+  --blue-dark:#1255A0;   --green-dark:#2A7A38;
+  --red-accent:#C0392B;  --amber:#E67E22;
+  --text-main:#1A1A1A;   --text-light:#555;
+  --line:#BBBBBB;        --white:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;font-size:10pt;color:var(--text-main);
+     background:#d0d0d0;display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px;}
+.page{width:210mm;height:297mm;background:var(--white);box-shadow:0 2px 14px rgba(0,0,0,.18);
+      display:flex;flex-direction:column;padding:8mm 12mm 7mm 12mm;overflow:hidden;}
+
+.page-header{display:flex;justify-content:space-between;align-items:flex-end;
+             padding-bottom:5px;border-bottom:2.5px solid var(--blue-dark);margin-bottom:8px;flex-shrink:0;}
+.header-left{flex:1;margin-left:8px;min-width:0;}
+.header-left .subject{font-size:13pt;font-weight:700;color:var(--blue-dark);}
+.header-left .breadcrumb{font-size:7.5pt;color:var(--text-light);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-right{display:flex;gap:14px;flex-shrink:0;white-space:nowrap;align-items:flex-end;margin-right:8px;}
+.input-field{font-size:9pt;display:flex;align-items:center;gap:5px;}
+.input-field .uline{display:inline-block;width:62px;height:15px;border-bottom:1.5px solid var(--text-main);}
+.seqno{font-size:9pt;font-weight:700;border:1.5px solid var(--blue-dark);color:var(--blue-dark);border-radius:4px;padding:1px 8px;}
+.tmp{font-size:7.5pt;color:var(--red-accent);font-weight:700;}
+/* 입력 코드 — 학생이 앱에 넣어야 이 답안지의 서열이 뜬다(2026-10-08 · 종이를 섞어 나눠 준다) */
+.code{font-size:9pt;font-weight:700;border:2px solid var(--red-accent);color:var(--red-accent);border-radius:4px;padding:1px 8px;}
+.code b{font-family:Consolas,'Courier New',monospace;font-size:13pt;letter-spacing:1px;color:var(--text-main);}
+
+/* 스캔용: 네 모서리 ArUco 표식(mk) + 답안지 번호 QR — _스캔자르기.py 가 이것으로 펴고 번호를 읽는다 */
+.mk{width:8mm;height:8mm;flex-shrink:0;} .mk svg{width:100%;height:100%;display:block;}
+.qrbox{display:flex;align-items:center;gap:8px;} .qrbox svg{width:13mm;height:13mm;display:block;}
+.page-footer{display:flex;justify-content:space-between;align-items:center;padding-top:4px;
+             border-top:1px solid var(--line);flex-shrink:0;margin-top:auto;}
+.page-badge{background:var(--blue-pastel);color:var(--blue-dark);font-size:8.5pt;
+            font-weight:700;padding:2px 14px;border-radius:12px;}
+
+.page-content{flex:1;overflow:hidden;display:flex;flex-direction:column;gap:12px;}   /* 4→12px(2026-10-27 교사 — 「문항 간 여백이 너무 딱 붙어 있다」 · 유전 부호 표를 연습지로 옮겨 자리가 났다) */   /* 5→4px · 아미노산 칸 34→30px · .case 여백 줄임(2026-10-26 2번 (2) 발문이 두 줄이 되어 18px 넘침) */
+.section{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}   /* 3→6px(2026-10-27) */   /* 5→3px(2026-10-24 1번 (2) 들어갈 자리) */
+.section-title{font-size:11pt;font-weight:700;padding:4px 10px;border-radius:4px;
+               border-left:4px solid var(--blue-dark);background:var(--blue-pastel);}
+.section-title.green{border-left-color:var(--green-dark);background:var(--green-pastel);}
+.section-title.amber{border-left-color:var(--amber);background:#FDE9C9;}
+.section-title .sub{font-size:8.5pt;font-weight:400;color:var(--text-light);margin-left:8px;}
+
+.q{font-size:9.5pt;line-height:1.6;padding-left:1.4em;text-indent:-1.4em;}   /* 내어쓰기(2026-10-27 교사 — 둘째 줄이 첫 줄 글 시작에 맞게) */
+.q .num{font-weight:700;color:var(--blue-dark);display:inline-block;width:1.4em;text-indent:0;}
+.q.sub-q{padding-left:calc(14px + 2em);text-indent:-2em;}
+.q .sn{display:inline-block;width:2em;text-indent:0;}   /* (1)·(2)·(3) */
+.q.plain{padding-left:0;text-indent:0;}
+.q-row{display:flex;align-items:center;gap:10px;}
+.q-row .q{flex:1;}
+.q-row .aa{flex-shrink:0;}
+
+/* 염기 서열 — 한 글자 한 칸 */
+.strand{display:flex;align-items:center;gap:0;justify-content:center;}
+.strand .end{width:26px;text-align:center;font-size:10pt;color:var(--text-light);}
+.strand .tag{width:58px;font-size:8.5pt;font-weight:700;color:var(--text-light);text-align:right;padding-right:8px;}
+.strand .tag.tpl{color:var(--blue-dark);}
+.strand .tag.blank{visibility:hidden;}
+.strand .bx{width:24px;height:28px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+            font-size:12pt;font-weight:700;font-family:Consolas,'Courier New',monospace;margin-left:-1px;}
+.strand .bx.w{background:#fff;border-color:var(--text-main);}
+.strand.tplrow .bx{background:#EAF3FB;}
+.strand.idx .bx{border:none;height:14px;font-size:7.5pt;font-weight:400;color:var(--text-light);font-family:'Noto Sans KR',sans-serif;}
+.pair{height:6px;display:flex;justify-content:center;}
+
+.info-box{border:1px solid var(--line);border-radius:4px;padding:7px 12px;font-size:9.5pt;line-height:1.8;background:#FAFAFA;}
+
+/* 아미노산 칸 */
+.aa{display:flex;align-items:center;justify-content:center;gap:6px;}
+.aa .cell{width:104px;height:30px;border:1.5px solid var(--text-main);border-radius:4px;}
+.aa .cell.sm{width:66px;}
+.aa .cell.nm{width:80px;}   /* 2번 (2) ㉠·㉢ 명칭 칸 96→80(2026-10-28 교사) · ㉡ 130 · 1번 (3) 160 (각각 style) */
+.aa .lbl{white-space:nowrap;}
+.aa .dash{font-weight:700;color:var(--text-light);}
+
+.case{border:1px solid var(--line);border-radius:4px;padding:4px 10px;display:flex;flex-direction:column;gap:2px;}
+.case .aa{justify-content:stretch;} .case .aa .cell.sm{flex:1 1 0;width:auto;min-width:0;}   /* 3번 아미노산 칸 — 7칸 그대로 상자 폭을 꽉 채운다(2026-10-28 교사) */
+.case .hd{font-size:9.5pt;font-weight:700;padding-left:2.3em;text-indent:-2.3em;}
+.case .hd .sn{display:inline-block;width:2.3em;text-indent:0;}   /* (가)·(나) */
+.case .hd b{color:var(--amber);}
+.lbl{font-size:8.5pt;color:var(--text-light);font-weight:700;}
+.wl{border-bottom:1px solid #A9A9A9;height:8mm;display:flex;align-items:flex-end;padding-bottom:1px;}
+.wl .lbl{font-size:8pt;background:#fff;padding-right:6px;}
+
+.codon{width:100%;border-collapse:collapse;font-size:8pt;line-height:1.38;}
+.codon td b{font-weight:700;}
+.codon td .g+.g{border-top:1px dashed #888;margin-top:1px;padding-top:1px;}   /* 한 칸 안에서 아미노산이 바뀌는 곳 */
+.codon th,.codon td{border:1px solid var(--line);text-align:center;vertical-align:middle;padding:1px 3px;}
+.codon th{background:#FDE9C9;font-weight:700;font-size:8.5pt;}
+.codon th.ax{font-size:7.5pt;}
+
+@page{size:A4;margin:0;}   /* 한 장 = A4 한 쪽(브라우저 기본 여백이면 두 쪽으로 넘친다) */
+@media print{
+  body{background:none;padding:0;gap:0;}
+  .page{box-shadow:none;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .page:last-child{page-break-after:avoid;}
+}
+</style>
+<style>/* 뒷면 연습지(수행1_연습지.html 에서 · .back 안으로 가둠) */
+.page.back{width:210mm;height:297mm;background:var(--white);box-shadow:0 2px 14px rgba(0,0,0,.18);display:flex;flex-direction:column;padding:10mm 12mm 8mm 12mm;overflow:hidden;}
+.back .page-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:5px;border-bottom:2.5px solid var(--blue-dark);margin-bottom:8px;flex-shrink:0;}
+.back .subject{font-size:13pt;font-weight:700;color:var(--blue-dark);}
+.back .breadcrumb{font-size:7.5pt;color:var(--text-light);margin-top:2px;}
+.back .note{font-size:8.5pt;color:var(--text-light);font-weight:700;}
+.back .section-title{font-size:11pt;font-weight:700;padding:4px 10px;border-radius:4px;border-left:4px solid var(--amber);background:#FDE9C9;margin-bottom:4px;}
+.back .section-title .sub{font-size:8.5pt;font-weight:400;color:var(--text-light);margin-left:8px;}
+.back .codon{width:100%;border-collapse:collapse;font-size:9pt;line-height:1.45;}
+.back .codon td b{font-weight:700;}
+.back .codon td .g+.g{border-top:1px dashed #888;margin-top:1px;padding-top:1px;}
+.back .codon th,.back .codon td{border:1px solid var(--line);text-align:center;vertical-align:middle;padding:2px 4px;}
+.back .codon th{background:#FDE9C9;font-weight:700;font-size:9pt;}
+.back .codon th.ax{font-size:8pt;}
+.back .work{flex:1;margin-top:10px;display:flex;flex-direction:column;}
+.back .grid{flex:1;border:1px solid var(--line);border-radius:4px;}
+.back .page-footer{display:flex;justify-content:center;align-items:center;padding-top:4px;border-top:1px solid var(--line);flex-shrink:0;margin-top:6px;}
+.back .page-badge{background:var(--blue-pastel);color:var(--blue-dark);font-size:8.5pt;font-weight:700;padding:2px 14px;border-radius:12px;}
+</style>
+<style>@media screen{body{background:#e9ecf0}.page{margin:12px auto!important;box-shadow:0 1px 6px rgba(0,0,0,.18)}}</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <div class="mk"><!--S:M0--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M0--></div>
+    <div class="header-left">
+      <div class="subject">수행평가① 답안지</div>
+      <div class="breadcrumb">생물의 유전 › 중심원리 모의 실험</div>
+    </div>
+    <div class="header-right">
+      <span class="seqno">답안지 <!--S:SHEET-->마스터-A<!--E:SHEET--></span><!--S:TMP--><!--E:TMP-->
+      <span class="code"><!--S:CODE-->입력 코드 <b>●●●-●●●</b><!--E:CODE--></span>
+      <div class="input-field">학번<span class="uline"></span></div>
+      <div class="input-field">이름<span class="uline"></span></div>
+    </div>
+    <div class="mk"><!--S:M1--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M1--></div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- ① 전사 (2026-10-24 교사 — 「주어진 DNA」와 「전사」를 한 문항으로 합침) -->
+    <div class="section">
+      <div class="section-title">① 전사 <span class="sub">수행평가 프로그램 ① 장면</span></div>
+      <div class="q"><span class="num">1.</span>다음은 어떤 유전자의 일부인 DNA 주형 가닥이다. 수행평가 프로그램 ① 장면의 애니메이션의 DNA와 합성되는 RNA는 각각 이 주형 가닥, 이 주형 가닥으로부터 전사되는 RNA와 같다. 물음에 답하시오.</div>
+      <div class="info-box" style="padding:4px 6px">
+        <div class="strand idx"><span class="tag blank">.</span><span class="end"></span>
+          <!--S:IDX--><span class="bx">1</span><span class="bx">2</span><span class="bx">3</span><span class="bx">4</span><span class="bx">5</span><span class="bx">6</span><span class="bx">7</span><span class="bx">8</span><span class="bx">9</span><span class="bx">10</span><span class="bx">11</span><span class="bx">12</span><span class="bx">13</span><span class="bx">14</span><span class="bx">15</span><!--E:IDX-->
+          <span class="end"></span></div>
+        <div class="strand tplrow"><span class="tag tpl">주형 가닥</span><span class="end">3′</span>
+          <!--S:TPL--><span class="bx">C</span><span class="bx">C</span><span class="bx">C</span><span class="bx">T</span><span class="bx">A</span><span class="bx">G</span><span class="bx">T</span><span class="bx">G</span><span class="bx">G</span><span class="bx">T</span><span class="bx">G</span><span class="bx">C</span><span class="bx">C</span><span class="bx">A</span><span class="bx">T</span><!--E:TPL-->
+          <span class="end">5′</span></div>
+      </div>
+      <div class="q sub-q"><span class="sn">(1)</span>이 주형 가닥으로부터 전사되는 RNA의 염기 서열을 5′ 말단부터 한 칸에 한 글자씩 쓰시오.</div>
+      <div class="strand" data-crop="q1"><span class="tag">RNA</span><span class="end">5′</span>
+          <!--S:MRNA--><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><!--E:MRNA-->
+        <span class="end">3′</span></div>
+      <!-- (2) 2026-10-24 교사 — 프로그램 ① 장면에서 빨갛게 깜빡이는 구슬(그 학생 RNA 의 5′ 쪽 첫 U) ↔ 답안지 연계 -->
+      <div class="q-row"><div class="q sub-q"><span class="sn">(2)</span>수행평가 프로그램 ① 장면의 애니메이션에서 빨갛게 깜빡이는 뉴클레오타이드의 염기를 쓰고, 그 염기의 고리 구조가 몇 개인지 쓰시오.</div>
+        <div class="aa" data-crop="q1b"><span class="lbl">염기</span><span class="cell sm"></span><span class="lbl" style="margin-left:10px">고리 구조</span><span class="cell sm"></span><span class="lbl">개</span></div></div>
+      <!-- (3) 2026-10-28 교사 — 프로그램 ① 장면의 X 상자가 코드마다 RNA · 위 DNA · 아래 DNA 중 하나를 가리킨다(번호 % 3). 답안지 글은 모두 같다 -->
+      <div class="q-row"><div class="q sub-q"><span class="sn">(3)</span>수행평가 프로그램 ① 장면의 애니메이션에서 X로 표시된 가닥을 구성하는 뉴클레오타이드의 당의 명칭을 쓰시오.</div>
+        <div class="aa" data-crop="q1c"><span class="cell nm" style="width:160px"></span></div></div>
+    </div>
+
+    <!-- ② 번역 -->
+    <div class="section">
+      <div class="section-title green">② 번역 <span class="sub">수행평가 프로그램 ②·③·④ 장면 · 1번의 DNA와 관계없는 mRNA이다.</span></div>
+      <div class="info-box" style="padding:4px 6px">
+        <div class="strand idx"><span class="tag blank">.</span><span class="end"></span>
+          <!--S:GIDX--><span class="bx">1</span><span class="bx">2</span><span class="bx">3</span><span class="bx">4</span><span class="bx">5</span><span class="bx">6</span><span class="bx">7</span><span class="bx">8</span><span class="bx">9</span><span class="bx">10</span><span class="bx">11</span><span class="bx">12</span><span class="bx">13</span><span class="bx">14</span><span class="bx">15</span><span class="bx">16</span><span class="bx">17</span><span class="bx">18</span><span class="bx">19</span><span class="bx">20</span><span class="bx">21</span><span class="bx">22</span><span class="bx">23</span><span class="bx">24</span><span class="bx">25</span><!--E:GIDX-->
+          <span class="end"></span></div>
+        <div class="strand tplrow"><span class="tag tpl">mRNA</span><span class="end">5′</span>
+          <!--S:GMRNA--><span class="bx">G</span><span class="bx">U</span><span class="bx">G</span><span class="bx">A</span><span class="bx">U</span><span class="bx">G</span><span class="bx">C</span><span class="bx">A</span><span class="bx">C</span><span class="bx">G</span><span class="bx">A</span><span class="bx">U</span><span class="bx">A</span><span class="bx">G</span><span class="bx">A</span><span class="bx">U</span><span class="bx">A</span><span class="bx">G</span><span class="bx">G</span><span class="bx">U</span><span class="bx">C</span><span class="bx">C</span><span class="bx">U</span><span class="bx">G</span><span class="bx">A</span><!--E:GMRNA-->
+          <span class="end">3′</span></div>
+      </div>
+      <!-- 2026-10-27 교사 — 「번역 장면의 mRNA 와 답안지 mRNA 가 같다」를 발문에 · 코돈표는 연습지로(수행1_연습지.html) · ㉠㉡㉢ 은 (2) 에 쓴다 -->
+      <div class="q"><span class="num">2.</span>②의 mRNA는 수행평가 프로그램 ②·③·④ 장면의 mRNA와 같으며, 프로그램의 mRNA 칸에 적힌 번호는 위 번호와 같다.<br>물음에 답하시오.</div>
+      <div class="q sub-q"><span class="sn">(1)</span>②의 mRNA가 번역되어 만들어지는 <b>폴리펩타이드 A</b>를 구성하는 아미노산을 순서대로 쓰시오. (연습지의 유전 부호 표를 이용하시오.)</div>
+      <div class="aa" data-crop="q2"><span class="cell"></span><span class="dash">–</span><span class="cell"></span><span class="dash">–</span><span class="cell"></span><span class="dash">–</span><span class="cell"></span></div>
+      <!-- 옛 2번 (2) 서술 문항(번역이 시작되는 때·곳)은 지웠다(2026-10-28 교사 — 「수행평가로서의 본질을 해친다」) -->
+      <!-- (2) 2026-10-27 교사 — 프로그램 번역 장면의 ㉠(② 개시 · 지시선이 가리키는 코돈) ㉡(③ 신장 · 새로 생긴 결합) ㉢(④ 종결 · 지시선이 가리키는 코돈) 을 답안지에 쓴다 · 채점 ㉠㉢ 한꺼번에 1 · ㉡ 1(10-28) -->
+      <div class="q-row" style="margin-top:8px"><div class="q sub-q"><span class="sn">(2)</span>수행평가 프로그램 ②·③·④ 장면의 ㉠, ㉡, ㉢에 해당하는 것의 명칭을 각각 쓰시오. (단, ㉠과 ㉢은 둘 다 옳게 써야 맞은 것으로 인정한다.)</div>
+        <div class="aa" data-crop="q2c"><span class="lbl">㉠</span><span class="cell nm"></span><span class="lbl" style="margin-left:8px">㉡</span><span class="cell nm" style="width:130px"></span><span class="lbl" style="margin-left:8px">㉢</span><span class="cell nm"></span></div></div>
+    </div>
+
+    <!-- ③ 유전 정보 해독 (2026-10-24 교사 — 경우마다 ㉡ 을 빼고 「변형된 아미노산 서열을 순서대로 쓰시오.」만 · 서술은 번역 쪽에 따로) -->
+    <div class="section">
+      <div class="section-title amber">③ 유전 정보 해독</div>
+      <div class="q"><span class="num">3.</span>②의 mRNA를 암호화하는 DNA가 변형되어, mRNA가 다음 (가), (나)와 같이 바뀌었다. (아미노산 칸은 자유롭게 필요한 만큼 쓴다.)</div>
+      <div class="case" data-crop="q3a">
+        <div class="hd"><!--S:CASEA--><span class="sn">(가)</span>②의 mRNA에서 <b>8번째 염기(A)가 중복</b>되어, 8번째와 9번째 염기 사이에 A가 하나 더 들어갔다.<!--E:CASEA--></div>
+        <div class="q sub-q plain">변형된 아미노산 서열을 순서대로 쓰시오.</div>
+        <div class="aa"><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span></div>
+      </div>
+      <div class="case" data-crop="q3b">
+        <div class="hd"><!--S:CASEB--><span class="sn">(나)</span>②의 mRNA에서 <b>15번째 염기(A)가 결실</b>되었다.<!--E:CASEB--></div>
+        <div class="q sub-q plain">변형된 아미노산 서열을 순서대로 쓰시오.</div>
+        <div class="aa"><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span></div>
+      </div>
+    </div>
+
+    <!-- 유전 부호 표는 연습지(2_인쇄물/수행1_연습지.html)로 옮겼다(2026-10-27 교사) -->
+
+  </div>
+
+  <div class="page-footer"><div class="mk"><!--S:M2--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M2--></div><div class="qrbox"><!--S:QR--><span data-sheet="M01-1"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" class="segno"><path class="qrline" stroke="#000" d="M2 2.5h7m1 0h3m1 0h1m1 0h7m-21 1h1m5 0h1m1 0h1m1 0h1m1 0h1m1 0h1m5 0h1m-21 1h1m1 0h3m1 0h1m1 0h5m1 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m3 0h3m1 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m2 0h1m1 0h1m2 0h1m1 0h3m1 0h1m-21 1h1m5 0h1m1 0h2m2 0h1m1 0h1m5 0h1m-21 1h7m1 0h1m1 0h1m1 0h1m1 0h7m-13 1h3m1 0h1m-11 1h3m1 0h1m1 0h1m1 0h1m2 0h3m2 0h3m-20 1h2m1 0h1m2 0h1m6 0h2m2 0h2m-20 1h3m1 0h1m1 0h1m1 0h1m1 0h2m1 0h3m2 0h1m1 0h1m-21 1h2m1 0h2m3 0h5m2 0h1m3 0h1m-20 1h1m2 0h1m2 0h2m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m-12 1h1m2 0h3m1 0h2m1 0h1m1 0h1m-21 1h7m3 0h1m4 0h1m4 0h1m-21 1h1m5 0h1m4 0h5m1 0h1m-18 1h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h2m1 0h1m1 0h1m-20 1h1m1 0h3m1 0h1m1 0h1m2 0h1m4 0h3m-19 1h1m1 0h3m1 0h1m1 0h1m2 0h3m1 0h3m-18 1h1m5 0h1m2 0h2m1 0h2m1 0h2m3 0h1m-21 1h7m3 0h2m1 0h1m1 0h1m2 0h1"/></svg></span><!--E:QR--><span class="page-badge">수행평가① 중심원리 모의 실험</span></div><div class="mk"><!--S:M3--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M3--></div></div>
+</div>
+
+<script>
+/* _서열생성.py 가 headless Chrome 으로 ?measure 를 붙여 열면, 장마다 표식·잘라낼 칸의 위치(mm, 장 왼쪽 위 기준)를 <pre id="measureOut"> 에 쓴다 */
+(function(){
+  if (!/[?&]measure/.test(location.search) || window._measureOn) return;
+  window._measureOn = 1;   /* 인쇄본에는 이 스크립트가 장마다 복사된다 — 한 번만, 문서를 다 읽은 뒤에(2026-10-08: 앞 몇 장만 재던 것 고침) */
+  function run(){
+    var mm=25.4/96, out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function(pg){
+      var R=pg.getBoundingClientRect(), q=pg.querySelector('[data-sheet]');
+      function box(el){ var r=el.getBoundingClientRect(); return [+((r.left-R.left)*mm).toFixed(2), +((r.top-R.top)*mm).toFixed(2), +(r.width*mm).toFixed(2), +(r.height*mm).toFixed(2)]; }
+      var pc=pg.querySelector('.page-content');   /* over = 내용이 장 밖으로 넘친 높이(px) — 0 이 아니면 생성기가 멈춘다(2026-10-22) */
+      var o={ sheet:q?q.getAttribute('data-sheet'):'', page:[+(R.width*mm).toFixed(2), +(R.height*mm).toFixed(2)], marks:[], crops:{}, header:box(pg.querySelector('.page-header')), over:pc?Math.max(0,pc.scrollHeight-pc.clientHeight):0 };
+      Array.prototype.forEach.call(pg.querySelectorAll('.mk'), function(m){ o.marks.push(box(m)); });
+      Array.prototype.forEach.call(pg.querySelectorAll('[data-crop]'), function(c){ o.crops[c.getAttribute('data-crop')]=box(c); });
+      out.push(o);
+    });
+    var pre=document.createElement('pre'); pre.id='measureOut'; pre.textContent=JSON.stringify(out); document.body.appendChild(pre);
+  }
+  function go(){ (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ setTimeout(run, 50); }); }
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+})();
+</script>
+<div class="page back">
+  <div class="page-header">
+    <div>
+      <div class="subject">수행평가① 연습지</div>
+      <div class="breadcrumb">생물의 유전 › 중심원리 모의 실험</div>
+    </div>
+    <div class="note">이 종이는 채점하지 않는다. 계산·메모에 자유롭게 쓰시오.</div>
+  </div>
+
+  <div class="section-title">유전 부호 표 <span class="sub">mRNA 코돈</span></div>
+<!-- ===CODON=== (코돈표 — 수행평가 앱의 CODON_GROUPS 와 같은 이름 · 같은 아미노산은 한 줄로 묶었다) -->
+<table class="codon">
+<tr><th rowspan="2" class="ax">첫째<br>염기</th><th colspan="4" class="ax">둘째 염기</th></tr>
+<tr><th>U</th><th>C</th><th>A</th><th>G</th></tr>
+<tr><th>U</th>
+<td><div class="g">UUU UUC <b>페닐알라닌</b></div><div class="g">UUA UUG <b>류신</b></div></td>
+<td><div class="g">UCU UCC UCA UCG <b>세린</b></div></td>
+<td><div class="g">UAU UAC <b>타이로신</b></div><div class="g">UAA UAG <b>?</b></div></td>
+<td><div class="g">UGU UGC <b>시스테인</b></div><div class="g">UGA <b>?</b></div><!-- 2026-10-24 교사: 번역을 끝내는 세 코돈도 외운다 --><div class="g">UGG <b>트립토판</b></div></td>
+</tr>
+<tr><th>C</th>
+<td><div class="g">CUU CUC CUA CUG <b>류신</b></div></td>
+<td><div class="g">CCU CCC CCA CCG <b>프롤린</b></div></td>
+<td><div class="g">CAU CAC <b>히스티딘</b></div><div class="g">CAA CAG <b>글루타민</b></div></td>
+<td><div class="g">CGU CGC CGA CGG <b>아르지닌</b></div></td>
+</tr>
+<tr><th>A</th>
+<td><div class="g">AUU AUC AUA <b>아이소류신</b></div><div class="g">AUG <b>?</b></div><!-- 2026-10-24 교사: 개시코돈이 지정하는 아미노산은 외워야 할 것 — 표에서 이름을 지운다 --></td>
+<td><div class="g">ACU ACC ACA ACG <b>트레오닌</b></div></td>
+<td><div class="g">AAU AAC <b>아스파라진</b></div><div class="g">AAA AAG <b>라이신</b></div></td>
+<td><div class="g">AGU AGC <b>세린</b></div><div class="g">AGA AGG <b>아르지닌</b></div></td>
+</tr>
+<tr><th>G</th>
+<td><div class="g">GUU GUC GUA GUG <b>발린</b></div></td>
+<td><div class="g">GCU GCC GCA GCG <b>알라닌</b></div></td>
+<td><div class="g">GAU GAC <b>아스파트산</b></div><div class="g">GAA GAG <b>글루탐산</b></div></td>
+<td><div class="g">GGU GGC GGA GGG <b>글라이신</b></div></td>
+</tr>
+</table>
+
+  <div class="work">
+    <div class="section-title">연습 공간</div>
+    <div class="grid"></div>
+  </div>
+
+  <div class="page-footer"><span class="page-badge">수행평가① 중심원리 모의 실험 — 연습지</span></div>
+</div>
+<div class="page">
+  <div class="page-header">
+    <div class="mk"><!--S:M0--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M0--></div>
+    <div class="header-left">
+      <div class="subject">수행평가① 답안지</div>
+      <div class="breadcrumb">생물의 유전 › 중심원리 모의 실험</div>
+    </div>
+    <div class="header-right">
+      <span class="seqno">답안지 <!--S:SHEET-->마스터-B<!--E:SHEET--></span><!--S:TMP--><!--E:TMP-->
+      <span class="code"><!--S:CODE-->입력 코드 <b>●●●-●●●</b><!--E:CODE--></span>
+      <div class="input-field">학번<span class="uline"></span></div>
+      <div class="input-field">이름<span class="uline"></span></div>
+    </div>
+    <div class="mk"><!--S:M1--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M1--></div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- ① 전사 (2026-10-24 교사 — 「주어진 DNA」와 「전사」를 한 문항으로 합침) -->
+    <div class="section">
+      <div class="section-title">① 전사 <span class="sub">수행평가 프로그램 ① 장면</span></div>
+      <div class="q"><span class="num">1.</span>다음은 어떤 유전자의 일부인 DNA 주형 가닥이다. 수행평가 프로그램 ① 장면의 애니메이션의 DNA와 합성되는 RNA는 각각 이 주형 가닥, 이 주형 가닥으로부터 전사되는 RNA와 같다. 물음에 답하시오.</div>
+      <div class="info-box" style="padding:4px 6px">
+        <div class="strand idx"><span class="tag blank">.</span><span class="end"></span>
+          <!--S:IDX--><span class="bx">1</span><span class="bx">2</span><span class="bx">3</span><span class="bx">4</span><span class="bx">5</span><span class="bx">6</span><span class="bx">7</span><span class="bx">8</span><span class="bx">9</span><span class="bx">10</span><span class="bx">11</span><span class="bx">12</span><span class="bx">13</span><span class="bx">14</span><span class="bx">15</span><!--E:IDX-->
+          <span class="end"></span></div>
+        <div class="strand tplrow"><span class="tag tpl">주형 가닥</span><span class="end">3′</span>
+          <!--S:TPL--><span class="bx">C</span><span class="bx">G</span><span class="bx">T</span><span class="bx">A</span><span class="bx">T</span><span class="bx">G</span><span class="bx">C</span><span class="bx">C</span><span class="bx">A</span><span class="bx">C</span><span class="bx">C</span><span class="bx">T</span><span class="bx">T</span><span class="bx">C</span><span class="bx">T</span><!--E:TPL-->
+          <span class="end">5′</span></div>
+      </div>
+      <div class="q sub-q"><span class="sn">(1)</span>이 주형 가닥으로부터 전사되는 RNA의 염기 서열을 5′ 말단부터 한 칸에 한 글자씩 쓰시오.</div>
+      <div class="strand" data-crop="q1"><span class="tag">RNA</span><span class="end">5′</span>
+          <!--S:MRNA--><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><!--E:MRNA-->
+        <span class="end">3′</span></div>
+      <!-- (2) 2026-10-24 교사 — 프로그램 ① 장면에서 빨갛게 깜빡이는 구슬(그 학생 RNA 의 5′ 쪽 첫 U) ↔ 답안지 연계 -->
+      <div class="q-row"><div class="q sub-q"><span class="sn">(2)</span>수행평가 프로그램 ① 장면의 애니메이션에서 빨갛게 깜빡이는 뉴클레오타이드의 염기를 쓰고, 그 염기의 고리 구조가 몇 개인지 쓰시오.</div>
+        <div class="aa" data-crop="q1b"><span class="lbl">염기</span><span class="cell sm"></span><span class="lbl" style="margin-left:10px">고리 구조</span><span class="cell sm"></span><span class="lbl">개</span></div></div>
+      <!-- (3) 2026-10-28 교사 — 프로그램 ① 장면의 X 상자가 코드마다 RNA · 위 DNA · 아래 DNA 중 하나를 가리킨다(번호 % 3). 답안지 글은 모두 같다 -->
+      <div class="q-row"><div class="q sub-q"><span class="sn">(3)</span>수행평가 프로그램 ① 장면의 애니메이션에서 X로 표시된 가닥을 구성하는 뉴클레오타이드의 당의 명칭을 쓰시오.</div>
+        <div class="aa" data-crop="q1c"><span class="cell nm" style="width:160px"></span></div></div>
+    </div>
+
+    <!-- ② 번역 -->
+    <div class="section">
+      <div class="section-title green">② 번역 <span class="sub">수행평가 프로그램 ②·③·④ 장면 · 1번의 DNA와 관계없는 mRNA이다.</span></div>
+      <div class="info-box" style="padding:4px 6px">
+        <div class="strand idx"><span class="tag blank">.</span><span class="end"></span>
+          <!--S:GIDX--><span class="bx">1</span><span class="bx">2</span><span class="bx">3</span><span class="bx">4</span><span class="bx">5</span><span class="bx">6</span><span class="bx">7</span><span class="bx">8</span><span class="bx">9</span><span class="bx">10</span><span class="bx">11</span><span class="bx">12</span><span class="bx">13</span><span class="bx">14</span><span class="bx">15</span><span class="bx">16</span><span class="bx">17</span><span class="bx">18</span><span class="bx">19</span><span class="bx">20</span><span class="bx">21</span><span class="bx">22</span><span class="bx">23</span><span class="bx">24</span><span class="bx">25</span><!--E:GIDX-->
+          <span class="end"></span></div>
+        <div class="strand tplrow"><span class="tag tpl">mRNA</span><span class="end">5′</span>
+          <!--S:GMRNA--><span class="bx">U</span><span class="bx">A</span><span class="bx">A</span><span class="bx">U</span><span class="bx">A</span><span class="bx">U</span><span class="bx">G</span><span class="bx">G</span><span class="bx">G</span><span class="bx">C</span><span class="bx">A</span><span class="bx">U</span><span class="bx">C</span><span class="bx">U</span><span class="bx">A</span><span class="bx">U</span><span class="bx">U</span><span class="bx">G</span><span class="bx">A</span><span class="bx">C</span><span class="bx">C</span><span class="bx">U</span><span class="bx">A</span><span class="bx">G</span><span class="bx">A</span><!--E:GMRNA-->
+          <span class="end">3′</span></div>
+      </div>
+      <!-- 2026-10-27 교사 — 「번역 장면의 mRNA 와 답안지 mRNA 가 같다」를 발문에 · 코돈표는 연습지로(수행1_연습지.html) · ㉠㉡㉢ 은 (2) 에 쓴다 -->
+      <div class="q"><span class="num">2.</span>②의 mRNA는 수행평가 프로그램 ②·③·④ 장면의 mRNA와 같으며, 프로그램의 mRNA 칸에 적힌 번호는 위 번호와 같다.<br>물음에 답하시오.</div>
+      <div class="q sub-q"><span class="sn">(1)</span>②의 mRNA가 번역되어 만들어지는 <b>폴리펩타이드 A</b>를 구성하는 아미노산을 순서대로 쓰시오. (연습지의 유전 부호 표를 이용하시오.)</div>
+      <div class="aa" data-crop="q2"><span class="cell"></span><span class="dash">–</span><span class="cell"></span><span class="dash">–</span><span class="cell"></span><span class="dash">–</span><span class="cell"></span></div>
+      <!-- 옛 2번 (2) 서술 문항(번역이 시작되는 때·곳)은 지웠다(2026-10-28 교사 — 「수행평가로서의 본질을 해친다」) -->
+      <!-- (2) 2026-10-27 교사 — 프로그램 번역 장면의 ㉠(② 개시 · 지시선이 가리키는 코돈) ㉡(③ 신장 · 새로 생긴 결합) ㉢(④ 종결 · 지시선이 가리키는 코돈) 을 답안지에 쓴다 · 채점 ㉠㉢ 한꺼번에 1 · ㉡ 1(10-28) -->
+      <div class="q-row" style="margin-top:8px"><div class="q sub-q"><span class="sn">(2)</span>수행평가 프로그램 ②·③·④ 장면의 ㉠, ㉡, ㉢에 해당하는 것의 명칭을 각각 쓰시오. (단, ㉠과 ㉢은 둘 다 옳게 써야 맞은 것으로 인정한다.)</div>
+        <div class="aa" data-crop="q2c"><span class="lbl">㉠</span><span class="cell nm"></span><span class="lbl" style="margin-left:8px">㉡</span><span class="cell nm" style="width:130px"></span><span class="lbl" style="margin-left:8px">㉢</span><span class="cell nm"></span></div></div>
+    </div>
+
+    <!-- ③ 유전 정보 해독 (2026-10-24 교사 — 경우마다 ㉡ 을 빼고 「변형된 아미노산 서열을 순서대로 쓰시오.」만 · 서술은 번역 쪽에 따로) -->
+    <div class="section">
+      <div class="section-title amber">③ 유전 정보 해독</div>
+      <div class="q"><span class="num">3.</span>②의 mRNA를 암호화하는 DNA가 변형되어, mRNA가 다음 (가), (나)와 같이 바뀌었다. (아미노산 칸은 자유롭게 필요한 만큼 쓴다.)</div>
+      <div class="case" data-crop="q3a">
+        <div class="hd"><!--S:CASEA--><span class="sn">(가)</span>②의 mRNA에서 <b>14번째 염기(U)가 중복</b>되어, 14번째와 15번째 염기 사이에 U가 하나 더 들어갔다.<!--E:CASEA--></div>
+        <div class="q sub-q plain">변형된 아미노산 서열을 순서대로 쓰시오.</div>
+        <div class="aa"><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span></div>
+      </div>
+      <div class="case" data-crop="q3b">
+        <div class="hd"><!--S:CASEB--><span class="sn">(나)</span>②의 mRNA에서 <b>16~17번째 염기(UU)가 결실</b>되었다.<!--E:CASEB--></div>
+        <div class="q sub-q plain">변형된 아미노산 서열을 순서대로 쓰시오.</div>
+        <div class="aa"><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span></div>
+      </div>
+    </div>
+
+    <!-- 유전 부호 표는 연습지(2_인쇄물/수행1_연습지.html)로 옮겼다(2026-10-27 교사) -->
+
+  </div>
+
+  <div class="page-footer"><div class="mk"><!--S:M2--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M2--></div><div class="qrbox"><!--S:QR--><span data-sheet="M02-1"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" class="segno"><path class="qrline" stroke="#000" d="M2 2.5h7m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h1m5 0h1m1 0h4m2 0h1m5 0h1m-21 1h1m1 0h3m1 0h1m1 0h1m5 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m2 0h1m1 0h2m1 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m3 0h1m3 0h1m1 0h3m1 0h1m-21 1h1m5 0h1m1 0h1m1 0h1m1 0h1m1 0h1m5 0h1m-21 1h7m1 0h1m1 0h1m1 0h1m1 0h7m-13 1h1m1 0h3m-11 1h3m1 0h1m1 0h1m2 0h5m2 0h3m-21 1h2m2 0h1m3 0h3m3 0h2m2 0h2m-19 1h2m1 0h3m3 0h6m2 0h1m1 0h1m-20 1h1m1 0h1m1 0h1m4 0h1m2 0h1m1 0h1m3 0h1m-19 1h2m1 0h3m2 0h1m2 0h2m1 0h1m1 0h1m1 0h1m-12 1h1m1 0h1m3 0h3m1 0h1m1 0h1m-21 1h7m2 0h3m1 0h3m4 0h1m-21 1h1m5 0h1m2 0h2m2 0h1m1 0h1m1 0h1m-18 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h5m1 0h1m-20 1h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m2 0h2m-19 1h1m1 0h3m1 0h1m1 0h1m2 0h5m1 0h1m-18 1h1m5 0h1m2 0h1m1 0h1m2 0h2m4 0h1m-21 1h7m2 0h1m1 0h3m4 0h1"/></svg></span><!--E:QR--><span class="page-badge">수행평가① 중심원리 모의 실험</span></div><div class="mk"><!--S:M3--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M3--></div></div>
+</div>
+
+<script>
+/* _서열생성.py 가 headless Chrome 으로 ?measure 를 붙여 열면, 장마다 표식·잘라낼 칸의 위치(mm, 장 왼쪽 위 기준)를 <pre id="measureOut"> 에 쓴다 */
+(function(){
+  if (!/[?&]measure/.test(location.search) || window._measureOn) return;
+  window._measureOn = 1;   /* 인쇄본에는 이 스크립트가 장마다 복사된다 — 한 번만, 문서를 다 읽은 뒤에(2026-10-08: 앞 몇 장만 재던 것 고침) */
+  function run(){
+    var mm=25.4/96, out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function(pg){
+      var R=pg.getBoundingClientRect(), q=pg.querySelector('[data-sheet]');
+      function box(el){ var r=el.getBoundingClientRect(); return [+((r.left-R.left)*mm).toFixed(2), +((r.top-R.top)*mm).toFixed(2), +(r.width*mm).toFixed(2), +(r.height*mm).toFixed(2)]; }
+      var pc=pg.querySelector('.page-content');   /* over = 내용이 장 밖으로 넘친 높이(px) — 0 이 아니면 생성기가 멈춘다(2026-10-22) */
+      var o={ sheet:q?q.getAttribute('data-sheet'):'', page:[+(R.width*mm).toFixed(2), +(R.height*mm).toFixed(2)], marks:[], crops:{}, header:box(pg.querySelector('.page-header')), over:pc?Math.max(0,pc.scrollHeight-pc.clientHeight):0 };
+      Array.prototype.forEach.call(pg.querySelectorAll('.mk'), function(m){ o.marks.push(box(m)); });
+      Array.prototype.forEach.call(pg.querySelectorAll('[data-crop]'), function(c){ o.crops[c.getAttribute('data-crop')]=box(c); });
+      out.push(o);
+    });
+    var pre=document.createElement('pre'); pre.id='measureOut'; pre.textContent=JSON.stringify(out); document.body.appendChild(pre);
+  }
+  function go(){ (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ setTimeout(run, 50); }); }
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+})();
+</script>
+<div class="page back">
+  <div class="page-header">
+    <div>
+      <div class="subject">수행평가① 연습지</div>
+      <div class="breadcrumb">생물의 유전 › 중심원리 모의 실험</div>
+    </div>
+    <div class="note">이 종이는 채점하지 않는다. 계산·메모에 자유롭게 쓰시오.</div>
+  </div>
+
+  <div class="section-title">유전 부호 표 <span class="sub">mRNA 코돈</span></div>
+<!-- ===CODON=== (코돈표 — 수행평가 앱의 CODON_GROUPS 와 같은 이름 · 같은 아미노산은 한 줄로 묶었다) -->
+<table class="codon">
+<tr><th rowspan="2" class="ax">첫째<br>염기</th><th colspan="4" class="ax">둘째 염기</th></tr>
+<tr><th>U</th><th>C</th><th>A</th><th>G</th></tr>
+<tr><th>U</th>
+<td><div class="g">UUU UUC <b>페닐알라닌</b></div><div class="g">UUA UUG <b>류신</b></div></td>
+<td><div class="g">UCU UCC UCA UCG <b>세린</b></div></td>
+<td><div class="g">UAU UAC <b>타이로신</b></div><div class="g">UAA UAG <b>?</b></div></td>
+<td><div class="g">UGU UGC <b>시스테인</b></div><div class="g">UGA <b>?</b></div><!-- 2026-10-24 교사: 번역을 끝내는 세 코돈도 외운다 --><div class="g">UGG <b>트립토판</b></div></td>
+</tr>
+<tr><th>C</th>
+<td><div class="g">CUU CUC CUA CUG <b>류신</b></div></td>
+<td><div class="g">CCU CCC CCA CCG <b>프롤린</b></div></td>
+<td><div class="g">CAU CAC <b>히스티딘</b></div><div class="g">CAA CAG <b>글루타민</b></div></td>
+<td><div class="g">CGU CGC CGA CGG <b>아르지닌</b></div></td>
+</tr>
+<tr><th>A</th>
+<td><div class="g">AUU AUC AUA <b>아이소류신</b></div><div class="g">AUG <b>?</b></div><!-- 2026-10-24 교사: 개시코돈이 지정하는 아미노산은 외워야 할 것 — 표에서 이름을 지운다 --></td>
+<td><div class="g">ACU ACC ACA ACG <b>트레오닌</b></div></td>
+<td><div class="g">AAU AAC <b>아스파라진</b></div><div class="g">AAA AAG <b>라이신</b></div></td>
+<td><div class="g">AGU AGC <b>세린</b></div><div class="g">AGA AGG <b>아르지닌</b></div></td>
+</tr>
+<tr><th>G</th>
+<td><div class="g">GUU GUC GUA GUG <b>발린</b></div></td>
+<td><div class="g">GCU GCC GCA GCG <b>알라닌</b></div></td>
+<td><div class="g">GAU GAC <b>아스파트산</b></div><div class="g">GAA GAG <b>글루탐산</b></div></td>
+<td><div class="g">GGU GGC GGA GGG <b>글라이신</b></div></td>
+</tr>
+</table>
+
+  <div class="work">
+    <div class="section-title">연습 공간</div>
+    <div class="grid"></div>
+  </div>
+
+  <div class="page-footer"><span class="page-badge">수행평가① 중심원리 모의 실험 — 연습지</span></div>
+</div>
+<div class="page">
+  <div class="page-header">
+    <div class="mk"><!--S:M0--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M0--></div>
+    <div class="header-left">
+      <div class="subject">수행평가① 답안지</div>
+      <div class="breadcrumb">생물의 유전 › 중심원리 모의 실험</div>
+    </div>
+    <div class="header-right">
+      <span class="seqno">답안지 <!--S:SHEET-->마스터-C<!--E:SHEET--></span><!--S:TMP--><!--E:TMP-->
+      <span class="code"><!--S:CODE-->입력 코드 <b>●●●-●●●</b><!--E:CODE--></span>
+      <div class="input-field">학번<span class="uline"></span></div>
+      <div class="input-field">이름<span class="uline"></span></div>
+    </div>
+    <div class="mk"><!--S:M1--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M1--></div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- ① 전사 (2026-10-24 교사 — 「주어진 DNA」와 「전사」를 한 문항으로 합침) -->
+    <div class="section">
+      <div class="section-title">① 전사 <span class="sub">수행평가 프로그램 ① 장면</span></div>
+      <div class="q"><span class="num">1.</span>다음은 어떤 유전자의 일부인 DNA 주형 가닥이다. 수행평가 프로그램 ① 장면의 애니메이션의 DNA와 합성되는 RNA는 각각 이 주형 가닥, 이 주형 가닥으로부터 전사되는 RNA와 같다. 물음에 답하시오.</div>
+      <div class="info-box" style="padding:4px 6px">
+        <div class="strand idx"><span class="tag blank">.</span><span class="end"></span>
+          <!--S:IDX--><span class="bx">1</span><span class="bx">2</span><span class="bx">3</span><span class="bx">4</span><span class="bx">5</span><span class="bx">6</span><span class="bx">7</span><span class="bx">8</span><span class="bx">9</span><span class="bx">10</span><span class="bx">11</span><span class="bx">12</span><span class="bx">13</span><span class="bx">14</span><span class="bx">15</span><!--E:IDX-->
+          <span class="end"></span></div>
+        <div class="strand tplrow"><span class="tag tpl">주형 가닥</span><span class="end">3′</span>
+          <!--S:TPL--><span class="bx">C</span><span class="bx">C</span><span class="bx">G</span><span class="bx">C</span><span class="bx">G</span><span class="bx">G</span><span class="bx">C</span><span class="bx">T</span><span class="bx">A</span><span class="bx">G</span><span class="bx">G</span><span class="bx">A</span><span class="bx">G</span><span class="bx">C</span><span class="bx">T</span><!--E:TPL-->
+          <span class="end">5′</span></div>
+      </div>
+      <div class="q sub-q"><span class="sn">(1)</span>이 주형 가닥으로부터 전사되는 RNA의 염기 서열을 5′ 말단부터 한 칸에 한 글자씩 쓰시오.</div>
+      <div class="strand" data-crop="q1"><span class="tag">RNA</span><span class="end">5′</span>
+          <!--S:MRNA--><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><span class="bx w"></span><!--E:MRNA-->
+        <span class="end">3′</span></div>
+      <!-- (2) 2026-10-24 교사 — 프로그램 ① 장면에서 빨갛게 깜빡이는 구슬(그 학생 RNA 의 5′ 쪽 첫 U) ↔ 답안지 연계 -->
+      <div class="q-row"><div class="q sub-q"><span class="sn">(2)</span>수행평가 프로그램 ① 장면의 애니메이션에서 빨갛게 깜빡이는 뉴클레오타이드의 염기를 쓰고, 그 염기의 고리 구조가 몇 개인지 쓰시오.</div>
+        <div class="aa" data-crop="q1b"><span class="lbl">염기</span><span class="cell sm"></span><span class="lbl" style="margin-left:10px">고리 구조</span><span class="cell sm"></span><span class="lbl">개</span></div></div>
+      <!-- (3) 2026-10-28 교사 — 프로그램 ① 장면의 X 상자가 코드마다 RNA · 위 DNA · 아래 DNA 중 하나를 가리킨다(번호 % 3). 답안지 글은 모두 같다 -->
+      <div class="q-row"><div class="q sub-q"><span class="sn">(3)</span>수행평가 프로그램 ① 장면의 애니메이션에서 X로 표시된 가닥을 구성하는 뉴클레오타이드의 당의 명칭을 쓰시오.</div>
+        <div class="aa" data-crop="q1c"><span class="cell nm" style="width:160px"></span></div></div>
+    </div>
+
+    <!-- ② 번역 -->
+    <div class="section">
+      <div class="section-title green">② 번역 <span class="sub">수행평가 프로그램 ②·③·④ 장면 · 1번의 DNA와 관계없는 mRNA이다.</span></div>
+      <div class="info-box" style="padding:4px 6px">
+        <div class="strand idx"><span class="tag blank">.</span><span class="end"></span>
+          <!--S:GIDX--><span class="bx">1</span><span class="bx">2</span><span class="bx">3</span><span class="bx">4</span><span class="bx">5</span><span class="bx">6</span><span class="bx">7</span><span class="bx">8</span><span class="bx">9</span><span class="bx">10</span><span class="bx">11</span><span class="bx">12</span><span class="bx">13</span><span class="bx">14</span><span class="bx">15</span><span class="bx">16</span><span class="bx">17</span><span class="bx">18</span><span class="bx">19</span><span class="bx">20</span><span class="bx">21</span><span class="bx">22</span><span class="bx">23</span><span class="bx">24</span><span class="bx">25</span><!--E:GIDX-->
+          <span class="end"></span></div>
+        <div class="strand tplrow"><span class="tag tpl">mRNA</span><span class="end">5′</span>
+          <!--S:GMRNA--><span class="bx">G</span><span class="bx">A</span><span class="bx">G</span><span class="bx">C</span><span class="bx">A</span><span class="bx">A</span><span class="bx">U</span><span class="bx">G</span><span class="bx">A</span><span class="bx">A</span><span class="bx">U</span><span class="bx">A</span><span class="bx">G</span><span class="bx">U</span><span class="bx">C</span><span class="bx">A</span><span class="bx">U</span><span class="bx">U</span><span class="bx">A</span><span class="bx">A</span><span class="bx">A</span><span class="bx">U</span><span class="bx">A</span><span class="bx">G</span><span class="bx">C</span><!--E:GMRNA-->
+          <span class="end">3′</span></div>
+      </div>
+      <!-- 2026-10-27 교사 — 「번역 장면의 mRNA 와 답안지 mRNA 가 같다」를 발문에 · 코돈표는 연습지로(수행1_연습지.html) · ㉠㉡㉢ 은 (2) 에 쓴다 -->
+      <div class="q"><span class="num">2.</span>②의 mRNA는 수행평가 프로그램 ②·③·④ 장면의 mRNA와 같으며, 프로그램의 mRNA 칸에 적힌 번호는 위 번호와 같다.<br>물음에 답하시오.</div>
+      <div class="q sub-q"><span class="sn">(1)</span>②의 mRNA가 번역되어 만들어지는 <b>폴리펩타이드 A</b>를 구성하는 아미노산을 순서대로 쓰시오. (연습지의 유전 부호 표를 이용하시오.)</div>
+      <div class="aa" data-crop="q2"><span class="cell"></span><span class="dash">–</span><span class="cell"></span><span class="dash">–</span><span class="cell"></span><span class="dash">–</span><span class="cell"></span></div>
+      <!-- 옛 2번 (2) 서술 문항(번역이 시작되는 때·곳)은 지웠다(2026-10-28 교사 — 「수행평가로서의 본질을 해친다」) -->
+      <!-- (2) 2026-10-27 교사 — 프로그램 번역 장면의 ㉠(② 개시 · 지시선이 가리키는 코돈) ㉡(③ 신장 · 새로 생긴 결합) ㉢(④ 종결 · 지시선이 가리키는 코돈) 을 답안지에 쓴다 · 채점 ㉠㉢ 한꺼번에 1 · ㉡ 1(10-28) -->
+      <div class="q-row" style="margin-top:8px"><div class="q sub-q"><span class="sn">(2)</span>수행평가 프로그램 ②·③·④ 장면의 ㉠, ㉡, ㉢에 해당하는 것의 명칭을 각각 쓰시오. (단, ㉠과 ㉢은 둘 다 옳게 써야 맞은 것으로 인정한다.)</div>
+        <div class="aa" data-crop="q2c"><span class="lbl">㉠</span><span class="cell nm"></span><span class="lbl" style="margin-left:8px">㉡</span><span class="cell nm" style="width:130px"></span><span class="lbl" style="margin-left:8px">㉢</span><span class="cell nm"></span></div></div>
+    </div>
+
+    <!-- ③ 유전 정보 해독 (2026-10-24 교사 — 경우마다 ㉡ 을 빼고 「변형된 아미노산 서열을 순서대로 쓰시오.」만 · 서술은 번역 쪽에 따로) -->
+    <div class="section">
+      <div class="section-title amber">③ 유전 정보 해독</div>
+      <div class="q"><span class="num">3.</span>②의 mRNA를 암호화하는 DNA가 변형되어, mRNA가 다음 (가), (나)와 같이 바뀌었다. (아미노산 칸은 자유롭게 필요한 만큼 쓴다.)</div>
+      <div class="case" data-crop="q3a">
+        <div class="hd"><!--S:CASEA--><span class="sn">(가)</span>②의 mRNA에서 <b>10번째 염기(A)가 중복</b>되어, 10번째와 11번째 염기 사이에 A가 하나 더 들어갔다.<!--E:CASEA--></div>
+        <div class="q sub-q plain">변형된 아미노산 서열을 순서대로 쓰시오.</div>
+        <div class="aa"><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span></div>
+      </div>
+      <div class="case" data-crop="q3b">
+        <div class="hd"><!--S:CASEB--><span class="sn">(나)</span>②의 mRNA에서 <b>18번째 염기(U)가 결실</b>되었다.<!--E:CASEB--></div>
+        <div class="q sub-q plain">변형된 아미노산 서열을 순서대로 쓰시오.</div>
+        <div class="aa"><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span><span class="dash">–</span><span class="cell sm"></span></div>
+      </div>
+    </div>
+
+    <!-- 유전 부호 표는 연습지(2_인쇄물/수행1_연습지.html)로 옮겼다(2026-10-27 교사) -->
+
+  </div>
+
+  <div class="page-footer"><div class="mk"><!--S:M2--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M2--></div><div class="qrbox"><!--S:QR--><span data-sheet="M03-1"><svg viewBox="0 0 25 25" shape-rendering="crispEdges" class="segno"><path class="qrline" stroke="#000" d="M2 2.5h7m3 0h3m1 0h7m-21 1h1m5 0h1m2 0h1m4 0h1m5 0h1m-21 1h1m1 0h3m1 0h1m2 0h4m1 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m3 0h3m1 0h1m1 0h3m1 0h1m-21 1h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h1m1 0h3m1 0h1m-21 1h1m5 0h1m2 0h1m1 0h1m2 0h1m5 0h1m-21 1h7m1 0h1m1 0h1m1 0h1m1 0h7m-13 1h1m1 0h1m1 0h1m-11 1h2m2 0h4m1 0h4m1 0h1m-16 1h4m3 0h1m2 0h5m2 0h2m-14 1h3m1 0h2m1 0h1m3 0h1m-18 1h6m1 0h5m1 0h1m2 0h1m1 0h1m-17 1h2m1 0h6m2 0h3m1 0h1m1 0h1m-12 1h1m5 0h1m1 0h2m-18 1h7m1 0h7m1 0h1m1 0h3m-21 1h1m5 0h1m8 0h1m1 0h1m-18 1h1m1 0h3m1 0h1m2 0h4m5 0h3m-21 1h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h2m1 0h2m1 0h1m-20 1h1m1 0h3m1 0h1m1 0h1m1 0h4m1 0h3m-18 1h1m5 0h1m2 0h1m5 0h1m1 0h2m-19 1h7m2 0h1m2 0h2m1 0h2m2 0h1"/></svg></span><!--E:QR--><span class="page-badge">수행평가① 중심원리 모의 실험</span></div><div class="mk"><!--S:M3--><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="#fff"/><g fill="#000"><rect x="1" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="1" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="1" y="5" width="1" height="1"/><rect x="2" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="6" y="5" width="1" height="1"/><rect x="1" y="6" width="1" height="1"/><rect x="2" y="6" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="6" y="6" width="1" height="1"/></g></svg><!--E:M3--></div></div>
+</div>
+
+<script>
+/* _서열생성.py 가 headless Chrome 으로 ?measure 를 붙여 열면, 장마다 표식·잘라낼 칸의 위치(mm, 장 왼쪽 위 기준)를 <pre id="measureOut"> 에 쓴다 */
+(function(){
+  if (!/[?&]measure/.test(location.search) || window._measureOn) return;
+  window._measureOn = 1;   /* 인쇄본에는 이 스크립트가 장마다 복사된다 — 한 번만, 문서를 다 읽은 뒤에(2026-10-08: 앞 몇 장만 재던 것 고침) */
+  function run(){
+    var mm=25.4/96, out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('.page'), function(pg){
+      var R=pg.getBoundingClientRect(), q=pg.querySelector('[data-sheet]');
+      function box(el){ var r=el.getBoundingClientRect(); return [+((r.left-R.left)*mm).toFixed(2), +((r.top-R.top)*mm).toFixed(2), +(r.width*mm).toFixed(2), +(r.height*mm).toFixed(2)]; }
+      var pc=pg.querySelector('.page-content');   /* over = 내용이 장 밖으로 넘친 높이(px) — 0 이 아니면 생성기가 멈춘다(2026-10-22) */
+      var o={ sheet:q?q.getAttribute('data-sheet'):'', page:[+(R.width*mm).toFixed(2), +(R.height*mm).toFixed(2)], marks:[], crops:{}, header:box(pg.querySelector('.page-header')), over:pc?Math.max(0,pc.scrollHeight-pc.clientHeight):0 };
+      Array.prototype.forEach.call(pg.querySelectorAll('.mk'), function(m){ o.marks.push(box(m)); });
+      Array.prototype.forEach.call(pg.querySelectorAll('[data-crop]'), function(c){ o.crops[c.getAttribute('data-crop')]=box(c); });
+      out.push(o);
+    });
+    var pre=document.createElement('pre'); pre.id='measureOut'; pre.textContent=JSON.stringify(out); document.body.appendChild(pre);
+  }
+  function go(){ (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function(){ setTimeout(run, 50); }); }
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
+})();
+</script>
+<div class="page back">
+  <div class="page-header">
+    <div>
+      <div class="subject">수행평가① 연습지</div>
+      <div class="breadcrumb">생물의 유전 › 중심원리 모의 실험</div>
+    </div>
+    <div class="note">이 종이는 채점하지 않는다. 계산·메모에 자유롭게 쓰시오.</div>
+  </div>
+
+  <div class="section-title">유전 부호 표 <span class="sub">mRNA 코돈</span></div>
+<!-- ===CODON=== (코돈표 — 수행평가 앱의 CODON_GROUPS 와 같은 이름 · 같은 아미노산은 한 줄로 묶었다) -->
+<table class="codon">
+<tr><th rowspan="2" class="ax">첫째<br>염기</th><th colspan="4" class="ax">둘째 염기</th></tr>
+<tr><th>U</th><th>C</th><th>A</th><th>G</th></tr>
+<tr><th>U</th>
+<td><div class="g">UUU UUC <b>페닐알라닌</b></div><div class="g">UUA UUG <b>류신</b></div></td>
+<td><div class="g">UCU UCC UCA UCG <b>세린</b></div></td>
+<td><div class="g">UAU UAC <b>타이로신</b></div><div class="g">UAA UAG <b>?</b></div></td>
+<td><div class="g">UGU UGC <b>시스테인</b></div><div class="g">UGA <b>?</b></div><!-- 2026-10-24 교사: 번역을 끝내는 세 코돈도 외운다 --><div class="g">UGG <b>트립토판</b></div></td>
+</tr>
+<tr><th>C</th>
+<td><div class="g">CUU CUC CUA CUG <b>류신</b></div></td>
+<td><div class="g">CCU CCC CCA CCG <b>프롤린</b></div></td>
+<td><div class="g">CAU CAC <b>히스티딘</b></div><div class="g">CAA CAG <b>글루타민</b></div></td>
+<td><div class="g">CGU CGC CGA CGG <b>아르지닌</b></div></td>
+</tr>
+<tr><th>A</th>
+<td><div class="g">AUU AUC AUA <b>아이소류신</b></div><div class="g">AUG <b>?</b></div><!-- 2026-10-24 교사: 개시코돈이 지정하는 아미노산은 외워야 할 것 — 표에서 이름을 지운다 --></td>
+<td><div class="g">ACU ACC ACA ACG <b>트레오닌</b></div></td>
+<td><div class="g">AAU AAC <b>아스파라진</b></div><div class="g">AAA AAG <b>라이신</b></div></td>
+<td><div class="g">AGU AGC <b>세린</b></div><div class="g">AGA AGG <b>아르지닌</b></div></td>
+</tr>
+<tr><th>G</th>
+<td><div class="g">GUU GUC GUA GUG <b>발린</b></div></td>
+<td><div class="g">GCU GCC GCA GCG <b>알라닌</b></div></td>
+<td><div class="g">GAU GAC <b>아스파트산</b></div><div class="g">GAA GAG <b>글루탐산</b></div></td>
+<td><div class="g">GGU GGC GGA GGG <b>글라이신</b></div></td>
+</tr>
+</table>
+
+  <div class="work">
+    <div class="section-title">연습 공간</div>
+    <div class="grid"></div>
+  </div>
+
+  <div class="page-footer"><span class="page-badge">수행평가① 중심원리 모의 실험 — 연습지</span></div>
+</div>
+</body>
+</html>
